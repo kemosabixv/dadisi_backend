@@ -15,7 +15,8 @@ return new class extends Migration {
             $table->timestamp('started_at');
             $table->timestamp('ends_at')->nullable();
             $table->timestamp('cancelled_at')->nullable();
-            $table->foreignId('payment_id')->nullable()->constrained('payments')->nullOnDelete();
+            // define payment_id as nullable unsigned big integer here; add FK in a later migration
+            $table->unsignedBigInteger('payment_id')->nullable();
             $table->timestamps();
         });
     }

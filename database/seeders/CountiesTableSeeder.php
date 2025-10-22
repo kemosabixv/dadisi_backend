@@ -2,67 +2,25 @@
 
 namespace Database\Seeders;
 
+use App\Models\County;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class CountiesTableSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = now();
         $counties = [
-            ['name' => 'Mombasa'],
-            ['name' => 'Kwale'],
-            ['name' => 'Kilifi'],
-            ['name' => 'Tana River'],
-            ['name' => 'Lamu'],
-            ['name' => 'Taita-Taveta'],
-            ['name' => 'Garissa'],
-            ['name' => 'Wajir'],
-            ['name' => 'Mandera'],
-            ['name' => 'Marsabit'],
-            ['name' => 'Isiolo'],
-            ['name' => 'Meru'],
-            ['name' => 'Tharaka-Nithi'],
-            ['name' => 'Embu'],
-            ['name' => 'Kitui'],
-            ['name' => 'Machakos'],
-            ['name' => 'Makueni'],
-            ['name' => 'Nyandarua'],
-            ['name' => 'Nyeri'],
-            ['name' => 'Kirinyaga'],
-            ['name' => 'Murang\'a'],
-            ['name' => 'Kiambu'],
-            ['name' => 'Turkana'],
-            ['name' => 'West Pokot'],
-            ['name' => 'Samburu'],
-            ['name' => 'Trans Nzoia'],
-            ['name' => 'Uasin Gishu'],
-            ['name' => 'Elgeyo-Marakwet'],
-            ['name' => 'Nandi'],
-            ['name' => 'Baringo'],
-            ['name' => 'Laikipia'],
-            ['name' => 'Nakuru'],
-            ['name' => 'Narok'],
-            ['name' => 'Kajiado'],
-            ['name' => 'Kericho'],
-            ['name' => 'Bomet'],
-            ['name' => 'Kakamega'],
-            ['name' => 'Vihiga'],
-            ['name' => 'Bungoma'],
-            ['name' => 'Busia'],
-            ['name' => 'Siaya'],
-            ['name' => 'Kisumu'],
-            ['name' => 'Homa Bay'],
-            ['name' => 'Migori'],
-            ['name' => 'Kisii'],
-            ['name' => 'Nyamira'],
-            ['name' => 'Nairobi City'],
+            'Mombasa','Kwale','Kilifi','Tana River','Lamu','Taita-Taveta','Garissa','Wajir','Mandera',
+            'Marsabit','Isiolo','Meru','Tharaka-Nithi','Embu','Kitui','Machakos','Makueni','Nyandarua',
+            'Nyeri','Kirinyaga','Murang\'a','Kiambu','Turkana','West Pokot','Samburu','Trans Nzoia',
+            'Uasin Gishu','Elgeyo-Marakwet','Nandi','Baringo','Laikipia','Nakuru','Narok','Kajiado',
+            'Kericho','Bomet','Kakamega','Vihiga','Bungoma','Busia','Siaya','Kisumu','Homa Bay',
+            'Migori','Kisii','Nyamira','Nairobi City'
         ];
 
-        DB::table('counties')->insert(array_map(function ($c) use ($now) {
-            return $c + ['created_at' => $now, 'updated_at' => $now];
-        }, $counties));
+        foreach ($counties as $name) {
+            County::firstOrCreate(['name' => $name]);
+        }
     }
 }
 

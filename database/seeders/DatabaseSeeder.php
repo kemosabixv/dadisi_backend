@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
         // Seed reference data first
         $this->call([
             CountiesTableSeeder::class,
+            AdminUserSeeder::class,
+            SampleEventsSeeder::class,
         ]);
 
         // Optionally seed a demo user

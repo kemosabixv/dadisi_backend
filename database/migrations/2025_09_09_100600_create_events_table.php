@@ -31,7 +31,25 @@ return new class extends Migration {
 
     public function down(): void
     {
+        // Drop foreign key constraints from dependent tables if they exist
+        if (Schema::hasTable('event_rsvps')) {
+            Schema::table('event_rsvps', function (Blueprint $table) {
+                $table->dropForeign(['event_id']);
+            });
+        }
+
+        if (Schema::hasTable('event_attendees')) {
+            Schema::table('event_attendees', function (Blueprint $table) {
+                $table->dropForeign(['event_id']);
+            });
+        }
+
+        if (Schema::hasTable('event_orders')) {
+            Schema::table('event_orders', function (Blueprint $table) {
+                $table->dropForeign(['event_id']);
+            });
+        }
+
         Schema::dropIfExists('events');
     }
 };
-

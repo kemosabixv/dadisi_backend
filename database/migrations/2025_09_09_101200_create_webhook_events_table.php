@@ -18,7 +18,7 @@ return new class extends Migration {
             $table->enum('status', ['received','processed','failed'])->default('received');
             $table->timestamp('processed_at')->nullable();
             $table->text('error')->nullable();
-            $table->timestamp('created_at');
+            $table->timestamps();
         });
     }
 
@@ -27,4 +27,3 @@ return new class extends Migration {
         Schema::dropIfExists('webhook_events');
     }
 };
-

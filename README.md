@@ -59,3 +59,119 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+
+## Local development quick start
+
+Follow these steps to run the backend locally on Windows / WSL / Linux.
+
+1. Copy environment example and set values:
+
+   cp .env.example .env
+
+2. Install dependencies (requires Composer):
+
+   composer install
+
+3. Generate app key:
+
+   php artisan key:generate
+
+4. Configure your local database and update `.env` (DB_CONNECTION, DB_DATABASE, DB_USERNAME, DB_PASSWORD).
+
+5. Run migrations and seeders (if any):
+
+   php artisan migrate --seed
+
+6. Run the dev server:
+
+   php artisan serve --host=127.0.0.1 --port=8000
+
+7. Run tests:
+
+   ./vendor/bin/phpunit --configuration phpunit.xml
+
+Notes:
+
+- If you're on Windows, use PowerShell or WSL. For a consistent environment consider using Docker.
+- The repository includes `azure-pipelines.yml` for a starter CI pipeline.
+
+## Developer onboarding (detailed)
+
+Follow these steps for a repeatable local developer setup. These are written to work on Windows (PowerShell), WSL, or Linux. Replace values in `.env` as appropriate for your environment.
+
+1. Copy the example environment and update values
+
+   ```powershell
+   copy .env.example .env
+   # then edit .env with your DB and mail values
+   notepad .env  # or use your preferred editor
+   ```
+
+2. Install PHP dependencies
+
+   ```powershell
+   composer install --no-interaction --prefer-dist
+   ```
+
+3. Generate app key
+
+   ```powershell
+   php artisan key:generate
+   ```
+
+4. Configure the database
+
+   - Update `DB_CONNECTION`, `DB_DATABASE`, `DB_USERNAME` and `DB_PASSWORD` in `.env`.
+   - For a local MySQL setup create the DB before running migrations.
+
+5. Run migrations and seeders
+
+   ```powershell
+   php artisan migrate --seed
+   ```
+
+   - If you need a fresh start during development:
+
+   ```powershell
+   php artisan migrate:fresh --seed
+   ```
+
+6. Run the local server
+
+   ```powershell
+   php artisan serve --host=127.0.0.1 --port=8000
+   ```
+
+7. Run the test suite
+
+   ```powershell
+   ./vendor/bin/phpunit --configuration phpunit.xml
+   ```
+
+8. Developer utilities in this repository
+
+   - Work item automation (we used it to create the backlog): see `..\Docs\create_ado_workitems_v2.ps1` and the generated log at `..\Docs\created_work_items_log.csv`.
+     - To re-check a created work item locally you can run (from `Docs`):
+
+     ```powershell
+     .\CheckWorkItems.ps1 <workItemId>
+     # example:
+     .\CheckWorkItems.ps1 229
+     ```
+
+   - If you need to create or update Azure DevOps work items again the scripts live under `Docs/workitems/` — they require the Azure CLI and the Azure DevOps extension.
+
+9. Recommended developer workflow
+
+   - Create a feature branch from `master` named like `feature/<workItemId>-short-description` (e.g. `feature/260-sanctum-auth`).
+   - Push and open a pull request back to `master` for review.
+   - Make small commits with clear messages and reference the work item ID in the PR description.
+
+10. Notes and troubleshooting
+
+   - If you encounter permission errors when running `php artisan migrate`, verify your DB credentials and that your DB user has CREATE/MIGRATE privileges.
+   - Use WSL or Docker if you want a Linux-like environment on Windows.
+   - For any CI-related questions see `azure-pipelines.yml` at the repository root.
+
+If you'd like, I can now start implementing one of the created work items (for example: implement Laravel Sanctum auth, story ID 260). Which work item should I start with?

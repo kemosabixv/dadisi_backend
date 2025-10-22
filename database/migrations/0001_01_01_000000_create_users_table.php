@@ -42,8 +42,30 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
+        // Drop foreign key constraints from dependent tables if they exist
+        $tables = [
+            'subscriptions',
+            'member_profiles',
+            'user_roles',
+            'user_permissions',
+            'events',
+            'event_orders',
+            'donations',
+            'posts',
+            'audit_logs'
+        ];
+
+        foreach ($tables as $table) {
+            if (Schema::hasTable($table)) {
+                Schema::table($table, function (Blueprint $table) {
+                    $table->dropForeign(['user_id']);
+                });
+            }
+        }
+
+        // Drop the sessions table first since it references users
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };
