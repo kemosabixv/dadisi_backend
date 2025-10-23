@@ -1,115 +1,121 @@
 <?php
 
-namespace App\Http\Controllers;
-
-use App\Models\User;
-use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Support\Facades\Password;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
-use Carbon\Carbon;
-use Laravel\Sanctum\PersonalAccessToken;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use App\Models\User;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
-        $data = $request->only(['name', 'email', 'password']);
+	public function signup(Request $request) {
+		$validatedData = $request->validate([
+			'name' => 'required|string|max:255',
+			'email' => 'required|email|unique:users,email',
+			'password' => 'required|min:6|confirmed',
+		]);
 
-        $validator = Validator::make($data, [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
-        ]);
+		$validatedData['password'] = Hash::make($validatedData['password']);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+		if(User::create($validatedData)) {
+			return response()->json(null, 201);
+		}
+
+		return response()->json(null, 404);
+	}
+
+	public function login(Request $request) {
+		$request->validate([
+			'email' => 'required|email',
+			'password' => 'required',
+		]);
+
+        //remember me functionality
+        if ($request->filled('remember_me')) {
+            $rememberMe = $request->input('remember_me');
+        } else {
+            $rememberMe = false;
         }
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            // Explicitly hash password for clarity
-            'password' => Hash::make($data['password']),
-        ]);
+		$user = User::where('email', $request->email)->first();
 
-        $abilities = $request->input('abilities', ['*']);
-        $remember = $request->boolean('remember', false);
+		if (! $user || ! Hash::check($request->password, $user->password)) {
+			throw ValidationException::withMessages([
+				'email' => ['The provided credentials are incorrect.'],
+			]);
+		}
 
-        $tokenName = $remember ? 'api-token-remember' : 'api-token';
-
-        // Create token with requested abilities/scopes
-        $tokenResult = $user->createToken($tokenName, $abilities);
-
-        // If remember requested, set a longer expiry on the token record
-        if ($remember) {
-            $tokenModel = $tokenResult->accessToken ?? $tokenResult->token ?? null;
-            // Laravel Sanctum returns a PersonalAccessToken model via accessToken in some versions
-            if ($tokenModel) {
-                $tokenModel->expires_at = Carbon::now()->addWeeks(4);
-                $tokenModel->save();
-            }
+        if ($rememberMe) {
+            // Set token expiration to 30 days
+            config(['sanctum.expiration' => 43200]); // 30 days in minutes
+        } else {
+            // Set token expiration to default (2 hours)
+            config(['sanctum.expiration' => null]);
         }
 
-        $token = $tokenResult->plainTextToken;
+		return response()->json([
+			'user' => $user,
+			'access_token' => $user->createToken($request->email)->plainTextToken
+		], 200);
+	}
 
-        return response()->json(['user' => $user, 'token' => $token], 201);
-    }
+	public function logout(Request $request) {
 
-    public function login(Request $request)
-    {
-        $credentials = $request->only(['email', 'password']);
+		// Revoke the token that was used to authenticate the current request
+		$request->user()->currentAccessToken()->delete();
+		//$request->user->tokens()->delete(); // use this to revoke all tokens (logout from all devices)
+		return response()->json(null, 200);
+	}
 
-        $validator = Validator::make($credentials, [
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+	public function getAuthenticatedUser(Request $request) {
+		return $request->user();
+	}
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+	public function sendPasswordResetLinkEmail(Request $request) {
+		$request->validate(['email' => 'required|email']);
 
-        $user = User::where('email', $credentials['email'])->first();
+		$status = Password::sendResetLink(
+			$request->only('email')
+		);
 
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
-        }
+		if($status === Password::RESET_LINK_SENT) {
+			return response()->json(['message' => __($status)], 200);
+		} else {
+			throw ValidationException::withMessages([
+				'email' => __($status)
+			]);
+		}
+	}
 
-        $abilities = $request->input('abilities', ['*']);
-        $remember = $request->boolean('remember', false);
-        $tokenName = $remember ? 'api-token-remember' : 'api-token';
+	public function resetPassword(Request $request) {
+		$request->validate([
+			'token' => 'required',
+			'email' => 'required|email',
+			'password' => 'required|min:8|confirmed',
+		]);
 
-        $tokenResult = $user->createToken($tokenName, $abilities);
+		$status = Password::reset(
+			$request->only('email', 'password', 'password_confirmation', 'token'),
+			function ($user, $password) use ($request) {
+				$user->forceFill([
+					'password' => Hash::make($password)
+				])->setRememberToken(Str::random(60));
 
-        return response()->json(['user' => $user, 'token' => $tokenResult->plainTextToken]);
-    }
+				$user->save();
 
-    public function logout(Request $request)
-    {
-        // Try to revoke by the bearer token string first
-        $bearer = $request->bearerToken();
-        if ($bearer) {
-            $tokenModel = PersonalAccessToken::findToken($bearer);
-            if ($tokenModel) {
-                $tokenModel->delete();
-                return response()->json(['message' => 'Logged out']);
-            }
-        }
+				event(new PasswordReset($user));
+			}
+		);
 
-        // Fallback: delete current access token model or all tokens for the user
-        $user = $request->user();
-        if ($user) {
-            if ($user->currentAccessToken()) {
-                $user->currentAccessToken()->delete();
-            } else {
-                $user->tokens()->delete();
-            }
-        }
-
-        return response()->json(['message' => 'Logged out']);
-    }
-
-    public function user(Request $request)
-    {
-        return response()->json($request->user());
-    }
+		if($status == Password::PASSWORD_RESET) {
+			return response()->json(['message' => __($status)], 200);
+		} else {
+			throw ValidationException::withMessages([
+				'email' => __($status)
+			]);
+		}
+	}
 }

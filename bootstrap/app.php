@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // middleware registered via app/Http/Kernel
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

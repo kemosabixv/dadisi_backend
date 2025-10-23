@@ -2,61 +2,88 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\User;
 
 class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_register_creates_user_and_returns_token()
+    public function test_signup_creates_user()
     {
         $payload = [
             'name' => 'Test User',
             'email' => 'testuser@example.com',
             'password' => 'password123',
+            'password_confirmation' => 'password123',
         ];
 
-        $response = $this->postJson('/api/register', $payload);
+        $response = $this->postJson('/api/auth/signup', $payload);
 
         $response->assertStatus(201);
-        $response->assertJsonStructure(['user' => ['id','email','name'], 'token']);
 
-        $this->assertDatabaseHas('users', ['email' => 'testuser@example.com']);
+        $this->assertDatabaseHas('users', [
+            'email' => 'testuser@example.com',
+        ]);
     }
 
     public function test_login_returns_token()
     {
-        $user = User::factory()->create(['password' => 'password123']);
+        $user = User::factory()->create([
+            'password' => bcrypt('password123'),
+        ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson('/api/auth/login', [
             'email' => $user->email,
             'password' => 'password123',
         ]);
 
         $response->assertStatus(200);
-        $response->assertJsonStructure(['user','token']);
+        $response->assertJsonStructure(['user', 'access_token']);
     }
 
     public function test_user_endpoint_requires_auth()
     {
-        $response = $this->getJson('/api/user');
+        $response = $this->getJson('/api/auth/user');
         $response->assertStatus(401);
     }
 
     public function test_logout_revokes_token()
     {
-        $user = User::factory()->create(['password' => 'password123']);
-        $token = $user->createToken('test-token')->plainTextToken;
+        $user = User::factory()->create([
+            'password' => bcrypt('password123'),
+        ]);
 
-        $this->withHeaders(['Authorization' => 'Bearer '.$token])
-            ->postJson('/api/logout')
-            ->assertStatus(200);
+        // Login to get token
+        $loginResponse = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
 
-        // Subsequent call should be unauthorized
-        $this->withHeaders(['Authorization' => 'Bearer '.$token])
-            ->getJson('/api/user')
-            ->assertStatus(401);
+        $token = $loginResponse->json('access_token');
+
+        // Confirm token exists
+        $this->assertDatabaseHas('personal_access_tokens', [
+            'tokenable_id' => $user->id,
+        ]);
+
+        // Logout
+        $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/api/auth/logout')
+          ->assertStatus(200);
+
+        // Token should be deleted
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'tokenable_id' => $user->id,
+        ]);
+
+        // Subsequent request with same token should fail
+        $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->getJson('/api/auth/user')
+          ->assertStatus(401);
     }
 }
+

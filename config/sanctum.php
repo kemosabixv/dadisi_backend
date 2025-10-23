@@ -34,6 +34,9 @@ return [
     |
     */
 
+    // Use the session-based 'web' guard first; if no session user is found,
+    // Sanctum will fall back to bearer token lookup. This avoids using the
+    // legacy 'token' guard which expects an `api_token` column.
     'guard' => ['web'],
 
     /*
