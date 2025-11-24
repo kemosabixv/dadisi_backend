@@ -15,9 +15,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed reference data first
+        // Seed roles and permissions first
+        $this->call([
+            RolesPermissionsSeeder::class,
+        ]);
+
+        // Seed reference data
         $this->call([
             CountiesTableSeeder::class,
+            SubscriptionPlansSeeder::class,
+            UserDataRetentionSettingsSeeder::class,
             AdminUserSeeder::class,
             SampleEventsSeeder::class,
         ]);

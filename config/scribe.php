@@ -200,6 +200,56 @@ return [
         // By default, Scribe will try the model's factory, and if that fails, try fetching the first from the database.
         // You can reorder or remove strategies here.
         'models_source' => ['factoryCreate', 'factoryMake', 'databaseFirst'],
+
+        // Custom examples for API responses - provides realistic data instead of gibberish
+        'models' => [
+            \App\Models\MemberProfile::class => [
+                'id' => 1,
+                'user_id' => 2,
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'phone' => '+254712345678',
+                'county_id' => 35,
+                'gender' => 'male',
+                'date_of_birth' => '1990-01-15',
+                'occupation' => 'Software Developer',
+                'membership_type' => 'premium',
+                'emergency_contact_name' => 'Jane Doe',
+                'emergency_contact_phone' => '+254798765432',
+                'terms_accepted' => true,
+                'marketing_consent' => false,
+                'interests' => ['technology', 'community', 'innovation'],
+                'bio' => 'Passionate software developer with 8+ years experience building scalable web applications. Focus on user experience and clean code.',
+                'created_at' => '2025-01-15T10:30:00.000000Z',
+                'updated_at' => '2025-01-20T14:45:00.000000Z',
+                'user' => [
+                    'id' => 2,
+                    'name' => 'John Doe',
+                    'email' => 'john.doe@example.com',
+                    'email_verified_at' => '2025-01-15T10:30:00.000000Z',
+                ],
+                'county' => [
+                    'id' => 35,
+                    'name' => 'Nairobi',
+                ]
+            ],
+            \App\Models\User::class => [
+                'id' => 2,
+                'name' => 'John Doe',
+                'email' => 'john.doe@example.com',
+                'email_verified_at' => '2025-01-15T10:30:00.000000Z',
+                'created_at' => '2025-01-15T10:30:00.000000Z',
+                'updated_at' => '2025-01-15T10:30:00.000000Z',
+                'google_id' => null,
+            ],
+            \App\Models\County::class => [
+                'id' => 35,
+                'name' => 'Nairobi',
+                'code' => null,
+                'created_at' => '2025-01-01T00:00:00.000000Z',
+                'updated_at' => '2025-01-01T00:00:00.000000Z',
+            ]
+        ],
     ],
 
     // The strategies Scribe will use to extract information about your routes at each stage.

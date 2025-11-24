@@ -13,10 +13,10 @@ class AuthTest extends TestCase
     public function test_signup_creates_user()
     {
         $payload = [
-            'name' => 'Test User',
+            'username' => 'testuser',
             'email' => 'testuser@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password1!',
+            'password_confirmation' => 'Password1!',
         ];
 
         $response = $this->postJson('/api/auth/signup', $payload);
