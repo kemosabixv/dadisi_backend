@@ -602,7 +602,7 @@ endpoints:
         name: terms_accepted
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -659,7 +659,7 @@ endpoints:
       membership_type: 16
       emergency_contact_name: 'n'
       emergency_contact_phone: g
-      terms_accepted: false
+      terms_accepted: true
       marketing_consent: true
       bio: z
       phone: '+254712345678'
