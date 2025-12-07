@@ -8,14 +8,14 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('member_profiles', function (Blueprint $table) {
-            $table->foreign('membership_type')->references('id')->on('subscription_plans');
+            $table->foreign('plan_id')->references('id')->on('plans');
         });
     }
 
     public function down(): void
     {
         Schema::table('member_profiles', function (Blueprint $table) {
-            $table->dropForeign(['membership_type']);
+            $table->dropForeign(['plan_id']);
         });
     }
 };

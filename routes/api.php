@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\Auth\EmailVerificationController;
 Route::prefix('auth')->group(function () {
 	Route::post('signup', [AuthController::class, 'signup'])->name('auth.signup');
 	Route::post('login', [AuthController::class, 'login'])->name('auth.login');
-	Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum')->name('auth.logout');
+	Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
 	Route::get('user', [AuthController::class, 'getAuthenticatedUser'])->middleware('auth:sanctum')->name('auth.user');
 
 	Route::post('/password/email', [AuthController::class, 'sendPasswordResetLinkEmail'])->middleware('throttle:5,1')->name('password.email');
@@ -77,10 +77,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('retention-settings/{retention}', [UserDataRetentionController::class, 'show']);
     Route::put('retention-settings/{retention}', [UserDataRetentionController::class, 'update']);
     Route::get('retention-settings-summary', [UserDataRetentionController::class, 'summary']);
+
+    // Update retention days for specific data types
+    Route::post('retention-settings/update-days', [UserDataRetentionController::class, 'updateRetentionDays']);
+
+    // Scheduler management
+    Route::get('schedulers', [UserDataRetentionController::class, 'getSchedulers']);
+    Route::post('schedulers/update', [UserDataRetentionController::class, 'updateScheduler']);
 });
 
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\AdminMenuController;
+
+// Admin Menu routes (returns only authorized menu items for current user)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('admin/menu', [AdminMenuController::class, 'index'])->name('admin.menu');
+});
 
 // RBAC Management routes (Super Admin only)
 Route::middleware('auth:sanctum')->group(function () {
@@ -101,6 +114,149 @@ Route::middleware('auth:sanctum')->group(function () {
     // Permission Assignment to Roles
     Route::post('roles/{role}/permissions', [RoleController::class, 'assignPermissions']);
     Route::delete('roles/{role}/permissions', [RoleController::class, 'removePermissions']);
+});
+
+// Plan Management routes (Super Admin only)
+use App\Http\Controllers\Api\PlanController;
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('plans', [PlanController::class, 'index'])->name('plans.index');
+    Route::post('plans', [PlanController::class, 'store'])->name('plans.store');
+    Route::get('plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
+    Route::put('plans/{plan}', [PlanController::class, 'update'])->name('plans.update');
+    Route::delete('plans/{plan}', [PlanController::class, 'destroy'])->name('plans.destroy');
+});
+
+// Blog Management - Public routes (read-only)
+use App\Http\Controllers\Api\PublicPostController;
+
+Route::prefix('blog')->group(function () {
+    Route::get('posts', [PublicPostController::class, 'index'])->name('blog.posts.index');
+    Route::get('posts/{post}', [PublicPostController::class, 'show'])->name('blog.posts.show');
+});
+
+// Blog Management - Admin routes (CRUD)
+use App\Http\Controllers\Api\PostAdminController;
+use App\Http\Controllers\Api\CategoryAdminController;
+use App\Http\Controllers\Api\TagAdminController;
+
+Route::prefix('admin/blog')->middleware('auth:sanctum')->group(function () {
+    // Posts management - explicit routes for full control
+    Route::get('posts', [PostAdminController::class, 'index'])->name('admin.blog.posts.index');
+    Route::get('posts/create', [PostAdminController::class, 'create'])->name('admin.blog.posts.create');
+    Route::post('posts', [PostAdminController::class, 'store'])->name('admin.blog.posts.store');
+    Route::get('posts/{post}', [PostAdminController::class, 'show'])->name('admin.blog.posts.show');
+    Route::get('posts/{post}/edit', [PostAdminController::class, 'edit'])->name('admin.blog.posts.edit');
+    Route::put('posts/{post}', [PostAdminController::class, 'update'])->name('admin.blog.posts.update');
+    Route::delete('posts/{post}', [PostAdminController::class, 'destroy'])->name('admin.blog.posts.destroy');
+    Route::post('posts/{post}/restore', [PostAdminController::class, 'restore'])->name('admin.blog.posts.restore');
+    Route::delete('posts/{post}/force', [PostAdminController::class, 'forceDelete'])->name('admin.blog.posts.forceDelete');
+
+    // Categories management - explicit routes
+    Route::get('categories', [CategoryAdminController::class, 'index'])->name('admin.blog.categories.index');
+    Route::get('categories/create', [CategoryAdminController::class, 'create'])->name('admin.blog.categories.create');
+    Route::post('categories', [CategoryAdminController::class, 'store'])->name('admin.blog.categories.store');
+    Route::get('categories/{category}', [CategoryAdminController::class, 'show'])->name('admin.blog.categories.show');
+    Route::get('categories/{category}/edit', [CategoryAdminController::class, 'edit'])->name('admin.blog.categories.edit');
+    Route::put('categories/{category}', [CategoryAdminController::class, 'update'])->name('admin.blog.categories.update');
+    Route::delete('categories/{category}', [CategoryAdminController::class, 'destroy'])->name('admin.blog.categories.destroy');
+
+    // Tags management - explicit routes
+    Route::get('tags', [TagAdminController::class, 'index'])->name('admin.blog.tags.index');
+    Route::get('tags/create', [TagAdminController::class, 'create'])->name('admin.blog.tags.create');
+    Route::post('tags', [TagAdminController::class, 'store'])->name('admin.blog.tags.store');
+    Route::get('tags/{tag}', [TagAdminController::class, 'show'])->name('admin.blog.tags.show');
+    Route::get('tags/{tag}/edit', [TagAdminController::class, 'edit'])->name('admin.blog.tags.edit');
+    Route::put('tags/{tag}', [TagAdminController::class, 'update'])->name('admin.blog.tags.update');
+    Route::delete('tags/{tag}', [TagAdminController::class, 'destroy'])->name('admin.blog.tags.destroy');
+});
+
+// Blog Management - User routes (user's own posts)
+Route::prefix('blog')->middleware('auth:sanctum')->group(function () {
+    Route::get('my-posts', [PublicPostController::class, 'myPosts'])->name('blog.my-posts');
+    Route::put('my-posts/{post}', [PublicPostController::class, 'updateUserPost'])->name('blog.my-posts.update');
+    Route::delete('my-posts/{post}', [PublicPostController::class, 'destroyUserPost'])->name('blog.my-posts.destroy');
+});
+
+// Media Management - User routes
+use App\Http\Controllers\Api\MediaController;
+
+Route::prefix('media')->middleware('auth:sanctum')->group(function () {
+    Route::get('', [MediaController::class, 'index'])->name('media.index');
+    Route::post('', [MediaController::class, 'store'])->name('media.store');
+    Route::get('{media}', [MediaController::class, 'show'])->name('media.show');
+    Route::delete('{media}', [MediaController::class, 'destroy'])->name('media.destroy');
+});
+
+// Webhook routes (no auth - called by external payment gateway)
+use App\Http\Controllers\Api\WebhookController;
+
+Route::post('webhooks/pesapal', [WebhookController::class, 'pesapal'])->name('webhooks.pesapal');
+Route::get('webhooks', [WebhookController::class, 'index'])->middleware('auth:sanctum');
+
+// Phase 1: Subscription & Payment Routes (Authenticated)
+use App\Http\Controllers\Api\SubscriptionCoreController;
+use App\Http\Controllers\Api\StudentApprovalController;
+use App\Http\Controllers\Api\PaymentController;
+
+// Subscription routes
+Route::prefix('subscriptions')->middleware('auth:sanctum')->group(function () {
+    // Current subscription status
+    Route::get('current', [SubscriptionCoreController::class, 'getCurrentSubscription'])->name('subscriptions.current');
+    Route::get('status', [SubscriptionCoreController::class, 'getSubscriptionStatus'])->name('subscriptions.status');
+
+    // Available plans
+    Route::get('plans', [SubscriptionCoreController::class, 'getAvailablePlans'])->name('subscriptions.plans');
+
+    // Renewal preferences
+    Route::get('renewal-preferences', [SubscriptionCoreController::class, 'getRenewalPreferences'])->name('subscriptions.renewal-preferences');
+    Route::put('renewal-preferences', [SubscriptionCoreController::class, 'updateRenewalPreferences'])->name('subscriptions.renewal-preferences.update');
+
+    // Subscription management
+    Route::post('initiate-payment', [SubscriptionCoreController::class, 'initiatePayment'])->name('subscriptions.initiate-payment');
+    Route::post('process-mock-payment', [SubscriptionCoreController::class, 'processMockPayment'])->name('subscriptions.process-mock-payment');
+    Route::post('cancel', [SubscriptionCoreController::class, 'cancelSubscription'])->name('subscriptions.cancel');
+});
+
+// Student approval routes
+Route::prefix('student-approvals')->middleware('auth:sanctum')->group(function () {
+    // User operations
+    Route::post('submit', [StudentApprovalController::class, 'submitApprovalRequest'])->name('student-approvals.submit');
+    Route::get('status', [StudentApprovalController::class, 'getApprovalStatus'])->name('student-approvals.status');
+    Route::get('eligible', [StudentApprovalController::class, 'canRequestStudentPlan'])->name('student-approvals.eligible');
+
+    // Admin operations
+    Route::get('requests', [StudentApprovalController::class, 'listApprovalRequests'])->name('student-approvals.list');
+    Route::get('requests/{request}', [StudentApprovalController::class, 'getApprovalDetails'])->name('student-approvals.show');
+    Route::post('requests/{request}/approve', [StudentApprovalController::class, 'approveRequest'])->name('student-approvals.approve');
+    Route::post('requests/{request}/reject', [StudentApprovalController::class, 'rejectRequest'])->name('student-approvals.reject');
+});
+
+// Payment routes
+Route::prefix('payments')->group(function () {
+    // Unauthenticated payment operations
+    Route::get('check-status', [PaymentController::class, 'checkPaymentStatus'])->name('payments.check-status');
+    Route::post('webhook', [PaymentController::class, 'handleWebhook'])->name('payments.webhook');
+
+    // Authenticated payment operations
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('form-metadata', [PaymentController::class, 'getPaymentFormMetadata'])->name('payments.form-metadata');
+        Route::post('verify', [PaymentController::class, 'verifyPayment'])->name('payments.verify');
+        Route::post('process', [PaymentController::class, 'processPayment'])->name('payments.process');
+        Route::get('history', [PaymentController::class, 'getPaymentHistory'])->name('payments.history');
+        Route::post('refund', [PaymentController::class, 'refundPayment'])->name('payments.refund');
+    });
+});
+
+// Admin Exchange Rate Management routes (Super Admin only)
+use App\Http\Controllers\Api\AdminController;
+
+Route::prefix('admin')->middleware('auth:sanctum')->group(function () {  // Policy handles super_admin checks
+    Route::get('exchange-rates', [AdminController::class, 'getExchangeRate']);
+    Route::get('exchange-rates/info', [AdminController::class, 'getExchangeRateInfo']);
+    Route::post('exchange-rates/refresh', [AdminController::class, 'refreshExchangeRate']);
+    Route::put('exchange-rates/settings', [AdminController::class, 'updateCacheSettings']);
+    Route::put('exchange-rates/rate', [AdminController::class, 'updateManualRate']);
 });
 
 // Additional API routes can be added here

@@ -31,7 +31,7 @@ return new class extends Migration {
             $table->boolean('is_staff')->default(false);
 
             // Membership
-            $table->unsignedBigInteger('membership_type')->nullable();
+            $table->unsignedBigInteger('plan_id')->nullable();
 
             // Additional details
             $table->string('occupation')->nullable();

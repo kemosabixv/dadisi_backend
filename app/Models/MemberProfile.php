@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravelcm\Subscriptions\Models\Plan;
 
 class MemberProfile extends Model
 {
@@ -23,7 +24,7 @@ class MemberProfile extends Model
         'interests',
         'bio',
         'is_staff',
-        'membership_type',
+        'plan_id',
         'occupation',
         'emergency_contact_name',
         'emergency_contact_phone',
@@ -75,11 +76,11 @@ class MemberProfile extends Model
     }
 
     /**
-     * Get the subscription plan for this membership type
+     * Get the subscription plan for this member
      */
-    public function subscriptionPlan(): BelongsTo
+    public function plan(): BelongsTo
     {
-        return $this->belongsTo(SubscriptionPlan::class, 'membership_type');
+        return $this->belongsTo(Plan::class, 'plan_id');
     }
 
     /**

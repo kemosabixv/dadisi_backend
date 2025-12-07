@@ -22,13 +22,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Bind permission and role route parameters to lookup by name (not id)
+        // Bind permission and role route parameters to lookup by id (not name)
         Route::bind('permission', function ($value) {
-            return Permission::where('name', $value)->firstOrFail();
+            return Permission::findOrFail($value);
         });
 
         Route::bind('role', function ($value) {
-            return Role::where('name', $value)->firstOrFail();
+            return Role::findOrFail($value);
         });
     }
 }

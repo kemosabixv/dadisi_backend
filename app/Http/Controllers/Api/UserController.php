@@ -15,35 +15,62 @@ use Illuminate\Validation\Rule;
 class UserController extends Controller
 {
     /**
-     * Display a listing of users (admin only)
-     * Includes both active and soft-deleted users for admins
+     * List All Users (Admin Portal)
+     *
+     * Comprehensive user listing endpoint for administrative user management.
+     * Provides paginated results with advanced filtering, search, and role-based access control.
+     * Includes soft-deleted users for audit and restoration purposes. Essential for user administration,
+     * role assignments, and monitoring user activity across the system.
+     *
+     * Access Requirements: super_admin, admin users only (enforced via UserPolicy)
+     * Use Cases: User administration portal, role management interface, user activity monitoring
      *
      * @group User Management
      * @authenticated
-     * @description List all users with filtering and search capabilities (Admin only)
+     * @description Administrative user listing with advanced filtering and search capabilities. Requires admin privileges.
      *
-     * @queryParam include_deleted boolean Include soft-deleted users. Example: true
-     * @queryParam search Search by username, email, or name. Example: john
-     * @queryParam role Filter by role. Example: member
-     * @queryParam status Filter by status (active, deleted). Example: active
+     * @queryParam include_deleted boolean optional Include soft-deleted users in results. Useful for viewing deactivated accounts. Example: true
+     * @queryParam search string optional Search across username, email, and name fields (first_name, last_name from profile). Case-insensitive partial matching. Example: john
+     * @queryParam role string optional Filter users by specific role name. Must match existing role names from roles table. Example: member
+     * @queryParam status string optional Filter by account status. Options: "active" (non-deleted users), "deleted" (soft-deleted users only). Example: active
      *
      * @response 200 {
      *   "success": true,
      *   "data": {
+     *     "current_page": 1,
      *     "data": [
      *       {
      *         "id": 1,
      *         "username": "johndoe",
      *         "email": "john@example.com",
-     *         "roles": ["member"],
-     *         "profile": {"first_name": "John", "last_name": "Doe"},
-     *         "deleted_at": null
+     *         "email_verified_at": "2025-01-01T00:00:00Z",
+     *         "roles": [
+     *           {"id": 1, "name": "member", "description": "Regular member user"}
+     *         ],
+     *         "profile": {
+     *           "id": 1,
+     *           "first_name": "John",
+     *           "last_name": "Doe",
+     *           "county": {"id": 1, "name": "Nairobi"}
+     *         },
+     *         "deleted_at": null,
+     *         "created_at": "2025-01-01T00:00:00Z"
      *       }
      *     ],
-     *     "current_page": 1,
-     *     "total": 25
+     *     "first_page_url": "http://localhost:8000/api/users?page=1",
+     *     "from": 1,
+     *     "last_page": 5,
+     *     "last_page_url": "http://localhost:8000/api/users?page=5",
+     *     "next_page_url": "http://localhost:8000/api/users?page=2",
+     *     "path": "http://localhost:8000/api/users",
+     *     "per_page": 20,
+     *     "prev_page_url": null,
+     *     "to": 20,
+     *     "total": 100
      *   }
      * }
+     *
+     * @response 403 {"message": "This action is unauthorized."}
      */
     public function index(Request $request): JsonResponse
     {

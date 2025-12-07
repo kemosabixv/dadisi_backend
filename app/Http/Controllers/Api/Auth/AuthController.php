@@ -135,9 +135,8 @@ class AuthController extends Controller
     /**
      * Logout
      *
-     * Revoke the authenticated user's token.
+     * Revoke the authenticated user's token. This endpoint works with or without a valid token.
      *
-     * @authenticated
      * @response 200
      */
     public function logout(Request $request) {

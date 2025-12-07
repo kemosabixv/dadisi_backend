@@ -4,9 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\MemberProfile;
-use App\Models\SubscriptionPlan;
+use App\Models\Plan;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AdminUserSeeder extends Seeder
 {
@@ -88,14 +89,14 @@ class AdminUserSeeder extends Seeder
 
                 // Get the appropriate subscription plan
                 $planName = $userData['subscription_plan'] ?? 'Free';
-                $plan = SubscriptionPlan::where('name', $planName)->first();
+                $plan = Plan::where('slug', Str::slug($planName))->first();
 
                 MemberProfile::create([
                     'user_id' => $user->id,
                     'first_name' => $nameParts[0] ?? '',
                     'last_name' => $nameParts[1] ?? '',
                     'county_id' => 1, // Default to first county (Nairobi)
-                    'membership_type' => $plan?->id,
+                    'plan_id' => $plan?->id,
                     'terms_accepted' => true,
                     'marketing_consent' => false,
                     'is_staff' => $userData['role'] !== 'member',

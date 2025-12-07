@@ -175,6 +175,7 @@ return [
         'order' => [
             'Authentication',
             'Member Profiles',
+            'Pesapal',
             'User Management',
             'RBAC Management',
             'Data Retention Management',

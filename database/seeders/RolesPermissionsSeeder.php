@@ -45,9 +45,30 @@ class RolesPermissionsSeeder extends Seeder
             'edit_posts',
             'publish_posts',
             'delete_posts',
+            'view_posts',
+            'edit_any_post',
+            'delete_any_post',
+
+            // Category/Tag management for posts
+            'manage_post_categories',
+            'manage_post_tags',
+
+            // Media uploads and management
+            'upload_post_media',
+            'manage_media',
 
             // System
             'view_reports',
+
+            // Exchange Rate Management
+            'manage_exchange_rates',
+            'view_exchange_rates',
+            'refresh_exchange_rates',
+            'configure_exchange_rates',
+
+            // Plan Management
+            'view_plans',
+            'manage_plans',
 
             // Member access
             'manage_own_profile',
@@ -69,18 +90,28 @@ class RolesPermissionsSeeder extends Seeder
                 'delete_events', 'view_all_events', 'manage_event_attendees',
                 'view_donation_ledger', 'export_donations', 'create_posts',
                 'edit_posts', 'publish_posts', 'delete_posts', 'view_reports',
+                'manage_exchange_rates', 'view_exchange_rates',
+                'refresh_exchange_rates', 'configure_exchange_rates',
+                'view_plans', 'manage_plans',
             ],
             'finance' => [
                 'view_donation_ledger', 'export_donations', 'reconcile_payments', 'view_reports',
+                'view_exchange_rates', 'refresh_exchange_rates', 'view_plans',
             ],
             'events_manager' => [
                 'create_events', 'edit_events', 'delete_events', 'view_all_events', 'manage_event_attendees', 'view_reports',
+                'view_plans',
             ],
             'content_editor' => [
                 'create_posts', 'edit_posts', 'publish_posts', 'delete_posts',
+                'view_plans',
+            ],
+            'author' => [
+                // Premium members that can create and publish their own posts
+                'view_posts', 'create_posts', 'edit_posts', 'publish_posts', 'upload_post_media',
             ],
             'member' => [
-                'manage_own_profile', 'rsvp_events', 'make_donations',
+                'manage_own_profile', 'rsvp_events', 'make_donations', 'view_plans',
             ],
         ];
 

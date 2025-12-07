@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\UserDataRetentionSetting;
+use App\Models\SchedulerSetting;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -158,6 +159,156 @@ class UserDataRetentionController extends Controller
         return response()->json([
             'success' => true,
             'data' => $settings,
+        ]);
+    }
+
+    /**
+     * Update retention cutoff days for a data type
+     *
+     * @group Data Retention Management
+     * @authenticated
+     * @description Update retention cutoff days for specific data types (Super Admin only)
+     *
+     * @bodyParam data_type string required The data type (e.g., 'orphaned_media'). Example: orphaned_media
+     * @bodyParam retention_days integer required Retention period in days. Example: 90
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Retention days updated successfully",
+     *   "data": {
+     *     "data_type": "orphaned_media",
+     *     "retention_days": 90
+     *   }
+     * }
+     */
+    public function updateRetentionDays(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'data_type' => 'required|string|in:orphaned_media,user_accounts,audit_logs,session_data,failed_jobs',
+            'retention_days' => 'required|integer|min:1|max:3650',
+        ]);
+
+        $setting = UserDataRetentionSetting::where('data_type', $validated['data_type'])->first();
+
+        if (!$setting) {
+            return response()->json([
+                'success' => false,
+                'message' => "Data type '{$validated['data_type']}' not found",
+            ], 404);
+        }
+
+        $oldValue = $setting->retention_days;
+        $setting->update([
+            'retention_days' => $validated['retention_days'],
+            'updated_by' => auth()->id(),
+        ]);
+
+        $this->logAuditAction('update', UserDataRetentionSetting::class, $setting->id,
+            ['retention_days' => $oldValue],
+            ['retention_days' => $validated['retention_days']],
+            "Updated retention days for {$validated['data_type']} to {$validated['retention_days']} days"
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Retention days updated successfully',
+            'data' => $setting->only(['data_type', 'retention_days']),
+        ]);
+    }
+
+    /**
+     * Update scheduler settings (time and frequency)
+     *
+     * @group Data Retention Management
+     * @authenticated
+     * @description Update when scheduled commands run (Super Admin only)
+     *
+     * @bodyParam command_name string required The command name (e.g., 'media:cleanup'). Example: media:cleanup
+     * @bodyParam run_time string required Run time in HH:MM format. Example: 03:00
+     * @bodyParam frequency string Frequency: daily, weekly, monthly, hourly. Example: daily
+     * @bodyParam enabled boolean Enable/disable the scheduler. Example: true
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Scheduler updated successfully",
+     *   "data": {
+     *     "command_name": "media:cleanup",
+     *     "run_time": "03:00",
+     *     "frequency": "daily",
+     *     "enabled": true
+     *   }
+     * }
+     */
+    public function updateScheduler(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'command_name' => 'required|string',
+            'run_time' => 'required|date_format:H:i',
+            'frequency' => 'in:daily,weekly,monthly,hourly',
+            'enabled' => 'boolean',
+        ]);
+
+        $scheduler = SchedulerSetting::firstOrCreate(
+            ['command_name' => $validated['command_name']],
+            [
+                'run_time' => $validated['run_time'],
+                'frequency' => $validated['frequency'] ?? 'daily',
+                'enabled' => $validated['enabled'] ?? true,
+                'updated_by' => auth()->id(),
+            ]
+        );
+
+        // If scheduler already existed, update it
+        if ($scheduler->wasRecentlyCreated === false) {
+            $oldValues = $scheduler->only(['run_time', 'frequency', 'enabled']);
+            $scheduler->update(array_merge($validated, ['updated_by' => auth()->id()]));
+
+            $this->logAuditAction('update', SchedulerSetting::class, $scheduler->id,
+                $oldValues,
+                $scheduler->only(['run_time', 'frequency', 'enabled']),
+                "Updated scheduler '{$validated['command_name']}' to run at {$validated['run_time']}"
+            );
+        } else {
+            $this->logAuditAction('create', SchedulerSetting::class, $scheduler->id,
+                null,
+                $scheduler->only(['command_name', 'run_time', 'frequency', 'enabled']),
+                "Created scheduler '{$validated['command_name']}'"
+            );
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Scheduler updated successfully',
+            'data' => $scheduler->only(['command_name', 'run_time', 'frequency', 'enabled']),
+        ]);
+    }
+
+    /**
+     * Get all scheduler settings
+     *
+     * @group Data Retention Management
+     * @authenticated
+     * @description Retrieve all scheduler settings with current run times (Super Admin only)
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": [
+     *     {
+     *       "command_name": "media:cleanup",
+     *       "run_time": "03:00",
+     *       "frequency": "daily",
+     *       "enabled": true
+     *     }
+     *   ]
+     * }
+     */
+    public function getSchedulers(): JsonResponse
+    {
+        $schedulers = SchedulerSetting::latest()->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $schedulers,
         ]);
     }
 

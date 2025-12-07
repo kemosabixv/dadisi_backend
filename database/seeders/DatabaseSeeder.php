@@ -7,6 +7,7 @@ use Database\Seeders\CountiesTableSeeder;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Database\Seeders\ExchangeRateSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -25,8 +26,11 @@ class DatabaseSeeder extends Seeder
             CountiesTableSeeder::class,
             SubscriptionPlansSeeder::class,
             UserDataRetentionSettingsSeeder::class,
+            SchedulerSettingsSeeder::class,
+            ExchangeRateSeeder::class,
             AdminUserSeeder::class,
             SampleEventsSeeder::class,
+            SampleAuthorsSeeder::class,
         ]);
 
         // Optionally seed a demo user
