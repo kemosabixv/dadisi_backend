@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Post extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -20,15 +21,17 @@ class Post extends Model
         'body',
         'status',
         'published_at',
-        'featured_image',
+        'hero_image_path',
         'meta_title',
         'meta_description',
         'is_featured',
+        'views_count', // System-managed field for view tracking
     ];
 
     protected $casts = [
         'published_at' => 'datetime',
         'is_featured' => 'boolean',
+        'views_count' => 'integer', // Cast views_count as integer for proper handling
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -45,6 +48,26 @@ class Post extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Backwards-compatible alias: allow setting 'author_id' in tests/factories
+     * to map to our 'user_id' column. Also auto-generate slug from title if title is set.
+     */
+    public function setAttribute($key, $value)
+    {
+        if ($key === 'author_id' && !array_key_exists('author_id', $this->attributes)) {
+            $key = 'user_id';
+        }
+
+        parent::setAttribute($key, $value);
+
+        // Auto-generate slug from title when title is set
+        if ($key === 'title' && !empty($value)) {
+            parent::setAttribute('slug', \Illuminate\Support\Str::slug($value));
+        }
+
+        return $this;
     }
 
     /**
@@ -97,6 +120,14 @@ class Post extends Model
     }
 
     /**
+     * Scope: featured posts
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
+    }
+
+    /**
      * Scope: by county
      */
     public function scopeByCounty($query, $countyId)
@@ -144,5 +175,102 @@ class Post extends Model
         return $query->published()
             ->orderByDesc('published_at')
             ->limit($limit);
+    }
+
+    /**
+     * Accessor: featured_image (backward compatibility with hero_image_path field)
+     */
+    public function getFeaturedImageAttribute(): ?string
+    {
+        return $this->hero_image_path;
+    }
+
+    /**
+     * Mutator: featured_image
+     */
+    public function setFeaturedImageAttribute(?string $value): void
+    {
+        $this->hero_image_path = $value;
+    }
+
+    /**
+     * Get featured image from media relationship (primary image)
+     * Returns the first image media attached to this post
+     */
+    public function getFeaturedMediaImage()
+    {
+        return $this->media()->where('type', 'image')->first();
+    }
+
+    /**
+     * Get featured image path (prioritizes media system, falls back to direct field)
+     * This provides a unified interface for getting the featured image
+     */
+    public function getFeaturedImagePath(): ?string
+    {
+        // First try to get from media system
+        $featuredMedia = $this->getFeaturedMediaImage();
+        if ($featuredMedia) {
+            return $featuredMedia->file_path;
+        }
+
+        // Fall back to direct field
+        return $this->hero_image_path;
+    }
+
+    /**
+     * Set featured image via media attachment
+     * Attaches the first image media as featured (by ordering)
+     */
+    public function setFeaturedImageFromMedia(int $mediaId): bool
+    {
+        $media = Media::find($mediaId);
+
+        if (!$media || $media->type !== 'image' || $media->user_id !== $this->user_id) {
+            return false;
+        }
+
+        // Detach existing featured media first (simple approach: detach all images, attach new one)
+        $this->media()->where('type', 'image')->detach();
+
+        // Attach the new featured image
+        $this->media()->attach($mediaId);
+
+        // Update media public status based on post status
+        $this->updateAttachedMediaPrivacy();
+
+        return true;
+    }
+
+    /**
+     * Update privacy status of all attached media based on post status
+     */
+    public function updateAttachedMediaPrivacy(): void
+    {
+        $isPublic = $this->status === 'published';
+
+        $this->media()->update(['is_public' => $isPublic]);
+    }
+
+    /**
+     * Boot method to handle media privacy updates
+     */
+    protected static function booted(): void
+    {
+        static::updating(function ($post) {
+            // If status changed to/from published, update media privacy
+            if ($post->isDirty('status')) {
+                $post->updateAttachedMediaPrivacy();
+            }
+        });
+
+        static::deleting(function ($post) {
+            // When post is deleted, make all media private again
+            $post->media()->update([
+                'is_public' => false,
+                'attached_to' => null,
+                'attached_to_id' => null,
+            ]);
+        });
     }
 }

@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RenewalPreference extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'user_id',
         'renewal_type',
@@ -20,6 +22,18 @@ class RenewalPreference extends Model
     protected $casts = [
         'send_renewal_reminders' => 'boolean',
         'auto_switch_to_free_on_expiry' => 'boolean',
+    ];
+
+    /**
+     * Model-level default attributes to match migration defaults.
+     * These ensure newly created models have expected defaults
+     * before the database round-trip in tests.
+     */
+    protected $attributes = [
+        'renewal_type' => 'automatic',
+        'send_renewal_reminders' => true,
+        'reminder_days_before' => 7,
+        'auto_switch_to_free_on_expiry' => true,
     ];
 
     /**

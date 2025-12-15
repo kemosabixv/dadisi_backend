@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="D:\Documents\Dadisi\dadisi_app\backend\phpunit.xml" tests="1" assertions="1" errors="0" failures="1" skipped="0" time="2.809503">
+    <testsuite name="Unit" tests="1" assertions="1" errors="0" failures="1" skipped="0" time="2.809503">
+      <testsuite name="Tests\Unit\PesapalGatewayIntegrationTest" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Unit\PesapalGatewayIntegrationTest.php" tests="1" assertions="1" errors="0" failures="1" skipped="0" time="2.809503">
+        <testcase name="test_charge_successful_with_mocked_responses" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Unit\PesapalGatewayIntegrationTest.php" line="31" class="Tests\Unit\PesapalGatewayIntegrationTest" classname="Tests.Unit.PesapalGatewayIntegrationTest" assertions="1" time="2.809503">
+          <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\Unit\PesapalGatewayIntegrationTest::test_charge_successful_with_mocked_responses&#13;
+Failed asserting that false is true.
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\tests\Unit\PesapalGatewayIntegrationTest.php:63</failure>
+        </testcase>
+      </testsuite>
+    </testsuite>
+  </testsuite>
+</testsuites>

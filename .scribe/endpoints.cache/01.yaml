@@ -4,10 +4,12 @@ name: 'Member Profiles'
 description: ''
 endpoints:
   -
+    custom: []
     httpMethods:
       - GET
     uri: api/member-profiles/me
     metadata:
+      custom: []
       groupName: 'Member Profiles'
       groupDescription: ''
       subgroup: ''
@@ -16,7 +18,6 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
@@ -30,6 +31,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -47,8 +49,8 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
       -
+        custom: []
         status: 404
         content: |-
           {
@@ -57,7 +59,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -66,12 +67,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - POST
     uri: api/member-profiles
     metadata:
+      custom: []
       groupName: 'Member Profiles'
       groupDescription: ''
       subgroup: ''
@@ -80,7 +82,6 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
@@ -91,6 +92,7 @@ endpoints:
     cleanQueryParameters: []
     bodyParameters:
       county_id:
+        custom: []
         name: county_id
         description: 'County ID.'
         required: true
@@ -99,8 +101,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
       first_name:
+        custom: []
         name: first_name
         description: 'optional First name. Max 100 chars.'
         required: false
@@ -109,8 +112,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       last_name:
+        custom: []
         name: last_name
         description: 'optional Last name. Max 100 chars.'
         required: false
@@ -119,8 +123,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       phone:
+        custom: []
         name: phone
         description: 'optional Phone number. Max 30 characters.'
         required: false
@@ -129,8 +134,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       gender:
+        custom: []
         name: gender
         description: 'optional Gender. One of: male, female, other.'
         required: false
@@ -139,8 +145,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       date_of_birth:
+        custom: []
         name: date_of_birth
         description: 'optional Date of birth. Must be before today.'
         required: false
@@ -149,8 +156,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       occupation:
+        custom: []
         name: occupation
         description: 'optional Occupation. Max 255 chars.'
         required: false
@@ -159,8 +167,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       membership_type:
+        custom: []
         name: membership_type
         description: 'optional Membership plan name.'
         required: false
@@ -169,8 +178,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       emergency_contact_name:
+        custom: []
         name: emergency_contact_name
         description: optional
         required: false
@@ -179,8 +189,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       emergency_contact_phone:
+        custom: []
         name: emergency_contact_phone
         description: optional
         required: false
@@ -189,8 +200,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       terms_accepted:
+        custom: []
         name: terms_accepted
         description: 'Must accept terms to create profile.'
         required: true
@@ -199,8 +211,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
       marketing_consent:
+        custom: []
         name: marketing_consent
         description: optional
         required: false
@@ -209,8 +222,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
       interests:
+        custom: []
         name: interests
         description: optional
         required: false
@@ -221,8 +235,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       bio:
+        custom: []
         name: bio
         description: 'optional Max 1000 chars.'
         required: false
@@ -231,7 +246,7 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
     cleanBodyParameters:
       county_id: 1
       first_name: John
@@ -252,6 +267,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -261,8 +277,8 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
       -
+        custom: []
         status: 422
         content: |-
           {
@@ -271,7 +287,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -280,12 +295,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - GET
     uri: api/member-profiles
     metadata:
+      custom: []
       groupName: 'Member Profiles'
       groupDescription: ''
       subgroup: ''
@@ -294,7 +310,6 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
       Content-Type: application/json
@@ -303,6 +318,7 @@ endpoints:
     cleanUrlParameters: []
     queryParameters:
       county_id:
+        custom: []
         name: county_id
         description: 'Filter by county ID.'
         required: false
@@ -311,8 +327,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
       membership_type:
+        custom: []
         name: membership_type
         description: 'Filter by membership type.'
         required: false
@@ -321,8 +338,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
       search:
+        custom: []
         name: search
         description: 'Search by user name or email.'
         required: false
@@ -331,7 +349,7 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanQueryParameters:
       county_id: 1
       membership_type: premium
@@ -341,6 +359,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -362,8 +381,8 @@ endpoints:
           }
         headers: []
         description: 'Admin Access'
-        custom: []
       -
+        custom: []
         status: 403
         content: |-
           {
@@ -372,7 +391,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -381,12 +399,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - GET
     uri: 'api/member-profiles/{id}'
     metadata:
+      custom: []
       groupName: 'Member Profiles'
       groupDescription: ''
       subgroup: ''
@@ -395,13 +414,13 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       id:
+        custom: []
         name: id
         description: "optional The profile ID to view. If not provided, returns authenticated user's profile."
         required: false
@@ -410,7 +429,7 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
       id: 123
     queryParameters: []
@@ -420,6 +439,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -436,8 +456,8 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
       -
+        custom: []
         status: 403
         content: |-
           {
@@ -446,8 +466,8 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
       -
+        custom: []
         status: 404
         content: |-
           {
@@ -456,7 +476,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -465,12 +484,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - PUT
     uri: 'api/member-profiles/{id}'
     metadata:
+      custom: []
       groupName: 'Member Profiles'
       groupDescription: ''
       subgroup: ''
@@ -479,13 +499,13 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       id:
+        custom: []
         name: id
         description: 'The profile ID to update.'
         required: true
@@ -494,13 +514,14 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
       county_id:
+        custom: []
         name: county_id
         description: 'optional County ID. Must exist in counties table.'
         required: false
@@ -509,8 +530,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
       phone_number:
+        custom: []
         name: phone_number
         description: 'Must not be greater than 15 characters.'
         required: false
@@ -519,8 +541,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: true
-        custom: []
+        deprecated: false
       gender:
+        custom: []
         name: gender
         description: 'optional Gender.'
         required: false
@@ -529,18 +552,20 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       date_of_birth:
+        custom: []
         name: date_of_birth
         description: 'Must be a valid date. Must be a date before <code>today</code>.'
         required: false
-        example: '2021-12-17'
+        example: '2022-01-07'
         type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: true
-        custom: []
+        deprecated: false
       sub_county:
+        custom: []
         name: sub_county
         description: 'Must not be greater than 50 characters.'
         required: false
@@ -549,8 +574,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: true
-        custom: []
+        deprecated: false
       ward:
+        custom: []
         name: ward
         description: 'Must not be greater than 50 characters.'
         required: false
@@ -559,8 +585,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: true
-        custom: []
+        deprecated: false
       occupation:
+        custom: []
         name: occupation
         description: 'optional New occupation.'
         required: false
@@ -569,8 +596,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
       membership_type:
+        custom: []
         name: membership_type
         description: ''
         required: false
@@ -579,8 +607,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: true
-        custom: []
+        deprecated: false
       emergency_contact_name:
+        custom: []
         name: emergency_contact_name
         description: 'Must not be greater than 255 characters.'
         required: false
@@ -589,8 +618,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: true
-        custom: []
+        deprecated: false
       emergency_contact_phone:
+        custom: []
         name: emergency_contact_phone
         description: 'Must not be greater than 15 characters.'
         required: false
@@ -599,28 +629,31 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: true
-        custom: []
+        deprecated: false
       terms_accepted:
+        custom: []
         name: terms_accepted
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       marketing_consent:
+        custom: []
         name: marketing_consent
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       interests:
+        custom: []
         name: interests
         description: ''
         required: false
@@ -629,8 +662,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: true
-        custom: []
+        deprecated: false
       bio:
+        custom: []
         name: bio
         description: 'Must not be greater than 1000 characters.'
         required: false
@@ -639,8 +673,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: true
-        custom: []
+        deprecated: false
       phone:
+        custom: []
         name: phone
         description: 'optional Phone number. Max 30 characters.'
         required: false
@@ -649,25 +684,26 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanBodyParameters:
       county_id: 1
       phone_number: 'n'
       gender: female
-      date_of_birth: '2021-12-17'
+      date_of_birth: '2022-01-07'
       sub_county: 'n'
       ward: g
       occupation: 'Project Manager'
       membership_type: 16
       emergency_contact_name: 'n'
       emergency_contact_phone: g
-      terms_accepted: true
-      marketing_consent: true
+      terms_accepted: false
+      marketing_consent: false
       bio: z
       phone: '+254712345678'
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -683,7 +719,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -692,12 +727,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - DELETE
     uri: 'api/member-profiles/{id}'
     metadata:
+      custom: []
       groupName: 'Member Profiles'
       groupDescription: ''
       subgroup: ''
@@ -706,13 +742,13 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       id:
+        custom: []
         name: id
         description: 'The profile ID to delete.'
         required: true
@@ -721,7 +757,7 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
       id: 123
     queryParameters: []
@@ -731,6 +767,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -739,8 +776,8 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
       -
+        custom: []
         status: 403
         content: |-
           {
@@ -749,7 +786,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -758,12 +794,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - GET
     uri: api/counties
     metadata:
+      custom: []
       groupName: 'Member Profiles'
       groupDescription: ''
       subgroup: ''
@@ -772,7 +809,6 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
@@ -786,6 +822,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -798,7 +835,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -807,4 +843,3 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []

@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('subscription_enhancements', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('subscription_id')->constrained('plan_subscriptions')->cascadeOnDelete();
+            $table->unsignedBigInteger('subscription_id');
+            // Note: Foreign key constraint removed due to compatibility issues with polymorphic subscriber relationship
+            // Data integrity is maintained via PlanSubscriptionObserver which cascades deletes at application level
+            // See: app/Observers/PlanSubscriptionObserver.php
             $table->enum('status', ['active', 'payment_pending', 'payment_failed', 'grace_period', 'suspended', 'cancelled'])->default('active');
             $table->enum('payment_failure_state', ['retry_immediate', 'retry_delayed', 'manual_intervention', 'abandoned'])->nullable();
             $table->integer('renewal_attempts')->default(0);

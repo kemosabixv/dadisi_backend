@@ -46,6 +46,7 @@ class RolesPermissionsSeeder extends Seeder
             'publish_posts',
             'delete_posts',
             'view_posts',
+            'view_all_posts',
             'edit_any_post',
             'delete_any_post',
 
@@ -70,6 +71,10 @@ class RolesPermissionsSeeder extends Seeder
             'view_plans',
             'manage_plans',
 
+            // Phase 3: Reconciliation Management
+            'view_reconciliation',
+            'manage_reconciliation',
+
             // Member access
             'manage_own_profile',
             'rsvp_events',
@@ -89,22 +94,27 @@ class RolesPermissionsSeeder extends Seeder
                 'manage_users', 'view_all_users', 'create_events', 'edit_events',
                 'delete_events', 'view_all_events', 'manage_event_attendees',
                 'view_donation_ledger', 'export_donations', 'create_posts',
-                'edit_posts', 'publish_posts', 'delete_posts', 'view_reports',
+                'edit_posts', 'publish_posts', 'delete_posts', 'view_posts', 'view_all_posts', 'view_reports',
                 'manage_exchange_rates', 'view_exchange_rates',
                 'refresh_exchange_rates', 'configure_exchange_rates',
                 'view_plans', 'manage_plans',
+                'view_reconciliation', 'manage_reconciliation',
             ],
             'finance' => [
                 'view_donation_ledger', 'export_donations', 'reconcile_payments', 'view_reports',
                 'view_exchange_rates', 'refresh_exchange_rates', 'view_plans',
+                'view_reconciliation', 'manage_reconciliation',
             ],
             'events_manager' => [
                 'create_events', 'edit_events', 'delete_events', 'view_all_events', 'manage_event_attendees', 'view_reports',
                 'view_plans',
             ],
             'content_editor' => [
-                'create_posts', 'edit_posts', 'publish_posts', 'delete_posts',
+                'create_posts', 'edit_posts', 'publish_posts', 'delete_posts', 'view_posts',
                 'view_plans',
+            ],
+            'editor' => [
+                'create_posts', 'edit_posts', 'publish_posts', 'view_posts',
             ],
             'author' => [
                 // Premium members that can create and publish their own posts

@@ -14,10 +14,11 @@ class PostResource extends JsonResource
             'title' => $this->title,
             'slug' => $this->slug,
             'excerpt' => $this->excerpt,
-            'content' => $this->content,
+            'content' => $this->body, // Fix: use 'body' instead of 'content'
             'status' => $this->status,
             'is_featured' => (bool) $this->is_featured,
             'views_count' => $this->views_count,
+            'featured_image' => $this->getFeaturedImagePath(), // Add featured image
             'author' => [
                 'id' => $this->author_id,
                 'name' => $this->author?->name,
@@ -43,6 +44,8 @@ class PostResource extends JsonResource
                 'file_path' => $media->file_path,
                 'type' => $media->type,
                 'mime_type' => $media->mime_type,
+                'file_size' => $media->file_size,
+                'is_featured' => $this->getFeaturedMediaImage()?->id === $media->id, // Mark featured media
             ]),
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,

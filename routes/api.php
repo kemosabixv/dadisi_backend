@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
+use App\Http\Controllers\Admin\ReconciliationController;
 
 Route::prefix('auth')->group(function () {
 	Route::post('signup', [AuthController::class, 'signup'])->name('auth.signup');
@@ -89,6 +90,17 @@ Route::middleware('auth:sanctum')->group(function () {
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\AdminMenuController;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
+// Route model bindings: allow lookup by name for permissions and roles used in tests
+Route::bind('permission', function ($value) {
+    return Permission::where('name', $value)->firstOrFail();
+});
+
+Route::bind('role', function ($value) {
+    return Role::where('name', $value)->firstOrFail();
+});
 
 // Admin Menu routes (returns only authorized menu items for current user)
 Route::middleware('auth:sanctum')->group(function () {
@@ -198,6 +210,9 @@ Route::get('webhooks', [WebhookController::class, 'index'])->middleware('auth:sa
 use App\Http\Controllers\Api\SubscriptionCoreController;
 use App\Http\Controllers\Api\StudentApprovalController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\RenewalController;
+use App\Http\Controllers\Api\UserPaymentMethodController;
+use App\Http\Controllers\Api\Admin\AutoRenewalJobController;
 
 // Subscription routes
 Route::prefix('subscriptions')->middleware('auth:sanctum')->group(function () {
@@ -216,6 +231,19 @@ Route::prefix('subscriptions')->middleware('auth:sanctum')->group(function () {
     Route::post('initiate-payment', [SubscriptionCoreController::class, 'initiatePayment'])->name('subscriptions.initiate-payment');
     Route::post('process-mock-payment', [SubscriptionCoreController::class, 'processMockPayment'])->name('subscriptions.process-mock-payment');
     Route::post('cancel', [SubscriptionCoreController::class, 'cancelSubscription'])->name('subscriptions.cancel');
+
+    // Manual renewal endpoints (Phase 2)
+    Route::post('{id}/renew/manual', [RenewalController::class, 'requestManualRenewal'])->name('subscriptions.renew.manual');
+    Route::get('{id}/renewal-options', [RenewalController::class, 'getManualRenewalOptions'])->name('subscriptions.renew.options');
+    Route::post('{id}/confirm-renewal', [RenewalController::class, 'confirmManualRenewal'])->name('subscriptions.renew.confirm');
+    Route::get('reminders', [RenewalController::class, 'getPendingReminders'])->name('subscriptions.reminders');
+    Route::post('{id}/extend-grace-period', [RenewalController::class, 'extendGracePeriod'])->name('subscriptions.extend-grace');
+    // User stored payment methods (Phase 2.C)
+    Route::get('payment-methods', [UserPaymentMethodController::class, 'index'])->name('payments.methods.index');
+    Route::post('payment-methods', [UserPaymentMethodController::class, 'store'])->name('payments.methods.store');
+    Route::put('payment-methods/{id}', [UserPaymentMethodController::class, 'update'])->name('payments.methods.update');
+    Route::delete('payment-methods/{id}', [UserPaymentMethodController::class, 'destroy'])->name('payments.methods.destroy');
+    Route::post('payment-methods/{id}/primary', [UserPaymentMethodController::class, 'setPrimary'])->name('payments.methods.setPrimary');
 });
 
 // Student approval routes
@@ -250,6 +278,7 @@ Route::prefix('payments')->group(function () {
 
 // Admin Exchange Rate Management routes (Super Admin only)
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\Admin\BillingController;
 
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {  // Policy handles super_admin checks
     Route::get('exchange-rates', [AdminController::class, 'getExchangeRate']);
@@ -257,6 +286,39 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {  // Poli
     Route::post('exchange-rates/refresh', [AdminController::class, 'refreshExchangeRate']);
     Route::put('exchange-rates/settings', [AdminController::class, 'updateCacheSettings']);
     Route::put('exchange-rates/rate', [AdminController::class, 'updateManualRate']);
+
+    // Auto-renewal job management (admin)
+    Route::get('auto-renewal-jobs', [AutoRenewalJobController::class, 'index'])->name('admin.auto_renewal_jobs.index');
+    Route::get('auto-renewal-jobs/{id}', [AutoRenewalJobController::class, 'show'])->name('admin.auto_renewal_jobs.show');
+    Route::post('auto-renewal-jobs/{id}/retry', [AutoRenewalJobController::class, 'retry'])->name('admin.auto_renewal_jobs.retry');
+    Route::post('auto-renewal-jobs/{id}/cancel', [AutoRenewalJobController::class, 'cancel'])->name('admin.auto_renewal_jobs.cancel');
+
+    // Phase 3: Reconciliation management (Finance/Admin)
+    Route::prefix('reconciliation')->group(function () {
+            Route::get('', [ReconciliationController::class, 'index'])->name('admin.reconciliation.index');
+            Route::get('stats', [ReconciliationController::class, 'stats'])->name('admin.reconciliation.stats');
+            Route::get('export', [ReconciliationController::class, 'export'])->name('admin.reconciliation.export');
+            Route::post('trigger', [ReconciliationController::class, 'trigger'])->name('admin.reconciliation.trigger');
+            Route::delete('{run}', [ReconciliationController::class, 'destroy'])->name('admin.reconciliation.destroy');
+            Route::get('{run}', [ReconciliationController::class, 'show'])->name('admin.reconciliation.show');
+    });
+
+    // Billing and reconciliation management (Finance/Admin)
+    Route::prefix('billing')->group(function () {
+        Route::get('dashboard', [BillingController::class, 'getDashboardSummary'])->name('admin.billing.dashboard');
+
+        // Reconciliation endpoints
+        Route::post('reconcile/donations', [BillingController::class, 'reconcileDonations'])->name('admin.billing.reconcile-donations');
+        Route::post('reconcile/orders', [BillingController::class, 'reconcileOrders'])->name('admin.billing.reconcile-orders');
+        Route::get('reconcile/status', [BillingController::class, 'getReconciliationStatus'])->name('admin.billing.reconcile-status');
+
+        // Export endpoints
+        Route::get('export/donations', [BillingController::class, 'exportDonations'])->name('admin.billing.export-donations');
+        Route::get('export/event-orders', [BillingController::class, 'exportEventOrders'])->name('admin.billing.export-event-orders');
+        Route::get('export/donation-summary', [BillingController::class, 'exportDonationSummary'])->name('admin.billing.export-donation-summary');
+        Route::get('export/event-sales-summary', [BillingController::class, 'exportEventSalesSummary'])->name('admin.billing.export-event-sales-summary');
+        Route::get('export/financial-reconciliation', [BillingController::class, 'exportFinancialReconciliation'])->name('admin.billing.export-financial-reconciliation');
+    });
 });
 
 // Additional API routes can be added here

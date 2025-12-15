@@ -48,7 +48,7 @@ class PublicPostController extends Controller
     {
         $query = Post::published()
             ->with(['author:id,name,email', 'categories:id,name,slug', 'tags:id,name,slug', 'county:id,name'])
-            ->select('id', 'title', 'slug', 'excerpt', 'author_id', 'county_id', 'is_featured', 'views_count', 'published_at', 'created_at');
+            ->select('id', 'title', 'slug', 'excerpt', 'user_id', 'county_id', 'is_featured', 'views_count', 'published_at', 'created_at');
 
         // Filtering
         if ($request->has('category_id')) {
@@ -149,7 +149,7 @@ class PublicPostController extends Controller
             ->where('id', '!=', $post->id)
             ->with('author:id,name')
             ->limit(3)
-            ->select('id', 'title', 'slug', 'excerpt', 'author_id', 'published_at')
+            ->select('id', 'title', 'slug', 'excerpt', 'user_id', 'published_at')
             ->get();
 
         return response()->json([
@@ -192,7 +192,7 @@ class PublicPostController extends Controller
     {
         $this->authorize('viewAny', Post::class);
 
-        $query = Post::where('author_id', Auth::id())
+        $query = Post::where('user_id', Auth::id())
             ->with(['categories:id,name,slug', 'tags:id,name'])
             ->select('id', 'title', 'slug', 'status', 'created_at', 'updated_at', 'published_at');
 
@@ -275,7 +275,7 @@ class PublicPostController extends Controller
             $post->tags()->sync($validated['tag_ids']);
         }
 
-        $this->logAuditAction('update', Post::class, $post->id, $oldValues, $validated, "User {$post->author_id} updated own post: {$post->title}");
+        $this->logAuditAction('update', Post::class, $post->id, $oldValues, $validated, "User {$post->user_id} updated own post: {$post->title}");
 
         return response()->json([
             'success' => true,
@@ -305,7 +305,7 @@ class PublicPostController extends Controller
     {
         $this->authorize('delete', $post);
 
-        $this->logAuditAction('delete', Post::class, $post->id, $post->only(['title', 'slug', 'status']), null, "User {$post->author_id} deleted own post: {$post->title}");
+        $this->logAuditAction('delete', Post::class, $post->id, $post->only(['title', 'slug', 'status']), null, "User {$post->user_id} deleted own post: {$post->title}");
         $post->delete();
 
         return response()->json([

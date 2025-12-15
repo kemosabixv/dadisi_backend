@@ -2,10 +2,12 @@ name: 'RBAC Management'
 description: ''
 endpoints:
   -
+    custom: []
     httpMethods:
       - POST
     uri: 'api/users/{id}/assign-role'
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -14,13 +16,13 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       id:
+        custom: []
         name: id
         description: 'The user ID'
         required: true
@@ -29,13 +31,14 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
       role:
+        custom: []
         name: role
         description: 'Role to assign.'
         required: true
@@ -44,12 +47,13 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanBodyParameters:
       role: admin
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -63,7 +67,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -72,12 +75,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - GET
     uri: api/permissions
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -86,7 +90,6 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
@@ -95,6 +98,7 @@ endpoints:
     cleanUrlParameters: []
     queryParameters:
       search:
+        custom: []
         name: search
         description: 'Search permissions by name.'
         required: false
@@ -103,7 +107,7 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanQueryParameters:
       search: manage_users
     bodyParameters: []
@@ -111,6 +115,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -127,7 +132,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -136,12 +140,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - POST
     uri: api/permissions
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -150,7 +155,6 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
@@ -161,6 +165,7 @@ endpoints:
     cleanQueryParameters: []
     bodyParameters:
       name:
+        custom: []
         name: name
         description: 'The permission name.'
         required: true
@@ -169,12 +174,13 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanBodyParameters:
       name: view_secret_data
     fileParameters: []
     responses:
       -
+        custom: []
         status: 201
         content: |-
           {
@@ -190,8 +196,8 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
       -
+        custom: []
         status: 422
         content: |-
           {
@@ -203,7 +209,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -212,12 +217,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - GET
     uri: 'api/permissions/{permission_id}'
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -226,23 +232,24 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       permission_id:
+        custom: []
         name: permission_id
         description: 'The ID of the permission.'
         required: true
-        example: 16
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       permission:
+        custom: []
         name: permission
         description: 'The permission name'
         required: true
@@ -251,9 +258,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
-      permission_id: 16
+      permission_id: 1
       permission: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -262,6 +269,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -282,7 +290,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -291,12 +298,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - PUT
     uri: 'api/permissions/{permission_id}'
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -305,23 +313,24 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       permission_id:
+        custom: []
         name: permission_id
         description: 'The ID of the permission.'
         required: true
-        example: 16
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       permission:
+        custom: []
         name: permission
         description: 'The permission name'
         required: true
@@ -330,14 +339,15 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
-      permission_id: 16
+      permission_id: 1
       permission: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
       name:
+        custom: []
         name: name
         description: 'Update the permission name.'
         required: false
@@ -346,12 +356,13 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanBodyParameters:
       name: manage_all_users
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -367,7 +378,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -376,12 +386,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - DELETE
     uri: 'api/permissions/{permission_id}'
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -390,23 +401,24 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       permission_id:
+        custom: []
         name: permission_id
         description: 'The ID of the permission.'
         required: true
-        example: 16
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       permission:
+        custom: []
         name: permission
         description: 'The permission name'
         required: true
@@ -415,9 +427,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
-      permission_id: 16
+      permission_id: 1
       permission: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -426,6 +438,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -434,8 +447,8 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
       -
+        custom: []
         status: 409
         content: |-
           {
@@ -444,7 +457,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -453,12 +465,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - GET
     uri: api/roles
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -467,7 +480,6 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
@@ -476,6 +488,7 @@ endpoints:
     cleanUrlParameters: []
     queryParameters:
       search:
+        custom: []
         name: search
         description: 'Search roles by name.'
         required: false
@@ -484,8 +497,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
       include_permissions:
+        custom: []
         name: include_permissions
         description: 'Include permissions for each role.'
         required: false
@@ -494,7 +508,7 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanQueryParameters:
       search: admin
       include_permissions: 'true'
@@ -503,6 +517,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -525,7 +540,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -534,12 +548,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - POST
     uri: api/roles
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -548,7 +563,6 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
@@ -559,6 +573,7 @@ endpoints:
     cleanQueryParameters: []
     bodyParameters:
       name:
+        custom: []
         name: name
         description: 'The role name.'
         required: true
@@ -567,12 +582,13 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanBodyParameters:
       name: moderator
     fileParameters: []
     responses:
       -
+        custom: []
         status: 201
         content: |-
           {
@@ -588,8 +604,8 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
       -
+        custom: []
         status: 422
         content: |-
           {
@@ -601,7 +617,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -610,12 +625,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - GET
     uri: 'api/roles/{role_id}'
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -624,23 +640,24 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       role_id:
+        custom: []
         name: role_id
         description: 'The ID of the role.'
         required: true
-        example: 16
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       role:
+        custom: []
         name: role
         description: 'The role name'
         required: true
@@ -649,9 +666,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
-      role_id: 16
+      role_id: 1
       role: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -660,6 +677,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -681,7 +699,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -690,12 +707,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - PUT
     uri: 'api/roles/{role_id}'
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -704,23 +722,24 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       role_id:
+        custom: []
         name: role_id
         description: 'The ID of the role.'
         required: true
-        example: 16
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       role:
+        custom: []
         name: role
         description: 'The role name'
         required: true
@@ -729,14 +748,15 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
-      role_id: 16
+      role_id: 1
       role: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
       name:
+        custom: []
         name: name
         description: 'Update the role name.'
         required: false
@@ -745,12 +765,13 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanBodyParameters:
       name: senior_admin
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -766,7 +787,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -775,12 +795,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - DELETE
     uri: 'api/roles/{role_id}'
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -789,23 +810,24 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       role_id:
+        custom: []
         name: role_id
         description: 'The ID of the role.'
         required: true
-        example: 16
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       role:
+        custom: []
         name: role
         description: 'The role name'
         required: true
@@ -814,9 +836,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
-      role_id: 16
+      role_id: 1
       role: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -825,6 +847,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -833,8 +856,8 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
       -
+        custom: []
         status: 409
         content: |-
           {
@@ -843,7 +866,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -852,12 +874,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - POST
     uri: 'api/roles/{role_id}/permissions'
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -866,23 +889,24 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       role_id:
+        custom: []
         name: role_id
         description: 'The ID of the role.'
         required: true
-        example: 16
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       role:
+        custom: []
         name: role
         description: 'The role name'
         required: true
@@ -891,14 +915,15 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
-      role_id: 16
+      role_id: 1
       role: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
       permissions:
+        custom: []
         name: permissions
         description: 'Array of permission names to assign.'
         required: true
@@ -909,7 +934,7 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanBodyParameters:
       permissions:
         - manage_users
@@ -917,6 +942,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -930,7 +956,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -939,12 +964,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - DELETE
     uri: 'api/roles/{role_id}/permissions'
     metadata:
+      custom: []
       groupName: 'RBAC Management'
       groupDescription: ''
       subgroup: ''
@@ -953,23 +979,24 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       role_id:
+        custom: []
         name: role_id
         description: 'The ID of the role.'
         required: true
-        example: 16
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       role:
+        custom: []
         name: role
         description: 'The role name'
         required: true
@@ -978,14 +1005,15 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
-      role_id: 16
+      role_id: 1
       role: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
       permissions:
+        custom: []
         name: permissions
         description: 'Array of permission names to remove.'
         required: true
@@ -995,13 +1023,14 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanBodyParameters:
       permissions:
         - manage_users
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -1015,7 +1044,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -1024,4 +1052,3 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []

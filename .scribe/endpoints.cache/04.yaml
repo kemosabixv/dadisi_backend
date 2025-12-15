@@ -4,10 +4,12 @@ name: 'Data Retention Management'
 description: ''
 endpoints:
   -
+    custom: []
     httpMethods:
       - GET
     uri: api/retention-settings
     metadata:
+      custom: []
       groupName: 'Data Retention Management'
       groupDescription: ''
       subgroup: ''
@@ -16,7 +18,6 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
@@ -25,6 +26,7 @@ endpoints:
     cleanUrlParameters: []
     queryParameters:
       data_type:
+        custom: []
         name: data_type
         description: 'Filter by data type.'
         required: false
@@ -33,7 +35,7 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
     cleanQueryParameters:
       data_type: 0
     bodyParameters: []
@@ -41,6 +43,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -60,7 +63,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -69,12 +71,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - GET
     uri: 'api/retention-settings/{retention_id}'
     metadata:
+      custom: []
       groupName: 'Data Retention Management'
       groupDescription: ''
       subgroup: ''
@@ -83,23 +86,24 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       retention_id:
+        custom: []
         name: retention_id
         description: 'The ID of the retention.'
         required: true
-        example: 16
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       retention:
+        custom: []
         name: retention
         description: 'The retention setting ID'
         required: true
@@ -108,9 +112,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
-      retention_id: 16
+      retention_id: 1
       retention: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -119,6 +123,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -135,7 +140,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -144,12 +148,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - PUT
     uri: 'api/retention-settings/{retention_id}'
     metadata:
+      custom: []
       groupName: 'Data Retention Management'
       groupDescription: ''
       subgroup: ''
@@ -158,23 +163,24 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       retention_id:
+        custom: []
         name: retention_id
         description: 'The ID of the retention.'
         required: true
-        example: 16
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
       retention:
+        custom: []
         name: retention
         description: 'The retention setting ID'
         required: true
@@ -183,14 +189,15 @@ endpoints:
         enumValues: []
         exampleWasSpecified: false
         nullable: false
-        custom: []
+        deprecated: false
     cleanUrlParameters:
-      retention_id: 16
+      retention_id: 1
       retention: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
       retention_days:
+        custom: []
         name: retention_days
         description: 'Retention period in days.'
         required: true
@@ -199,8 +206,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
       auto_delete:
+        custom: []
         name: auto_delete
         description: 'Enable/disable auto deletion.'
         required: false
@@ -209,8 +217,9 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: false
-        custom: []
+        deprecated: false
       description:
+        custom: []
         name: description
         description: 'Description of the setting.'
         required: false
@@ -219,7 +228,7 @@ endpoints:
         enumValues: []
         exampleWasSpecified: true
         nullable: true
-        custom: []
+        deprecated: false
     cleanBodyParameters:
       retention_days: 90
       auto_delete: true
@@ -227,6 +236,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -241,7 +251,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -250,12 +259,13 @@ endpoints:
     controller: null
     method: null
     route: null
-    custom: []
   -
+    custom: []
     httpMethods:
       - GET
     uri: api/retention-settings-summary
     metadata:
+      custom: []
       groupName: 'Data Retention Management'
       groupDescription: ''
       subgroup: ''
@@ -264,7 +274,6 @@ endpoints:
       description: ''
       authenticated: true
       deprecated: false
-      custom: []
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
@@ -278,6 +287,7 @@ endpoints:
     fileParameters: []
     responses:
       -
+        custom: []
         status: 200
         content: |-
           {
@@ -290,7 +300,6 @@ endpoints:
           }
         headers: []
         description: ''
-        custom: []
     responseFields: []
     auth:
       - headers
@@ -299,4 +308,227 @@ endpoints:
     controller: null
     method: null
     route: null
+  -
     custom: []
+    httpMethods:
+      - POST
+    uri: api/retention-settings/update-days
+    metadata:
+      custom: []
+      groupName: 'Data Retention Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update retention cutoff days for a data type'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      data_type:
+        custom: []
+        name: data_type
+        description: "The data type (e.g., 'orphaned_media')."
+        required: true
+        example: orphaned_media
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      retention_days:
+        custom: []
+        name: retention_days
+        description: 'Retention period in days.'
+        required: true
+        example: 90
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      data_type: orphaned_media
+      retention_days: 90
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "Retention days updated successfully",
+            "data": {
+              "data_type": "orphaned_media",
+              "retention_days": 90
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/schedulers
+    metadata:
+      custom: []
+      groupName: 'Data Retention Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get all scheduler settings'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "data": [
+              {
+                "command_name": "media:cleanup",
+                "run_time": "03:00",
+                "frequency": "daily",
+                "enabled": true
+              }
+            ]
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/schedulers/update
+    metadata:
+      custom: []
+      groupName: 'Data Retention Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update scheduler settings (time and frequency)'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      command_name:
+        custom: []
+        name: command_name
+        description: "The command name (e.g., 'media:cleanup')."
+        required: true
+        example: 'media:cleanup'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      run_time:
+        custom: []
+        name: run_time
+        description: 'Run time in HH:MM format.'
+        required: true
+        example: '03:00'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      frequency:
+        custom: []
+        name: frequency
+        description: 'Frequency: daily, weekly, monthly, hourly.'
+        required: false
+        example: daily
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      enabled:
+        custom: []
+        name: enabled
+        description: 'Enable/disable the scheduler.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      command_name: 'media:cleanup'
+      run_time: '03:00'
+      frequency: daily
+      enabled: true
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "Scheduler updated successfully",
+            "data": {
+              "command_name": "media:cleanup",
+              "run_time": "03:00",
+              "frequency": "daily",
+              "enabled": true
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

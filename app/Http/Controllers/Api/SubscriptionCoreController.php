@@ -48,16 +48,36 @@ class SubscriptionCoreController extends Controller
     {
         $user = auth()->user();
 
+        Log::info('getCurrentSubscription called', [
+            'user_id' => $user?->id,
+            'active_subscription_id' => $user?->active_subscription_id ?? null,
+        ]);
+
         $subscription = $user->activeSubscription()->with('plan:id,name,description,price')->first();
         $enhancement = $subscription ?
             SubscriptionEnhancement::where('subscription_id', $subscription->id)->first() :
             null;
 
+        // Normalize plan to include raw JSON attributes for name/description
+        $planData = null;
+        if ($subscription && $subscription->plan) {
+            $plan = $subscription->plan;
+            $rawName = $plan->getRawOriginal('name');
+            $rawDescription = $plan->getRawOriginal('description');
+
+            $planData = [
+                'id' => $plan->id,
+                'name' => is_string($rawName) ? json_decode($rawName, true) ?? $plan->name : $rawName,
+                'description' => is_string($rawDescription) ? json_decode($rawDescription, true) ?? $plan->description : $rawDescription,
+                'price' => $plan->price,
+            ];
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
                 'user_id' => $user->id,
-                'plan' => $subscription?->plan,
+                'plan' => $planData,
                 'subscription' => $subscription,
                 'enhancement' => $enhancement,
             ],
@@ -84,6 +104,10 @@ class SubscriptionCoreController extends Controller
     public function getSubscriptionStatus(): JsonResponse
     {
         $user = auth()->user();
+        Log::info('getSubscriptionStatus called', [
+            'user_id' => $user?->id,
+            'active_subscription_id' => $user?->active_subscription_id ?? null,
+        ]);
         $subscription = $user->activeSubscription()->first();
 
         $enhancements = $subscription ?
@@ -123,8 +147,8 @@ class SubscriptionCoreController extends Controller
      */
     public function getAvailablePlans(): JsonResponse
     {
-        $plans = Plan::where('active', true)
-            ->select('id', 'name', 'description', 'price', 'billing_period')
+        $plans = Plan::where('is_active', true)
+            ->select('id', 'name', 'description', 'price', 'invoice_period', 'invoice_interval')
             ->orderBy('price')
             ->get();
 
@@ -238,15 +262,25 @@ class SubscriptionCoreController extends Controller
         try {
             DB::beginTransaction();
 
-            // Create or update subscription
-            $subscription = PlanSubscription::firstOrCreate(
-                ['user_id' => $user->id, 'plan_id' => $plan->id],
+            // Create or update subscription with polymorphic relationship
+            $baseTime = now();
+            $subscription = PlanSubscription::updateOrCreate(
+                ['subscriber_id' => $user->id, 'subscriber_type' => 'App\Models\User', 'plan_id' => $plan->id],
                 [
-                    'starts_at' => now(),
-                    'ends_at' => $billingPeriod === 'year' ? now()->addYear() : now()->addMonth(),
+                    'starts_at' => $baseTime,
+                    'ends_at' => $billingPeriod === 'year' ? $baseTime->copy()->addDays(366) : $baseTime->copy()->addMonth(),
                     'trial_ends_at' => null,
+                    'name' => $plan->name,
+                    'slug' => $plan->slug . '-' . $user->id . '-' . time(),
                 ]
             );
+
+            Log::info('Subscription created/updated', [
+                'subscription_id' => $subscription->id,
+                'starts_at' => $subscription->starts_at?->toIso8601String(),
+                'ends_at' => $subscription->ends_at?->toIso8601String(),
+                'billing_period' => $billingPeriod,
+            ]);
 
             // Create or update enhancement
             $enhancement = SubscriptionEnhancement::firstOrCreate(
@@ -269,6 +303,9 @@ class SubscriptionCoreController extends Controller
             ];
 
             $paymentResponse = MockPaymentService::initiatePayment($paymentData);
+
+            // Set the user's active subscription
+            $user->update(['active_subscription_id' => $subscription->id]);
 
             DB::commit();
 
@@ -326,13 +363,21 @@ class SubscriptionCoreController extends Controller
         try {
             DB::beginTransaction();
 
-            // Find the subscription enhancement
-            $enhancement = SubscriptionEnhancement::where('subscription_id',
-                PlanSubscription::where('user_id', $user->id)->latest()->value('id')
-            )->first();
+            Log::info('processMockPayment start', ['user_id' => $user->id]);
+            // Find the subscription enhancement - use polymorphic query
+            $subscription = PlanSubscription::where('subscriber_id', $user->id)
+                ->where('subscriber_type', 'App\Models\User')
+                ->latest()
+                ->first();
+
+            if (!$subscription) {
+                throw new \Exception('No active subscription found');
+            }
+
+            $enhancement = SubscriptionEnhancement::where('subscription_id', $subscription->id)->first();
 
             if (!$enhancement) {
-                throw new \Exception('No active subscription found');
+                throw new \Exception('No active subscription enhancement found');
             }
 
             // Process mock payment
@@ -411,6 +456,10 @@ class SubscriptionCoreController extends Controller
         ]);
 
         $user = auth()->user();
+        Log::info('cancelSubscription called', [
+            'user_id' => $user?->id,
+            'active_subscription_id' => $user?->active_subscription_id ?? null,
+        ]);
         $subscription = $user->activeSubscription()->first();
 
         if (!$subscription) {
@@ -426,11 +475,14 @@ class SubscriptionCoreController extends Controller
             // Cancel enhancement
             $enhancement = SubscriptionEnhancement::where('subscription_id', $subscription->id)->first();
             if ($enhancement) {
-                $enhancement->cancel();
+                $enhancement->update(['status' => 'cancelled']);
             }
 
-            // Update subscription
-            $subscription->update(['status' => 'cancelled']);
+            // Update subscription - use the laravel-subscriptions fields
+            $subscription->update([
+                'canceled_at' => now(),
+                'cancels_at' => now(),
+            ]);
 
             // Update user
             $user->update([

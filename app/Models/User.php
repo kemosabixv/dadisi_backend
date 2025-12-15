@@ -32,6 +32,10 @@ class User extends Authenticatable
         'password',
         'google_id',
         'email_verified_at',
+        'active_subscription_id',
+        'subscription_status',
+        'subscription_activated_at',
+        'last_payment_date',
     ];
 
     /**
@@ -98,11 +102,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get all subscriptions for the user (legacy compatibility)
+     */
+    public function subscriptions(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(PlanSubscription::class, 'subscriber', 'subscriber_type', 'subscriber_id');
+    }
+
+    /**
      * Get the user's active plan subscription
      */
-    public function activeSubscription(): BelongsTo
+    public function activeSubscription()
     {
-        return $this->belongsTo(PlanSubscription::class, 'active_subscription_id');
+        return $this->subscriptions()->where(function ($query) {
+            $query->whereNull('ends_at')
+                ->orWhere('ends_at', '>', now());
+        })->whereNull('canceled_at');
     }
 
     /**

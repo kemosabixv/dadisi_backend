@@ -21,9 +21,9 @@ return new class extends Migration
             $table->foreignId('reviewed_by')->nullable()->constrained('users');
             $table->text('admin_notes')->nullable();
             $table->text('rejection_reason')->nullable();
-            $table->timestamp('requested_at');
+            $table->timestamp('requested_at')->useCurrent();
             $table->timestamp('reviewed_at')->nullable();
-            $table->timestamp('expires_at');
+            $table->timestamp('expires_at')->nullable()->default(null);
             $table->timestamps();
             $table->softDeletes();
 

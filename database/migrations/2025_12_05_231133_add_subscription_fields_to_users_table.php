@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('active_subscription_id')->nullable()->constrained('plan_subscriptions');
+            $table->foreignId('active_subscription_id')->nullable()->constrained('subscriptions');
             $table->foreignId('plan_id')->nullable()->constrained('plans');
             $table->enum('subscription_status', ['active', 'payment_pending', 'payment_failed', 'grace_period', 'suspended', 'cancelled'])->default('active');
             $table->timestamp('subscription_expires_at')->nullable();

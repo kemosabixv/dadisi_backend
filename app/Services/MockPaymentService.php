@@ -41,15 +41,14 @@ class MockPaymentService
         $transactionId = 'MOCK_' . Str::random(12);
         $orderTrackingId = 'ORDER_' . Str::random(16);
 
+        // Build a safe redirect URL without depending on named routes (tests may not register it)
+        $redirectUrl = url('/api/payments/mock/checkout') . '?transaction_id=' . urlencode($transactionId) . '&order_id=' . urlencode($paymentData['order_id'] ?? '') . '&amount=' . urlencode($paymentData['amount'] ?? 0);
+
         return [
             'success' => true,
             'transaction_id' => $transactionId,
             'order_tracking_id' => $orderTrackingId,
-            'redirect_url' => route('api.payments.mock.checkout', [
-                'transaction_id' => $transactionId,
-                'order_id' => $paymentData['order_id'] ?? null,
-                'amount' => $paymentData['amount'] ?? 0,
-            ]),
+            'redirect_url' => $redirectUrl,
             'message' => 'Mock payment initialized successfully',
             'gateway' => 'mock_pesapal',
         ];
@@ -70,12 +69,13 @@ class MockPaymentService
         ]);
 
         // Determine outcome based on phone pattern
-        if (self::isSuccessPhone($phone)) {
-            return self::createSuccessResponse($transactionData);
-        } elseif (self::isFailurePhone($phone)) {
+        // Check explicit failure patterns first so they take precedence
+        if (self::isFailurePhone($phone)) {
             return self::createFailureResponse($transactionData, 'Card declined');
         } elseif (self::isPendingPhone($phone)) {
             return self::createPendingResponse($transactionData);
+        } elseif (self::isSuccessPhone($phone)) {
+            return self::createSuccessResponse($transactionData);
         }
 
         // Default: random success (70% success rate for default numbers)

@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->string('path', 255);
             $table->string('mime_type', 100)->nullable();
             $table->unsignedBigInteger('size_bytes')->nullable();
-            $table->timestamp('created_at');
+            $table->timestamps();
             $table->index(['owner_type','owner_id']);
         });
     }

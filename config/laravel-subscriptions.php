@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Laravelcm\Subscriptions\Models\Feature;
 use Laravelcm\Subscriptions\Models\Plan;
-use Laravelcm\Subscriptions\Models\Subscription;
+use App\Models\PlanSubscription;
 use Laravelcm\Subscriptions\Models\SubscriptionUsage;
 
 return [
@@ -38,7 +38,7 @@ return [
     'models' => [
         'plan' => Plan::class,
         'feature' => Feature::class,
-        'subscription' => Subscription::class,
+        'subscription' => PlanSubscription::class,
         'subscription_usage' => SubscriptionUsage::class,
     ],
 

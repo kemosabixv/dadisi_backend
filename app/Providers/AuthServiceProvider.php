@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use App\Models\Plan;
+use App\Models\ReconciliationRun;
 use App\Policies\PermissionPolicy;
 use App\Policies\PlanPolicy;
+use App\Policies\ReconciliationRunPolicy;
 use App\Policies\RolePolicy;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -20,6 +22,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Permission::class => PermissionPolicy::class,
         Plan::class => PlanPolicy::class,
+        ReconciliationRun::class => ReconciliationRunPolicy::class,
         Role::class => RolePolicy::class,
     ];
 

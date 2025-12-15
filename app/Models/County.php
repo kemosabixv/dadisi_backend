@@ -10,4 +10,12 @@ class County extends Model
     use HasFactory;
 
     protected $fillable = ['name'];
+
+    /**
+     * Posts relationship (backwards compatibility for tests)
+     */
+    public function posts()
+    {
+        return $this->hasMany(Post::class, 'county_id');
+    }
 }

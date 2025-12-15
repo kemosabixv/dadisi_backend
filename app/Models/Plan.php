@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravelcm\Subscriptions\Models\Plan as BasePlan;
 use App\Services\CurrencyService;
 
 class Plan extends BasePlan
 {
+    use HasFactory;
+    
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
@@ -21,6 +24,39 @@ class Plan extends BasePlan
             'yearly_promotion_discount_percent',
             'yearly_promotion_expires_at',
         ]);
+    }
+
+    /**
+     * Override setAttribute to filter out invalid 'active' column
+     * (vendor package may try to set it, but our schema uses 'is_active')
+     */
+    public function setAttribute($key, $value)
+    {
+        // Skip the vendor package's 'active' attribute; use 'is_active' instead
+        if ($key === 'active' && !isset($this->attributes['active'])) {
+            $key = 'is_active';
+        }
+        return parent::setAttribute($key, $value);
+    }
+
+    /**
+     * Expose an `active` accessor for compatibility with tests.
+     */
+    public function getActiveAttribute(): bool
+    {
+        if (array_key_exists('is_active', $this->attributes)) {
+            return (bool) $this->attributes['is_active'];
+        }
+
+        return (bool) ($this->attributes['active'] ?? false);
+    }
+
+    /**
+     * Scope to return only active plans.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
     protected $casts = [

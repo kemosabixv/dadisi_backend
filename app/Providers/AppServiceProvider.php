@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use App\Observers\PlanSubscriptionObserver;
+use App\Models\PlanSubscription;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -14,7 +16,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register Payment Gateway Manager for DI
+        $this->app->singleton(\App\Services\PaymentGateway\GatewayManager::class, function ($app) {
+            return new \App\Services\PaymentGateway\GatewayManager();
+        });
     }
 
     /**
@@ -30,5 +35,8 @@ class AppServiceProvider extends ServiceProvider
         Route::bind('role', function ($value) {
             return Role::findOrFail($value);
         });
+
+        // Register model observers for data integrity
+        PlanSubscription::observe(PlanSubscriptionObserver::class);
     }
 }

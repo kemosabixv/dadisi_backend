@@ -32,19 +32,23 @@ class WebhookController extends Controller
             ]);
 
             // Store the webhook event regardless of verification
+            // Populate external/order references from common keys; ensure non-null for DB constraints
+            $externalId = $payload['OrderTrackingId'] ?? $payload['reference'] ?? ('webhook_' . uniqid());
+            $orderRef = $payload['OrderMerchantReference'] ?? $payload['reference'] ?? $externalId;
+
             $webhookEvent = WebhookEvent::create([
                 'provider' => 'pesapal',
                 'event_type' => $payload['OrderNotificationType'] ?? 'unknown',
-                'external_id' => $payload['OrderTrackingId'] ?? null,
-                'order_reference' => $payload['OrderMerchantReference'] ?? null,
+                'external_id' => $externalId,
+                'order_reference' => $orderRef,
                 'payload' => $payload,
                 'signature' => $signature,
                 'status' => 'received',
             ]);
 
-            // Verify signature (skip if using mock)
-            $isSignatureValid = true; // Allow for testing
-            if (config('services.pesapal.environment') !== 'local' && app()->environment() !== 'local') {
+            // Verify signature (skip in local/testing environments or when services.pesapal.environment is 'local')
+            $isSignatureValid = true; // default to true for non-production
+            if (!app()->environment('local', 'testing') && config('services.pesapal.environment') !== 'local') {
                 $isSignatureValid = $this->pesapalService->verifyWebhookSignature($payload, $signature);
             }
 

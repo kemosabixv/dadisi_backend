@@ -82,6 +82,8 @@ class PostAdminController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Post::class);
+        
         $query = Post::with('author:id,name,username', 'categories:id,name', 'tags:id,name', 'county:id,name');
 
         if ($request->has('status')) {
@@ -145,6 +147,12 @@ class PostAdminController extends Controller
     {
         $validated = $request->validated();
 
+        // Map content to body for database storage
+        if (isset($validated['content'])) {
+            $validated['body'] = $validated['content'];
+            unset($validated['content']);
+        }
+
         // Generate slug from title if not provided
         if (!isset($validated['slug'])) {
             $validated['slug'] = \Str::slug($validated['title']);
@@ -155,7 +163,7 @@ class PostAdminController extends Controller
             }
         }
 
-        $validated['author_id'] = auth()->id();
+        $validated['user_id'] = auth()->id();
 
         $post = Post::create($validated);
 
@@ -167,12 +175,19 @@ class PostAdminController extends Controller
             $post->tags()->sync($validated['tag_ids']);
         }
 
+        // Attach media files if provided
+        if (isset($validated['media_ids']) && is_array($validated['media_ids'])) {
+            $post->media()->sync($validated['media_ids']);
+            // Update media privacy based on post status
+            $post->updateAttachedMediaPrivacy();
+        }
+
         $this->logAuditAction('create', Post::class, $post->id, null, $post->only(['title', 'slug', 'status']), "Created post: {$post->title}");
 
         return response()->json([
             'success' => true,
             'message' => 'Post created successfully',
-            'data' => $post->load('author:id,name,username', 'categories:id,name', 'tags:id,name'),
+            'data' => $post->load('author:id,name,username', 'categories:id,name', 'tags:id,name', 'media:id,file_name,file_path,type'),
         ], 201);
     }
 
@@ -275,6 +290,7 @@ class PostAdminController extends Controller
             'hero_image_path' => 'nullable|string|max:500',
             'category_ids' => 'array|exists:categories,id',
             'tag_ids' => 'array|exists:tags,id',
+            'media_ids' => 'nullable|array|exists:media,id',
             'meta_title' => 'nullable|string|max:60',
             'meta_description' => 'nullable|string|max:160',
             'is_featured' => 'boolean',
@@ -291,12 +307,19 @@ class PostAdminController extends Controller
             $post->tags()->sync($validated['tag_ids']);
         }
 
+        // Sync media files if provided
+        if (array_key_exists('media_ids', $validated)) {
+            $post->media()->sync($validated['media_ids']);
+            // Update media privacy based on post status
+            $post->updateAttachedMediaPrivacy();
+        }
+
         $this->logAuditAction('update', Post::class, $post->id, $oldValues, $validated, "Updated post: {$post->title}");
 
         return response()->json([
             'success' => true,
             'message' => 'Post updated successfully',
-            'data' => $post->load('author:id,name,username', 'categories:id,name', 'tags:id,name'),
+            'data' => $post->load('author:id,name,username', 'categories:id,name', 'tags:id,name', 'media:id,file_name,file_path,type'),
         ]);
     }
 

@@ -84,6 +84,14 @@ class MemberProfile extends Model
     }
 
     /**
+     * Alias for plan() relationship (used by controllers for backwards compatibility)
+     */
+    public function subscriptionPlan(): BelongsTo
+    {
+        return $this->plan();
+    }
+
+    /**
      * Get full name from profile first_name and last_name
      */
     public function getFullNameAttribute(): string
