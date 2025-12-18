@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\SubscriptionEnhancement;
 
 /**
  * Student Approval Controller
@@ -27,20 +28,34 @@ class StudentApprovalController extends Controller
     /**
      * Submit student plan approval request
      *
+     * Allows an authenticated user to submit proof of student status (e.g., ID card, enrollment letter) to qualify for student pricing.
+     * Requires a valid institution name, email, and link to verification documents.
+     * Only one active request is allowed per user.
+     *
      * @group Subscriptions - Student Approvals
+     * @groupDescription Comprehensive workflow for verifying student status to grant access to discounted student plans. Includes endpoints for students to submit applications and for admins to review, approve, or reject them.
      * @authenticated
-     * @description Submit a request for student subscription plan approval with documentation
      *
      * @bodyParam student_institution string required The student's educational institution. Example: University of Nairobi
      * @bodyParam student_email string required University email address for verification. Example: student@uon.ac.ke
      * @bodyParam documentation_url string required URL to student ID/verification document. Example: https://example.com/doc.pdf
-     * @bodyParam birth_date date required Date of birth for age verification. Example: 2005-01-15
+     * @bodyParam birth_date date required Date of birth for age verification (must be at least 16 years old). Example: 2005-01-15
      * @bodyParam county string required County of residence. Example: Nairobi
+     * @bodyParam additional_notes string optional Any extra details to support the application. Example: I am a first year student.
      *
      * @response 201 {
      *   "success": true,
      *   "message": "Student approval request submitted successfully",
-     *   "data": {"id": 1, "status": "pending", "created_at": "2025-12-06T10:30:00Z"}
+     *   "data": {
+     *     "id": 1,
+     *     "status": "pending",
+     *     "created_at": "2025-12-06T10:30:00Z",
+     *     "expires_at": "2026-01-05T10:30:00Z"
+     *   }
+     * }
+     * @response 409 {
+     *   "success": false,
+     *   "message": "You already have an active student approval request"
      * }
      */
     public function submitApprovalRequest(Request $request): JsonResponse
@@ -123,9 +138,11 @@ class StudentApprovalController extends Controller
     /**
      * Get student approval request status
      *
+     * Retrieves the most recent student approval request for the authenticated user.
+     * Returns details including current status (pending, approved, rejected), submission date, and any admin feedback.
+     *
      * @group Subscriptions - Student Approvals
      * @authenticated
-     * @description Get the current status of the authenticated user's student approval request
      *
      * @response 200 {
      *   "success": true,
@@ -133,8 +150,14 @@ class StudentApprovalController extends Controller
      *     "id": 1,
      *     "status": "pending",
      *     "student_institution": "University of Nairobi",
-     *     "submitted_at": "2025-12-06T10:30:00Z"
+     *     "submitted_at": "2025-12-06T10:30:00Z",
+     *     "rejection_reason": null,
+     *     "admin_notes": null
      *   }
+     * }
+     * @response 404 {
+     *   "success": false,
+     *   "message": "No approval request found"
      * }
      */
     public function getApprovalStatus(): JsonResponse
@@ -169,15 +192,28 @@ class StudentApprovalController extends Controller
     /**
      * Get approval request details (for admin review)
      *
+     * Fetches complete information about a specific student request, including personal details and verification documents.
+     * Users can view their own requests; Admins can view any request.
+     *
      * @group Subscriptions - Student Approvals
      * @authenticated
-     * @description Retrieve full details of a student approval request
      *
-     * @urlParam request_id integer required The approval request ID. Example: 1
+     * @urlParam request_id integer required The unique ID of the approval request. Example: 1
      *
      * @response 200 {
      *   "success": true,
-     *   "data": {"id": 1, "user_id": 1, "status": "pending", "documentation_url": "https://..."}
+     *   "data": {
+     *     "id": 1,
+     *     "user_id": 1,
+     *     "user_name": "John Doe",
+     *     "status": "pending",
+     *     "documentation_url": "https://example.com/doc.pdf",
+     *     "student_institution": "University of Nairobi"
+     *   }
+     * }
+     * @response 403 {
+     *   "success": false,
+     *   "message": "Unauthorized"
      * }
      */
     public function getApprovalDetails($requestId): JsonResponse
@@ -220,20 +256,33 @@ class StudentApprovalController extends Controller
     /**
      * List pending approval requests (admin only)
      *
+     * Retrieves a paginated list of student approval requests for administrative review.
+     * Supports filtering by status (e.g., 'pending') and location (county) to help admins manage their review queue.
+     *
      * @group Subscriptions - Student Approvals
      * @authenticated
-     * @description List all pending student approval requests for admin review
      *
-     * @queryParam status string Filter by status. Example: pending
+     * @queryParam status string Filter by status (pending, approved, rejected). Default: pending. Example: pending
      * @queryParam county string Filter by county. Example: Nairobi
-     * @queryParam per_page integer Results per page. Example: 15
+     * @queryParam per_page integer Results per page. Default: 15. Example: 15
      *
      * @response 200 {
      *   "success": true,
      *   "data": [
-     *     {"id": 1, "status": "pending", "user_name": "John Doe", "submitted_at": "2025-12-06"}
+     *     {
+     *       "id": 1,
+     *       "status": "pending",
+     *       "user_name": "John Doe",
+     *       "student_institution": "University of Nairobi",
+     *       "submitted_at": "2025-12-06T10:30:00Z"
+     *     }
      *   ],
-     *   "pagination": {"total": 1, "per_page": 15, "current_page": 1}
+     *   "pagination": {
+     *     "total": 1,
+     *     "per_page": 15,
+     *     "current_page": 1,
+     *     "last_page": 1
+     *   }
      * }
      */
     public function listApprovalRequests(Request $request): JsonResponse
@@ -281,17 +330,28 @@ class StudentApprovalController extends Controller
     /**
      * Approve student request (admin only)
      *
+     * Finalizes the review process by approving the request.
+     * This action automatically creates a 'student' plan subscription for the user and activates it.
+     * Restricted to administrators with appropriate permissions.
+     *
      * @group Subscriptions - Student Approvals
      * @authenticated
-     * @description Approve a student's plan subscription request and create student subscription
      *
      * @urlParam request_id integer required The approval request ID. Example: 1
-     * @bodyParam admin_notes string Admin review notes. Example: Documents verified successfully
+     * @bodyParam admin_notes string optional Internal notes for the approval. Example: Documents verified successfully.
      *
      * @response 200 {
      *   "success": true,
      *   "message": "Student request approved successfully",
-     *   "data": {"status": "approved", "subscription_id": 1}
+     *   "data": {
+     *     "status": "approved",
+     *     "subscription_id": 1,
+     *     "approved_at": "2025-12-07T14:00:00Z"
+     *   }
+     * }
+     * @response 409 {
+     *   "success": false,
+     *   "message": "Request is not in pending status"
      * }
      */
     public function approveRequest($requestId, Request $request): JsonResponse
@@ -381,18 +441,24 @@ class StudentApprovalController extends Controller
     /**
      * Reject student request (admin only)
      *
+     * Rejects a student approval request.
+     * Administrators must provide a rejection reason (e.g., 'Unclear document') which will be visible to the user.
+     * The user may then resolve the issue and re-apply.
+     *
      * @group Subscriptions - Student Approvals
      * @authenticated
-     * @description Reject a student's plan subscription request
      *
      * @urlParam request_id integer required The approval request ID. Example: 1
-     * @bodyParam rejection_reason string required Reason for rejection. Example: Documentation incomplete
-     * @bodyParam admin_notes string Admin review notes. Example: Student provided wrong ID type
+     * @bodyParam rejection_reason string required Valid reason for rejection. Example: Documentation incomplete or unclear
+     * @bodyParam admin_notes string optional Internal notes regarding the rejection. Example: Student uploaded a selfie instead of ID.
      *
      * @response 200 {
      *   "success": true,
      *   "message": "Student request rejected",
-     *   "data": {"status": "rejected"}
+     *   "data": {
+     *     "status": "rejected",
+     *     "rejection_reason": "Documentation incomplete or unclear"
+     *   }
      * }
      */
     public function rejectRequest($requestId, Request $request): JsonResponse
@@ -466,14 +532,22 @@ class StudentApprovalController extends Controller
     /**
      * Check if user can request student plan
      *
+     * Checks if the logged-in user is allowed to submit a new student approval request.
+     * Returns false if they already have a pending/active request or an active student subscription.
+     * Use this to show/hide the application form.
+     *
      * @group Subscriptions - Student Approvals
      * @authenticated
-     * @description Check user eligibility for student plan subscription
      *
      * @response 200 {
      *   "success": true,
      *   "can_request": true,
      *   "reason": "You are eligible to request student plan"
+     * }
+     * @response 200 {
+     *   "success": true,
+     *   "can_request": false,
+     *   "reason": "You already have an active student subscription"
      * }
      */
     public function canRequestStudentPlan(): JsonResponse

@@ -15,10 +15,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Subscription Core Controller
+ * @group Subscription Lifecycle
+ * @groupDescription Core endpoints for managing the user's subscription state, including status checks, renewal preferences, and payment initiation.
  *
- * Manages subscription lifecycle including creation, status,
- * renewal preferences, and payment initiation (Phase 1)
+ * This group handles the primary business logic for a user's subscription journey, from checking their current status to initiating payments and managing renewals.
  */
 class SubscriptionCoreController extends Controller
 {
@@ -28,11 +28,13 @@ class SubscriptionCoreController extends Controller
     }
 
     /**
-     * Get current user's subscription
+     * Get Current Subscription
      *
-     * @group Subscriptions - Core
+     * Retrieves detailed information about the authenticated user's currently active subscription.
+     * Includes the plan details, subscription status, expiration dates, and any active enhancements (like grace periods).
+     *
+     * @group Subscription Lifecycle
      * @authenticated
-     * @description Get detailed information about the authenticated user's active subscription
      *
      * @response 200 {
      *   "success": true,
@@ -85,11 +87,14 @@ class SubscriptionCoreController extends Controller
     }
 
     /**
-     * Get subscription status and history
+     * Check Subscription Status
      *
-     * @group Subscriptions - Core
+     * Provides a high-level overview of the user's subscription status.
+     * Returns the current status (e.g., active, expired, payment_failed), details of the active record, and any enhancement flags.
+     * This is commonly used by the frontend to gate access to premium features.
+     *
+     * @group Subscription Lifecycle
      * @authenticated
-     * @description Retrieve subscription status, history, and enhancement details
      *
      * @response 200 {
      *   "success": true,
@@ -126,11 +131,13 @@ class SubscriptionCoreController extends Controller
     }
 
     /**
-     * Get available plans
+     * List Available Plans (Simplified)
      *
-     * @group Subscriptions - Core
+     * Retrieves a simplified list of active subscription plans.
+     * This endpoint is often used for "Upgrade Plan" dropdowns or quick references where full promotional details are not required.
+     *
+     * @group Subscription Lifecycle
      * @authenticated
-     * @description List all available subscription plans with pricing and features
      *
      * @response 200 {
      *   "success": true,
@@ -159,11 +166,13 @@ class SubscriptionCoreController extends Controller
     }
 
     /**
-     * Get renewal preferences
+     * Get Renewal Preferences
      *
-     * @group Subscriptions - Core
+     * Retrieves the authenticated user's settings for subscription auto-renewal.
+     * Includes preferences for reminders, payment methods, and fallback behaviors.
+     *
+     * @group Subscription Lifecycle
      * @authenticated
-     * @description Get or create the authenticated user's renewal preferences
      *
      * @response 200 {
      *   "success": true,
@@ -187,17 +196,20 @@ class SubscriptionCoreController extends Controller
     }
 
     /**
-     * Update renewal preferences
+     * Update Renewal Preferences
      *
-     * @group Subscriptions - Core
+     * Allows the user to configure how their subscription should be handled upon expiration.
+     * Users can toggle auto-renewal, set reminder timing, or update their preferred payment method link.
+     *
+     * @group Subscription Lifecycle
      * @authenticated
-     * @description Update user's renewal preferences (auto/manual, reminders, etc.)
      *
-     * @bodyParam renewal_type string Renewal type: "automatic" or "manual". Example: automatic
-     * @bodyParam send_renewal_reminders boolean Send renewal reminder emails. Example: true
-     * @bodyParam reminder_days_before integer Days before expiry to send reminder. Example: 7
-     * @bodyParam preferred_payment_method string Preferred payment method. Example: mobile_money
-     * @bodyParam auto_switch_to_free_on_expiry boolean Auto-downgrade to Free plan on expiry. Example: true
+     * @bodyParam renewal_type string optional The renewal mode: "automatic" or "manual". Example: automatic
+     * @bodyParam send_renewal_reminders boolean optional Whether to receive email reminders before expiry. Example: true
+     * @bodyParam reminder_days_before integer optional Number of days before expiry to send a reminder (1-30). Example: 7
+     * @bodyParam preferred_payment_method string optional Identifier for the preferred payment method (e.g., "mpesa", "card"). Example: mpesa
+     * @bodyParam auto_switch_to_free_on_expiry boolean optional If true, allows downgrade to free tier automatically if renewal fails. Example: true
+     * @bodyParam notes string optional User notes regarding their renewal preference. Example: Prefer text reminders.
      *
      * @response 200 {
      *   "success": true,
@@ -228,15 +240,18 @@ class SubscriptionCoreController extends Controller
     }
 
     /**
-     * Initiate payment for subscription
+     * Initiate Subscription Payment
      *
-     * @group Subscriptions - Core
+     * Starts the payment process for purchasing or renewing a subscription plan.
+     * This creates a pending subscription record and initiates a transaction with the payment gateway.
+     * Returns a transaction reference that the frontend uses to track or verify the payment.
+     *
+     * @group Subscription Lifecycle
      * @authenticated
-     * @description Start the payment process for a subscription plan using mock gateway
      *
-     * @bodyParam plan_id integer required The plan ID to subscribe to. Example: 1
-     * @bodyParam billing_period string Billing period: "month" or "year". Example: month
-     * @bodyParam phone string Phone number for payment processing. Example: 254712345678
+     * @bodyParam plan_id integer required The ID of the plan to subscribe to. Example: 1
+     * @bodyParam billing_period string optional The billing cycle: "month" or "year". Default: month. Example: month
+     * @bodyParam phone string optional The mobile number for payment (required for mobile money). Format: 254xxxxxxxxx. Example: 254712345678
      *
      * @response 201 {
      *   "success": true,
@@ -336,14 +351,16 @@ class SubscriptionCoreController extends Controller
     }
 
     /**
-     * Process mock payment (for testing only)
+     * Process Mock Payment (Dev/Test)
      *
-     * @group Subscriptions - Core
+     * internal/Development endpoint to simulate payment completion.
+     * This allows developers to manually trigger a "Success" or "Failure" outcome for a pending transaction without using a real payment provider.
+     *
+     * @group Subscription Lifecycle
      * @authenticated
-     * @description Process a mock payment with controlled success/failure outcomes
      *
-     * @bodyParam transaction_id string required The transaction ID from payment initiation. Example: MOCK_abc123xyz
-     * @bodyParam phone string Phone number for simulating payment outcome. Example: 254712345678
+     * @bodyParam transaction_id string required The transaction ID returned from the initiation step. Example: MOCK_abc123xyz
+     * @bodyParam phone string required The phone number associated with the transaction. Example: 254712345678
      *
      * @response 200 {
      *   "success": true,
@@ -436,13 +453,16 @@ class SubscriptionCoreController extends Controller
     }
 
     /**
-     * Cancel subscription
+     * Cancel Subscription
      *
-     * @group Subscriptions - Core
+     * Terminates the user's active subscription.
+     * Depending on business logic, this may take effect immediately or at the end of the current billing cycle.
+     * The subscription status will update to 'cancelled'.
+     *
+     * @group Subscription Lifecycle
      * @authenticated
-     * @description Cancel the authenticated user's active subscription
      *
-     * @bodyParam reason string Cancellation reason. Example: No longer needed
+     * @bodyParam reason string optional A reason for cancellation (for feedback). Example: Too expensive
      *
      * @response 200 {
      *   "success": true,

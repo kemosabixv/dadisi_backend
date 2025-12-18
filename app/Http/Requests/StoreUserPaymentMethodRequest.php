@@ -20,4 +20,26 @@ class StoreUserPaymentMethodRequest extends FormRequest
             'is_primary' => 'nullable|boolean',
         ];
     }
+
+    public function bodyParameters()
+    {
+        return [
+            'type' => [
+                'description' => 'The type of payment method (phone_pattern usually implies MPESA).',
+                'example' => 'phone_pattern',
+            ],
+            'identifier' => [
+                'description' => 'The unique identifier for the payment method (e.g., partial phone number or masked card). Sensitive data should not be stored here.',
+                'example' => '2547***123',
+            ],
+            'label' => [
+                'description' => 'A user-friendly label for this payment method.',
+                'example' => 'My Safaricom Line',
+            ],
+            'is_primary' => [
+                'description' => 'Whether to set this as the default payment method.',
+                'example' => true,
+            ],
+        ];
+    }
 }

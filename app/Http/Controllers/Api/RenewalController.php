@@ -23,13 +23,22 @@ class RenewalController extends Controller
     /**
      * Request manual renewal for a subscription (user-initiated)
      *
+     * This endpoint triggers the manual renewal workflow for a specific subscription.
+     * It schedules renewal reminders and prepares the system for a user-initiated payment.
+     * Use this when a user wants to renew before the automatic process kicks in or if auto-renewal failed.
+     *
      * @group Subscriptions - Renewals
+     * @groupDescription Endpoints for users to manage their subscription renewals, including requesting manual renewals, viewing payment options, and checking renewal reminders.
      * @authenticated
-     * @urlParam id integer required The subscription id. Example: 1
+     * @urlParam id integer required The unique ID of the subscription to renew. Example: 1
      *
      * @response 200 {
      *   "success": true,
      *   "message": "Manual renewal requested. Reminders scheduled."
+     * }
+     * @response 404 {
+     *   "success": false,
+     *   "message": "Subscription not found"
      * }
      */
     public function requestManualRenewal(Request $request, $subscriptionId): JsonResponse
@@ -54,16 +63,30 @@ class RenewalController extends Controller
     }
 
     /**
-        * Get renewal payment options for a subscription (placeholder)
-        *
-        * @group Subscriptions - Renewals
-        * @authenticated
-        * @urlParam id integer required The subscription id. Example: 1
-        *
-        * @response 200 {
-        *   "success": true,
-        *   "data": {"payment_methods": [{"type":"mobile_money","display":"M-Pesa"}], "amount": 99.99, "currency": "KES"}
-        * }
+     * Get renewal payment options for a subscription
+     *
+     * Fetches the valid payment options, current pricing, and supported currencies for renewing a specific subscription.
+     * This ensures the frontend displays up-to-date payment channels (e.g., M-Pesa, Card) and accurate amounts.
+     *
+     * @group Subscriptions - Renewals
+     * @authenticated
+     * @urlParam id integer required The unique ID of the subscription. Example: 1
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": {
+     *     "payment_methods": [
+     *       {"type": "mobile_money", "display": "M-Pesa (Mobile Money)"},
+     *       {"type": "card", "display": "Card (Mock)"}
+     *     ],
+     *     "amount": 99.99,
+     *     "currency": "KES"
+     *   }
+     * }
+     * @response 404 {
+     *   "success": false,
+     *   "message": "Subscription not found"
+     * }
      */
     public function getManualRenewalOptions(Request $request, $subscriptionId): JsonResponse
     {
@@ -89,14 +112,27 @@ class RenewalController extends Controller
     }
 
     /**
-        * Confirm manual renewal (placeholder) — this would create a renewal job or trigger payment flow
-        *
-        * @group Subscriptions - Renewals
-        * @authenticated
-        * @urlParam id integer required The subscription id. Example: 1
-        * @bodyParam payment_method string required The payment method chosen. Example: mobile_money
-        *
-        * @response 200 {"success": true, "message": "Renewal confirmed (mock)"}
+     * Confirm manual renewal (placeholder)
+     *
+     * Confirms the user's intent to renew using a specific payment method.
+     * In a real-world scenario, this would initiate the payment gateway flow or create a pending renewal job.
+     * Currently acts as a confirmation step returning success for mock purposes.
+     *
+     * @group Subscriptions - Renewals
+     * @authenticated
+     * @urlParam id integer required The unique ID of the subscription. Example: 1
+     * @bodyParam payment_method string required The payment method chosen by the user. Example: mobile_money
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Renewal confirmed (mock)"
+     * }
+     * @response 422 {
+     *   "message": "The given data was invalid.",
+     *   "errors": {
+     *     "payment_method": ["The payment method field is required."]
+     *   }
+     * }
      */
     public function confirmManualRenewal(Request $request, $subscriptionId): JsonResponse
     {
@@ -116,11 +152,23 @@ class RenewalController extends Controller
     }
 
     /**
-        * List pending reminders for the authenticated user
-        *
-        * @group Subscriptions - Renewals
-        * @authenticated
-        * @response 200 {"success": true, "data": []}
+     * List pending reminders
+     *
+     * Retrieves a list of scheduled renewal reminders that haven't been sent yet for the authenticated user.
+     * Useful for showing users when they will be notified about upcoming expirations.
+     *
+     * @group Subscriptions - Renewals
+     * @authenticated
+     * @response 200 {
+     *   "success": true,
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "scheduled_at": "2025-01-15T09:00:00Z",
+     *       "is_sent": false
+     *     }
+     *   ]
+     * }
      */
     public function getPendingReminders(Request $request): JsonResponse
     {
@@ -136,13 +184,26 @@ class RenewalController extends Controller
     }
 
     /**
-        * Admin: Extend grace period for a subscription
-        *
-        * @group Subscriptions - Renewals (Admin)
-        * @authenticated
-        * @bodyParam days integer required Number of days to extend. Example: 14
-        * @bodyParam note string optional Reason for extension
-        * @response 200 {"success": true, "message": "Grace period extended"}
+     * Admin: Extend grace period for a subscription
+     *
+     * Allows administrators to grant additional time (grace period) to a subscription that has expired or is about to expire.
+     * This is typically used in customer support scenarios where a user has a valid reason for delayed payment.
+     *
+     * @group Subscriptions - Renewals (Admin)
+     * @groupDescription Administrative endpoints for managing subscription lifecycles, specifically handling manual overrides like grace period extensions.
+     * @authenticated
+     * @urlParam subscriptionId integer required The unique ID of the subscription. Example: 10
+     * @bodyParam days integer required Number of days to extend the grace period (1-90). Example: 14
+     * @bodyParam note string optional Reason for the extension (for audit logs). Example: User promised payment next week.
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Grace period extended"
+     * }
+     * @response 403 {
+     *   "success": false,
+     *   "message": "Unauthorized"
+     * }
      */
     public function extendGracePeriod(Request $request, $subscriptionId): JsonResponse
     {

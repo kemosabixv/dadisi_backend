@@ -49,7 +49,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * List published posts without filters
      */
-    public function test_index_returns_all_published_posts()
+    public function test_index_returns_all_published_posts(): void
     {
         // Create published posts
         Post::factory(5)->published()->create([
@@ -89,7 +89,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Filter posts by category
      */
-    public function test_index_filters_posts_by_category()
+    public function test_index_filters_posts_by_category(): void
     {
         $otherCategory = Category::factory()->create(['name' => 'News']);
 
@@ -114,7 +114,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Filter posts by tag
      */
-    public function test_index_filters_posts_by_tag()
+    public function test_index_filters_posts_by_tag(): void
     {
         $otherTag = Tag::factory()->create(['name' => 'PHP']);
 
@@ -137,7 +137,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Filter posts by county
      */
-    public function test_index_filters_posts_by_county()
+    public function test_index_filters_posts_by_county(): void
     {
         $otherCounty = County::factory()->create();
 
@@ -161,7 +161,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Search posts by title
      */
-    public function test_index_searches_posts_by_title()
+    public function test_index_searches_posts_by_title(): void
     {
         Post::factory()->published()->create([
             'user_id' => $this->author->id,
@@ -184,7 +184,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Sort posts by latest
      */
-    public function test_index_sorts_posts_by_latest()
+    public function test_index_sorts_posts_by_latest(): void
     {
         $post1 = Post::factory()->create([
             'status' => 'published',
@@ -208,7 +208,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Sort posts by oldest
      */
-    public function test_index_sorts_posts_by_oldest()
+    public function test_index_sorts_posts_by_oldest(): void
     {
         $post1 = Post::factory()->create([
             'status' => 'published',
@@ -232,7 +232,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Sort posts by views count
      */
-    public function test_index_sorts_posts_by_views()
+    public function test_index_sorts_posts_by_views(): void
     {
         $post1 = Post::factory()->create([
             'status' => 'published',
@@ -258,7 +258,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Pagination works correctly
      */
-    public function test_index_paginate_posts()
+    public function test_index_paginate_posts(): void
     {
         Post::factory(25)->published()->create([
             'user_id' => $this->author->id,
@@ -276,7 +276,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * View single published post increments view count
      */
-    public function test_show_published_post_increments_views()
+    public function test_show_published_post_increments_views(): void
     {
         $post = Post::factory()->published()->create([
             'user_id' => $this->author->id,
@@ -312,7 +312,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Cannot view draft post as unauthenticated user
      */
-    public function test_show_draft_post_not_found()
+    public function test_show_draft_post_not_found(): void
     {
         $post = Post::factory()->create([
             'status' => 'draft',
@@ -333,7 +333,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * View post by ID also works
      */
-    public function test_show_post_by_id()
+    public function test_show_post_by_id(): void
     {
         $post = Post::factory()->published()->create([
             'user_id' => $this->author->id,
@@ -349,7 +349,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Related posts are returned when viewing a post
      */
-    public function test_show_post_includes_related_posts()
+    public function test_show_post_includes_related_posts(): void
     {
         $post = Post::factory()->published()->create([
             'user_id' => $this->author->id,
@@ -379,7 +379,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * User can view their own posts (draft and published)
      */
-    public function test_my_posts_returns_user_posts()
+    public function test_my_posts_returns_user_posts(): void
     {
         $draftPost = Post::factory()->create([
             'status' => 'draft',
@@ -407,7 +407,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * my_posts requires authentication
      */
-    public function test_my_posts_requires_authentication()
+    public function test_my_posts_requires_authentication(): void
     {
         $response = $this->getJson('/api/blog/my-posts');
 
@@ -418,7 +418,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Filter my posts by status
      */
-    public function test_my_posts_filter_by_status()
+    public function test_my_posts_filter_by_status(): void
     {
         $this->user->assignRole($this->editorRole);
 
@@ -442,7 +442,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Search own posts
      */
-    public function test_my_posts_search()
+    public function test_my_posts_search(): void
     {
         $this->user->assignRole($this->editorRole);
 
@@ -473,7 +473,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Admin can view create form metadata
      */
-    public function test_create_returns_form_metadata()
+    public function test_create_returns_form_metadata(): void
     {
         $this->user->assignRole('admin');
 
@@ -493,7 +493,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Non-admin cannot access create form
      */
-    public function test_create_requires_admin()
+    public function test_create_requires_admin(): void
     {
         $response = $this->actingAs($this->user)->getJson('/api/admin/blog/posts/create');
 
@@ -504,7 +504,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Admin can list all posts (admin view)
      */
-    public function test_index_admin_lists_all_posts()
+    public function test_index_admin_lists_all_posts(): void
     {
         $this->user->assignRole('admin');
         $this->user = $this->user->fresh();
@@ -528,7 +528,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Admin can filter posts by status
      */
-    public function test_index_admin_filter_by_status()
+    public function test_index_admin_filter_by_status(): void
     {
         $this->user->assignRole('admin');
         $this->user = $this->user->fresh();
@@ -553,7 +553,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Admin can filter posts by author
      */
-    public function test_index_admin_filter_by_author()
+    public function test_index_admin_filter_by_author(): void
     {
         $this->user->assignRole('admin');
         $this->user = $this->user->fresh();
@@ -578,7 +578,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Admin can search posts in admin view
      */
-    public function test_index_admin_search()
+    public function test_index_admin_search(): void
     {
         $this->user->assignRole('admin');
         $this->user = $this->user->fresh();
@@ -604,7 +604,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Admin can create a post
      */
-    public function test_store_creates_new_post()
+    public function test_store_creates_new_post(): void
     {
         $this->user->assignRole('admin');
 
@@ -632,7 +632,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Cannot create post with invalid data
      */
-    public function test_store_validates_required_fields()
+    public function test_store_validates_required_fields(): void
     {
         $this->user->assignRole('admin');
 
@@ -647,7 +647,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Admin can update a post
      */
-    public function test_update_edits_existing_post()
+    public function test_update_edits_existing_post(): void
     {
         $this->user->assignRole('admin');
         $post = Post::factory()->create([
@@ -674,7 +674,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Admin can publish a post
      */
-    public function test_publish_post()
+    public function test_publish_post(): void
     {
         $this->user->assignRole('admin');
         $post = Post::factory()->create([
@@ -696,7 +696,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Admin can delete a post
      */
-    public function test_destroy_deletes_post()
+    public function test_destroy_deletes_post(): void
     {
         $this->user->assignRole('admin');
         $post = Post::factory()->create([
@@ -714,7 +714,7 @@ class BlogEndpointsTest extends TestCase
      * @test
      * Editor can update only their own posts
      */
-    public function test_editor_can_only_update_own_posts()
+    public function test_editor_can_only_update_own_posts(): void
     {
         $this->user->assignRole('editor');
         $otherPost = Post::factory()->create([

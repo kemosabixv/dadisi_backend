@@ -9,13 +9,14 @@ use App\Services\CurrencyService;
 class Plan extends BasePlan
 {
     use HasFactory;
-    
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
 
         // Add custom fillable fields
         $this->fillable = array_merge(parent::getFillable(), [
+            'type',
             'base_monthly_price',
             'yearly_discount_percent',
             'default_billing_period',

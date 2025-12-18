@@ -11,19 +11,27 @@ class AdminController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:sanctum'); // Authenticate users, Policy handles authorization
+        $this->middleware('auth:sanctum')->except(['getExchangeRate']); // Authenticate users, Policy handles authorization
     }
 
     /**
-     * Get Current Exchange Rate Configuration
+     * Get Active Exchange Rate
      *
-     * Retrieves the current exchange rate settings and stored USD to KES conversion rate.
-     * This endpoint shows the database-stored exchange rate that is used across the application
-     * instead of making live API calls, improving performance and reducing API costs.
+     * Retrieves the currently active USD to KES exchange rate used by the system.
+     * This rate is fetched from the local database cache to ensure performance and reduce external API costs.
      *
      * @group Admin - Exchange Rates
+     * @groupDescription Endpoints for managing the system's currency exchange rates (USD to KES). Supports caching configuration, manual overrides, and integration health checks.
      * @authenticated
-     * @response 200 {"id": 1, "from_currency": "USD", "to_currency": "KES", "rate": 145.0, "cache_minutes": 10080, "last_updated": "2025-12-03T14:00:00Z", "inverse_rate": 0.006897}
+     * @response 200 {
+     *   "id": 1,
+     *   "from_currency": "USD",
+     *   "to_currency": "KES",
+     *   "rate": 145.0,
+     *   "cache_minutes": 10080,
+     *   "last_updated": "2025-12-03T14:00:00Z",
+     *   "inverse_rate": 0.006897
+     * }
      */
     public function getExchangeRate()
     {
@@ -33,15 +41,25 @@ class AdminController extends Controller
     }
 
     /**
-     * Get Detailed Exchange Rate Information
+     * Get Exchange Rate Details (Stats)
      *
      * Provides comprehensive exchange rate information including both USD/KES and KES/USD rates,
      * cache expiry information, next auto-refresh timestamp, and current cache settings.
-     * This endpoint is useful for displaying detailed exchange rate status in admin dashboards.
+     * Used for the admin dashboard widget to show currency health.
      *
      * @group Admin - Exchange Rates
      * @authenticated
-     * @response 200 {"rate": 145.67, "kes_to_usd_rate": 0.0067, "usd_to_kes_rate": 150.0, "last_updated": "2025-12-03T14:00:00Z", "next_auto_refresh": "2025-12-10T14:00:00Z", "cache_time_days": 7, "cache_minutes": 10080, "source": "database", "api_source": "exchangerate-api.com"}
+     * @response 200 {
+     *   "rate": 145.67,
+     *   "kes_to_usd_rate": 0.0067,
+     *   "usd_to_kes_rate": 150.0,
+     *   "last_updated": "2025-12-03T14:00:00Z",
+     *   "next_auto_refresh": "2025-12-10T14:00:00Z",
+     *   "cache_time_days": 7,
+     *   "cache_minutes": 10080,
+     *   "source": "database",
+     *   "api_source": "exchangerate-api.com"
+     * }
      */
     public function getExchangeRateInfo(CurrencyService $currencyService)
     {
@@ -51,17 +69,25 @@ class AdminController extends Controller
     }
 
     /**
-     * Manually Refresh Exchange Rate from API
+     * Force Rate Refresh (API)
      *
-     * Forces an immediate update of the exchange rate by calling the exchangerate-api.com API.
-     * This refreshes the USD to KES rate stored in the database and updates the last_updated timestamp.
-     * Use this when you need the most current exchange rate without waiting for the cache to expire.
-     * Note: This consumes 1 of your monthly API requests.
+     * Triggers an immediate call to the external currency API to fetch the latest exchange rates.
+     * This overrides the local cache and resets the "last_updated" timestamp.
+     * **Note:** This action consumes one unit of the external API's usage quota.
      *
      * @group Admin - Exchange Rates
      * @authenticated
-     * @response 201 {"message": "Exchange rate refreshed from API", "rate": 145.67, "inverse_rate": 0.006896, "last_updated": "2025-12-03T14:00:00Z"}
-     * @response 422 {"message": "Failed to refresh exchange rate from API", "error": "API connection failed"}
+     *
+     * @response 201 {
+     *   "message": "Exchange rate refreshed from API",
+     *   "rate": 145.67,
+     *   "inverse_rate": 0.006896,
+     *   "last_updated": "2025-12-03T14:00:00Z"
+     * }
+     * @response 422 {
+     *   "message": "Failed to refresh exchange rate from API",
+     *   "error": "API connection failed"
+     * }
      */
     public function refreshExchangeRate()
     {
@@ -85,17 +111,24 @@ class AdminController extends Controller
     }
 
     /**
-     * Update Exchange Rate Cache Duration
+     * Configure Rate Caching
      *
-     * Allows administrators to configure how long exchange rates are cached before auto-refreshing from the API.
-     * Longer cache periods reduce API costs but may result in slightly stale exchange rates.
-     * Common settings: 3 days (most up-to-date), 5 days (balanced), 7 days (cost-effective).
+     * Updates the duration (in minutes) that exchange rates remain valid before an auto-refresh is triggered.
+     * Long cache durations save API costs, while shorter durations ensure tighter alignment with market rates.
      *
      * @group Admin - Exchange Rates
      * @authenticated
-     * @bodyParam cache_minutes integer required Options: 4320 (3 days), 7200 (5 days), 10080 (7 days)
-     * @response 200 {"message": "Cache settings updated to 7 days (10080 minutes)", "cache_minutes": 10080, "cache_days": 7}
-     * @response 422 {"message": "Invalid cache minutes value. Must be one of: 4320, 7200, 10080"}
+     *
+     * @bodyParam cache_minutes integer required The cache duration in minutes. Allowed values: 4320 (3 days), 7200 (5 days), 10080 (7 days). Example: 10080
+     *
+     * @response 200 {
+     *   "message": "Cache settings updated to 7-day (10080 minutes)",
+     *   "cache_minutes": 10080,
+     *   "cache_days": 7
+     * }
+     * @response 422 {
+     *   "message": "Invalid cache minutes value. Must be one of: 4320, 7200, 10080"
+     * }
      */
     public function updateCacheSettings(Request $request)
     {
@@ -125,19 +158,26 @@ class AdminController extends Controller
     }
 
     /**
-     * Manually Override Exchange Rate
+     * Set Manual Exchange Rate
      *
-     * Allows administrators to manually set a specific USD to KES exchange rate that overrides
-     * the API-provided rate. This is useful in cases where the market rate needs to be adjusted
-     * for business reasons (e.g., competitive positioning, currency fluctuations, or special promotions).
-     * The manual rate remains in effect until either overwritten by another manual update or replaced
-     * by an automatic API refresh (based on cache settings).
+     * Manually overrides the system's exchange rate with a specific value.
+     * This is useful for locking in a fixed rate for promotions or stabilizing pricing during high volatility.
+     * The manual rate persists until the next manual update or API refresh.
      *
      * @group Admin - Exchange Rates
      * @authenticated
-     * @bodyParam rate decimal required Manual USD to KES rate (e.g., 145.50) - must be between 1 and 1000
-     * @response 200 {"message": "Exchange rate manually updated", "rate": 145.50, "inverse_rate": 0.006872, "last_updated": "2025-12-03T14:00:00Z"}
-     * @response 422 {"message": "The rate field is required. The rate must be a number between 1 and 1000."}
+     *
+     * @bodyParam rate number required The custom USD to KES rate (Between 1 and 1000). Example: 145.50
+     *
+     * @response 200 {
+     *   "message": "Exchange rate manually updated",
+     *   "rate": 145.50,
+     *   "inverse_rate": 0.006872,
+     *   "last_updated": "2025-12-03T14:00:00Z"
+     * }
+     * @response 422 {
+     *   "message": "The rate field is required. The rate must be a number between 1 and 1000."
+     * }
      */
     public function updateManualRate(Request $request)
     {

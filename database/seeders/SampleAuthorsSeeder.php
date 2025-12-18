@@ -33,7 +33,6 @@ class SampleAuthorsSeeder extends Seeder
         $demo = User::firstOrCreate(
             ['email' => 'author@example.com'],
             [
-                'name' => 'Demo Author',
                 'username' => $uniqueUsername,
                 'password' => bcrypt('password'),
             ]

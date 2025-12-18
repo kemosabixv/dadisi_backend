@@ -22,7 +22,10 @@ class RolesPermissionsSeeder extends Seeder
             // User Management
             'manage_users',
             'view_all_users',
+            'invite_users',
+            'bulk_user_operations',
             'assign_roles',
+            'view_audit_logs',
 
             // RBAC Management
             'manage_permissions',
@@ -91,7 +94,7 @@ class RolesPermissionsSeeder extends Seeder
                 // All permissions
             ],
             'admin' => [
-                'manage_users', 'view_all_users', 'create_events', 'edit_events',
+                'manage_users', 'view_all_users', 'invite_users', 'bulk_user_operations', 'view_audit_logs', 'create_events', 'edit_events',
                 'delete_events', 'view_all_events', 'manage_event_attendees',
                 'view_donation_ledger', 'export_donations', 'create_posts',
                 'edit_posts', 'publish_posts', 'delete_posts', 'view_posts', 'view_all_posts', 'view_reports',
@@ -99,6 +102,7 @@ class RolesPermissionsSeeder extends Seeder
                 'refresh_exchange_rates', 'configure_exchange_rates',
                 'view_plans', 'manage_plans',
                 'view_reconciliation', 'manage_reconciliation',
+                'manage_permissions', 'manage_roles',
             ],
             'finance' => [
                 'view_donation_ledger', 'export_donations', 'reconcile_payments', 'view_reports',

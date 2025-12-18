@@ -7,9 +7,8 @@ use Illuminate\Http\Request;
 use App\Services\Reconciliation\CsvExporter;
 
 /**
- * @group Admin - Reconciliation
- * Export financial reconciliation data for compliance reporting and account verification.
- * Requires admin authentication and generates CSV files for county-level transactions.
+ * @group Admin - Reconciliation Reports
+ * @groupDescription Dedicated endpoint for exporting detailed financial reconciliation reports matching internal records against gateway statements.
  */
 class ReconciliationController extends Controller
 {
@@ -20,17 +19,20 @@ class ReconciliationController extends Controller
     }
 
     /**
-     * Export reconciliation data as CSV.
+     * Export Reconciliation Data (CSV)
      *
-     * Generates a CSV export of all transactions for a specified period, optionally filtered
-     * by county or transaction status. Used for financial reconciliation, compliance reporting,
-     * and account verification. The CSV includes transaction IDs, references, amounts, and status.
+     * Generates a detailed CSV export of transactions for financial reconciliation.
+     * This report allows finance teams to match internal system records against payment gateway statements (e.g., Pesapal, MPESA).
+     * Includes transaction references, amounts, dates, and current reconciliation status.
      *
+     * @group Admin - Reconciliation Reports
+     * @groupDescription Dedicated endpoint for exporting detailed financial reconciliation reports matching internal records against gateway statements.
      * @authenticated
-     * @queryParam start_date string Optional start date for reconciliation period (ISO 8601). Example: 2025-01-01
-     * @queryParam end_date string Optional end date for reconciliation period (ISO 8601). Example: 2025-12-31
-     * @queryParam county string Optional filter by county name. Example: Nairobi
-     * @queryParam status string Optional filter by transaction status (matched, unmatched_app, unmatched_gateway). Example: unmatched_gateway
+     *
+     * @queryParam start_date string optional Start date for reconciliation period (ISO 8601). Example: 2025-01-01
+     * @queryParam end_date string optional End date for reconciliation period (ISO 8601). Example: 2025-12-31
+     * @queryParam county string optional Filter by county name. Example: Nairobi
+     * @queryParam status string optional Filter by transaction status (matched, unmatched_app, unmatched_gateway). Example: unmatched_gateway
      *
      * @response 200 {
      *   "headers": ["run_id", "transaction_id", "reference", "source", "date", "amount", "status"],
@@ -40,7 +42,10 @@ class ReconciliationController extends Controller
      *   ],
      *   "file": "reconciliation_sample.csv"
      * }
-     * @response 403 {"success": false, "message": "This action is unauthorized"}
+     * @response 403 {
+     *   "success": false,
+     *   "message": "This action is unauthorized"
+     * }
      */
     public function export(Request $request)
     {

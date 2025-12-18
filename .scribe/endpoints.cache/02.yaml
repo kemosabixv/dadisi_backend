@@ -14,8 +14,11 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Allow users to delete their own account'
-      description: ''
+      title: 'Delete own account'
+      description: |-
+        Allows an authenticated user to permanently deactivate their own account.
+        Requires current password for security verification.
+        Logs the user out from all devices immediately.
       authenticated: true
       deprecated: false
     headers:
@@ -30,7 +33,7 @@ endpoints:
       password:
         custom: []
         name: password
-        description: 'Current password confirmation.'
+        description: 'Current password for confirmation.'
         required: true
         example: mypassword123
         type: string
@@ -41,7 +44,7 @@ endpoints:
       reason:
         custom: []
         name: reason
-        description: 'optional Reason for deletion.'
+        description: 'optional Feedback/reason for leaving.'
         required: false
         example: 'No longer need account'
         type: string
@@ -61,6 +64,16 @@ endpoints:
           {
             "success": true,
             "message": "Your account has been deactivated. You have been logged out from all devices."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 400
+        content: |-
+          {
+            "success": false,
+            "message": "Current password is incorrect"
           }
         headers: []
         description: ''
@@ -125,334 +138,43 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - GET
-    uri: api/users
+      - POST
+    uri: api/users/self/profile-picture
     metadata:
       custom: []
       groupName: 'User Management'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'List All Users (Admin Portal)'
+      title: 'Upload Profile Picture'
       description: |-
-        Comprehensive user listing endpoint for administrative user management.
-        Provides paginated results with advanced filtering, search, and role-based access control.
-        Includes soft-deleted users for audit and restoration purposes. Essential for user administration,
-        role assignments, and monitoring user activity across the system.
-
-        Access Requirements: super_admin, admin users only (enforced via UserPolicy)
-        Use Cases: User administration portal, role management interface, user activity monitoring
+        Uploads and updates the user's profile picture.
+        Replaces any existing picture.
       authenticated: true
       deprecated: false
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
+      Content-Type: multipart/form-data
       Accept: application/json
     urlParameters: []
     cleanUrlParameters: []
-    queryParameters:
-      include_deleted:
-        custom: []
-        name: include_deleted
-        description: 'optional Include soft-deleted users in results. Useful for viewing deactivated accounts.'
-        required: false
-        example: true
-        type: boolean
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      search:
-        custom: []
-        name: search
-        description: 'optional Search across username, email, and name fields (first_name, last_name from profile). Case-insensitive partial matching.'
-        required: false
-        example: john
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      role:
-        custom: []
-        name: role
-        description: 'optional Filter users by specific role name. Must match existing role names from roles table.'
-        required: false
-        example: member
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      status:
-        custom: []
-        name: status
-        description: 'optional Filter by account status. Options: "active" (non-deleted users), "deleted" (soft-deleted users only).'
-        required: false
-        example: active
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanQueryParameters:
-      include_deleted: true
-      search: john
-      role: member
-      status: active
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "success": true,
-            "data": {
-              "current_page": 1,
-              "data": [
-                {
-                  "id": 1,
-                  "username": "johndoe",
-                  "email": "john@example.com",
-                  "email_verified_at": "2025-01-01T00:00:00Z",
-                  "roles": [
-                    {"id": 1, "name": "member", "description": "Regular member user"}
-                  ],
-                  "profile": {
-                    "id": 1,
-                    "first_name": "John",
-                    "last_name": "Doe",
-                    "county": {"id": 1, "name": "Nairobi"}
-                  },
-                  "deleted_at": null,
-                  "created_at": "2025-01-01T00:00:00Z"
-                }
-              ],
-              "first_page_url": "http://localhost:8000/api/users?page=1",
-              "from": 1,
-              "last_page": 5,
-              "last_page_url": "http://localhost:8000/api/users?page=5",
-              "next_page_url": "http://localhost:8000/api/users?page=2",
-              "path": "http://localhost:8000/api/users",
-              "per_page": 20,
-              "prev_page_url": null,
-              "to": 20,
-              "total": 100
-            }
-          }
-        headers: []
-        description: ''
-      -
-        custom: []
-        status: 403
-        content: '{"message": "This action is unauthorized."}'
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/users/{id}'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Display the specified user'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The user ID'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "success": true,
-            "data": {
-              "id": 1,
-              "username": "johndoe",
-              "email": "john@example.com",
-              "email_verified_at": "2025-01-01T00:00:00Z",
-              "roles": ["member"],
-              "profile": {
-                "first_name": "John",
-                "last_name": "Doe",
-                "county": {"name": "Nairobi"}
-              },
-              "last_login": "2025-01-01T00:00:00Z",
-              "deleted_at": null
-            }
-          }
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PUT
-    uri: 'api/users/{id}'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Update the specified user'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The user ID'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      username:
+      image:
         custom: []
-        name: username
-        description: 'Update username.'
-        required: false
-        example: newusername
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      email:
-        custom: []
-        name: email
-        description: 'Update email address.'
-        required: false
-        example: newemail@example.com
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      username: newusername
-      email: newemail@example.com
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "success": true,
-            "message": "User updated successfully",
-            "data": {
-              "id": 1,
-              "username": "newusername",
-              "email": "newemail@example.com"
-            }
-          }
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - DELETE
-    uri: 'api/users/{id}'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Soft delete the specified user'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The user ID'
+        name: image
+        description: 'The image file (jpeg, png, jpg, gif, svg). Max 5MB.'
         required: true
-        example: architecto
-        type: string
+        example: null
+        type: file
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
     cleanBodyParameters: []
-    fileParameters: []
+    fileParameters:
+      image: null
     responses:
       -
         custom: []
@@ -460,344 +182,9 @@ endpoints:
         content: |-
           {
             "success": true,
-            "message": "User account has been deactivated"
-          }
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: 'api/users/{id}/restore'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Restore a soft-deleted user'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The user ID to restore'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "success": true,
-            "message": "User account has been restored",
+            "message": "Profile picture updated successfully",
             "data": {
-              "id": 1,
-              "username": "johndoe",
-              "email": "john@example.com"
-            }
-          }
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - DELETE
-    uri: 'api/users/{id}/force'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Force delete a user (permanent deletion)'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The user ID to permanently delete'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "success": true,
-            "message": "User account permanently deleted"
-          }
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/users/{id}/audit'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Get audit log for a specific user'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The user ID'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "success": true,
-            "data": [
-              {
-                "id": 1,
-                "action": "update",
-                "model_type": "User",
-                "old_values": {"username": "oldname"},
-                "new_values": {"username": "newname"},
-                "user_id": 2,
-                "created_at": "2025-01-01T00:00:00Z"
-              }
-            ]
-          }
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: 'api/users/{id}/remove-role'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Remove role from user'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The user ID'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      role:
-        custom: []
-        name: role
-        description: 'Role to remove.'
-        required: true
-        example: admin
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      role: admin
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "success": true,
-            "message": "Role removed successfully",
-            "data": {
-              "id": 1,
-              "username": "johndoe",
-              "roles": ["member"]
-            }
-          }
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: 'api/users/{id}/sync-roles'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Sync user roles (replace all roles)'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The user ID'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      roles:
-        custom: []
-        name: roles
-        description: 'Array of role names.'
-        required: true
-        example:
-          - member
-          - admin
-        type: 'string[]'
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      roles:
-        - member
-        - admin
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "success": true,
-            "message": "User roles updated successfully",
-            "data": {
-              "id": 1,
-              "username": "johndoe",
-              "roles": ["member", "admin"]
+              "profile_picture_url": "http://localhost:8000/storage/profile-pictures/avatar.jpg"
             }
           }
         headers: []
@@ -1200,6 +587,818 @@ endpoints:
               "successful": 3,
               "failed": 0,
               "errors": []
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/users
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List All Users (Admin Portal)'
+      description: |-
+        Comprehensive user listing endpoint for administrative user management.
+        Provides paginated results with advanced filtering, search, and role-based access control.
+        Includes soft-deleted users for audit and restoration purposes. Essential for user administration,
+        role assignments, and monitoring user activity across the system.
+
+        Access Requirements: super_admin, admin users only (enforced via UserPolicy)
+        Use Cases: User administration portal, role management interface, user activity monitoring
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      include_deleted:
+        custom: []
+        name: include_deleted
+        description: 'optional Include soft-deleted users in results. Useful for viewing deactivated accounts.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      search:
+        custom: []
+        name: search
+        description: 'optional Search across username, email, and name fields (first_name, last_name from profile). Case-insensitive partial matching.'
+        required: false
+        example: john
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      role:
+        custom: []
+        name: role
+        description: 'optional Filter users by specific role name. Must match existing role names from roles table.'
+        required: false
+        example: member
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      status:
+        custom: []
+        name: status
+        description: 'optional Filter by account status. Options: "active" (non-deleted users), "deleted" (soft-deleted users only).'
+        required: false
+        example: active
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      include_deleted: true
+      search: john
+      role: member
+      status: active
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "data": {
+              "current_page": 1,
+              "data": [
+                {
+                  "id": 1,
+                  "username": "johndoe",
+                  "email": "john@example.com",
+                  "email_verified_at": "2025-01-01T00:00:00Z",
+                  "roles": [
+                    {"id": 1, "name": "member", "description": "Regular member user"}
+                  ],
+                  "profile": {
+                    "id": 1,
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "county": {"id": 1, "name": "Nairobi"}
+                  },
+                  "deleted_at": null,
+                  "created_at": "2025-01-01T00:00:00Z"
+                }
+              ],
+              "first_page_url": "http://localhost:8000/api/users?page=1",
+              "from": 1,
+              "last_page": 5,
+              "last_page_url": "http://localhost:8000/api/users?page=5",
+              "next_page_url": "http://localhost:8000/api/users?page=2",
+              "path": "http://localhost:8000/api/users",
+              "per_page": 20,
+              "prev_page_url": null,
+              "to": 20,
+              "total": 100
+            }
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "This action is unauthorized."}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/users/{id}'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get user details'
+      description: |-
+        Retrieves full profile information, role assignments, and status for a specific user.
+        This endpoint is restricted to administrators for viewing other users' data.
+        Includes soft-deleted users if they exist.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The unique ID of the user.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "data": {
+              "id": 1,
+              "username": "johndoe",
+              "email": "john@example.com",
+              "email_verified_at": "2025-01-01T00:00:00Z",
+              "roles": [
+                {"id": 2, "name": "member", "guard_name": "web"}
+              ],
+              "profile": {
+                "first_name": "John",
+                "last_name": "Doe",
+                "county": {"name": "Nairobi"}
+              },
+              "last_login_at": "2025-01-01T00:00:00Z",
+              "deleted_at": null
+            }
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+            "success": false,
+            "message": "User not found"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/users/{id}'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update user details'
+      description: |-
+        Modifies core user account information such as username and email.
+        RESTRICTED: Admin or Super Admin access required.
+        Changes are audit logged.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID to update.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      username:
+        custom: []
+        name: username
+        description: 'optional New username (must be unique).'
+        required: false
+        example: newusername
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: 'optional New email address (must be unique).'
+        required: false
+        example: newemail@example.com
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      username: newusername
+      email: newemail@example.com
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "User updated successfully",
+            "data": {
+              "id": 1,
+              "username": "newusername",
+              "email": "newemail@example.com"
+            }
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "The username has already been taken."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/users/{id}'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Deactivate user (Soft Delete)'
+      description: |-
+        Temporarily deactivates a user account by setting a 'deleted_at' timestamp.
+        The user will no longer be able to log in, but their data is preserved until retention period expires.
+        Admin action or user self-deletion (via separate endpoint) triggers this state.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID to deactivate.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "User account has been deactivated"
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: |-
+          {
+            "success": false,
+            "message": "Unauthorized"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/users/{id}/restore'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Restore deactivated user'
+      description: |-
+        Reactivates a previously soft-deleted user account.
+        The user will regain access to their account and previous roles.
+        RESTRICTED: Super Admin or Admin only.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID to restore.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "User account has been restored",
+            "data": {
+              "id": 1,
+              "username": "johndoe",
+              "deleted_at": null
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/users/{id}/force'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Force delete a user (permanent deletion)'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID to permanently delete'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "User account permanently deleted"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/users/{id}/audit'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get audit log for a specific user'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "data": [
+              {
+                "id": 1,
+                "action": "update",
+                "model_type": "User",
+                "old_values": {"username": "oldname"},
+                "new_values": {"username": "newname"},
+                "user_id": 2,
+                "created_at": "2025-01-01T00:00:00Z"
+              }
+            ]
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/users/{id}/assign-role'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Assign role to user'
+      description: |-
+        Grants a specific system role to a user.
+        Roles determine permissions within the application.
+        RESTRICTED: Super Admin access required.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      role:
+        custom: []
+        name: role
+        description: 'The role name to assign. Must be a valid existing role.'
+        required: true
+        example: admin
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      role: admin
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "Role assigned successfully",
+            "data": {
+              "id": 1,
+              "username": "johndoe",
+              "roles": ["member", "admin"]
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/users/{id}/remove-role'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Remove role from user'
+      description: |-
+        Revokes a specific system role from a user.
+        If the user only has one role, removing it may restrict their access significantly.
+        RESTRICTED: Super Admin access required.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      role:
+        custom: []
+        name: role
+        description: 'The role name to remove.'
+        required: true
+        example: admin
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      role: admin
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "Role removed successfully",
+            "data": {
+              "id": 1,
+              "roles": ["member"]
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/users/{id}/sync-roles'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Sync user roles'
+      description: |-
+        Replaces ALL current roles for a user with the provided list.
+        Any roles not in the provided array will be revoked.
+        RESTRICTED: Super Admin access required.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      roles:
+        custom: []
+        name: roles
+        description: 'List of role names to assign.'
+        required: true
+        example:
+          - member
+          - admin
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      roles:
+        - member
+        - admin
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "User roles updated successfully",
+            "data": {
+              "id": 1,
+              "roles": ["member", "admin"]
             }
           }
         headers: []

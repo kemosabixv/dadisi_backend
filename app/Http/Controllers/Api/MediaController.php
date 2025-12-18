@@ -32,15 +32,19 @@ class MediaController extends Controller
     ];
 
     /**
-     * List user's media
+     * List My Media
      *
-     * @group Media Management - User
+     * Retrieves a paginated list of media files uploaded by the authenticated user.
+     * Supports filtering by media type (e.g., images only) and searching by filename.
+     *
+     * @group Media Management
+     * @groupDescription Endpoints for uploading, retrieving, and managing user-generated content (files, images, documents). Enforces storage quotas and file type restrictions.
      * @authenticated
      * @description Retrieve authenticated user's media files (images, audio, video, PDFs, GIFs)
      *
-     * @queryParam type Filter by media type (image, audio, video, pdf, gif). Example: image
-     * @queryParam search Search media by file name. Example: profile
-     * @queryParam per_page Pagination size. Example: 30
+     * @queryParam type string optional Filter by media type (image, audio, video, pdf, gif). Example: image
+     * @queryParam search string optional Search for media by file name. Example: profile_pic
+     * @queryParam per_page integer optional Number of items per page. Default: 30. Example: 15
      *
      * @response 200 {
      *   "success": true,
@@ -95,15 +99,22 @@ class MediaController extends Controller
     }
 
     /**
-     * Upload media file
+     * Upload Media File
      *
-     * @group Media Management - User
+     * Uploads a new media file to the server.
+     * The system automatically validates file types and enforcing size limits:
+     * - Images: 5MB
+     * - Audio: 10MB
+     * - Video: 50MB
+     * - PDF: 30MB
+     * - GIF: 5MB
+     *
+     * @group Media Management
      * @authenticated
-     * @description Upload media file (images, audio, video, PDFs, GIFs). Max sizes: images 5MB, audio 10MB, video 50MB, PDF 30MB, GIF 5MB
      *
-     * @bodyParam file file required The media file to upload
-     * @bodyParam attached_to string Optional attachment context (e.g., "post")
-     * @bodyParam attached_to_id integer Optional attachment ID
+     * @bodyParam file file required The binary file to upload. Must be a supported MIME type.
+     * @bodyParam attached_to string optional Context tag for the file (e.g., 'profile_header', 'post_image'). Example: post
+     * @bodyParam attached_to_id integer optional ID of the related resource. Example: 101
      *
      * @response 201 {
      *   "success": true,
@@ -197,13 +208,15 @@ class MediaController extends Controller
     }
 
     /**
-     * Delete user's media
+     * Delete Media File
      *
-     * @group Media Management - User
+     * Permanently deletes a specific media file from storage and the database.
+     * Users can only delete files they uploaded themselves.
+     *
+     * @group Media Management
      * @authenticated
-     * @description Delete media file (user can only delete their own media)
      *
-     * @urlParam media required The media ID
+     * @urlParam media integer required The ID of the media record to delete. Example: 42
      *
      * @response 200 {
      *   "success": true,
@@ -250,13 +263,16 @@ class MediaController extends Controller
     }
 
     /**
-     * Get media details
+     * Get Media Details
      *
-     * @group Media Management - User
+     * Retrieves the metadata and public URL for a specific media file.
+     * Securely checks ownership before returning details.
+     *
+     * @group Media Management
      * @authenticated
-     * @description Get metadata for a specific media file (user can only view their own)
      *
-     * @urlParam media required The media ID
+     * @urlParam media integer required The unique ID of the media file. Example: 1
+
      *
      * @response 200 {
      *   "success": true,

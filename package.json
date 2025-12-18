@@ -1,5 +1,8 @@
 {
     "$schema": "https://json.schemastore.org/package.json",
+    "name": "dadisi-backend",
+    "version": "1.0.0",
+    "description": "Dadisi Backend - Laravel API",
     "private": true,
     "type": "module",
     "scripts": {

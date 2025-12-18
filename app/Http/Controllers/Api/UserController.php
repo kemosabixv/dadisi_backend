@@ -10,6 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -117,13 +119,16 @@ class UserController extends Controller
     }
 
     /**
-     * Display the specified user
+     * Get user details
+     *
+     * Retrieves full profile information, role assignments, and status for a specific user.
+     * This endpoint is restricted to administrators for viewing other users' data.
+     * Includes soft-deleted users if they exist.
      *
      * @group User Management
      * @authenticated
-     * @description Get detailed information about a specific user (Admin only)
      *
-     * @urlParam id required The user ID
+     * @urlParam id required The unique ID of the user. Example: 1
      *
      * @response 200 {
      *   "success": true,
@@ -132,15 +137,21 @@ class UserController extends Controller
      *     "username": "johndoe",
      *     "email": "john@example.com",
      *     "email_verified_at": "2025-01-01T00:00:00Z",
-     *     "roles": ["member"],
+     *     "roles": [
+     *       {"id": 2, "name": "member", "guard_name": "web"}
+     *     ],
      *     "profile": {
      *       "first_name": "John",
      *       "last_name": "Doe",
      *       "county": {"name": "Nairobi"}
      *     },
-     *     "last_login": "2025-01-01T00:00:00Z",
+     *     "last_login_at": "2025-01-01T00:00:00Z",
      *     "deleted_at": null
      *   }
+     * }
+     * @response 404 {
+     *   "success": false,
+     *   "message": "User not found"
      * }
      */
     public function show(Request $request, string $id): JsonResponse
@@ -158,15 +169,18 @@ class UserController extends Controller
     }
 
     /**
-     * Update the specified user
+     * Update user details
+     *
+     * Modifies core user account information such as username and email.
+     * RESTRICTED: Admin or Super Admin access required.
+     * Changes are audit logged.
      *
      * @group User Management
      * @authenticated
-     * @description Update user information (Admin only)
      *
-     * @urlParam id required The user ID
-     * @bodyParam username string Update username. Example: newusername
-     * @bodyParam email string Update email address. Example: newemail@example.com
+     * @urlParam id required The user ID to update. Example: 1
+     * @bodyParam username string optional New username (must be unique). Example: newusername
+     * @bodyParam email string optional New email address (must be unique). Example: newemail@example.com
      *
      * @response 200 {
      *   "success": true,
@@ -176,6 +190,9 @@ class UserController extends Controller
      *     "username": "newusername",
      *     "email": "newemail@example.com"
      *   }
+     * }
+     * @response 422 {
+     *   "message": "The username has already been taken."
      * }
      */
     public function update(Request $request, string $id): JsonResponse
@@ -212,17 +229,24 @@ class UserController extends Controller
     }
 
     /**
-     * Soft delete the specified user
+     * Deactivate user (Soft Delete)
+     *
+     * Temporarily deactivates a user account by setting a 'deleted_at' timestamp.
+     * The user will no longer be able to log in, but their data is preserved until retention period expires.
+     * Admin action or user self-deletion (via separate endpoint) triggers this state.
      *
      * @group User Management
      * @authenticated
-     * @description Soft delete a user account (Admin or self)
      *
-     * @urlParam id required The user ID
+     * @urlParam id required The user ID to deactivate. Example: 1
      *
      * @response 200 {
      *   "success": true,
      *   "message": "User account has been deactivated"
+     * }
+     * @response 403 {
+     *   "success": false,
+     *   "message": "Unauthorized"
      * }
      */
     public function destroy(Request $request, string $id): JsonResponse
@@ -248,18 +272,80 @@ class UserController extends Controller
     }
 
     /**
-     * Allow users to delete their own account
+     * Upload Profile Picture
+     *
+     * Uploads and updates the user's profile picture.
+     * Replaces any existing picture.
      *
      * @group User Management
      * @authenticated
-     * @description Allow authenticated users to delete their own account
      *
-     * @bodyParam password string required Current password confirmation. Example: mypassword123
-     * @bodyParam reason string optional Reason for deletion. Example: No longer need account
+     * @bodyParam image file required The image file (jpeg, png, jpg, gif, svg). Max 5MB.
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Profile picture updated successfully",
+     *   "data": {
+     *     "profile_picture_url": "http://localhost:8000/storage/profile-pictures/avatar.jpg"
+     *   }
+     * }
+     */
+    public function uploadProfilePicture(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:5120', // 5MB
+        ]);
+
+        $file = $request->file('image');
+        $filename = 'profile-' . $user->id . '-' . time() . '.' . $file->getClientOriginalExtension();
+
+        // Delete old picture if exists
+        if ($user->profile_picture_path && Storage::disk('public')->exists($user->profile_picture_path)) {
+            Storage::disk('public')->delete($user->profile_picture_path);
+        }
+
+        // Store new file
+        $path = $file->storeAs('profile-pictures', $filename, 'public');
+
+        // Update user record
+        $oldValues = $user->only(['profile_picture_path']);
+        $user->update(['profile_picture_path' => $path]);
+
+        // Audit log
+        $this->logAuditAction('update_profile_picture', User::class, $user->id, $oldValues, ['profile_picture_path' => $path], 'User uploaded new profile picture');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile picture updated successfully',
+            'data' => [
+                'profile_picture_url' => $user->profile_picture_url,
+                'user' => $user->load(['memberProfile', 'roles']),
+            ],
+        ]);
+    }
+
+    /**
+     * Delete own account
+     *
+     * Allows an authenticated user to permanently deactivate their own account.
+     * Requires current password for security verification.
+     * Logs the user out from all devices immediately.
+     *
+     * @group User Management
+     * @authenticated
+     *
+     * @bodyParam password string required Current password for confirmation. Example: mypassword123
+     * @bodyParam reason string optional Feedback/reason for leaving. Example: No longer need account
      *
      * @response 200 {
      *   "success": true,
      *   "message": "Your account has been deactivated. You have been logged out from all devices."
+     * }
+     * @response 400 {
+     *   "success": false,
+     *   "message": "Current password is incorrect"
      * }
      */
     public function deleteSelf(Request $request): JsonResponse
@@ -298,13 +384,16 @@ class UserController extends Controller
     }
 
     /**
-     * Restore a soft-deleted user
+     * Restore deactivated user
+     *
+     * Reactivates a previously soft-deleted user account.
+     * The user will regain access to their account and previous roles.
+     * RESTRICTED: Super Admin or Admin only.
      *
      * @group User Management
      * @authenticated
-     * @description Restore a soft-deleted user account (Super Admin/Admin only)
      *
-     * @urlParam id required The user ID to restore
+     * @urlParam id required The user ID to restore. Example: 1
      *
      * @response 200 {
      *   "success": true,
@@ -312,7 +401,7 @@ class UserController extends Controller
      *   "data": {
      *     "id": 1,
      *     "username": "johndoe",
-     *     "email": "john@example.com"
+     *     "deleted_at": null
      *   }
      * }
      */
@@ -462,12 +551,15 @@ class UserController extends Controller
     /**
      * Assign role to user
      *
-     * @group RBAC Management
-     * @authenticated
-     * @description Assign a role to a user (Super Admin only)
+     * Grants a specific system role to a user.
+     * Roles determine permissions within the application.
+     * RESTRICTED: Super Admin access required.
      *
-     * @urlParam id required The user ID
-     * @bodyParam role string required Role to assign. Example: admin
+     * @group User Management
+     * @authenticated
+     *
+     * @urlParam id required The user ID. Example: 1
+     * @bodyParam role string required The role name to assign. Must be a valid existing role. Example: admin
      *
      * @response 200 {
      *   "success": true,
@@ -510,19 +602,21 @@ class UserController extends Controller
     /**
      * Remove role from user
      *
+     * Revokes a specific system role from a user.
+     * If the user only has one role, removing it may restrict their access significantly.
+     * RESTRICTED: Super Admin access required.
+     *
      * @group User Management
      * @authenticated
-     * @description Remove a role from a user (Super Admin only)
      *
-     * @urlParam id required The user ID
-     * @bodyParam role string required Role to remove. Example: admin
+     * @urlParam id required The user ID. Example: 1
+     * @bodyParam role string required The role name to remove. Example: admin
      *
      * @response 200 {
      *   "success": true,
      *   "message": "Role removed successfully",
      *   "data": {
      *     "id": 1,
-     *     "username": "johndoe",
      *     "roles": ["member"]
      *   }
      * }
@@ -556,21 +650,23 @@ class UserController extends Controller
     }
 
     /**
-     * Sync user roles (replace all roles)
+     * Sync user roles
+     *
+     * Replaces ALL current roles for a user with the provided list.
+     * Any roles not in the provided array will be revoked.
+     * RESTRICTED: Super Admin access required.
      *
      * @group User Management
      * @authenticated
-     * @description Replace all user roles with new set (Super Admin only)
      *
-     * @urlParam id required The user ID
-     * @bodyParam roles array required Array of role names. Example: ["member", "admin"]
+     * @urlParam id required The user ID. Example: 1
+     * @bodyParam roles array required List of role names to assign. Example: ["member", "admin"]
      *
      * @response 200 {
      *   "success": true,
      *   "message": "User roles updated successfully",
      *   "data": {
      *     "id": 1,
-     *     "username": "johndoe",
      *     "roles": ["member", "admin"]
      *   }
      * }
@@ -915,6 +1011,124 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'message' => "{$successful} users updated successfully",
+            'data' => [
+                'successful' => $successful,
+                'failed' => $failed,
+                'errors' => $errors,
+            ],
+        ]);
+    }
+
+    /**
+     * Get all audit logs (Admin only)
+     */
+    public function bulkAuditLogs(Request $request): JsonResponse
+    {
+        $this->authorize('viewAuditLogs', User::class);
+
+        $query = AuditLog::with('user:id,username,email');
+
+        if ($request->has('action')) {
+            $query->where('action', $request->action);
+        }
+
+        if ($request->has('model_type')) {
+            $query->where('model_type', 'like', '%' . $request->model_type . '%');
+        }
+
+        $logs = $query->latest()->paginate(50);
+
+        return response()->json([
+            'success' => true,
+            'data' => $logs,
+        ]);
+    }
+
+    /**
+     * Invite a new user
+     */
+    public function invite(Request $request): JsonResponse
+    {
+        $this->authorize('create', User::class);
+
+        $validated = $request->validate([
+            'email' => 'required|email|unique:users,email',
+            'username' => 'required|string|max:255|unique:users,username',
+            'roles' => 'sometimes|array',
+            'roles.*' => 'string|exists:roles,name',
+        ]);
+
+        // Placeholder: In a real app, send invitation email
+        $user = User::create([
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => Hash::make(Str::random(12)),
+        ]);
+
+        if (isset($validated['roles']) && !empty($validated['roles'])) {
+            $user->syncRoles($validated['roles']);
+        } else {
+            $user->assignRole('member');
+        }
+
+        $this->logAuditAction('invite', User::class, $user->id, null, $validated, 'User invited');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User invited successfully',
+            'data' => $user->load('roles'),
+        ]);
+    }
+
+    /**
+     * Bulk invite users
+     */
+    public function bulkInvite(Request $request): JsonResponse
+    {
+        $this->authorize('create', User::class);
+
+        $validated = $request->validate([
+            'users' => 'required|array|min:1|max:50',
+            'users.*.email' => 'required|email',
+            'users.*.username' => 'required|string',
+            'users.*.roles' => 'sometimes|array',
+            'users.*.roles.*' => 'string|exists:roles,name',
+        ]);
+
+        $successful = 0;
+        $failed = 0;
+        $errors = [];
+
+        foreach ($validated['users'] as $inviteData) {
+            try {
+                // Check if user already exists
+                if (User::where('email', $inviteData['email'])->exists()) {
+                    throw new \Exception("User with email {$inviteData['email']} already exists");
+                }
+
+                $user = User::create([
+                    'username' => $inviteData['username'],
+                    'email' => $inviteData['email'],
+                    'password' => Hash::make(Str::random(12)),
+                ]);
+
+                if (isset($inviteData['roles']) && !empty($inviteData['roles'])) {
+                    $user->syncRoles($inviteData['roles']);
+                } else {
+                    $user->assignRole('member');
+                }
+
+                $this->logAuditAction('bulk_invite', User::class, $user->id, null, $inviteData, 'User invited via bulk operation');
+                $successful++;
+            } catch (\Exception $e) {
+                $failed++;
+                $errors[] = "Invite for {$inviteData['email']} failed: " . $e->getMessage();
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Successfully invited {$successful} users",
             'data' => [
                 'successful' => $successful,
                 'failed' => $failed,

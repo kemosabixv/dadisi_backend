@@ -20,4 +20,22 @@ class UpdateUserPaymentMethodRequest extends FormRequest
             'is_primary' => 'nullable|boolean',
         ];
     }
+
+    public function bodyParameters()
+    {
+        return [
+            'label' => [
+                'description' => 'A user-friendly label for this payment method.',
+                'example' => 'Office Expense Card',
+            ],
+            'is_active' => [
+                'description' => 'Enable or disable this payment method.',
+                'example' => true,
+            ],
+            'is_primary' => [
+                'description' => 'Set this as the default payment method.',
+                'example' => true,
+            ],
+        ];
+    }
 }

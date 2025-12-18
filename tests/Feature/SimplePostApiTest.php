@@ -24,7 +24,7 @@ class SimplePostApiTest extends TestCase
      * @test
      * Public posts endpoint returns 200
      */
-    public function test_public_posts_endpoint_returns_success()
+    public function test_public_posts_endpoint_returns_success(): void
     {
         $response = $this->getJson('/api/blog/posts');
 
@@ -35,7 +35,7 @@ class SimplePostApiTest extends TestCase
      * @test
      * Can create a published post and retrieve it
      */
-    public function test_can_retrieve_published_posts()
+    public function test_can_retrieve_published_posts(): void
     {
         $user = User::factory()->create();
         $county = County::factory()->create();
@@ -63,7 +63,7 @@ class SimplePostApiTest extends TestCase
      * @test
      * Published posts are returned in list
      */
-    public function test_published_posts_appear_in_list()
+    public function test_published_posts_appear_in_list(): void
     {
         $user = User::factory()->create();
         $county = County::factory()->create();
@@ -94,7 +94,7 @@ class SimplePostApiTest extends TestCase
      * @test
      * Can filter posts by search
      */
-    public function test_search_filters_posts()
+    public function test_search_filters_posts(): void
     {
         $user = User::factory()->create();
         $county = County::factory()->create();
@@ -127,7 +127,7 @@ class SimplePostApiTest extends TestCase
      * @test
      * Posts are paginated correctly
      */
-    public function test_posts_pagination()
+    public function test_posts_pagination(): void
     {
         $user = User::factory()->create();
         $county = County::factory()->create();
@@ -150,7 +150,7 @@ class SimplePostApiTest extends TestCase
      * @test
      * Can retrieve single post
      */
-    public function test_can_retrieve_single_post()
+    public function test_can_retrieve_single_post(): void
     {
         $user = User::factory()->create();
         $county = County::factory()->create();
@@ -173,7 +173,7 @@ class SimplePostApiTest extends TestCase
      * @test
      * Filter posts by county
      */
-    public function test_filter_posts_by_county()
+    public function test_filter_posts_by_county(): void
     {
         $user = User::factory()->create();
         $county1 = County::factory()->create(['name' => 'Nairobi']);

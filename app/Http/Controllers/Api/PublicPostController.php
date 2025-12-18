@@ -13,17 +13,21 @@ use Illuminate\Support\Facades\Auth;
 class PublicPostController extends Controller
 {
     /**
-     * List published posts
+     * List Published Posts
      *
-     * @group Blog Management - Public
-     * @description Retrieve all published blog posts with filtering and pagination
+     * Retrieves a paginated list of all publicly available blog posts.
+     * Supports extensive filtering options to build category pages, tag archives, or search results.
      *
-     * @queryParam category_id Filter by category ID. Example: 1
-     * @queryParam tag_id Filter by tag ID. Example: 2
-     * @queryParam county_id Filter by county ID. Example: 3
-     * @queryParam search Search posts by title or content. Example: tutorial
-     * @queryParam sort Sort by field (latest, oldest, views). Example: latest
-     * @queryParam per_page Pagination size. Example: 20
+     * @group Blog Content (Public)
+     * @groupDescription Publicly accessible endpoints for retrieving, searching, and reading blog content. No authentication is required for reading.
+     * @unauthenticated
+     *
+     * @queryParam category_id integer optional Filter by Category ID. Example: 5
+     * @queryParam tag_id integer optional Filter by Tag ID. Example: 12
+     * @queryParam county_id integer optional Filter by specific County context. Example: 47
+     * @queryParam search string optional Keyword search against title and excerpt. Example: "farm management"
+     * @queryParam sort string optional Sort order: `latest` (default), `oldest`, or `views`. Example: views
+     * @queryParam per_page integer optional Number of posts per page (default 20). Example: 10
      *
      * @response 200 {
      *   "success": true,
@@ -47,8 +51,7 @@ class PublicPostController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Post::published()
-            ->with(['author:id,name,email', 'categories:id,name,slug', 'tags:id,name,slug', 'county:id,name'])
-            ->select('id', 'title', 'slug', 'excerpt', 'user_id', 'county_id', 'is_featured', 'views_count', 'published_at', 'created_at');
+            ->with(['author:id,username,email', 'categories', 'tags', 'county:id,name']);
 
         // Filtering
         if ($request->has('category_id')) {
@@ -77,25 +80,25 @@ class PublicPostController extends Controller
         };
 
         $posts = $query->paginate($request->per_page ?? 20);
-
-        return response()->json([
+        $response = array_merge($posts->toArray(), [
             'success' => true,
-            'data' => $posts->items(),
-            'pagination' => [
-                'total' => $posts->total(),
-                'per_page' => $posts->perPage(),
-                'current_page' => $posts->currentPage(),
-            ],
         ]);
+
+        return response()->json($response);
     }
 
     /**
-     * View a published post
+     * View Single Post
      *
-     * @group Blog Management - Public
-     * @description Retrieve a single published post by slug or ID. Increments view count.
+     * Retrieves the full content of a specific blog post.
+     * This endpoint automatically increments the "views count" for the post.
+     * It also returns a list of related posts to encourage continued reading.
      *
-     * @urlParam post required Post slug or ID
+     * @group Blog Content (Public)
+     * @unauthenticated
+     *
+     * @urlParam post string required The ID or Slug of the post to retrieve. Example: getting-started-with-laravel
+
      *
      * @response 200 {
      *   "success": true,
@@ -125,10 +128,10 @@ class PublicPostController extends Controller
         $post = Post::published()
             ->where(fn($q) => $q->where('slug', $post)->orWhere('id', $post))
             ->with([
-                'author:id,name,email',
-                'categories:id,name,slug',
-                'tags:id,name',
-                'media:id,file_name,file_path,mime_type',
+                'author:id,username,email',
+                'categories',
+                'tags',
+                'media',
                 'county:id,name',
             ])
             ->first();
@@ -147,9 +150,8 @@ class PublicPostController extends Controller
         $relatedPosts = Post::published()
             ->whereHas('categories', fn($q) => $q->whereIn('category_id', $post->categories->pluck('id')))
             ->where('id', '!=', $post->id)
-            ->with('author:id,name')
+            ->with('author:id,username')
             ->limit(3)
-            ->select('id', 'title', 'slug', 'excerpt', 'user_id', 'published_at')
             ->get();
 
         return response()->json([
@@ -159,15 +161,18 @@ class PublicPostController extends Controller
     }
 
     /**
-     * User's own posts (draft + published)
+     * List My Posts (Author)
      *
-     * @group Blog Management - User
+     * Retrieves all posts authored by the currently authenticated user.
+     * This includes 'published' posts visible to everyone and 'draft' posts visible only to the author.
+     *
+     * @group Blog Content (Authoring)
+     * @groupDescription Endpoints for authenticated authors to manage their own content (creating, updating, listing own posts).
      * @authenticated
-     * @description Retrieve authenticated user's posts (both draft and published)
      *
-     * @queryParam status Filter by status (draft, published). Example: draft
-     * @queryParam search Search user's posts. Example: tutorial
-     * @queryParam per_page Pagination size. Example: 20
+     * @queryParam status string optional Filter by status (`draft` or `published`). Example: draft
+     * @queryParam search string optional Search within your own posts. Example: my first draft
+     * @queryParam per_page integer optional Pagination limit. Example: 20
      *
      * @response 200 {
      *   "success": true,
@@ -226,20 +231,22 @@ class PublicPostController extends Controller
     }
 
     /**
-     * Update user's own post
+     * Update My Post
      *
-     * @group Blog Management - User
+     * Updates an existing post belonging to the authenticated user.
+     * Authors can modify content, switch status (draft/published), and manage category or tag associations.
+     *
+     * @group Blog Content (Authoring)
      * @authenticated
-     * @description Update authenticated user's post (draft or published)
      *
-     * @urlParam post required Post ID
-     * @bodyParam title string Post title
-     * @bodyParam slug string Post slug
-     * @bodyParam excerpt string Short excerpt
-     * @bodyParam content string Full HTML content (TinyMCE)
-     * @bodyParam status string Post status (draft, published)
-     * @bodyParam category_ids array Category IDs
-     * @bodyParam tag_ids array Tag IDs
+     * @urlParam post integer required The ID of the post to update. Example: 1
+     * @bodyParam title string optional Updated title. Example: Advanced Techniques
+     * @bodyParam slug string optional SEO-friendly URL slug. Must be unique. Example: advanced-techniques
+     * @bodyParam excerpt string optional Short summary for listing pages. Example: A deep dive into...
+     * @bodyParam content string optional The full HTML body of the post.
+     * @bodyParam status string optional Publication status: `draft` or `published`. Example: published
+     * @bodyParam category_ids array optional List of Category IDs to attach. Example: [1, 3]
+     * @bodyParam tag_ids array optional List of Tag IDs to attach. Example: [2, 5]
      *
      * @response 200 {
      *   "success": true,
@@ -285,13 +292,15 @@ class PublicPostController extends Controller
     }
 
     /**
-     * Delete user's own post
+     * Delete My Post
      *
-     * @group Blog Management - User
+     * Soft-deletes a post owned by the authenticated user.
+     * The post will no longer be visible in public lists.
+     *
+     * @group Blog Content (Authoring)
      * @authenticated
-     * @description Delete authenticated user's post (soft delete)
      *
-     * @urlParam post required Post ID
+     * @urlParam post integer required The ID of the post to delete. Example: 1
      *
      * @response 200 {
      *   "success": true,

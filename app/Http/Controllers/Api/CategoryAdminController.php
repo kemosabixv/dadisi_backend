@@ -17,13 +17,16 @@ class CategoryAdminController extends Controller
     }
 
     /**
-     * Show form data for creating a new category
+     * Get Category Creation Metadata
      *
-     * @group Blog Management - Admin
+     * Retrieves any necessary metadata or configuration required before creating a new category.
+     * (Currently returns a readiness message, but extensible for future validation rules).
+     *
+     * @group Blog Admin - Categories
+     * @groupDescription Administrative endpoints for managing blog categories (taxonomy). Categories organize posts into broader topics.
      * @authenticated
-     * @description Get form metadata needed to create a category
      *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "data": {"message": "Ready to create new category"}
      * }
@@ -39,14 +42,16 @@ class CategoryAdminController extends Controller
     }
 
     /**
-     * Display all categories
+     * List Categories (Admin)
      *
-     * @group Blog Management - Admin
+     * Retrieves a paginated list of all blog categories.
+     * Supports searching by name or description.
+     *
+     * @group Blog Admin - Categories
      * @authenticated
-     * @description List all blog post categories (public accessible)
      *
-     * @queryParam search Search categories. Example: news
-     * @queryParam per_page Pagination size. Example: 20
+     * @queryParam search string optional Keyword search for category name or description. Example: news
+     * @queryParam per_page integer optional Number of items per page. Example: 20
      *
      * @response 200 {
      *   "success": true,
@@ -66,28 +71,25 @@ class CategoryAdminController extends Controller
         }
 
         $categories = $query->latest()->paginate($request->per_page ?? 20);
-
-        return response()->json([
+        $response = array_merge($categories->toArray(), [
             'success' => true,
-            'data' => $categories->items(),
-            'pagination' => [
-                'total' => $categories->total(),
-                'per_page' => $categories->perPage(),
-                'current_page' => $categories->currentPage(),
-            ],
         ]);
+
+        return response()->json($response);
     }
 
     /**
-     * Create a new category
+     * Create New Category
      *
-     * @group Blog Management - Admin
+     * Registers a new blog category in the system.
+     * The slug is automatically generated from the name if not provided.
+     *
+     * @group Blog Admin - Categories
      * @authenticated
-     * @description Create new blog category (editors/admins/premium members)
      *
-     * @bodyParam name string required Category name. Example: Technology
-     * @bodyParam slug string Category slug (auto-generated if omitted). Example: technology
-     * @bodyParam description string Category description. Example: Technology news and updates
+     * @bodyParam name string required Unique name for the category. Example: Technology
+     * @bodyParam slug string optional Unique URL-friendly slug. Auto-generated if empty. Example: technology
+     * @bodyParam description string optional Short description of the category topic. Example: Technology news and updates
      *
      * @response 201 {
      *   "success": true,
@@ -121,13 +123,15 @@ class CategoryAdminController extends Controller
     }
 
     /**
-     * Display a specific category
+     * Get Category Details
      *
-     * @group Blog Management - Admin
+     * Retrieves detailed information about a specific category.
+     * (Note: Post counts are computed fields available in this view).
+     *
+     * @group Blog Admin - Categories
      * @authenticated
-     * @description Get category details with post count
      *
-     * @urlParam category required The category ID
+     * @urlParam category integer required The category ID. Example: 1
      *
      * @response 200 {
      *   "success": true,
@@ -143,15 +147,16 @@ class CategoryAdminController extends Controller
     }
 
     /**
-     * Show edit form data for a category
+     * Get Category Edit Metadata
      *
-     * @group Blog Management - Admin
+     * Retrieves the category data formatted for the "Edit Category" form.
+     *
+     * @group Blog Admin - Categories
      * @authenticated
-     * @description Get category data for editing
      *
-     * @urlParam category integer required The category ID
+     * @urlParam category integer required The category ID. Example: 1
      *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "data": {
      *     "category": {"id": 1, "name": "Technology", "slug": "technology"}
@@ -169,16 +174,18 @@ class CategoryAdminController extends Controller
     }
 
     /**
-     * Update a category
+     * Update Category
      *
-     * @group Blog Management - Admin
+     * Modifies the details of an existing category.
+     * All fields are optional to allow for partial updates.
+     *
+     * @group Blog Admin - Categories
      * @authenticated
-     * @description Update category (creator or admin only)
      *
-     * @urlParam category required The category ID
-     * @bodyParam name string Category name. Example: Updated Category
-     * @bodyParam slug string Category slug. Example: updated-category
-     * @bodyParam description string Category description. Example: Updated description
+     * @urlParam category integer required The category ID. Example: 1
+     * @bodyParam name string optional Update name (must be unique). Example: Updated Category
+     * @bodyParam slug string optional Update slug (must be unique). Example: updated-category
+     * @bodyParam description string optional Update description. Example: Updated description
      *
      * @response 200 {
      *   "success": true,
@@ -207,13 +214,14 @@ class CategoryAdminController extends Controller
     }
 
     /**
-     * Delete a category
+     * Delete Category
      *
-     * @group Blog Management - Admin
+     * Permanently removes a category from the system.
+     *
+     * @group Blog Admin - Categories
      * @authenticated
-     * @description Delete category (creator or admin only)
      *
-     * @urlParam category required The category ID
+     * @urlParam category integer required The category ID. Example: 1
      *
      * @response 200 {
      *   "success": true,

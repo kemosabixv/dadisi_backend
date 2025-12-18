@@ -37,6 +37,12 @@ class Post extends Model
         'deleted_at' => 'datetime',
     ];
 
+    protected $appends = [
+        'featured_image',
+        'content',
+        'is_published',
+    ];
+
     protected $attributes = [
         'status' => 'draft',
         'is_featured' => false,
@@ -56,15 +62,16 @@ class Post extends Model
      */
     public function setAttribute($key, $value)
     {
-        if ($key === 'author_id' && !array_key_exists('author_id', $this->attributes)) {
+        // Map author_id to user_id for factory/test compatibility
+        if ($key === 'author_id') {
             $key = 'user_id';
         }
 
         parent::setAttribute($key, $value);
 
-        // Auto-generate slug from title when title is set
-        if ($key === 'title' && !empty($value)) {
-            parent::setAttribute('slug', \Illuminate\Support\Str::slug($value));
+        // Auto-generate slug from title when title is set and slug is empty
+        if ($key === 'title' && !empty($value) && empty($this->getAttribute('slug'))) {
+            $this->attributes['slug'] = \Illuminate\Support\Str::slug($value);
         }
 
         return $this;
@@ -183,6 +190,22 @@ class Post extends Model
     public function getFeaturedImageAttribute(): ?string
     {
         return $this->hero_image_path;
+    }
+
+    /**
+     * Accessor: content (alias for body)
+     */
+    public function getContentAttribute(): string
+    {
+        return $this->body;
+    }
+
+    /**
+     * Accessor: is_published
+     */
+    public function getIsPublishedAttribute(): bool
+    {
+        return $this->status === 'published';
     }
 
     /**

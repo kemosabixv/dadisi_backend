@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Admin\ReconciliationController;
 
 Route::prefix('auth')->group(function () {
@@ -11,6 +12,7 @@ Route::prefix('auth')->group(function () {
 	Route::post('login', [AuthController::class, 'login'])->name('auth.login');
 	Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
 	Route::get('user', [AuthController::class, 'getAuthenticatedUser'])->middleware('auth:sanctum')->name('auth.user');
+    Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum')->name('auth.me');
 
 	Route::post('/password/email', [AuthController::class, 'sendPasswordResetLinkEmail'])->middleware('throttle:5,1')->name('password.email');
 	Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('password.reset');
@@ -34,19 +36,33 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('member-profiles/{id}', [MemberProfileController::class, 'show']);
     Route::put('member-profiles/{id}', [MemberProfileController::class, 'update']);
     Route::delete('member-profiles/{id}', [MemberProfileController::class, 'destroy']);
+    Route::post('member-profiles/profile-picture', [MemberProfileController::class, 'uploadProfilePicture']);
     // Custom route for getting counties
     Route::get('counties', [MemberProfileController::class, 'getCounties'])->name('counties.index');
 });
 
 // User Management routes (authenticated)
 use App\Http\Controllers\Api\UserController;
-
+// Self-service user endpoints (authenticated)
 Route::middleware('auth:sanctum')->group(function () {
     // Self-service operations (must come before parameterized routes)
     Route::delete('users/self', [UserController::class, 'deleteSelf']);
     Route::get('users/self/export', [UserController::class, 'exportData']);
+    Route::post('users/self/profile-picture', [UserController::class, 'uploadProfilePicture']);
+});
 
-    // Standard CRUD operations
+// Admin-protected user management and RBAC operations
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    // Bulk operations (Super Admin only) - MUST come before parameterized routes
+    Route::post('users/bulk/assign-role', [UserController::class, 'bulkAssignRole']);
+    Route::post('users/bulk/remove-role', [UserController::class, 'bulkRemoveRole']);
+    Route::post('users/bulk/delete', [UserController::class, 'bulkDelete']);
+    Route::post('users/bulk/restore', [UserController::class, 'bulkRestore']);
+    Route::post('users/bulk/update', [UserController::class, 'bulkUpdate']);
+    Route::post('users/invite', [UserController::class, 'invite']);
+    Route::post('users/bulk-invite', [UserController::class, 'bulkInvite']);
+
+    // Standard CRUD operations (admin-managed)
     Route::get('users', [UserController::class, 'index']);
     Route::get('users/{id}', [UserController::class, 'show']);
     Route::put('users/{id}', [UserController::class, 'update']);
@@ -61,26 +77,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('users/{id}/assign-role', [UserController::class, 'assignRole']);
     Route::post('users/{id}/remove-role', [UserController::class, 'removeRole']);
     Route::post('users/{id}/sync-roles', [UserController::class, 'syncRoles']);
-
-    // Bulk operations (Super Admin only)
-    Route::post('users/bulk/assign-role', [UserController::class, 'bulkAssignRole']);
-    Route::post('users/bulk/remove-role', [UserController::class, 'bulkRemoveRole']);
-    Route::post('users/bulk/delete', [UserController::class, 'bulkDelete']);
-    Route::post('users/bulk/restore', [UserController::class, 'bulkRestore']);
-    Route::post('users/bulk/update', [UserController::class, 'bulkUpdate']);
 });
 
 // Data Retention Management routes (Super Admin only)
 use App\Http\Controllers\Api\UserDataRetentionController;
 
 Route::middleware('auth:sanctum')->group(function () {
+    // Specific routes before parameterized routes
+    Route::get('retention-settings-summary', [UserDataRetentionController::class, 'summary']);
+    Route::post('retention-settings/update-days', [UserDataRetentionController::class, 'updateRetentionDays']);
+
+    // Parameterized routes
     Route::get('retention-settings', [UserDataRetentionController::class, 'index']);
     Route::get('retention-settings/{retention}', [UserDataRetentionController::class, 'show']);
     Route::put('retention-settings/{retention}', [UserDataRetentionController::class, 'update']);
-    Route::get('retention-settings-summary', [UserDataRetentionController::class, 'summary']);
-
-    // Update retention days for specific data types
-    Route::post('retention-settings/update-days', [UserDataRetentionController::class, 'updateRetentionDays']);
 
     // Scheduler management
     Route::get('schedulers', [UserDataRetentionController::class, 'getSchedulers']);
@@ -93,22 +103,28 @@ use App\Http\Controllers\Api\AdminMenuController;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-// Route model bindings: allow lookup by name for permissions and roles used in tests
+// Route model bindings: allow lookup by name or ID for permissions and roles
 Route::bind('permission', function ($value) {
+    if (is_numeric($value)) {
+        return Permission::where('id', $value)->firstOrFail();
+    }
     return Permission::where('name', $value)->firstOrFail();
 });
 
 Route::bind('role', function ($value) {
+    if (is_numeric($value)) {
+        return Role::where('id', $value)->firstOrFail();
+    }
     return Role::where('name', $value)->firstOrFail();
 });
 
-// Admin Menu routes (returns only authorized menu items for current user)
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('admin/menu', [AdminMenuController::class, 'index'])->name('admin.menu');
+// Admin Menu route: restricted to admin users only to avoid discovery of admin surface
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    Route::get('menu', [AdminMenuController::class, 'index'])->name('admin.menu');
 });
 
 // RBAC Management routes (Super Admin only)
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     // Permission Management
     Route::get('permissions', [PermissionController::class, 'index']);
     Route::post('permissions', [PermissionController::class, 'store']);
@@ -126,15 +142,22 @@ Route::middleware('auth:sanctum')->group(function () {
     // Permission Assignment to Roles
     Route::post('roles/{role}/permissions', [RoleController::class, 'assignPermissions']);
     Route::delete('roles/{role}/permissions', [RoleController::class, 'removePermissions']);
+
+    // Global Audit Logs
+    Route::get('audit-logs', [UserController::class, 'bulkAuditLogs']);
 });
 
-// Plan Management routes (Super Admin only)
+// Plan Management routes
 use App\Http\Controllers\Api\PlanController;
 
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('plans', [PlanController::class, 'index'])->name('plans.index');
+// Public: list and view active subscription plans (guest-facing)
+Route::get('plans', [PlanController::class, 'index'])->name('plans.index');
+Route::get('plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
+Route::get('exchange-rates/latest', [AdminController::class, 'getExchangeRate'])->name('exchange-rates.latest');
+
+// Admin-only plan management (create/update/delete)
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('plans', [PlanController::class, 'store'])->name('plans.store');
-    Route::get('plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
     Route::put('plans/{plan}', [PlanController::class, 'update'])->name('plans.update');
     Route::delete('plans/{plan}', [PlanController::class, 'destroy'])->name('plans.destroy');
 });
@@ -152,7 +175,7 @@ use App\Http\Controllers\Api\PostAdminController;
 use App\Http\Controllers\Api\CategoryAdminController;
 use App\Http\Controllers\Api\TagAdminController;
 
-Route::prefix('admin/blog')->middleware('auth:sanctum')->group(function () {
+Route::prefix('admin/blog')->middleware(['auth:sanctum', 'admin'])->group(function () {
     // Posts management - explicit routes for full control
     Route::get('posts', [PostAdminController::class, 'index'])->name('admin.blog.posts.index');
     Route::get('posts/create', [PostAdminController::class, 'create'])->name('admin.blog.posts.create');
@@ -277,10 +300,9 @@ Route::prefix('payments')->group(function () {
 });
 
 // Admin Exchange Rate Management routes (Super Admin only)
-use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\Admin\BillingController;
 
-Route::prefix('admin')->middleware('auth:sanctum')->group(function () {  // Policy handles super_admin checks
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {  // Policy handles super_admin checks
     Route::get('exchange-rates', [AdminController::class, 'getExchangeRate']);
     Route::get('exchange-rates/info', [AdminController::class, 'getExchangeRateInfo']);
     Route::post('exchange-rates/refresh', [AdminController::class, 'refreshExchangeRate']);
@@ -319,6 +341,10 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {  // Poli
         Route::get('export/event-sales-summary', [BillingController::class, 'exportEventSalesSummary'])->name('admin.billing.export-event-sales-summary');
         Route::get('export/financial-reconciliation', [BillingController::class, 'exportFinancialReconciliation'])->name('admin.billing.export-financial-reconciliation');
     });
+
+    // System Settings
+    Route::get('system-settings', [\App\Http\Controllers\Api\Admin\SystemSettingController::class, 'index'])->name('admin.system-settings.index');
+    Route::put('system-settings', [\App\Http\Controllers\Api\Admin\SystemSettingController::class, 'update'])->name('admin.system-settings.update');
 });
 
 // Additional API routes can be added here

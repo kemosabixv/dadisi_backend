@@ -13,7 +13,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // middleware registered via app/Http/Kernel
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+        ]);
+        
+        // Configure API authentication to return JSON instead of redirecting
+        $middleware->redirectGuestsTo(function ($request) {
+            // For API routes, return null to prevent redirect and let Sanctum handle it
+            if ($request->is('api/*')) {
+                return null;
+            }
+            // For web routes, redirect to login (if we had one)
+            return route('login');
+        });
     })
     ->withSchedule(function (Schedule $schedule): void {
         // Automatic Exchange Rate Refresh - Daily at midnight UTC

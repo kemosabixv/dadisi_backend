@@ -37,7 +37,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post belongs to author (user)
      */
-    public function test_post_belongs_to_author()
+    public function test_post_belongs_to_author(): void
     {
         $post = Post::factory()->create([
             'user_id' => $this->author->id,
@@ -50,7 +50,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post belongs to county
      */
-    public function test_post_belongs_to_county()
+    public function test_post_belongs_to_county(): void
     {
         $post = Post::factory()->create([
             'county_id' => $this->county->id,
@@ -63,7 +63,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post has many categories (belongsToMany)
      */
-    public function test_post_has_many_categories()
+    public function test_post_has_many_categories(): void
     {
         $post = Post::factory()->create();
 
@@ -81,7 +81,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post has many tags (belongsToMany)
      */
-    public function test_post_has_many_tags()
+    public function test_post_has_many_tags(): void
     {
         $post = Post::factory()->create();
 
@@ -97,7 +97,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post published scope returns only published posts
      */
-    public function test_post_published_scope()
+    public function test_post_published_scope(): void
     {
         $publishedPost = Post::factory()->create(['status' => 'published']);
         $draftPost = Post::factory()->create(['status' => 'draft']);
@@ -112,7 +112,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post draft scope returns only draft posts
      */
-    public function test_post_draft_scope()
+    public function test_post_draft_scope(): void
     {
         $publishedPost = Post::factory()->create(['status' => 'published']);
         $draftPost = Post::factory()->create(['status' => 'draft']);
@@ -127,7 +127,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post featured scope returns only featured posts
      */
-    public function test_post_featured_scope()
+    public function test_post_featured_scope(): void
     {
         $featuredPost = Post::factory()->create(['is_featured' => true]);
         $regularPost = Post::factory()->create(['is_featured' => false]);
@@ -142,7 +142,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post generates slug automatically
      */
-    public function test_post_generates_slug()
+    public function test_post_generates_slug(): void
     {
         $post = Post::factory()->create([
             'title' => 'Getting Started With Laravel',
@@ -156,7 +156,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post slug is unique
      */
-    public function test_post_slug_uniqueness()
+    public function test_post_slug_uniqueness(): void
     {
         $post1 = Post::factory()->create([
             'title' => 'Test Post',
@@ -173,7 +173,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post has default status of draft
      */
-    public function test_post_default_status_is_draft()
+    public function test_post_default_status_is_draft(): void
     {
         $post = Post::factory()->create();
 
@@ -184,7 +184,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post is_featured defaults to false
      */
-    public function test_post_is_featured_defaults_to_false()
+    public function test_post_is_featured_defaults_to_false(): void
     {
         $post = Post::factory()->create();
 
@@ -195,7 +195,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post views_count can be incremented
      */
-    public function test_post_views_count_increment()
+    public function test_post_views_count_increment(): void
     {
         $post = Post::factory()->create(['views_count' => 10]);
 
@@ -208,7 +208,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post excerpt is truncated version of body
      */
-    public function test_post_excerpt_truncation()
+    public function test_post_excerpt_truncation(): void
     {
         $longContent = str_repeat('Lorem ipsum dolor sit amet. ', 50);
         $post = Post::factory()->create([
@@ -224,7 +224,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post published_at timestamp is set when publishing
      */
-    public function test_post_published_at_timestamp()
+    public function test_post_published_at_timestamp(): void
     {
         $now = now();
         $post = Post::factory()->create([
@@ -240,7 +240,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post uses soft deletes
      */
-    public function test_post_uses_soft_deletes()
+    public function test_post_uses_soft_deletes(): void
     {
         $post = Post::factory()->create();
 
@@ -254,7 +254,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Deleted posts are not returned in queries
      */
-    public function test_deleted_posts_not_in_queries()
+    public function test_deleted_posts_not_in_queries(): void
     {
         $post1 = Post::factory()->create();
         $post2 = Post::factory()->create();
@@ -272,7 +272,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post can be restored from soft delete
      */
-    public function test_post_can_be_restored()
+    public function test_post_can_be_restored(): void
     {
         $post = Post::factory()->create();
         $post->delete();
@@ -291,7 +291,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Category has many posts
      */
-    public function test_category_has_many_posts()
+    public function test_category_has_many_posts(): void
     {
         $post1 = Post::factory()->create();
         $post2 = Post::factory()->create();
@@ -305,7 +305,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Category slug is generated from name
      */
-    public function test_category_slug_generation()
+    public function test_category_slug_generation(): void
     {
         $category = Category::factory()->create([
             'name' => 'Technology and News',
@@ -322,7 +322,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Tag has many posts
      */
-    public function test_tag_has_many_posts()
+    public function test_tag_has_many_posts(): void
     {
         $post1 = Post::factory()->create();
         $post2 = Post::factory()->create();
@@ -336,7 +336,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Tag slug is generated from name
      */
-    public function test_tag_slug_generation()
+    public function test_tag_slug_generation(): void
     {
         $tag = Tag::factory()->create([
             'name' => 'Laravel Framework',
@@ -353,7 +353,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * County has many posts
      */
-    public function test_county_has_many_posts()
+    public function test_county_has_many_posts(): void
     {
         $post1 = Post::factory()->create([
             'county_id' => $this->county->id,
@@ -373,7 +373,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * User has many posts as author
      */
-    public function test_user_has_many_posts()
+    public function test_user_has_many_posts(): void
     {
         Post::factory(3)->create([
             'author_id' => $this->author->id,
@@ -386,7 +386,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * User can have posts in different statuses
      */
-    public function test_user_can_have_mixed_status_posts()
+    public function test_user_can_have_mixed_status_posts(): void
     {
         Post::factory(2)->create([
             'author_id' => $this->author->id,
@@ -411,7 +411,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Can filter posts by title
      */
-    public function test_filter_posts_by_title()
+    public function test_filter_posts_by_title(): void
     {
         Post::factory()->create(['title' => 'Laravel Tutorial']);
         Post::factory()->create(['title' => 'Vue Guide']);
@@ -426,7 +426,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Can filter posts by content
      */
-    public function test_filter_posts_by_content()
+    public function test_filter_posts_by_content(): void
     {
         Post::factory()->create(['body' => 'This is about database queries']);
         Post::factory()->create(['body' => 'This is about HTTP requests']);
@@ -440,7 +440,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Can order posts by published date
      */
-    public function test_order_posts_by_published_date()
+    public function test_order_posts_by_published_date(): void
     {
         $post1 = Post::factory()->create([
             'published_at' => now()->subDays(10),
@@ -460,7 +460,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Can order posts by views count
      */
-    public function test_order_posts_by_views()
+    public function test_order_posts_by_views(): void
     {
         Post::factory()->create(['views_count' => 50]);
         Post::factory()->create(['views_count' => 150]);
@@ -476,7 +476,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Can get posts by category with eager loading
      */
-    public function test_get_posts_by_category_with_eager_loading()
+    public function test_get_posts_by_category_with_eager_loading(): void
     {
         $post = Post::factory()->create();
         $post->categories()->attach($this->category);
@@ -493,7 +493,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Can get posts by tag with eager loading
      */
-    public function test_get_posts_by_tag_with_eager_loading()
+    public function test_get_posts_by_tag_with_eager_loading(): void
     {
         $post = Post::factory()->create();
         $post->tags()->attach($this->tag);
@@ -510,7 +510,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Featured posts query works correctly
      */
-    public function test_featured_posts_query()
+    public function test_featured_posts_query(): void
     {
         Post::factory(3)->create(['is_featured' => true]);
         Post::factory(2)->create(['is_featured' => false]);
@@ -524,7 +524,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Published posts with author relation
      */
-    public function test_published_posts_with_author()
+    public function test_published_posts_with_author(): void
     {
         Post::factory()->create([
             'status' => 'published',
@@ -545,7 +545,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Post can be associated with multiple categories and tags
      */
-    public function test_post_multiple_associations()
+    public function test_post_multiple_associations(): void
     {
         $post = Post::factory()->create();
 
@@ -563,7 +563,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Detaching category from post
      */
-    public function test_detach_category_from_post()
+    public function test_detach_category_from_post(): void
     {
         $post = Post::factory()->create();
         $category = Category::factory()->create();
@@ -579,7 +579,7 @@ class BlogModelsUnitTest extends TestCase
      * @test
      * Syncing categories replaces all existing associations
      */
-    public function test_sync_categories_replaces_existing()
+    public function test_sync_categories_replaces_existing(): void
     {
         $post = Post::factory()->create();
         $cat1 = Category::factory()->create();

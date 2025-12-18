@@ -8,24 +8,31 @@ use App\Models\County;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class MemberProfileController extends Controller
 {
     /**
+     * List all member profiles
+     *
+     * Retrieves a paginated list of all member profiles.
+     * RESTRICTED: Only accessible by users with 'super_admin' or 'admin' roles.
+     * Supports filtering by county, membership type, and search by name/email.
+     *
      * @group Member Profiles
+     * @groupDescription Endpoints for managing user profiles, including personal details, contact info, and preferences. Users can manage their own profiles, while admins have broader access.
      * @authenticated
      * @header Authorization Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-     * @description List all member profiles with filtering options (Admin roles only)
      *
-     * Required roles: super_admin, admin
-     *
-     * @queryParam county_id Filter by county ID. Example: 1
-     * @queryParam membership_type Filter by membership type. Example: premium
-     * @queryParam search Search by user name or email. Example: john
+     * @queryParam county_id integer Filter by county ID. Example: 1
+     * @queryParam membership_type string Filter by membership type name. Example: premium
+     * @queryParam search string Search by user name or email. Example: john
+     * @queryParam page integer Page number for pagination. Example: 1
      *
      * @response scenario="Admin Access" {
      *   "success": true,
      *   "data": {
+     *     "current_page": 1,
      *     "data": [
      *       {
      *         "id": 1,
@@ -33,11 +40,12 @@ class MemberProfileController extends Controller
      *         "county": {"name": "Nairobi"},
      *         "first_name": "John",
      *         "last_name": "Smith",
-     *         "terms_accepted": true
+     *         "terms_accepted": true,
+     *         "created_at": "2024-01-01T12:00:00Z"
      *       }
      *     ],
-     *     "current_page": 1,
-     *     "total": 5
+     *     "total": 5,
+     *     "per_page": 20
      *   }
      * }
      *
@@ -58,7 +66,11 @@ class MemberProfileController extends Controller
             ], 403);
         }
 
-        $query = MemberProfile::with(['user', 'county']);
+        $query = MemberProfile::with([
+            'user:id,username,email,phone,email_verified_at,profile_picture_path',  
+            'county:id,name',
+            'subscriptionPlan:id,slug,name,price,description'
+        ]);
 
         // Filter by county if provided
         if ($request->has('county_id')) {
@@ -85,26 +97,30 @@ class MemberProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $profiles,
+            'data' => \App\Http\Resources\MemberProfileResource::collection($profiles),
         ]);
     }
 
     /**
+     * Get current user profile
+     *
+     * Retrieves the profile associated with the currently authenticated user.
+     * This is the primary endpoint for fetching user details for the dashboard/profile page.
+     *
      * @group Member Profiles
      * @authenticated
-     * @description Get the authenticated user's own profile. This is a convenient endpoint that always returns the current user's profile.
      *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "data": {
      *     "id": 1,
      *     "user": {"name": "John Doe", "email": "john@example.com"},
-     *     "county": {"name": "Nairobi"},
+     *     "county": {"name": "Nairobi", "id": 47},
      *     "first_name": "John",
      *     "last_name": "Doe",
      *     "gender": "male",
      *     "terms_accepted": true,
-     *     "subscription_plan": {"name": "Free", "price": null}
+     *     "subscription_plan": {"name": "Free", "price": 0}
      *   }
      * }
      *
@@ -124,36 +140,50 @@ class MemberProfileController extends Controller
             ], 404);
         }
 
+        // WARNING: This endpoint is NOT to be used for authorization or admin checks.
+        // Use /api/auth/me instead.
         return response()->json([
             'success' => true,
-            'data' => $profile->load(['user', 'county', 'subscriptionPlan']),
+            'data' => \App\Http\Resources\MemberProfileResource::make($profile->load([
+                'user:id,username,email,phone,email_verified_at,profile_picture_path',
+                'county:id,name',
+                'subscriptionPlan:id,slug,name,price,description'
+            ])),
         ]);
     }
 
     /**
+     * Create/Update current user profile
+     *
+     * Creates a new profile for the authenticated user if one doesn't exist, or updates the existing one.
+     * This ensures the user has a linked profile record with necessary details like county and contact info.
+     *
      * @group Member Profiles
      * @authenticated
-     * @description Create or update authenticated user's profile. All users can manage their own profile.
      *
-     * @bodyParam county_id integer required County ID. Example: 1
-     * @bodyParam first_name string optional First name. Max 100 chars. Example: John
-     * @bodyParam last_name string optional Last name. Max 100 chars. Example: Doe
+     * @bodyParam county_id integer required County ID. Must correspond to a valid county. Example: 47
+     * @bodyParam first_name string optional First name. Max 100 chars. Auto-filled from user name if empty. Example: John
+     * @bodyParam last_name string optional Last name. Max 100 chars. Auto-filled if empty. Example: Doe
      * @bodyParam phone string optional Phone number. Max 30 characters. Example: +254712345678
-     * @bodyParam gender string optional Gender. One of: male, female, other. Example: male
-     * @bodyParam date_of_birth date optional Date of birth. Must be before today. Example: 1990-01-15
-     * @bodyParam occupation string optional Occupation. Max 255 chars. Example: Software Developer
-     * @bodyParam membership_type string optional Membership plan name. Example: free
-     * @bodyParam emergency_contact_name string optional Example: Jane Doe
-     * @bodyParam emergency_contact_phone string optional Example: +254798765432
-     * @bodyParam terms_accepted boolean required Must accept terms to create profile. Example: true
-     * @bodyParam marketing_consent boolean optional Example: false
-     * @bodyParam interests array optional Example: ["technology","community"]
-     * @bodyParam bio string optional Max 1000 chars. Example: Passionate about community development
+     * @bodyParam gender string optional Gender identity. One of: male, female, other. Example: male
+     * @bodyParam date_of_birth date optional Date of birth. Must be a past date. Example: 1990-01-15
+     * @bodyParam occupation string optional Professional occupation. Max 255 chars. Example: Software Developer
+     * @bodyParam membership_type string optional Desired membership plan (e.g., 'free', 'premium'). Example: free
+     * @bodyParam emergency_contact_name string optional Name of emergency contact. Example: Jane Doe
+     * @bodyParam emergency_contact_phone string optional Phone of emergency contact. Example: +254798765432
+     * @bodyParam terms_accepted boolean required Confirmation of T&C acceptance. Example: true
+     * @bodyParam marketing_consent boolean optional Consent to receive marketing materials. Example: false
+     * @bodyParam interests array optional List of user interests/tags. Example: ["technology", "community"]
+     * @bodyParam bio string optional Short biography. Max 1000 chars. Example: Enthusiastic learner.
      *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "message": "Profile updated successfully",
-     *   "data": {"id": 1}
+     *   "data": {
+     *     "id": 1,
+     *     "first_name": "John",
+     *     "county_id": 47
+     *   }
      * }
      *
      * @response 422 {
@@ -234,7 +264,11 @@ class MemberProfileController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully',
-            'data' => $profile->load(['user', 'county', 'subscriptionPlan']),
+            'data' => \App\Http\Resources\MemberProfileResource::make($profile->load([
+                'user:id,username,email,phone,email_verified_at,profile_picture_path',
+                'county:id,name',
+                'subscriptionPlan:id,slug,name,price,description'
+            ])),
         ]);
     }
 
@@ -258,15 +292,17 @@ class MemberProfileController extends Controller
      * }
      */
     /**
+     * Delete a profile
+     *
+     * Permanently deletes a member profile.
+     * RESTRICTED: Only admins can delete profiles, but they cannot delete their own profile via this endpoint.
+     *
      * @group Member Profiles
      * @authenticated
-     * @description Delete a profile. Only admins can delete profiles, and cannot delete their own profile.
      *
-     * Required permissions: manage_users (Super Admin, Admin roles)
+     * @urlParam id integer required The unique ID of the profile to delete. Example: 123
      *
-     * @urlParam id int required The profile ID to delete. Example: 123
-     *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "message": "Profile deleted successfully"
      * }
@@ -306,15 +342,19 @@ class MemberProfileController extends Controller
         ]);
     }
     /**
+     * Get specific profile details
+     *
+     * Retrieves details for a specific profile by ID.
+     * - Users can always view their own profile (if ID matches or if ID is omitted, though `me` endpoint is preferred for that).
+     * - Admins can view any user's profile.
+     * - Access is denied if a regular user tries to view another user's profile.
+     *
      * @group Member Profiles
      * @authenticated
-     * @description Get authenticated user's profile. All users can view their own profile. This is a convenient endpoint that always returns the current user's profile.
      *
-     * For admins: Can view any user's profile (super_admin, admin roles).
+     * @urlParam id integer optional The ID of the profile to view. If omitted, defaults to the authenticated user's profile. Example: 123
      *
-     * @urlParam id integer optional The profile ID to view. If not provided, returns authenticated user's profile. Example: 123
-     *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "data": {
      *     "id": 1,
@@ -334,7 +374,7 @@ class MemberProfileController extends Controller
      *
      * @response 404 {
      *   "success": false,
-     *   "message": "Profile not found. Please create a profile first."
+     *   "message": "Profile not found"
      * }
      */
     public function show(Request $request, $id = null): JsonResponse
@@ -352,7 +392,11 @@ class MemberProfileController extends Controller
             }
         } else {
             // Check if requesting own profile or has admin role
-            $profile = MemberProfile::with(['user', 'county'])->findOrFail($id);
+            $profile = MemberProfile::with([
+                'user:id,username,email,phone,email_verified_at,profile_picture_path',  
+                'county:id,name',
+                'subscriptionPlan:id,slug,name,price,description'
+            ])->findOrFail($id);
 
             // If not the profile owner and not admin, deny access
             if ($profile->user_id !== $user->id && !$user->hasRole(['super_admin', 'admin'])) {
@@ -365,7 +409,11 @@ class MemberProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $profile->load(['user', 'county', 'subscriptionPlan']),
+            'data' => \App\Http\Resources\MemberProfileResource::make($profile->load([
+                'user:id,username,email,phone,email_verified_at,profile_picture_path',
+                'county:id,name',
+                'subscriptionPlan:id,slug,name,price,description'
+            ])),
         ]);
     }
 
@@ -411,28 +459,36 @@ class MemberProfileController extends Controller
 
 
     /**
+     * Update specific profile
+     *
+     * Updates an existing profile by ID.
+     * - Regular users can only update their own profile.
+     * - Admins ('super_admin', 'admin') can update any profile.
+     *
      * @group Member Profiles
      * @authenticated
-     * @description Update an existing profile. Users can update their own profile. Admins can update any profile.
      *
-     * Required roles for others: super_admin, admin
-     *
-     * @urlParam id required The profile ID to update.
-     * @bodyParam county_id integer optional County ID. Must exist in counties table. Example: 1
-     * @bodyParam phone string optional Phone number. Max 30 characters. Example: +254712345678
+     * @urlParam id integer required The ID of the profile to update. Example: 1
+     * @bodyParam county_id integer optional County ID. Example: 1
+     * @bodyParam phone string optional Phone number. Example: +254712345678
      * @bodyParam gender string optional Gender. Example: female
      * @bodyParam occupation string optional New occupation. Example: Project Manager
+     * @bodyParam bio string optional Biography. Example: Updated bio text.
      *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "message": "Profile updated successfully",
      *   "data": {
      *     "id": 1,
      *     "user": {"name": "John Doe"},
      *     "county": {"name": "Nairobi"},
-     *     "gender": "female",
      *     "occupation": "Project Manager"
      *   }
+     * }
+     *
+     * @response 403 {
+     *   "success": false,
+     *   "message": "Unauthorized to update this profile"
      * }
      */
     public function update(Request $request, string $id): JsonResponse
@@ -479,19 +535,25 @@ class MemberProfileController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully',
-            'data' => $profile->load(['user', 'county', 'subscriptionPlan']),
+            'data' => \App\Http\Resources\MemberProfileResource::make($profile->load([
+                'user:id,username,email,phone,email_verified_at,profile_picture_path',
+                'county:id,name',
+                'subscriptionPlan:id,slug,name,price,description'
+            ])),
         ]);
     }
 
 
     /**
+     * List all counties
+     *
+     * Retrieves a list of all available counties, sorted alphabetically.
+     * Helper endpoint for populating dropdowns in profile creation/edit forms.
+     *
      * @group Member Profiles
      * @authenticated
-     * @description Get list of all available counties for profile forms.
      *
-     * Returns counties sorted alphabetically by name for use in dropdowns.
-     *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "data": [
      *     {"id": 35, "name": "Nairobi"},
@@ -508,5 +570,61 @@ class MemberProfileController extends Controller
             'success' => true,
             'data' => $counties,
         ]);
+    }
+
+    /**
+     * Upload profile picture
+     *
+     * Uploads and updates the authenticated user's profile picture.
+     * Replaces any existing picture.
+     *
+     * @group Member Profiles
+     * @authenticated
+     *
+     * @bodyParam profile_picture file required The image file (jpeg, png, jpg, gif). Max 2MB.
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Profile picture updated successfully",
+     *   "data": {
+     *     "profile_picture_url": "http://example.com/storage/profile-pictures/filename.jpg"
+     *   }
+     * }
+     */
+    public function uploadProfilePicture(Request $request): JsonResponse
+    {
+        $request->validate([
+            'profile_picture' => ['required', 'image', 'max:5120'],
+        ]);
+
+        $user = auth()->user();
+
+        if ($request->hasFile('profile_picture')) {
+            // delete old image if exists
+            if ($user->profile_picture_path) {
+                Storage::disk('public')->delete($user->profile_picture_path);
+            }
+
+            // store new image
+            $path = $request->file('profile_picture')->store('profile-pictures', 'public');
+
+            // update user
+            $user->profile_picture_path = $path;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile picture updated successfully',
+                'data' => [
+                    'profile_picture_url' => $user->profile_picture_url,
+                    'user' => $user->load('memberProfile') // Return updated user for frontend state
+                ]
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'No file uploaded',
+        ], 400);
     }
 }

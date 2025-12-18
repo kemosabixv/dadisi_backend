@@ -21,13 +21,16 @@ class PostAdminController extends Controller
     }
 
     /**
-     * Show form data for creating a new post
+     * Get Post Creation Metadata
+     *
+     * Retrieves the necessary metadata (tags, categories) to populate the "Create Post" form.
+     * This ensures the frontend has the latest taxonomy data before a user starts writing.
      *
      * @group Blog Management - Admin
+     * @groupDescription Administrative endpoints for creating, editing, and managing blog posts. Includes status management (draft/published), SEO metadata, and soft deletion.
      * @authenticated
-     * @description Get form metadata needed to create a post (categories, tags, etc)
      *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "data": {
      *     "categories": [{"id": 1, "name": "Technology"}],
@@ -49,18 +52,20 @@ class PostAdminController extends Controller
     }
 
     /**
-     * List all posts (Admin view)
+     * List Posts (Admin)
+     *
+     * Retrieves a paginated list of all posts with advanced filtering capabilities.
+     * Unlike the public API, this endpoint returns draft and hidden posts for administrative review.
      *
      * @group Blog Management - Admin
      * @authenticated
-     * @description List all posts with full details (admins/editors only)
      *
-     * @queryParam status Filter by status (draft, published). Example: published
-     * @queryParam county_id Filter by county ID. Example: 1
-     * @queryParam author_id Filter by author ID. Example: 5
-     * @queryParam search Search in title or body. Example: welcome
-     * @queryParam per_page Pagination size. Example: 15
-     * @queryParam page Page number. Example: 1
+     * @queryParam status string optional Filter by publication status (draft, published). Example: published
+     * @queryParam county_id integer optional Filter by County ID. Example: 1
+     * @queryParam author_id integer optional Filter by Author ID. Example: 5
+     * @queryParam search string optional Keyword search in title or body content. Example: welcome
+     * @queryParam per_page integer optional Number of records per page. Example: 15
+     * @queryParam page integer optional Page number. Example: 1
      *
      * @response 200 {
      *   "success": true,
@@ -84,9 +89,11 @@ class PostAdminController extends Controller
     {
         $this->authorize('viewAny', Post::class);
         
-        $query = Post::with('author:id,name,username', 'categories:id,name', 'tags:id,name', 'county:id,name');
+        $query = Post::with('author:id,username', 'categories', 'tags', 'county:id,name');
 
-        if ($request->has('status')) {
+        if ($request->status === 'trashed') {
+            $query->onlyTrashed();
+        } elseif ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
@@ -100,42 +107,41 @@ class PostAdminController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where('title', 'like', "%{$search}%")
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
                   ->orWhere('body', 'like', "%{$search}%");
+            });
         }
 
         $posts = $query->latest('created_at')->paginate($request->per_page ?? 15);
-
-        return response()->json([
+        $response = array_merge($posts->toArray(), [
             'success' => true,
-            'data' => $posts->items(),
-            'pagination' => [
-                'total' => $posts->total(),
-                'per_page' => $posts->perPage(),
-                'current_page' => $posts->currentPage(),
-                'last_page' => $posts->lastPage(),
-            ],
         ]);
+
+        return response()->json($response);
     }
 
     /**
-     * Store a new post
+     * Create New Post
+     *
+     * Creates a new blog post entry.
+     * Supports rich content (HTML), SEO metadata fields, and associations (categories, tags, media).
+     * The slug is automatically generated from the title if not provided.
      *
      * @group Blog Management - Admin
      * @authenticated
-     * @description Create a new blog post (editors/admins/premium authors)
      *
-     * @bodyParam title string required Post title. Example: Welcome to Our Blog
-     * @bodyParam content string required Post content (HTML). Example: <p>Post content here</p>
-     * @bodyParam slug string Slug (auto-generated if omitted). Example: welcome-to-blog
-     * @bodyParam excerpt string Post summary. Example: A brief introduction
-     * @bodyParam status string Post status (draft, published). Default: draft
-     * @bodyParam county_id integer County ID. Example: 1
-     * @bodyParam category_ids array Category IDs. Example: [1, 2]
-     * @bodyParam tag_ids array Tag IDs. Example: [1, 3, 5]
-     * @bodyParam meta_title string SEO title (max 60). Example: Welcome - Our Blog
-     * @bodyParam meta_description string SEO description (max 160). Example: A great blog post
-     * @bodyParam is_featured boolean Feature the post. Example: true
+     * @bodyParam title string required The main headline of the post. Example: Welcome to Our Blog
+     * @bodyParam content string required The full HTML content of the post. Example: <p>Post content here</p>
+     * @bodyParam slug string optional Custom URL slug (must be unique). Auto-generated if omitted. Example: welcome-to-blog
+     * @bodyParam excerpt string optional Short summary or teaser text (max 500 chars). Example: A brief introduction
+     * @bodyParam status string optional Publication status: 'draft' or 'published'. Default: draft
+     * @bodyParam county_id integer optional Regional context for the post. Example: 1
+     * @bodyParam category_ids array optional List of category IDs to associate. Example: [1, 2]
+     * @bodyParam tag_ids array optional List of tag IDs to associate. Example: [1, 3, 5]
+     * @bodyParam meta_title string optional Custom page title for SEO (max 60 chars). Example: Welcome - Our Blog
+     * @bodyParam meta_description string optional Meta description for SEO (max 160 chars). Example: A great blog post
+     * @bodyParam is_featured boolean optional Mark this post as featured (pinned). Example: true
      *
      * @response 201 {
      *   "success": true,
@@ -187,18 +193,20 @@ class PostAdminController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Post created successfully',
-            'data' => $post->load('author:id,name,username', 'categories:id,name', 'tags:id,name', 'media:id,file_name,file_path,type'),
+            'data' => $post->load('author:id,username', 'categories', 'tags', 'media'),
         ], 201);
     }
 
     /**
-     * Display a specific post (admin view)
+     * Get Post Details (Admin)
+     *
+     * Retrieves the full administrative details of a specific post.
+     * Includes all metadata, SEO settings, and author information necessary for the edit view.
      *
      * @group Blog Management - Admin
      * @authenticated
-     * @description Get detailed post information (admins/editors/owner)
      *
-     * @urlParam post required The post ID
+     * @urlParam post integer required The unique ID of the post. Example: 1
      *
      * @response 200 {
      *   "success": true,
@@ -216,20 +224,22 @@ class PostAdminController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $post->load('author:id,name,username', 'categories:id,name', 'tags:id,name', 'media:id,file_name,file_path', 'county:id,name'),
+            'data' => $post->load('author:id,username', 'categories', 'tags', 'media', 'county:id,name'),
         ]);
     }
 
     /**
-     * Show edit form data for a post
+     * Get Post Edit Metadata
+     *
+     * Retrieves the post data along with all available categories and tags.
+     * This "all-in-one" endpoint is designed to hydrate the "Edit Post" form in a single request.
      *
      * @group Blog Management - Admin
      * @authenticated
-     * @description Get post data and form metadata needed to edit a post
      *
-     * @urlParam post integer required The post ID
+     * @urlParam post integer required The unique ID of the post to edit. Example: 1
      *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "data": {
      *     "post": {"id": 1, "title": "...", "content": "..."},
@@ -245,7 +255,7 @@ class PostAdminController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'post' => $post->load('author:id,name,username', 'categories:id,name', 'tags:id,name', 'media:id,file_name,file_path', 'county:id,name'),
+                'post' => $post->load('author:id,username', 'categories:id,name', 'tags:id,name', 'media:id,file_name,file_path', 'county:id,name'),
                 'categories' => Category::select('id', 'name')->orderBy('name')->get(),
                 'tags' => Tag::select('id', 'name')->orderBy('name')->get(),
             ],
@@ -253,23 +263,25 @@ class PostAdminController extends Controller
     }
 
     /**
-     * Update a post
+     * Update Post
+     *
+     * Updates an existing blog post.
+     * All fields are optional, allowing for partial updates (e.g., just changing the status).
      *
      * @group Blog Management - Admin
      * @authenticated
-     * @description Update existing post details (editors/admins/owner)
      *
-     * @urlParam post required The post ID
-     * @bodyParam title string Post title. Example: Updated Title
-     * @bodyParam body string Post content. Example: <p>Updated content</p>
-     * @bodyParam slug string New slug (unique). Example: updated-title
-     * @bodyParam excerpt string Post summary. Example: Updated summary
-     * @bodyParam status string Post status. Example: published
-     * @bodyParam category_ids array Category IDs. Example: [1, 2]
-     * @bodyParam tag_ids array Tag IDs. Example: [1, 3]
-     * @bodyParam meta_title string SEO title. Example: Updated - Our Blog
-     * @bodyParam meta_description string SEO description. Example: Updated post
-     * @bodyParam is_featured boolean Feature status. Example: false
+     * @urlParam post integer required The unique ID of the post. Example: 1
+     * @bodyParam title string optional Post title. Example: Updated Title
+     * @bodyParam body string optional Post content (HTML). Example: <p>Updated content</p>
+     * @bodyParam slug string optional Unique URL slug. Example: updated-title
+     * @bodyParam excerpt string optional Short summary. Example: Updated summary
+     * @bodyParam status string optional 'draft' or 'published'. Example: published
+     * @bodyParam category_ids array optional Categories to sync. Example: [1, 2]
+     * @bodyParam tag_ids array optional Tags to sync. Example: [1, 3]
+     * @bodyParam meta_title string optional SEO title. Example: Updated - Our Blog
+     * @bodyParam meta_description string optional SEO description. Example: Updated post
+     * @bodyParam is_featured boolean optional Feature status. Example: false
      *
      * @response 200 {
      *   "success": true,
@@ -319,18 +331,20 @@ class PostAdminController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Post updated successfully',
-            'data' => $post->load('author:id,name,username', 'categories:id,name', 'tags:id,name', 'media:id,file_name,file_path,type'),
+            'data' => $post->load('author:id,username', 'categories:id,name', 'tags:id,name', 'media:id,file_name,file_path,type'),
         ]);
     }
 
     /**
-     * Delete a post
+     * Delete Post (Soft)
+     *
+     * Moves a post to the 'trashed' state.
+     * Soft-deleted posts are not visible to the public but can be restored by an admin.
      *
      * @group Blog Management - Admin
      * @authenticated
-     * @description Soft-delete a post (editors/admins/owner)
      *
-     * @urlParam post required The post ID
+     * @urlParam post integer required The ID of the post to trash. Example: 1
      *
      * @response 200 {
      *   "success": true,
@@ -349,13 +363,15 @@ class PostAdminController extends Controller
     }
 
     /**
-     * Restore a soft-deleted post
+     * Restore Deleted Post
+     *
+     * Recovers a soft-deleted post from the trash.
+     * The post will regain its original status (e.g., draft or published).
      *
      * @group Blog Management - Admin
      * @authenticated
-     * @description Restore deleted post (admins only)
      *
-     * @urlParam post required The post ID
+     * @urlParam post integer required The ID of the trashed post. Example: 1
      *
      * @response 200 {
      *   "success": true,
@@ -378,13 +394,15 @@ class PostAdminController extends Controller
     }
 
     /**
-     * Force delete a post permanently
+     * Permanently Delete Post
+     *
+     * Irreversibly purges a post and its associations from the database.
+     * **Warning:** TThis action cannot be undone.
      *
      * @group Blog Management - Admin
      * @authenticated
-     * @description Permanently delete post and associated data (admins only)
      *
-     * @urlParam post required The post ID
+     * @urlParam post integer required The ID of the post to destroy. Example: 1
      *
      * @response 200 {
      *   "success": true,

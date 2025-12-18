@@ -17,13 +17,16 @@ class TagAdminController extends Controller
     }
 
     /**
-     * Show form data for creating a new tag
+     * Get Tag Creation Metadata
      *
-     * @group Blog Management - Admin
+     * Retrieves any necessary metadata or configuration required before creating a new tag.
+     * Use this endpoint to check if the tag creation interface is ready (e.g., checking permission status).
+     *
+     * @group Blog Admin - Tags
+     * @groupDescription Administrative endpoints for managing blog tags (micro-taxonomy). Tags are keyword descriptors attached to posts.
      * @authenticated
-     * @description Get form metadata needed to create a tag
      *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "data": {"message": "Ready to create new tag"}
      * }
@@ -39,19 +42,21 @@ class TagAdminController extends Controller
     }
 
     /**
-     * Display all tags
+     * List Tags (Admin)
      *
-     * @group Blog Management - Admin
+     * Retrieves a paginated list of all blog tags.
+     * The response includes the usage count (number of posts) for each tag.
+     *
+     * @group Blog Admin - Tags
      * @authenticated
-     * @description List all blog tags
      *
-     * @queryParam search Search tags. Example: tutorial
-     * @queryParam per_page Pagination size. Example: 50
+     * @queryParam search string optional Search tags by name. Example: tutorial
+     * @queryParam per_page integer optional Pagination size. Example: 50
      *
      * @response 200 {
      *   "success": true,
      *   "data": [
-     *     {"id": 1, "name": "tutorial", "slug": "tutorial", "post_count": 3}
+     *     {"id": 1, "name": "tutorial", "slug": "tutorial", "posts_count": 3}
      *   ]
      * }
      */
@@ -65,27 +70,24 @@ class TagAdminController extends Controller
         }
 
         $tags = $query->withCount('posts')->latest()->paginate($request->per_page ?? 50);
-
-        return response()->json([
+        $response = array_merge($tags->toArray(), [
             'success' => true,
-            'data' => $tags->items(),
-            'pagination' => [
-                'total' => $tags->total(),
-                'per_page' => $tags->perPage(),
-                'current_page' => $tags->currentPage(),
-            ],
         ]);
+
+        return response()->json($response);
     }
 
     /**
-     * Create a new tag
+     * Create New Tag
      *
-     * @group Blog Management - Admin
+     * Registers a new tag in the system.
+     * The slug is automatically generated from the name if omitted.
+     *
+     * @group Blog Admin - Tags
      * @authenticated
-     * @description Create new blog tag (editors/admins/premium members)
      *
-     * @bodyParam name string required Tag name. Example: Laravel
-     * @bodyParam slug string Tag slug (auto-generated if omitted). Example: laravel
+     * @bodyParam name string required Unique name for the tag. Example: Laravel
+     * @bodyParam slug string optional Unique URL-friendly slug. Auto-generated if empty. Example: laravel
      *
      * @response 201 {
      *   "success": true,
@@ -116,13 +118,14 @@ class TagAdminController extends Controller
     }
 
     /**
-     * Display a specific tag
+     * Get Tag Details
      *
-     * @group Blog Management - Admin
+     * Retrieves detailed information about a specific tag, including the count of associated posts.
+     *
+     * @group Blog Admin - Tags
      * @authenticated
-     * @description Get tag details with post count
      *
-     * @urlParam tag required The tag ID
+     * @urlParam tag integer required The tag ID. Example: 1
      *
      * @response 200 {
      *   "success": true,
@@ -138,15 +141,16 @@ class TagAdminController extends Controller
     }
 
     /**
-     * Show edit form data for a tag
+     * Get Tag Edit Metadata
      *
-     * @group Blog Management - Admin
+     * Retrieves the tag data formatted for the "Edit Tag" form.
+     *
+     * @group Blog Admin - Tags
      * @authenticated
-     * @description Get tag data for editing
      *
-     * @urlParam tag integer required The tag ID
+     * @urlParam tag integer required The tag ID. Example: 1
      *
-     * @response {
+     * @response 200 {
      *   "success": true,
      *   "data": {
      *     "tag": {"id": 1, "name": "Laravel", "slug": "laravel"}
@@ -164,15 +168,16 @@ class TagAdminController extends Controller
     }
 
     /**
-     * Update a tag
+     * Update Tag
      *
-     * @group Blog Management - Admin
+     * Modifies the details of an existing tag.
+     *
+     * @group Blog Admin - Tags
      * @authenticated
-     * @description Update tag (editors/admins only)
      *
-     * @urlParam tag required The tag ID
-     * @bodyParam name string Tag name. Example: Updated Tag
-     * @bodyParam slug string Tag slug. Example: updated-tag
+     * @urlParam tag integer required The tag ID. Example: 1
+     * @bodyParam name string optional Update name (must be unique). Example: Updated Tag
+     * @bodyParam slug string optional Update slug (must be unique). Example: updated-tag
      *
      * @response 200 {
      *   "success": true,
@@ -200,13 +205,14 @@ class TagAdminController extends Controller
     }
 
     /**
-     * Delete a tag
+     * Delete Tag
      *
-     * @group Blog Management - Admin
+     * Permanently removes a tag from the system.
+     *
+     * @group Blog Admin - Tags
      * @authenticated
-     * @description Delete tag (editors/admins only)
      *
-     * @urlParam tag required The tag ID
+     * @urlParam tag integer required The tag ID. Example: 1
      *
      * @response 200 {
      *   "success": true,

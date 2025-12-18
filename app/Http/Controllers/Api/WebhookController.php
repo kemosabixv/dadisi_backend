@@ -15,9 +15,25 @@ class WebhookController extends Controller
     ) {}
 
     /**
-     * Handle Pesapal webhook notifications
+     * Handle Pesapal Webhook
      *
-     * @group Pesapal
+     * Processes incoming webhook notifications from the Pesapal payment gateway.
+     * This endpoint receives payment status updates (e.g., COMPLETED, FAILED) and synchronizes the local system state.
+     * It validates the request signature to ensure authenticity before processing.
+     *
+     * @group Integrations - Pesapal
+     * @groupDescription Endpoints for handling external callbacks and system integrations, specifically the Pesapal payment gateway.
+     * @unauthenticated
+     *
+     * @response 200 {
+     *   "status": "OK"
+     * }
+     * @response 400 {
+     *   "error": "Invalid signature"
+     * }
+     * @response 500 {
+     *   "error": "Processing failed"
+     * }
      */
     public function pesapal(Request $request)
     {
@@ -103,9 +119,33 @@ class WebhookController extends Controller
     }
 
     /**
-     * Get webhook events (for debugging)
+     * List Webhooks (Debug)
      *
-     * @group Pesapal
+     * Retrieves a paginated history of received webhook events.
+     * Useful for debugging integration issues and verifying payment callbacks.
+     *
+     * @group Integrations - Pesapal
+     * @authenticated
+     *
+     * @queryParam provider string Filter by provider name. Example: pesapal
+     * @queryParam status string Filter by processing status (received, processed, failed). Example: failed
+     * @queryParam per_page integer Pagination limit. Example: 20
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": {
+     *     "current_page": 1,
+     *     "data": [
+     *       {
+     *         "id": 1,
+     *         "provider": "pesapal",
+     *         "event_type": "COMPLETED",
+     *         "status": "processed",
+     *         "created_at": "2025-12-04T10:00:00Z"
+     *       }
+     *     ]
+     *   }
+     * }
      */
     public function index(Request $request)
     {

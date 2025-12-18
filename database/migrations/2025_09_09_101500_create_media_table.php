@@ -9,12 +9,12 @@ return new class extends Migration {
     {
         Schema::create('media', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('owner_type', 100);
-            $table->unsignedBigInteger('owner_id');
+            $table->string('owner_type', 100)->nullable();
+            $table->unsignedBigInteger('owner_id')->nullable();
             $table->string('disk', 50)->default('public');
-            $table->string('path', 255);
+            $table->string('file_path', 255);
             $table->string('mime_type', 100)->nullable();
-            $table->unsignedBigInteger('size_bytes')->nullable();
+            $table->unsignedBigInteger('file_size')->nullable();
             $table->timestamps();
             $table->index(['owner_type','owner_id']);
         });

@@ -19,11 +19,15 @@ class UserDataRetentionController extends Controller
     }
 
     /**
-     * Display a listing of retention settings
+     * List Retention Policies
+     *
+     * Retrieves a detailed list of all configured data retention policies.
+     * These policies determine how long various types of data (e.g., logs, user history) are kept before being automatically purged.
      *
      * @group Data Retention Management
+     * @groupDescription Administrative endpoints for managing data retention policies, automated cleanup schedules, and compliance settings.
      * @authenticated
-     * @description List all data retention settings (Super Admin only)
+     * @description List all active data retention policies. Only accessible by Super Admins.
      *
      * @queryParam data_type Filter by data type. Example: user_accounts
      *
@@ -60,7 +64,10 @@ class UserDataRetentionController extends Controller
     }
 
     /**
-     * Display the specified retention setting
+     * Get Retention Policy Details
+     *
+     * Retrieves the specific configuration for a single data retention policy.
+     * Includes information on retention duration, auto-delete status, and the administrator who last modified it.
      *
      * @group Data Retention Management
      * @authenticated
@@ -89,8 +96,12 @@ class UserDataRetentionController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified retention setting
+/**
+     * Update Retention Policy
+     *
+     * Modifies the parameters of an existing data retention policy.
+     * Allows administrators to change the retention period (in days), toggle automatic deletion, or update the policy description.
+     * All changes are audit-logged.
      *
      * @group Data Retention Management
      * @authenticated
@@ -137,7 +148,10 @@ class UserDataRetentionController extends Controller
     }
 
     /**
-     * Get current retention settings summary
+     * Get Retention Summary
+     *
+     * Provides a quick overview of the active retention periods for key data types.
+     * Useful for dashboard widgets or compliance reporting.
      *
      * @group Data Retention Management
      * @authenticated
@@ -163,7 +177,10 @@ class UserDataRetentionController extends Controller
     }
 
     /**
-     * Update retention cutoff days for a data type
+     * Update Retention Period (Quick Action)
+     *
+     * A streamlined endpoint to quickly update the retention duration (days) for a specific data type.
+     * This is an alternative to the full update endpoint when only the day count needs changing.
      *
      * @group Data Retention Management
      * @authenticated
@@ -217,7 +234,10 @@ class UserDataRetentionController extends Controller
     }
 
     /**
-     * Update scheduler settings (time and frequency)
+     * Configure Cleanup Schedule
+     *
+     * Configures the timing and frequency of automated cleanup commands.
+     * Allows administrators to determine exactly when system maintenance tasks (like purging old data) run to minimize impact on active users.
      *
      * @group Data Retention Management
      * @authenticated
@@ -284,7 +304,10 @@ class UserDataRetentionController extends Controller
     }
 
     /**
-     * Get all scheduler settings
+     * List Cleanup Schedules
+     *
+     * Retrieves a list of all defined system maintenance schedules.
+     * Shows which commands are enabled, their frequency (e.g., daily), and the specific time they are set to execute.
      *
      * @group Data Retention Management
      * @authenticated

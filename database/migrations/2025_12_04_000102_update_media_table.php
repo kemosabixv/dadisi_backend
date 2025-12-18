@@ -30,6 +30,17 @@ return new class extends Migration {
         } else {
             // Update existing media table structure safely (do not rely on `after()` ordering)
             Schema::table('media', function (Blueprint $table) {
+                // User relationship
+                if (!Schema::hasColumn('media', 'user_id')) {
+                    $table->foreignId('user_id')->nullable()->constrained('users')->cascadeOnDelete();
+                }
+
+                // Polymorphic owner (if used by other code)
+                    // Keep existing polymorphic owner columns untouched to avoid
+                    // SQLite drop-column limitations during migrations.
+                    // If you need to remove these columns, perform a manual
+                    // table rebuild in a separate migration on supported DB.
+
                 // Core file columns
                 if (!Schema::hasColumn('media', 'file_name')) {
                     $table->string('file_name');
@@ -46,7 +57,7 @@ return new class extends Migration {
 
                 // Type / privacy / attachments
                 if (!Schema::hasColumn('media', 'type')) {
-                    $table->enum('type', ['image', 'audio', 'video', 'pdf'])->nullable();
+                    $table->enum('type', ['image', 'audio', 'video', 'pdf', 'gif'])->nullable();
                 }
                 if (!Schema::hasColumn('media', 'is_public')) {
                     $table->boolean('is_public')->default(false);

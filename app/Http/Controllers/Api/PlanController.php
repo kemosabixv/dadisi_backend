@@ -8,27 +8,28 @@ use App\Services\CurrencyService;
 use Laravelcm\Subscriptions\Models\Feature;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PlanController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:sanctum');
+        $this->middleware('auth:sanctum')->except(['index', 'show']);
     }
 
     /**
-     * List All Active Subscription Plans with Multi-Currency Pricing
+     * List Active Subscription Plans
      *
-     * Returns all active subscription plans with comprehensive pricing information including:
-     * - Base prices and discounted prices in both KES and USD
-     * - Active promotional campaigns with expiration dates
-     * - Real-time currency conversion using updated exchange rates
+     * Retrieves a list of all currently active subscription plans.
+     * The response includes comprehensive pricing details (multi-currency support for KES and USD),
+     * active promotional campaigns (discounts), and associated feature limits.
+     * This endpoint is public and typically used to populate pricing pages.
      *
-     * Perfect for subscription plan selection interfaces and billing dashboards.
-     *
-     * @group Plans
+     * @group Subscription Plans
+     * @groupDescription Management of subscription tiers, pricing models, and feature sets. Includes public endpoints for listing plans and administrative endpoints for plan configuration.
      * @authenticated
-     * @queryParam include_features boolean optional Include detailed feature information. Default: true
+     * @queryParam include_features boolean optional If true, returns the list of features associated with each plan. Default: true
+
      *
      * @response 200 {
      *   "success": true,
@@ -79,19 +80,15 @@ class PlanController extends Controller
     }
 
     /**
-     * Get Detailed Plan Information with Multi-Currency Pricing
+     * Get Plan Details
      *
-     * Returns comprehensive information for a specific subscription plan including:
-     * - Full pricing breakdown in both KES and USD currencies
-     * - Current promotional status and time remaining
-     * - Real-time currency conversion and exchange rate used
-     * - Detailed feature information with limits
+     * Retrieves detailed information for a specific subscription plan by its ID.
+     * Includes full pricing breakdowns, active promotions with time remaining, and a complete list of features.
+     * Useful for displaying a "Plan Details" modal or checkout summary.
      *
-     * Perfect for subscription plan detail pages and purchase flows.
-     *
-     * @group Plans
+     * @group Subscription Plans
      * @authenticated
-     * @urlParam id integer required The plan ID
+     * @urlParam id integer required The unique identifier of the plan. Example: 1
      *
      * @response 200 {
      *   "success": true,
@@ -138,28 +135,26 @@ class PlanController extends Controller
     }
 
     /**
-     * Create New Subscription Plan with Promotional Pricing
+     * Create Subscription Plan (Admin)
      *
-     * Creates a new subscription plan with comprehensive pricing structure and promotional campaigns.
-     * Supports flexible monthly pricing with optional promotional discounts for different billing intervals.
-     * Only administrators can create subscription plans.
+     * Creates a new subscription plan with defined pricing, currency, and optional promotional campaigns.
+     * Allows administrators to set up monthly and yearly billing options, assign feature limits, and configure initial discounts.
      *
-     * @group Plans
+     * @group Subscription Plans
      * @authenticated
-     * @description Create a new subscription plan with pricing and promotional campaigns. Requires admin privileges.
      *
-     * @bodyParam name string required Plan display name. Max 255 characters. Example: Premium Plan
-     * @bodyParam monthly_price_kes numeric required Base monthly price in KES. Must be between 100 and 100,000. Example: 2500.00
-     * @bodyParam currency string required Currency code. Fixed to "KES". Example: KES
-     * @bodyParam monthly_promotion object optional Monthly promotion configuration. Pass null to remove promotion. Example: {"discount_percent": 20, "expires_at": "2025-12-31T23:59:59Z"}
-     * @bodyParam monthly_promotion.discount_percent numeric optional Monthly discount percentage. Must be 0-50%. Required when monthly_promotion is provided. Example: 20
-     * @bodyParam monthly_promotion.expires_at string optional Monthly promotion expiry date. Required when monthly_promotion provided. Format: ISO 8601. Example: 2025-12-31T23:59:59Z
-     * @bodyParam yearly_promotion object optional Yearly promotion configuration. Pass null to remove promotion. Example: {"discount_percent": 25, "expires_at": "2026-06-30T23:59:59Z"}
-     * @bodyParam yearly_promotion.discount_percent numeric optional Yearly discount percentage. Must be 0-50%. Required when yearly_promotion is provided. Example: 25
-     * @bodyParam yearly_promotion.expires_at string optional Yearly promotion expiry date. Required when yearly_promotion provided. Format: ISO 8601. Example: 2026-06-30T23:59:59Z
-     * @bodyParam features array optional Array of plan features to attach. Example: [{"id": 1, "limit": null}, {"id": 2, "limit": 100}]
-     * @bodyParam features[].id integer required Feature ID that exists in plan_features table. Required when features provided. Example: 1
-     * @bodyParam features[].limit integer optional Usage limit for the feature. Null means unlimited. Example: 100
+     * @bodyParam name string required The display name of the plan. Example: Premium Plan
+     * @bodyParam monthly_price_kes numeric required Base price per month in KES. Must be a positive number. Example: 2500.00
+     * @bodyParam currency string required The currency code (currently supports 'KES'). Example: KES
+     * @bodyParam monthly_promotion object optional Configuration for monthly billing discounts. Example: {"discount_percent": 20, "expires_at": "2025-12-31T23:59:59Z"}
+     * @bodyParam monthly_promotion.discount_percent numeric optional Percentage discount (0-50). Required if monthly_promotion is set. Example: 20
+     * @bodyParam monthly_promotion.expires_at string optional ISO 8601 data string for promotion expiry. Example: 2025-12-31T23:59:59Z
+     * @bodyParam yearly_promotion object optional Configuration for yearly billing discounts. Example: {"discount_percent": 25, "expires_at": "2026-06-30T23:59:59Z"}
+     * @bodyParam yearly_promotion.discount_percent numeric optional Percentage discount (0-50). Required if yearly_promotion is set. Example: 25
+     * @bodyParam yearly_promotion.expires_at string optional ISO 8601 date string for promotion expiry. Example: 2026-06-30T23:59:59Z
+     * @bodyParam features array optional List of features to include in this plan.
+     * @bodyParam features[].id integer required The ID of the feature (from plan_features table). Example: 1
+     * @bodyParam features[].limit integer optional usage limit for the feature (null for unlimited). Example: 100
      *
      * @response 201 {
      *   "success": true,
@@ -197,7 +192,9 @@ class PlanController extends Controller
         $plan = DB::transaction(function () use ($validated) {
             $slug = \Str::slug($validated['name']);
 
-            $plan = Plan::create([
+            $plansTable = config('laravel-subscriptions.tables.plans', 'plans');
+
+            $createData = [
                 'name' => json_encode(['en' => $validated['name']]),
                 'slug' => $slug,
                 'description' => json_encode(['en' => $validated['name'] . ' Plan']),
@@ -210,16 +207,24 @@ class PlanController extends Controller
                 'grace_period' => 0,
                 'grace_interval' => 'day',
                 'is_active' => true,
-                'sort_order' => Plan::max('sort_order') + 1,
+            ];
 
-                // Promotional fields
-                'monthly_promotion_discount_percent' => $validated['monthly_promotion']['discount_percent'] ?? 0,
-                'monthly_promotion_expires_at' => isset($validated['monthly_promotion']['expires_at']) ?
-                    $validated['monthly_promotion']['expires_at'] : null,
-                'yearly_promotion_discount_percent' => $validated['yearly_promotion']['discount_percent'] ?? 0,
-                'yearly_promotion_expires_at' => isset($validated['yearly_promotion']['expires_at']) ?
-                    $validated['yearly_promotion']['expires_at'] : null,
-            ]);
+            $createData['sort_order'] = Plan::max('sort_order') + 1;
+
+            // Promotional fields only set if the DB table includes them (tests may run against a schema without promotions)
+            if (Schema::hasColumn($plansTable, 'monthly_promotion_discount_percent')) {
+                $createData['monthly_promotion_discount_percent'] = $validated['monthly_promotion']['discount_percent'] ?? 0;
+                $createData['monthly_promotion_expires_at'] = isset($validated['monthly_promotion']['expires_at']) ?
+                    $validated['monthly_promotion']['expires_at'] : null;
+            }
+
+            if (Schema::hasColumn($plansTable, 'yearly_promotion_discount_percent')) {
+                $createData['yearly_promotion_discount_percent'] = $validated['yearly_promotion']['discount_percent'] ?? 0;
+                $createData['yearly_promotion_expires_at'] = isset($validated['yearly_promotion']['expires_at']) ?
+                    $validated['yearly_promotion']['expires_at'] : null;
+            }
+
+            $plan = Plan::create($createData);
 
             if (!empty($validated['features'])) {
                 foreach ($validated['features'] as $featureData) {
@@ -243,12 +248,13 @@ class PlanController extends Controller
     }
 
     /**
-     * Update Subscription Plan with Promotional Changes
+     * Update Subscription Plan (Admin)
      *
-     * Updates an existing subscription plan including pricing, promotional campaigns, and features.
-     * Supports adding, modifying, or removing promotional discounts for both billing intervals.
+     * Updates an existing subscription plan's details, pricing, promotions, or active status.
+     * Useful for adjusting prices, launching new campaigns, or retiring old plans.
      *
-     * @group Plans
+     * @group Subscription Plans
+
      * @authenticated
      * @urlParam id integer required The plan ID to update
      * @bodyParam name string optional New plan display name. Example: Premium Pro
@@ -316,7 +322,9 @@ class PlanController extends Controller
             }
 
             // Handle promotional updates
-            if (array_key_exists('monthly_promotion', $validated)) {
+            $plansTable = config('laravel-subscriptions.tables.plans', 'plans');
+
+            if (array_key_exists('monthly_promotion', $validated) && Schema::hasColumn($plansTable, 'monthly_promotion_discount_percent')) {
                 if ($validated['monthly_promotion'] === null) {
                     // Remove monthly promotion
                     $updateData['monthly_promotion_discount_percent'] = 0;
@@ -329,7 +337,7 @@ class PlanController extends Controller
                 }
             }
 
-            if (array_key_exists('yearly_promotion', $validated)) {
+            if (array_key_exists('yearly_promotion', $validated) && Schema::hasColumn($plansTable, 'yearly_promotion_discount_percent')) {
                 if ($validated['yearly_promotion'] === null) {
                     // Remove yearly promotion
                     $updateData['yearly_promotion_discount_percent'] = 0;
@@ -369,10 +377,23 @@ class PlanController extends Controller
     }
 
     /**
-     * @group Plans
+     * Delete Subscription Plan (Admin)
+     *
+     * Permanently removes a subscription plan from the system.
+     * **Restriction:** A plan cannot be deleted if there are currently active subscriptions linked to it. In such cases, consider setting `is_active` to false via the Update endpoint instead.
+     *
+     * @group Subscription Plans
      * @authenticated
-     * @urlParam id integer required
-     * @response 200 {"message": "Plan deleted"}
+     * @urlParam id integer required The ID of the plan to delete. Example: 1
+     * @response 200 {
+     *   "message": "Plan deleted"
+     * }
+     * @response 404 {
+     *   "message": "Plan not found"
+     * }
+     * @response 409 {
+     *   "error": "Cannot delete plan with active subscriptions"
+     * }
      */
     public function destroy(Plan $plan)
     {

@@ -1,0 +1,79 @@
+<?php
+
+namespace Tests\Feature\Admin;
+
+use App\Models\SystemSetting;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class SystemSettingTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected $admin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Create an admin user - assuming 'admin' role existence isn't strictly enforced for this specific controller logic,
+        // but typically we'd attach a role. For now, we simulate an authenticated user.
+        $this->admin = User::factory()->create(); 
+        // Note: Real RBAC might deny this if middleware checks permissions. 
+        // Ensuring Sanctum auth is enough for the route protection we saw in api.php unless 'can' middleware was added.
+    }
+
+    /** @test */
+    public function it_can_list_system_settings()
+    {
+        SystemSetting::create(['key' => 'general.site_name', 'value' => 'Dadisi', 'type' => 'string']);
+        SystemSetting::create(['key' => 'pesapal.enabled', 'value' => '1', 'type' => 'boolean']);
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+                         ->getJson('/api/admin/system-settings');
+
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'success' => true,
+                     'data' => [
+                         'general.site_name' => 'Dadisi',
+                         'pesapal.enabled' => true
+                     ]
+                 ]);
+    }
+
+    /** @test */
+    public function it_can_filter_settings_by_group()
+    {
+        SystemSetting::create(['key' => 'general.site_name', 'value' => 'Dadisi', 'group' => 'general']);
+        SystemSetting::create(['key' => 'pesapal.enabled', 'value' => '1', 'group' => 'pesapal']);
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+                         ->getJson('/api/admin/system-settings?group=pesapal');
+
+        $response->assertStatus(200)
+                 ->assertJsonFragment(['pesapal.enabled' => '1']) // Note: Cast might depend on how it's saved. If type missing, defaults string.
+                 ->assertJsonMissing(['general.site_name' => 'Dadisi']);
+    }
+
+    /** @test */
+    public function it_can_bulk_update_settings()
+    {
+        $payload = [
+            'pesapal.consumer_key' => 'new_secret_key',
+            'pesapal.live_mode' => true,
+        ];
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+                         ->putJson('/api/admin/system-settings', $payload);
+
+        $response->assertStatus(200)
+                 ->assertJsonPath('data.pesapal.consumer_key', 'new_secret_key')
+                 ->assertJsonPath('data.pesapal.live_mode', true);
+
+        $this->assertDatabaseHas('system_settings', [
+            'key' => 'pesapal.consumer_key',
+            'value' => 'new_secret_key'
+        ]);
+    }
+}

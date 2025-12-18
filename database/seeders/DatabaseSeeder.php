@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             SampleEventsSeeder::class,
             SampleAuthorsSeeder::class,
+            BlogPostsSeeder::class,
         ]);
 
         // Optionally seed a demo user

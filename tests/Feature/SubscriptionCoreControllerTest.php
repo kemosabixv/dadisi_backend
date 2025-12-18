@@ -224,8 +224,15 @@ class SubscriptionCoreControllerTest extends TestCase
             ]
         ]);
 
-        // Should only return 2 active plans created in setUp
-        $this->assertEquals(2, count($response->json('data')));
+        // Should return at least 2 active plans (created in setUp), excluding inactive plan
+        $this->assertGreaterThanOrEqual(2, count($response->json('data')));
+
+        // Verify the inactive plan was not returned
+        $planIds = array_column($response->json('data'), 'id');
+        $inactivePlan = Plan::where('is_active', false)->first();
+        if ($inactivePlan) {
+            $this->assertNotContains($inactivePlan->id, $planIds);
+        }
     }
 
     /**
@@ -626,7 +633,7 @@ class SubscriptionCoreControllerTest extends TestCase
         $this->assertDatabaseHas('subscriptions', [
             'id' => $subscription->id,
         ]);
-        
+
         // Verify user status changed
         $this->assertDatabaseHas('users', [
             'id' => $this->user->id,

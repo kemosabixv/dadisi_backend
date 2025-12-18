@@ -14,21 +14,27 @@ use Illuminate\Support\Str;
 
 /**
  * @group Authentication
- *
- * Email verification endpoints
+ * @groupDescription Specific endpoints for handling the email verification flow (Post-Registration).
  */
 class EmailVerificationController extends Controller
 {
     /**
-     * Send verification email
+     * Send Verification Email
      *
-     * Sends a verification code to the authenticated user's email.
-     * Rate limited to 1 attempt per minute.
+     * Triggers the dispatch of a 6-character email verification code to the authenticated user's registered email.
+     * This endpoint is rate-limited to one request per minute to prevent abuse.
+     * Use this if the initial registration email was missed or expired.
      *
      * @authenticated
-     * @response 200 {"message":"Verification email sent"}
-     * @response 400 {"message":"Email already verified"}
-     * @response 429 {"message":"Verification recently sent, try again later"}
+     * @response 200 {
+     *   "message": "Verification email sent"
+     * }
+     * @response 400 {
+     *   "message": "Email already verified"
+     * }
+     * @response 429 {
+     *   "message": "Verification recently sent, try again later"
+     * }
      */
     public function send(Request $request)
     {
@@ -93,24 +99,30 @@ class EmailVerificationController extends Controller
     }
 
     /**
-     * Verify email address
+     * Verify Email Address
      *
-     * Verifies a user's email using the provided code.
-     * Returns user data and new auth token on success.
+     * Consumes a verification code to confirm the user's email address.
+     * Upon success, marks the email as verified and returns an authentication token for immediate login.
+     * The code is one-time use and expires in 24 hours.
      *
-     * @bodyParam code string required The verification code sent by email. Example: ABC123
+     * @bodyParam code string required The 6-character verification code from the email. Example: ABC123
      *
      * @response 200 {
      *   "message": "Email verified",
      *   "token": "2|zIF5K7csJqxfM9...",
      *   "user": {
      *     "id": 1,
-     *     "name": "Example User",
+     *     "username": "Example User",
      *     "email": "user@example.com",
      *     "email_verified_at": "2025-10-24T12:00:00.000000Z"
      *   }
      * }
-     * @response 422 {"message": "Invalid or expired code"}
+     * @response 400 {
+     *   "message": "Email already verified"
+     * }
+     * @response 422 {
+     *   "message": "Invalid or expired code"
+     * }
      */
     public function verify(Request $request)
     {

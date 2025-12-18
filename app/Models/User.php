@@ -36,6 +36,26 @@ class User extends Authenticatable
         'subscription_status',
         'subscription_activated_at',
         'last_payment_date',
+        'profile_picture_path',
+    ];
+
+    /**
+     * Get the profile picture URL.
+     */
+    public function getProfilePictureUrlAttribute(): ?string
+    {
+        return $this->profile_picture_path
+            ? url('storage/' . $this->profile_picture_path)
+            : null;
+    }
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'profile_picture_url',
     ];
 
     /**
@@ -157,7 +177,7 @@ class User extends Authenticatable
     /**
      * Get all the user's subscription enhancements
      */
-    public function subscriptionEnhancements(): HasMany
+    public function subscriptionEnhancements(): HasManyThrough
     {
         return $this->hasManyThrough(
             SubscriptionEnhancement::class,
@@ -201,5 +221,23 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    /**
+     * Check if user can access admin panel
+     */
+    public function canAccessAdminPanel(): bool
+    {
+        // Check if user has specific admin roles or is a staff member
+        // Roles: super_admin, admin, finance, events_manager, content_editor
+        return $this->hasAnyRole(['super_admin', 'admin', 'finance', 'events_manager', 'content_editor']) 
+               || ($this->memberProfile && $this->memberProfile->is_staff);
+    }
+
+    /**
+     * Check if user is a staff member
+     */
+    public function isStaffMember(): bool
+    {
+        return $this->canAccessAdminPanel();
     }
 }

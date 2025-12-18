@@ -31,7 +31,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->hasPermissionTo('invite_users');
     }
 
     /**
@@ -85,7 +85,7 @@ class UserPolicy
      */
     public function viewAuditLogs(User $user): bool
     {
-        return $user->hasRole(['super_admin', 'admin']);
+        return $user->hasPermissionTo('view_audit_logs');
     }
 
     /**
@@ -112,7 +112,7 @@ class UserPolicy
      */
     public function bulkOperations(User $user): bool
     {
-        return $user->hasRole(['super_admin', 'admin']);
+        return $user->hasPermissionTo('bulk_user_operations');
     }
 
     /**

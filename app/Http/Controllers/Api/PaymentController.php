@@ -27,17 +27,23 @@ class PaymentController extends Controller
     /**
      * Get payment form metadata
      *
+     * Retrieves configuration data required to render the payment form on the frontend.
+     * Includes supported payment methods, currency limits, phone number formatting rules, and test numbers.
+     * Use this to dynamically validate user input before submission.
+     *
      * @group Payments
+     * @groupDescription Endpoints for handling financial transactions, including initiating payments, verifying status, and viewing history. Also includes admin tools for refunds.
      * @authenticated
-     * @description Get payment form details and validation rules for UI rendering
      *
      * @response 200 {
      *   "success": true,
      *   "data": {
      *     "phone_format": "254XXXXXXXXX",
+     *     "phone_example": "254712345678",
      *     "min_amount": 0.01,
      *     "max_amount": 999999.99,
-     *     "supported_methods": ["mobile_money"]
+     *     "currency": "KES",
+     *     "supported_payment_methods": ["mobile_money", "card"]
      *   }
      * }
      */
@@ -62,18 +68,25 @@ class PaymentController extends Controller
     /**
      * Check payment status
      *
-     * @group Payments
-     * @description Check the status of a payment transaction (unauthenticated)
+     * Queries the external payment gateway (or mock service) for the current status of a transaction.
+     * Can be called publically to support callback/redirect pages where auth might be tricky, or for quick status checks.
      *
-     * @queryParam transaction_id string required The transaction ID to check. Example: MOCK_abc123xyz
+     * @group Payments
+     *
+     * @queryParam transaction_id string required The unique transaction ID provided during initiation. Example: MOCK_abc123xyz
      *
      * @response 200 {
      *   "success": true,
      *   "data": {
      *     "transaction_id": "MOCK_abc123xyz",
      *     "status": "completed",
-     *     "amount": 100.00
+     *     "amount": 100.00,
+     *     "currency": "KES"
      *   }
+     * }
+     * @response 404 {
+     *   "success": false,
+     *   "message": "Transaction not found"
      * }
      */
     public function checkPaymentStatus(Request $request): JsonResponse
@@ -107,16 +120,27 @@ class PaymentController extends Controller
     /**
      * Verify payment and update subscription
      *
+     * Verifies a completed payment securely and updates the user's subscription status.
+     * This endpoint should be called after a successful payment flow to ensure the local database reflects the new state.
+     * It handles success, pending, and failure states, updating the subscription enhancement record accordingly.
+     *
      * @group Payments
      * @authenticated
-     * @description Verify payment completion and update subscription status
      *
-     * @bodyParam transaction_id string required Transaction ID to verify. Example: MOCK_abc123xyz
+     * @bodyParam transaction_id string required The transaction ID to verify. Example: MOCK_abc123xyz
      *
      * @response 200 {
      *   "success": true,
      *   "message": "Payment verified and subscription activated",
-     *   "data": {"subscription_id": 1, "status": "active"}
+     *   "data": {
+     *     "subscription_id": 1,
+     *     "status": "active",
+     *     "payment_status": "completed"
+     *   }
+     * }
+     * @response 500 {
+     *   "success": false,
+     *   "message": "Payment verification failed"
      * }
      */
     public function verifyPayment(Request $request): JsonResponse
@@ -229,20 +253,33 @@ class PaymentController extends Controller
     }
 
     /**
-     * Process payment with phone number simulation
+     * Process payment (Simulation)
+     *
+     * Simulates the payment processing step for development and testing.
+     * Allows forcing different outcomes (success, timeout, failure) based on the phone number provided.
+     * See `getPaymentFormMetadata` for test numbers.
      *
      * @group Payments
      * @authenticated
-     * @description Complete payment processing with phone number to simulate outcomes
      *
-     * @bodyParam transaction_id string required Transaction ID from initiation. Example: MOCK_abc123xyz
-     * @bodyParam order_id integer Order/Subscription ID. Example: 1
-     * @bodyParam phone string required Phone number for outcome simulation. Example: 254712345678
+     * @bodyParam transaction_id string required Unique transaction reference. Example: MOCK_abc123xyz
+     * @bodyParam order_id integer required The ID of the subscription order being paid for. Example: 1
+     * @bodyParam phone string required MPESA phone number. Example: 254712345678
      *
      * @response 200 {
      *   "success": true,
      *   "message": "Payment processed successfully",
-     *   "data": {"status": "completed", "subscription_status": "active"}
+     *   "data": {
+     *     "status": "completed",
+     *     "subscription_status": "active",
+     *     "transaction_id": "MOCK_abc123xyz"
+     *   }
+     * }
+     * @response 422 {
+     *   "message": "The given data was invalid.",
+     *   "errors": {
+     *     "phone": ["The phone format is invalid."]
+     *   }
      * }
      */
     public function processPayment(Request $request): JsonResponse
@@ -351,17 +388,33 @@ class PaymentController extends Controller
     /**
      * Get user's payment history
      *
+     * Retrieves a paginated history of all subscription payments made by the authenticated user.
+     * Includes successful, failed, and pending transactions.
+     *
      * @group Payments
      * @authenticated
-     * @description Retrieve user's payment transaction history
      *
-     * @queryParam per_page integer Results per page. Example: 15
+     * @queryParam per_page integer Number of records per page. Default: 15. Example: 15
      *
      * @response 200 {
      *   "success": true,
      *   "data": [
-     *     {"transaction_id": "MOCK_abc", "amount": 100, "status": "completed", "date": "2025-12-06"}
-     *   ]
+     *     {
+     *       "subscription_id": 1,
+     *       "plan_name": "Premium Monthly",
+     *       "amount": 999.00,
+     *       "currency": "KES",
+     *       "status": "active",
+     *       "failure_state": null,
+     *       "started_at": "2025-12-01T10:00:00Z",
+     *       "ended_at": "2026-01-01T10:00:00Z"
+     *     }
+     *   ],
+     *   "pagination": {
+     *     "total": 1,
+     *     "per_page": 15,
+     *     "current_page": 1
+     *   }
      * }
      */
     public function getPaymentHistory(Request $request): JsonResponse
@@ -402,16 +455,19 @@ class PaymentController extends Controller
     }
 
     /**
-     * Mock webhook for payment completion
+     * Handle payment webhook
+     *
+     * Receives instant payment notifications (IPN) from the payment gateway (e.g., Pesapal).
+     * Updates local transaction status in real-time.
+     * Note: This endpoint is public but verifies the payload signature/validity internally (mocked in Phase 1).
      *
      * @group Payments
-     * @description Webhook endpoint for Pesapal payment notifications (Phase 1 uses mock)
      *
-     * @bodyParam event_type string Event type from payment gateway. Example: payment.completed
-     * @bodyParam transaction_id string Transaction ID from payment gateway. Example: MOCK_abc123xyz
-     * @bodyParam status string Payment status. Example: completed
-     * @bodyParam amount float Payment amount. Example: 100.00
-     * @bodyParam order_tracking_id string Order tracking ID. Example: ORDER_def456
+     * @bodyParam event_type string required Type of event. Example: payment.completed
+     * @bodyParam transaction_id string required Gateway transaction ID. Example: MOCK_abc123xyz
+     * @bodyParam status string required Status of payment. Example: completed
+     * @bodyParam amount float Amount paid. Example: 100.00
+     * @bodyParam order_tracking_id string optional Tracking ID. Example: ORDER_def456
      *
      * @response 200 {
      *   "success": true,
@@ -455,17 +511,29 @@ class PaymentController extends Controller
     /**
      * Refund payment (admin only)
      *
+     * Initiates a refund for a completed transaction.
+     * RESTRICTED: Only accessible by administrators.
+     * Useful for correcting billing errors or handling customer cancellations.
+     *
      * @group Payments
      * @authenticated
-     * @description Process refund for a payment transaction
      *
-     * @bodyParam transaction_id string required Transaction ID to refund. Example: MOCK_abc123xyz
-     * @bodyParam reason string required Refund reason. Example: Duplicate charge
+     * @bodyParam transaction_id string required The transaction ID to refund. Example: MOCK_abc123xyz
+     * @bodyParam reason string required Justification for the refund. Example: Duplicate charge
+     * @bodyParam amount float optional Partial refund amount. If omitted, refunds full amount. Example: 50.00
      *
      * @response 200 {
      *   "success": true,
      *   "message": "Refund processed successfully",
-     *   "data": {"refund_id": "REF_123", "status": "completed"}
+     *   "data": {
+     *     "refund_id": "REF_123",
+     *     "status": "completed",
+     *     "amount": 100.00
+     *   }
+     * }
+     * @response 403 {
+     *   "success": false,
+     *   "message": "Unauthorized - admin only"
      * }
      */
     public function refundPayment(Request $request): JsonResponse

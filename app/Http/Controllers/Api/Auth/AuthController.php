@@ -18,21 +18,52 @@ use Carbon\Carbon;
 
 /**
  * @group Authentication
+ * @groupDescription APIs for managing user authentication sessions, including registration, login, logout, and password recovery processes.
  *
- * APIs for user registration, login, logout and password resets.
+ * This group handles the core identity management features of the application.
+ * Note: Password security rules enforce at least one uppercase, lowercase, number, and special character.
  */
 class AuthController extends Controller
 {
     /**
-     * Signup
+     * Signup / Register
      *
-     * Register a new user and return a 201 response on success.
+     * Creates a new user account, initializes a basic member profile, and sends an email verification link.
+     * This is the entry point for new users to access the platform.
      *
-     * @bodyParam username string required The user's username. Example: curluser
-     * @bodyParam email string required The user's email. Example: curluser@example.com
-     * @bodyParam password string required Must be 8+ chars with letters, numbers & special chars. Example: Pass123!@#
-     * @bodyParam password_confirmation string required Confirmation of the password. Example: Pass123!@#
-     * @response 201
+     * @bodyParam username string required The desired username. Must be unique. Example: curluser
+     * @bodyParam email string required The user's valid email address. Must be unique. Example: curluser@example.com
+     * @bodyParam password string required Password (min 8 chars, mixed case, numbers, special chars). Example: Pass123!@#
+     * @bodyParam password_confirmation string required Must match the password field. Example: Pass123!@#
+     *
+     * @response 201 {
+     *  "user": {
+     *      "id": 1,
+     *      "username": "newuser",
+     *      "email": "newuser@example.com",
+     *      "email_verified_at": null,
+     *      "ui_permissions": {
+     *          "can_view_users": false,
+     *          "can_create_users": false,
+     *          "can_access_admin_panel": false
+     *      },
+     *      "admin_access": {
+     *          "can_access_admin": false,
+     *          "menu": []
+     *      },
+     *      "member_profile": {
+     *          "is_staff": false,
+     *          "first_name": "",
+     *          "last_name": ""
+     *      }
+     *  }
+     * }
+     * @response 422 {
+     *   "message": "The given data was invalid.",
+     *   "errors": {
+     *     "email": ["The email has already been taken."]
+     *   }
+     * }
      */
     public function signup(Request $request) {
         $validatedData = $request->validate([
@@ -67,7 +98,9 @@ class AuthController extends Controller
             $emailVerificationController = new EmailVerificationController();
             $emailVerificationController->sendWelcomeAndVerifyEmail($user);
 
-            return response()->json(null, 201);
+            return response()->json([
+                'user' => new \App\Http\Resources\SecureUserResource($user),
+            ], 201);
         }
 
         return response()->json(null, 404);
@@ -76,15 +109,29 @@ class AuthController extends Controller
     /**
      * Login
      *
-     * Authenticate user and return an access token.
+     * Authenticates a user using their email and password, returning a new API access token.
+     * Supports a "remember me" option to extend the token's expiration time (e.g., to 30 days).
      *
-     * @bodyParam email string required The user's email. Example: curluser@example.com
-     * @bodyParam password string required The user's password. Example: password123
-     * @bodyParam remember_me boolean Optional remember flag to extend token expiry. Example: true
+     * @bodyParam email string required The registered email address. Example: curluser@example.com
+     * @bodyParam password string required The user's password. Example: Pass123!@#
+     * @bodyParam remember_me boolean Optional. If true, extends token validity. Example: true
+     *
      * @response 200 {
-     *  "user": {"id":1,"username":"curluser","email":"curluser@example.com"},
-     *  "access_token": "token-value",
+     *  "user": {
+     *      "id": 1,
+     *      "username": "curluser",
+     *      "email": "curluser@example.com",
+     *      "created_at": "2023-01-01T12:00:00.000000Z",
+     *      "updated_at": "2023-01-01T12:00:00.000000Z"
+     *  },
+     *  "access_token": "2|zIF5K7csJqxfM9...",
      *  "email_verified": false
+     * }
+     * @response 422 {
+     *   "message": "The provided credentials are incorrect.",
+     *   "errors": {
+     *     "email": ["The provided credentials are incorrect."]
+     *   }
      * }
      */
     public function login(Request $request) {
@@ -126,7 +173,7 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'user' => $user,
+            'user' => new \App\Http\Resources\SecureUserResource($user),
             'access_token' => $plainText,
             'email_verified' => !is_null($user->email_verified_at)
         ], 200);
@@ -135,9 +182,14 @@ class AuthController extends Controller
     /**
      * Logout
      *
-     * Revoke the authenticated user's token. This endpoint works with or without a valid token.
+     * Revokes the authenticated user's current API token.
+     * This effectively invalidates the current session. The endpoint attempts to cleanup other tokens for the user as well where possible.
      *
-     * @response 200
+     * @authenticated
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Logged out successfully."
+     * }
      */
     public function logout(Request $request) {
         // Revoke the token used in this request (logout single device/session).
@@ -189,13 +241,20 @@ class AuthController extends Controller
     /**
      * Get Authenticated User
      *
-     * Returns the currently authenticated user.
+     * Retrieve the profile details of the currently logged-in user.
+     * Useful for frontend applications to fetch user state on page load.
      *
      * @authenticated
      * @response 200 {
      *  "id": 1,
      *  "username": "curluser",
-     *  "email": "curluser@example.com"
+     *  "email": "curluser@example.com",
+     *  "email_verified_at": null,
+     *  "created_at": "2023-01-01T12:00:00.000000Z",
+     *  "updated_at": "2023-01-01T12:00:00.000000Z"
+     * }
+     * @response 401 {
+     *   "message": "Unauthenticated."
      * }
      */
     public function getAuthenticatedUser(Request $request) {
@@ -213,12 +272,22 @@ class AuthController extends Controller
     }
 
     /**
-     * Send password reset link email
+     * Send Password Reset Link
      *
-     * Sends a password reset link to the user's email.
+     * Initiates the password recovery process by sending a reset link to the user's email address.
+     * To prevent email enumeration, this endpoint returns a success message even if the email does not exist in the system.
      *
-     * @bodyParam email string required The user's email. Example: curluser@example.com
-     * @response 200 {"message": "We have emailed your password reset link!"}
+     * @bodyParam email string required The email address to send the reset link to. Example: curluser@example.com
+     *
+     * @response 200 {
+     *   "message": "We have emailed your password reset link!"
+     * }
+     * @response 422 {
+     *   "message": "The given data was invalid.",
+     *   "errors": {
+     *     "email": ["The email field is required."]
+     *   }
+     * }
      */
     public function sendPasswordResetLinkEmail(Request $request) {
         $request->validate(['email' => 'required|email']);
@@ -237,16 +306,27 @@ class AuthController extends Controller
     }
 
     /**
-     * Reset the user's password.
+     * Reset Password
      *
-     * @bodyParam token string required The password reset token. Example: abc123
-     * @bodyParam email string required The user's email. Example: curluser@example.com
-     * @bodyParam password string required Must be 8+ chars with letters, numbers & special chars. Example: Pass123!@#
-     * @bodyParam password_confirmation string required Confirmation of the password. Example: Pass123!@#
-     * @response 200 {"message": "Password reset successful."}
-     * @response 400 {"message": "Invalid or expired token."}
-     * @response 404 {"message": "User not found."}
-     * @response 422 {"message": "The password reset token has expired. Please request a new password reset link."}
+     * Finalizes the password recovery process using a valid reset token.
+     *
+     * @bodyParam token string required The secure token received in the password reset email. Example: c0500732df...
+     * @bodyParam email string required The user's email address. Example: curluser@example.com
+     * @bodyParam password string required The new password (min 8 chars, mixed case, numbers, special chars). Example: NewPass123!@#
+     * @bodyParam password_confirmation string required Must match the password field. Example: NewPass123!@#
+     *
+     * @response 200 {
+     *   "message": "Password reset successful."
+     * }
+     * @response 400 {
+     *   "message": "Invalid or expired token."
+     * }
+     * @response 404 {
+     *   "message": "User not found."
+     * }
+     * @response 422 {
+     *   "message": "The password reset token has expired. Please request a new password reset link."
+     * }
      */
     public function resetPassword(Request $request)
     {
@@ -289,7 +369,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = \App\Models\User::where('email', $email)->first();
+        $user = User::where('email', $email)->first();
 
         if (! $user) {
             return response()->json(['message' => 'User not found.'], 404);
@@ -320,15 +400,23 @@ class AuthController extends Controller
     /**
      * Change Password
      *
-     * Allows an authenticated user to change their password.
+     * Allows a currently logged-in user to update their password.
+     * Requires the current password for security verification.
+     *
      * @authenticated
-     * @bodyParam current_password string required The user's current password. Example: OldPass123!@#
-     * @bodyParam new_password string required Must be 8+ chars with letters, numbers & special chars. Example: NewPass123!@#
-     * @bodyParam new_password_confirmation string required Confirmation of the new password. Example: NewPass123!@#
-     * @response 200 {"message": "Password changed successfully."}
-     * @response 400 {"message": "Current password is incorrect."}
-     * @response 400 {"message": "New password cannot be the same as the old password."}
-     * @response 422 {"message": "The new password must contain at least one lowercase letter, one uppercase letter, one number, and one special character."}
+     * @bodyParam current_password string required The user's existing password. Example: OldPass123!@#
+     * @bodyParam new_password string required The new password to set (min 8 chars, mixed case, numbers, special chars). Example: NewPass123!@#
+     * @bodyParam new_password_confirmation string required Must match the new password. Example: NewPass123!@#
+     *
+     * @response 200 {
+     *   "message": "Password changed successfully."
+     * }
+     * @response 400 {
+     *   "message": "Current password is incorrect."
+     * }
+     * @response 422 {
+     *   "message": "The new password must contain at least one lowercase letter, one uppercase letter, one number, and one special character."
+     * }
      */
     public function changePassword(Request $request)
     {
@@ -371,4 +459,16 @@ class AuthController extends Controller
     }
 
 
+    /**
+     * Get Current User (UI Optimized)
+     *
+     * Returns the authenticated user with specific UI permission flags.
+     * Use this endpoint for initial session hydration and authorization checks.
+     *
+     * @authenticated
+     */
+    public function me(Request $request)
+    {
+        return new \App\Http\Resources\SecureUserResource($request->user());
+    }
 }

@@ -1,7 +1,5 @@
 name: Authentication
-description: |-
-
-  APIs for user registration, login, logout and password resets.
+description: ''
 endpoints:
   -
     custom: []
@@ -11,13 +9,13 @@ endpoints:
     metadata:
       custom: []
       groupName: Authentication
-      groupDescription: |-
-
-        APIs for user registration, login, logout and password resets.
+      groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: Signup
-      description: 'Register a new user and return a 201 response on success.'
+      title: 'Signup / Register'
+      description: |-
+        Creates a new user account, initializes a basic member profile, and sends an email verification link.
+        This is the entry point for new users to access the platform.
       authenticated: false
       deprecated: false
     headers:
@@ -31,7 +29,7 @@ endpoints:
       username:
         custom: []
         name: username
-        description: "The user's username."
+        description: 'The desired username. Must be unique.'
         required: true
         example: curluser
         type: string
@@ -42,7 +40,7 @@ endpoints:
       email:
         custom: []
         name: email
-        description: "The user's email."
+        description: "The user's valid email address. Must be unique."
         required: true
         example: curluser@example.com
         type: string
@@ -53,7 +51,7 @@ endpoints:
       password:
         custom: []
         name: password
-        description: 'Must be 8+ chars with letters, numbers & special chars.'
+        description: 'Password (min 8 chars, mixed case, numbers, special chars).'
         required: true
         example: 'Pass123!@#'
         type: string
@@ -64,7 +62,7 @@ endpoints:
       password_confirmation:
         custom: []
         name: password_confirmation
-        description: 'Confirmation of the password.'
+        description: 'Must match the password field.'
         required: true
         example: 'Pass123!@#'
         type: string
@@ -82,7 +80,41 @@ endpoints:
       -
         custom: []
         status: 201
-        content: '{}'
+        content: |-
+          {
+           "user": {
+               "id": 1,
+               "username": "newuser",
+               "email": "newuser@example.com",
+               "email_verified_at": null,
+               "ui_permissions": {
+                   "can_view_users": false,
+                   "can_create_users": false,
+                   "can_access_admin_panel": false
+               },
+               "admin_access": {
+                   "can_access_admin": false,
+                   "menu": []
+               },
+               "member_profile": {
+                   "is_staff": false,
+                   "first_name": "",
+                   "last_name": ""
+               }
+           }
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "The given data was invalid.",
+            "errors": {
+              "email": ["The email has already been taken."]
+            }
+          }
         headers: []
         description: ''
     responseFields: []
@@ -98,13 +130,13 @@ endpoints:
     metadata:
       custom: []
       groupName: Authentication
-      groupDescription: |-
-
-        APIs for user registration, login, logout and password resets.
+      groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: Login
-      description: 'Authenticate user and return an access token.'
+      description: |-
+        Authenticates a user using their email and password, returning a new API access token.
+        Supports a "remember me" option to extend the token's expiration time (e.g., to 30 days).
       authenticated: false
       deprecated: false
     headers:
@@ -118,7 +150,7 @@ endpoints:
       email:
         custom: []
         name: email
-        description: "The user's email."
+        description: 'The registered email address.'
         required: true
         example: curluser@example.com
         type: string
@@ -131,7 +163,7 @@ endpoints:
         name: password
         description: "The user's password."
         required: true
-        example: password123
+        example: 'Pass123!@#'
         type: string
         enumValues: []
         exampleWasSpecified: true
@@ -140,7 +172,7 @@ endpoints:
       remember_me:
         custom: []
         name: remember_me
-        description: 'Optional remember flag to extend token expiry.'
+        description: 'Optional. If true, extends token validity.'
         required: false
         example: true
         type: boolean
@@ -150,7 +182,7 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       email: curluser@example.com
-      password: password123
+      password: 'Pass123!@#'
       remember_me: true
     fileParameters: []
     responses:
@@ -159,9 +191,40 @@ endpoints:
         status: 200
         content: |-
           {
-           "user": {"id":1,"username":"curluser","email":"curluser@example.com"},
-           "access_token": "token-value",
+           "user": {
+               "id": 1,
+               "username": "curluser",
+               "email": "curluser@example.com",
+               "email_verified_at": "2023-01-01T12:00:00.000000Z",
+               "ui_permissions": {
+                   "can_view_users": false,
+                   "can_create_users": false,
+                   "can_access_admin_panel": false
+               },
+               "admin_access": {
+                   "can_access_admin": false,
+                   "menu": []
+               },
+               "member_profile": {
+                   "is_staff": false,
+                   "first_name": "John",
+                   "last_name": "Doe"
+               }
+           },
+           "access_token": "2|zIF5K7csJqxfM9...",
            "email_verified": false
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "The provided credentials are incorrect.",
+            "errors": {
+              "email": ["The provided credentials are incorrect."]
+            }
           }
         headers: []
         description: ''
@@ -178,16 +241,17 @@ endpoints:
     metadata:
       custom: []
       groupName: Authentication
-      groupDescription: |-
-
-        APIs for user registration, login, logout and password resets.
+      groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: Logout
-      description: "Revoke the authenticated user's token. This endpoint works with or without a valid token."
-      authenticated: false
+      description: |-
+        Revokes the authenticated user's current API token.
+        This effectively invalidates the current session. The endpoint attempts to cleanup other tokens for the user as well where possible.
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -201,11 +265,18 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{}'
+        content: |-
+          {
+            "success": true,
+            "message": "Logged out successfully."
+          }
         headers: []
         description: ''
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
     controller: null
     method: null
     route: null
@@ -217,13 +288,13 @@ endpoints:
     metadata:
       custom: []
       groupName: Authentication
-      groupDescription: |-
-
-        APIs for user registration, login, logout and password resets.
+      groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: 'Get Authenticated User'
-      description: 'Returns the currently authenticated user.'
+      description: |-
+        Retrieve the profile details of the currently logged-in user.
+        Useful for frontend applications to fetch user state on page load.
       authenticated: true
       deprecated: false
     headers:
@@ -245,7 +316,94 @@ endpoints:
           {
            "id": 1,
            "username": "curluser",
-           "email": "curluser@example.com"
+           "email": "curluser@example.com",
+           "email_verified_at": "2023-01-01T12:00:00.000000Z",
+           "ui_permissions": {
+               "can_view_users": false,
+               "can_create_users": false,
+               "can_access_admin_panel": false
+           },
+           "admin_access": {
+               "can_access_admin": false,
+               "menu": []
+           },
+           "member_profile": {
+               "is_staff": false,
+               "first_name": "John",
+               "last_name": "Doe"
+           }
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 401
+        content: |-
+          {
+            "message": "Unauthenticated."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/auth/me
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Current User (UI Optimized)'
+      description: |-
+        Returns the authenticated user with specific UI permission flags.
+        Use this endpoint for initial session hydration and authorization checks.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+           "id": 1,
+           "username": "curluser",
+           "email": "curluser@example.com",
+           "email_verified_at": "2023-01-01T12:00:00.000000Z",
+           "ui_permissions": {
+               "can_view_users": false,
+               "can_create_users": false,
+               "can_access_admin_panel": false
+           },
+           "admin_access": {
+               "can_access_admin": false,
+               "menu": []
+           },
+           "member_profile": {
+               "is_staff": false,
+               "first_name": "John",
+               "last_name": "Doe"
+           }
           }
         headers: []
         description: ''
@@ -265,13 +423,13 @@ endpoints:
     metadata:
       custom: []
       groupName: Authentication
-      groupDescription: |-
-
-        APIs for user registration, login, logout and password resets.
+      groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Send password reset link email'
-      description: "Sends a password reset link to the user's email."
+      title: 'Send Password Reset Link'
+      description: |-
+        Initiates the password recovery process by sending a reset link to the user's email address.
+        To prevent email enumeration, this endpoint returns a success message even if the email does not exist in the system.
       authenticated: false
       deprecated: false
     headers:
@@ -285,7 +443,7 @@ endpoints:
       email:
         custom: []
         name: email
-        description: "The user's email."
+        description: 'The email address to send the reset link to.'
         required: true
         example: curluser@example.com
         type: string
@@ -300,7 +458,22 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"message": "We have emailed your password reset link!"}'
+        content: |-
+          {
+            "message": "We have emailed your password reset link!"
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "The given data was invalid.",
+            "errors": {
+              "email": ["The email field is required."]
+            }
+          }
         headers: []
         description: ''
     responseFields: []
@@ -316,13 +489,11 @@ endpoints:
     metadata:
       custom: []
       groupName: Authentication
-      groupDescription: |-
-
-        APIs for user registration, login, logout and password resets.
+      groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: "Reset the user's password."
-      description: ''
+      title: 'Reset Password'
+      description: 'Finalizes the password recovery process using a valid reset token.'
       authenticated: false
       deprecated: false
     headers:
@@ -336,9 +507,9 @@ endpoints:
       token:
         custom: []
         name: token
-        description: 'The password reset token.'
+        description: 'The secure token received in the password reset email.'
         required: true
-        example: abc123
+        example: c0500732df...
         type: string
         enumValues: []
         exampleWasSpecified: true
@@ -347,7 +518,7 @@ endpoints:
       email:
         custom: []
         name: email
-        description: "The user's email."
+        description: "The user's email address."
         required: true
         example: curluser@example.com
         type: string
@@ -358,9 +529,9 @@ endpoints:
       password:
         custom: []
         name: password
-        description: 'Must be 8+ chars with letters, numbers & special chars.'
+        description: 'The new password (min 8 chars, mixed case, numbers, special chars).'
         required: true
-        example: 'Pass123!@#'
+        example: 'NewPass123!@#'
         type: string
         enumValues: []
         exampleWasSpecified: true
@@ -369,43 +540,55 @@ endpoints:
       password_confirmation:
         custom: []
         name: password_confirmation
-        description: 'Confirmation of the password.'
+        description: 'Must match the password field.'
         required: true
-        example: 'Pass123!@#'
+        example: 'NewPass123!@#'
         type: string
         enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanBodyParameters:
-      token: abc123
+      token: c0500732df...
       email: curluser@example.com
-      password: 'Pass123!@#'
-      password_confirmation: 'Pass123!@#'
+      password: 'NewPass123!@#'
+      password_confirmation: 'NewPass123!@#'
     fileParameters: []
     responses:
       -
         custom: []
         status: 200
-        content: '{"message": "Password reset successful."}'
+        content: |-
+          {
+            "message": "Password reset successful."
+          }
         headers: []
         description: ''
       -
         custom: []
         status: 400
-        content: '{"message": "Invalid or expired token."}'
+        content: |-
+          {
+            "message": "Invalid or expired token."
+          }
         headers: []
         description: ''
       -
         custom: []
         status: 404
-        content: '{"message": "User not found."}'
+        content: |-
+          {
+            "message": "User not found."
+          }
         headers: []
         description: ''
       -
         custom: []
         status: 422
-        content: '{"message": "The password reset token has expired. Please request a new password reset link."}'
+        content: |-
+          {
+            "message": "The password reset token has expired. Please request a new password reset link."
+          }
         headers: []
         description: ''
     responseFields: []
@@ -421,13 +604,13 @@ endpoints:
     metadata:
       custom: []
       groupName: Authentication
-      groupDescription: |-
-
-        APIs for user registration, login, logout and password resets.
+      groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: 'Change Password'
-      description: 'Allows an authenticated user to change their password.'
+      description: |-
+        Allows a currently logged-in user to update their password.
+        Requires the current password for security verification.
       authenticated: true
       deprecated: false
     headers:
@@ -442,7 +625,7 @@ endpoints:
       current_password:
         custom: []
         name: current_password
-        description: "The user's current password."
+        description: "The user's existing password."
         required: true
         example: 'OldPass123!@#'
         type: string
@@ -453,7 +636,7 @@ endpoints:
       new_password:
         custom: []
         name: new_password
-        description: 'Must be 8+ chars with letters, numbers & special chars.'
+        description: 'The new password to set (min 8 chars, mixed case, numbers, special chars).'
         required: true
         example: 'NewPass123!@#'
         type: string
@@ -464,7 +647,7 @@ endpoints:
       new_password_confirmation:
         custom: []
         name: new_password_confirmation
-        description: 'Confirmation of the new password.'
+        description: 'Must match the new password.'
         required: true
         example: 'NewPass123!@#'
         type: string
@@ -481,25 +664,28 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"message": "Password changed successfully."}'
+        content: |-
+          {
+            "message": "Password changed successfully."
+          }
         headers: []
         description: ''
       -
         custom: []
         status: 400
-        content: '{"message": "Current password is incorrect."}'
-        headers: []
-        description: ''
-      -
-        custom: []
-        status: 400
-        content: '{"message": "New password cannot be the same as the old password."}'
+        content: |-
+          {
+            "message": "Current password is incorrect."
+          }
         headers: []
         description: ''
       -
         custom: []
         status: 422
-        content: '{"message": "The new password must contain at least one lowercase letter, one uppercase letter, one number, and one special character."}'
+        content: |-
+          {
+            "message": "The new password must contain at least one lowercase letter, one uppercase letter, one number, and one special character."
+          }
         headers: []
         description: ''
     responseFields: []
@@ -518,15 +704,14 @@ endpoints:
     metadata:
       custom: []
       groupName: Authentication
-      groupDescription: |-
-
-        Email verification endpoints
+      groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Send verification email'
+      title: 'Send Verification Email'
       description: |-
-        Sends a verification code to the authenticated user's email.
-        Rate limited to 1 attempt per minute.
+        Triggers the dispatch of a 6-character email verification code to the authenticated user's registered email.
+        This endpoint is rate-limited to one request per minute to prevent abuse.
+        Use this if the initial registration email was missed or expired.
       authenticated: true
       deprecated: false
     headers:
@@ -544,19 +729,28 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"message":"Verification email sent"}'
+        content: |-
+          {
+            "message": "Verification email sent"
+          }
         headers: []
         description: ''
       -
         custom: []
         status: 400
-        content: '{"message":"Email already verified"}'
+        content: |-
+          {
+            "message": "Email already verified"
+          }
         headers: []
         description: ''
       -
         custom: []
         status: 429
-        content: '{"message":"Verification recently sent, try again later"}'
+        content: |-
+          {
+            "message": "Verification recently sent, try again later"
+          }
         headers: []
         description: ''
     responseFields: []
@@ -575,15 +769,14 @@ endpoints:
     metadata:
       custom: []
       groupName: Authentication
-      groupDescription: |-
-
-        Email verification endpoints
+      groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Verify email address'
+      title: 'Verify Email Address'
       description: |-
-        Verifies a user's email using the provided code.
-        Returns user data and new auth token on success.
+        Consumes a verification code to confirm the user's email address.
+        Upon success, marks the email as verified and returns an authentication token for immediate login.
+        The code is one-time use and expires in 24 hours.
       authenticated: false
       deprecated: false
     headers:
@@ -597,7 +790,7 @@ endpoints:
       code:
         custom: []
         name: code
-        description: 'The verification code sent by email.'
+        description: 'The 6-character verification code from the email.'
         required: true
         example: ABC123
         type: string
@@ -618,7 +811,7 @@ endpoints:
             "token": "2|zIF5K7csJqxfM9...",
             "user": {
               "id": 1,
-              "name": "Example User",
+              "username": "Example User",
               "email": "user@example.com",
               "email_verified_at": "2025-10-24T12:00:00.000000Z"
             }
@@ -627,8 +820,20 @@ endpoints:
         description: ''
       -
         custom: []
+        status: 400
+        content: |-
+          {
+            "message": "Email already verified"
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
         status: 422
-        content: '{"message": "Invalid or expired code"}'
+        content: |-
+          {
+            "message": "Invalid or expired code"
+          }
         headers: []
         description: ''
     responseFields: []

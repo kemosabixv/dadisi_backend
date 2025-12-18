@@ -14,8 +14,10 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
-      description: ''
+      title: 'Get current user profile'
+      description: |-
+        Retrieves the profile associated with the currently authenticated user.
+        This is the primary endpoint for fetching user details for the dashboard/profile page.
       authenticated: true
       deprecated: false
     headers:
@@ -39,12 +41,12 @@ endpoints:
             "data": {
               "id": 1,
               "user": {"name": "John Doe", "email": "john@example.com"},
-              "county": {"name": "Nairobi"},
+              "county": {"name": "Nairobi", "id": 47},
               "first_name": "John",
               "last_name": "Doe",
               "gender": "male",
               "terms_accepted": true,
-              "subscription_plan": {"name": "Free", "price": null}
+              "subscription_plan": {"name": "Free", "price": 0}
             }
           }
         headers: []
@@ -78,8 +80,10 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
-      description: ''
+      title: 'Create/Update current user profile'
+      description: |-
+        Creates a new profile for the authenticated user if one doesn't exist, or updates the existing one.
+        This ensures the user has a linked profile record with necessary details like county and contact info.
       authenticated: true
       deprecated: false
     headers:
@@ -94,9 +98,9 @@ endpoints:
       county_id:
         custom: []
         name: county_id
-        description: 'County ID.'
+        description: 'County ID. Must correspond to a valid county.'
         required: true
-        example: 1
+        example: 47
         type: integer
         enumValues: []
         exampleWasSpecified: true
@@ -105,7 +109,7 @@ endpoints:
       first_name:
         custom: []
         name: first_name
-        description: 'optional First name. Max 100 chars.'
+        description: 'optional First name. Max 100 chars. Auto-filled from user name if empty.'
         required: false
         example: John
         type: string
@@ -116,7 +120,7 @@ endpoints:
       last_name:
         custom: []
         name: last_name
-        description: 'optional Last name. Max 100 chars.'
+        description: 'optional Last name. Max 100 chars. Auto-filled if empty.'
         required: false
         example: Doe
         type: string
@@ -138,7 +142,7 @@ endpoints:
       gender:
         custom: []
         name: gender
-        description: 'optional Gender. One of: male, female, other.'
+        description: 'optional Gender identity. One of: male, female, other.'
         required: false
         example: male
         type: string
@@ -149,7 +153,7 @@ endpoints:
       date_of_birth:
         custom: []
         name: date_of_birth
-        description: 'optional Date of birth. Must be before today.'
+        description: 'optional Date of birth. Must be a past date.'
         required: false
         example: '1990-01-15'
         type: date
@@ -160,7 +164,7 @@ endpoints:
       occupation:
         custom: []
         name: occupation
-        description: 'optional Occupation. Max 255 chars.'
+        description: 'optional Professional occupation. Max 255 chars.'
         required: false
         example: 'Software Developer'
         type: string
@@ -171,7 +175,7 @@ endpoints:
       membership_type:
         custom: []
         name: membership_type
-        description: 'optional Membership plan name.'
+        description: "optional Desired membership plan (e.g., 'free', 'premium')."
         required: false
         example: free
         type: string
@@ -182,7 +186,7 @@ endpoints:
       emergency_contact_name:
         custom: []
         name: emergency_contact_name
-        description: optional
+        description: 'optional Name of emergency contact.'
         required: false
         example: 'Jane Doe'
         type: string
@@ -193,7 +197,7 @@ endpoints:
       emergency_contact_phone:
         custom: []
         name: emergency_contact_phone
-        description: optional
+        description: 'optional Phone of emergency contact.'
         required: false
         example: '+254798765432'
         type: string
@@ -204,7 +208,7 @@ endpoints:
       terms_accepted:
         custom: []
         name: terms_accepted
-        description: 'Must accept terms to create profile.'
+        description: 'Confirmation of T&C acceptance.'
         required: true
         example: true
         type: boolean
@@ -215,7 +219,7 @@ endpoints:
       marketing_consent:
         custom: []
         name: marketing_consent
-        description: optional
+        description: 'optional Consent to receive marketing materials.'
         required: false
         example: false
         type: boolean
@@ -226,7 +230,7 @@ endpoints:
       interests:
         custom: []
         name: interests
-        description: optional
+        description: 'optional List of user interests/tags.'
         required: false
         example:
           - technology
@@ -239,16 +243,16 @@ endpoints:
       bio:
         custom: []
         name: bio
-        description: 'optional Max 1000 chars.'
+        description: 'optional Short biography. Max 1000 chars.'
         required: false
-        example: 'Passionate about community development'
+        example: 'Enthusiastic learner.'
         type: string
         enumValues: []
         exampleWasSpecified: true
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      county_id: 1
+      county_id: 47
       first_name: John
       last_name: Doe
       phone: '+254712345678'
@@ -263,7 +267,7 @@ endpoints:
       interests:
         - technology
         - community
-      bio: 'Passionate about community development'
+      bio: 'Enthusiastic learner.'
     fileParameters: []
     responses:
       -
@@ -273,7 +277,11 @@ endpoints:
           {
             "success": true,
             "message": "Profile updated successfully",
-            "data": {"id": 1}
+            "data": {
+              "id": 1,
+              "first_name": "John",
+              "county_id": 47
+            }
           }
         headers: []
         description: ''
@@ -306,8 +314,11 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
-      description: ''
+      title: 'List all member profiles'
+      description: |-
+        Retrieves a paginated list of all member profiles.
+        RESTRICTED: Only accessible by users with 'super_admin' or 'admin' roles.
+        Supports filtering by county, membership type, and search by name/email.
       authenticated: true
       deprecated: false
     headers:
@@ -331,7 +342,7 @@ endpoints:
       membership_type:
         custom: []
         name: membership_type
-        description: 'Filter by membership type.'
+        description: 'Filter by membership type name.'
         required: false
         example: premium
         type: string
@@ -350,10 +361,22 @@ endpoints:
         exampleWasSpecified: true
         nullable: false
         deprecated: false
+      page:
+        custom: []
+        name: page
+        description: 'Page number for pagination.'
+        required: false
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
     cleanQueryParameters:
       county_id: 1
       membership_type: premium
       search: john
+      page: 1
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
@@ -365,6 +388,7 @@ endpoints:
           {
             "success": true,
             "data": {
+              "current_page": 1,
               "data": [
                 {
                   "id": 1,
@@ -372,11 +396,12 @@ endpoints:
                   "county": {"name": "Nairobi"},
                   "first_name": "John",
                   "last_name": "Smith",
-                  "terms_accepted": true
+                  "terms_accepted": true,
+                  "created_at": "2024-01-01T12:00:00Z"
                 }
               ],
-              "current_page": 1,
-              "total": 5
+              "total": 5,
+              "per_page": 20
             }
           }
         headers: []
@@ -410,8 +435,12 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
-      description: ''
+      title: 'Get specific profile details'
+      description: |-
+        Retrieves details for a specific profile by ID.
+        - Users can always view their own profile (if ID matches or if ID is omitted, though `me` endpoint is preferred for that).
+        - Admins can view any user's profile.
+        - Access is denied if a regular user tries to view another user's profile.
       authenticated: true
       deprecated: false
     headers:
@@ -422,7 +451,7 @@ endpoints:
       id:
         custom: []
         name: id
-        description: "optional The profile ID to view. If not provided, returns authenticated user's profile."
+        description: "optional The ID of the profile to view. If omitted, defaults to the authenticated user's profile."
         required: false
         example: 123
         type: integer
@@ -472,7 +501,7 @@ endpoints:
         content: |-
           {
             "success": false,
-            "message": "Profile not found. Please create a profile first."
+            "message": "Profile not found"
           }
         headers: []
         description: ''
@@ -495,8 +524,11 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
-      description: ''
+      title: 'Update specific profile'
+      description: |-
+        Updates an existing profile by ID.
+        - Regular users can only update their own profile.
+        - Admins ('super_admin', 'admin') can update any profile.
       authenticated: true
       deprecated: false
     headers:
@@ -507,23 +539,23 @@ endpoints:
       id:
         custom: []
         name: id
-        description: 'The profile ID to update.'
+        description: 'The ID of the profile to update.'
         required: true
-        example: architecto
-        type: string
+        example: 1
+        type: integer
         enumValues: []
-        exampleWasSpecified: false
+        exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      id: architecto
+      id: 1
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
       county_id:
         custom: []
         name: county_id
-        description: 'optional County ID. Must exist in counties table.'
+        description: 'optional County ID.'
         required: false
         example: 1
         type: integer
@@ -558,7 +590,7 @@ endpoints:
         name: date_of_birth
         description: 'Must be a valid date. Must be a date before <code>today</code>.'
         required: false
-        example: '2022-01-07'
+        example: '2022-01-10'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -635,7 +667,7 @@ endpoints:
         name: terms_accepted
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -666,18 +698,18 @@ endpoints:
       bio:
         custom: []
         name: bio
-        description: 'Must not be greater than 1000 characters.'
+        description: 'optional Biography.'
         required: false
-        example: z
+        example: 'Updated bio text.'
         type: string
         enumValues: []
-        exampleWasSpecified: false
+        exampleWasSpecified: true
         nullable: true
         deprecated: false
       phone:
         custom: []
         name: phone
-        description: 'optional Phone number. Max 30 characters.'
+        description: 'optional Phone number.'
         required: false
         example: '+254712345678'
         type: string
@@ -689,16 +721,16 @@ endpoints:
       county_id: 1
       phone_number: 'n'
       gender: female
-      date_of_birth: '2022-01-07'
+      date_of_birth: '2022-01-10'
       sub_county: 'n'
       ward: g
       occupation: 'Project Manager'
       membership_type: 16
       emergency_contact_name: 'n'
       emergency_contact_phone: g
-      terms_accepted: false
+      terms_accepted: true
       marketing_consent: false
-      bio: z
+      bio: 'Updated bio text.'
       phone: '+254712345678'
     fileParameters: []
     responses:
@@ -713,9 +745,18 @@ endpoints:
               "id": 1,
               "user": {"name": "John Doe"},
               "county": {"name": "Nairobi"},
-              "gender": "female",
               "occupation": "Project Manager"
             }
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: |-
+          {
+            "success": false,
+            "message": "Unauthorized to update this profile"
           }
         headers: []
         description: ''
@@ -738,8 +779,10 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
-      description: ''
+      title: 'Delete a profile'
+      description: |-
+        Permanently deletes a member profile.
+        RESTRICTED: Only admins can delete profiles, but they cannot delete their own profile via this endpoint.
       authenticated: true
       deprecated: false
     headers:
@@ -750,7 +793,7 @@ endpoints:
       id:
         custom: []
         name: id
-        description: 'The profile ID to delete.'
+        description: 'The unique ID of the profile to delete.'
         required: true
         example: 123
         type: integer
@@ -805,8 +848,10 @@ endpoints:
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: ''
-      description: ''
+      title: 'List all counties'
+      description: |-
+        Retrieves a list of all available counties, sorted alphabetically.
+        Helper endpoint for populating dropdowns in profile creation/edit forms.
       authenticated: true
       deprecated: false
     headers:

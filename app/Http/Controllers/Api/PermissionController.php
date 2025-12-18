@@ -11,13 +11,17 @@ use Illuminate\Support\Facades\Log;
 class PermissionController extends Controller
 {
     /**
-     * Display a listing of permissions
+     * List System Permissions
+     *
+     * Retrieves a paginated list of all registered system permissions.
+     * These permissions define the granular actions available within the application (e.g., 'create_post', 'delete_user').
      *
      * @group RBAC Management
+     * @groupDescription Administrative endpoints for managing Role-Based Access Control (RBAC). Use these to define roles and assigning specific permissions to them.
      * @authenticated
      * @description List all permissions (Super Admin only)
      *
-     * @queryParam search Search permissions by name. Example: manage_users
+     * @queryParam search string optional Filter permissions by name. Example: manage_users
      *
      * @response 200 {
      *   "success": true,
@@ -52,13 +56,16 @@ class PermissionController extends Controller
     }
 
     /**
-     * Store a newly created permission
+     * Create Permission
+     *
+     * Registers a new permission in the system.
+     * Typically used during development or initial system setup when introducing new features that require access control.
      *
      * @group RBAC Management
      * @authenticated
      * @description Create a new permission (Super Admin only)
      *
-     * @bodyParam name string required The permission name. Example: view_secret_data
+     * @bodyParam name string required The unique name of the permission (usually snake_case). Example: view_secret_data
      *
      * @response 201 {
      *   "success": true,
@@ -101,13 +108,16 @@ class PermissionController extends Controller
     }
 
     /**
-     * Display the specified permission
+     * Get Permission Details
+     *
+     * Retrieves detailed information about a specific permission.
+     * Includes a list of roles that currently hold this permission.
      *
      * @group RBAC Management
      * @authenticated
      * @description Get detailed information about a specific permission (Super Admin only)
      *
-     * @urlParam permission required The permission name
+     * @urlParam permission string required The unique identifier (name) of the permission.
      *
      * @response 200 {
      *   "success": true,
@@ -137,14 +147,17 @@ class PermissionController extends Controller
     }
 
     /**
-     * Update the specified permission
+     * Update Permission
+     *
+     * Modifies the name of an existing permission.
+     * **Warning:** Changing a permission name may break application logic if the code relies on the old string. Use with caution.
      *
      * @group RBAC Management
      * @authenticated
      * @description Update permission information (Super Admin only)
      *
-     * @urlParam permission required The permission name
-     * @bodyParam name string Update the permission name. Example: manage_all_users
+     * @urlParam permission string required The current permission name to update.
+     * @bodyParam name string required The new name for the permission. Example: manage_all_users
      *
      * @response 200 {
      *   "success": true,
@@ -181,13 +194,16 @@ class PermissionController extends Controller
     }
 
     /**
-     * Remove the specified permission
+     * Delete Permission
+     *
+     * Permanently removes a permission from the system.
+     * This action is blocked if the permission is currently assigned to any roles to prevent accidental access privilege loss.
      *
      * @group RBAC Management
      * @authenticated
      * @description Delete a permission (Super Admin only)
      *
-     * @urlParam permission required The permission name
+     * @urlParam permission string required The permission name to delete.
      *
      * @response 200 {
      *   "success": true,

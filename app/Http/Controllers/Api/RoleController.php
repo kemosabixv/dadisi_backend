@@ -12,32 +12,41 @@ use Illuminate\Support\Facades\Log;
 class RoleController extends Controller
 {
     /**
-     * Display a listing of roles
+     * List all roles
+     *
+     * Retrieves a paginated list of all system roles.
+     * Optionally includes the permissions associated with each role.
+     * RESTRICTED: Super Admin only.
      *
      * @group RBAC Management
+     * @groupDescription Endpoints for managing Role-Based Access Control (RBAC). Includes creating and managing roles and assigning permissions to them.
      * @authenticated
-     * @description List all roles with their permissions (Super Admin only)
      *
-     * @queryParam search Search roles by name. Example: admin
-     * @queryParam include_permissions Include permissions for each role. Example: true
+     * @queryParam search string Filter roles by name. Partial match supported. Example: admin
+     * @queryParam include_permissions boolean Include associated permissions in the response. Example: true
+     * @queryParam page integer Page number. Example: 1
      *
      * @response 200 {
      *   "success": true,
-     *   "data": [
-     *     {
-     *       "id": 1,
-     *       "name": "super_admin",
-     *       "guard_name": "web",
-     *       "created_at": "2025-01-01T00:00:00Z",
-     *       "updated_at": "2025-01-01T00:00:00Z",
-     *       "permissions": [
-     *         {
-     *           "id": 1,
-     *           "name": "manage_users"
-     *         }
-     *       ]
-     *     }
-     *   ]
+     *   "data": {
+     *     "current_page": 1,
+     *     "data": [
+     *       {
+     *         "id": 1,
+     *         "name": "super_admin",
+     *         "guard_name": "web",
+     *         "created_at": "2025-01-01T00:00:00Z",
+     *         "updated_at": "2025-01-01T00:00:00Z",
+     *         "permissions": [
+     *           {
+     *             "id": 1,
+     *             "name": "manage_users"
+     *           }
+     *         ]
+     *       }
+     *     ],
+     *     "total": 5
+     *   }
      * }
      */
     public function index(Request $request): JsonResponse
@@ -66,13 +75,16 @@ class RoleController extends Controller
     }
 
     /**
-     * Store a newly created role
+     * Create new role
+     *
+     * Creates a new role definition in the system.
+     * Roles are used to group permissions and assign them to users.
+     * RESTRICTED: Super Admin only.
      *
      * @group RBAC Management
      * @authenticated
-     * @description Create a new role (Super Admin only)
      *
-     * @bodyParam name string required The role name. Example: moderator
+     * @bodyParam name string required Unique name for the role. Must not already exist. Example: moderator
      *
      * @response 201 {
      *   "success": true,
@@ -85,12 +97,11 @@ class RoleController extends Controller
      *     "updated_at": "2025-01-01T00:00:00Z"
      *   }
      * }
-     *
      * @response 422 {
      *   "success": false,
      *   "message": "Validation failed",
      *   "errors": {
-     *     "name": ["The role name is required"]
+     *     "name": ["The name has already been taken."]
      *   }
      * }
      */
@@ -115,13 +126,16 @@ class RoleController extends Controller
     }
 
     /**
-     * Display the specified role
+     * Get role details
+     *
+     * Retrieves detailed information about a specific role, including its permissions and validity.
+     * Used for auditing or editing role configurations.
+     * RESTRICTED: Super Admin only.
      *
      * @group RBAC Management
      * @authenticated
-     * @description Get detailed information about a specific role (Super Admin only)
      *
-     * @urlParam role required The role name
+     * @urlParam role required The role ID or name. (Model binding uses ID usually). Example: 1
      *
      * @response 200 {
      *   "success": true,
@@ -129,13 +143,8 @@ class RoleController extends Controller
      *     "id": 1,
      *     "name": "super_admin",
      *     "guard_name": "web",
-     *     "created_at": "2025-01-01T00:00:00Z",
-     *     "updated_at": "2025-01-01T00:00:00Z",
      *     "permissions": [
-     *       {
-     *         "id": 1,
-     *         "name": "manage_users"
-     *       }
+     *       {"id": 1, "name": "manage_users"}
      *     ],
      *     "users_count": 5
      *   }
@@ -154,14 +163,17 @@ class RoleController extends Controller
     }
 
     /**
-     * Update the specified role
+     * Update role details
+     *
+     * Updates the name of an existing role.
+     * Note: Changing a role name will update it for all users currently assigned to that role.
+     * RESTRICTED: Super Admin only.
      *
      * @group RBAC Management
      * @authenticated
-     * @description Update role information (Super Admin only)
      *
-     * @urlParam role required The role name
-     * @bodyParam name string Update the role name. Example: senior_admin
+     * @urlParam role required The role ID. Example: 1
+     * @bodyParam name string required The new name for the role. Example: senior_admin
      *
      * @response 200 {
      *   "success": true,
@@ -169,9 +181,7 @@ class RoleController extends Controller
      *   "data": {
      *     "id": 1,
      *     "name": "senior_admin",
-     *     "guard_name": "web",
-     *     "created_at": "2025-01-01T00:00:00Z",
-     *     "updated_at": "2025-01-01T00:00:00Z"
+     *     "guard_name": "web"
      *   }
      * }
      */
@@ -198,19 +208,21 @@ class RoleController extends Controller
     }
 
     /**
-     * Remove the specified role
+     * Delete role
+     *
+     * Permanently deletes a role from the system.
+     * Fails if any users are currently assigned to this role (safety check).
+     * RESTRICTED: Super Admin only.
      *
      * @group RBAC Management
      * @authenticated
-     * @description Delete a role (Super Admin only)
      *
-     * @urlParam role required The role name
+     * @urlParam role required The unique ID of the role to delete. Example: 1
      *
      * @response 200 {
      *   "success": true,
      *   "message": "Role deleted successfully"
      * }
-     *
      * @response 409 {
      *   "success": false,
      *   "message": "Cannot delete role that has assigned users"
@@ -242,14 +254,17 @@ class RoleController extends Controller
     }
 
     /**
-     * Assign permissions to a role
+     * Assign permissions to role
+     *
+     * Grants one or more permissions to a specific role.
+     * All users with this role will immediately inherit these permissions.
+     * RESTRICTED: Super Admin only.
      *
      * @group RBAC Management
      * @authenticated
-     * @description Assign permissions to a role (Super Admin only)
      *
-     * @urlParam role required The role name
-     * @bodyParam permissions array required Array of permission names to assign. Example: ["manage_users", "view_reports"]
+     * @urlParam role required The role ID. Example: 1
+     * @bodyParam permissions array required List of permission names to assign. Example: ["manage_users", "view_reports"]
      *
      * @response 200 {
      *   "success": true,
@@ -295,14 +310,17 @@ class RoleController extends Controller
     }
 
     /**
-     * Remove permissions from a role
+     * Remove permissions from role
+     *
+     * Revokes one or more permissions from a specific role.
+     * Users with this role will lose these permissions immediately.
+     * RESTRICTED: Super Admin only.
      *
      * @group RBAC Management
      * @authenticated
-     * @description Remove permissions from a role (Super Admin only)
      *
-     * @urlParam role required The role name
-     * @bodyParam permissions array required Array of permission names to remove. Example: ["manage_users"]
+     * @urlParam role required The role ID. Example: 1
+     * @bodyParam permissions array required List of permission names to revoke. Example: ["manage_users"]
      *
      * @response 200 {
      *   "success": true,

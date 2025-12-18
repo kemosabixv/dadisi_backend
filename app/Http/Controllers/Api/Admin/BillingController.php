@@ -19,7 +19,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *
  * Handles billing operations, reconciliation, and exports for finance/admin users.
  *
- * @group Admin - Billing
+ * @group Admin - Billing Operations
+ * @groupDescription Endpoints for billing dashboard aggregation, manual reconciliation triggers (donations, event orders), and financial data exports (CSV).
  * @authenticated
  */
 class BillingController extends Controller
@@ -51,9 +52,13 @@ class BillingController extends Controller
     }
 
     /**
-     * Get billing dashboard summary
+     * Get Billing Dashboard Stats
      *
-     * @description Get high-level billing metrics and status
+     * Retrieves aggregated financial metrics for the admin dashboard.
+     * Includes real-time totals for donations and event orders, broken down by payment status (paid, pending, failed).
+     *
+     * @group Admin - Billing Operations
+     * @authenticated
      *
      * @response 200 {
      *   "success": true,
@@ -130,9 +135,13 @@ class BillingController extends Controller
     }
 
     /**
-     * Reconcile all pending donations
+     * Trigger Donation Reconciliation
      *
-     * @description Run reconciliation job for all pending donations
+     * Manually initiates the donation reconciliation job.
+     * Checks all pending donations against the payment gateway to identify paid but unrecorded transactions.
+     *
+     * @group Admin - Billing Operations
+     * @authenticated
      *
      * @response 200 {
      *   "success": true,
@@ -165,9 +174,13 @@ class BillingController extends Controller
     }
 
     /**
-     * Reconcile all pending event orders
+     * Trigger Order Reconciliation
      *
-     * @description Run reconciliation job for all pending event orders
+     * Manually initiates the event order reconciliation job.
+     * Verifies payment status for all pending event ticket orders.
+     *
+     * @group Admin - Billing Operations
+     * @authenticated
      *
      * @response 200 {
      *   "success": true,
@@ -200,9 +213,12 @@ class BillingController extends Controller
     }
 
     /**
-     * Get reconciliation status
+     * Get Reconciliation Status
      *
-     * @description Get current reconciliation status including discrepancies
+     * Retrieves the current count and details of unresolved discrepancies for both donations and event orders.
+     *
+     * @group Admin - Billing Operations
+     * @authenticated
      *
      * @response 200 {
      *   "success": true,
@@ -243,16 +259,21 @@ class BillingController extends Controller
     }
 
     /**
-     * Export donations as CSV
+     * Export Donations CSV
      *
-     * @queryParam start_date string Date in format YYYY-MM-DD (optional)
-     * @queryParam end_date string Date in format YYYY-MM-DD (optional)
-     * @queryParam county_id integer County ID filter (optional)
-     * @queryParam status string Payment status: paid|pending|failed|refunded (optional)
+     * Downloads a CSV report of donations filtered by date range, county, or status.
      *
-     * @response 200 CSV file
+     * @group Admin - Billing Operations
+     * @authenticated
+     *
+     * @queryParam start_date string optional Filter by start date (YYYY-MM-DD). Example: 2025-01-01
+     * @queryParam end_date string optional Filter by end date (YYYY-MM-DD). Example: 2025-12-31
+     * @queryParam county_id integer optional Filter by County ID. Example: 47
+     * @queryParam status string optional Filter by status (paid, pending, failed, refunded). Example: paid
+     *
+     * @response 200 CSV file download
      */
-    public function exportDonations(Request $request): StreamedResponse
+    public function exportDonations(Request $request)
     {
         try {
             $validated = $request->validate([
@@ -286,16 +307,21 @@ class BillingController extends Controller
     }
 
     /**
-     * Export event orders as CSV
+     * Export Event Orders CSV
      *
-     * @queryParam start_date string Date in format YYYY-MM-DD (optional)
-     * @queryParam end_date string Date in format YYYY-MM-DD (optional)
-     * @queryParam event_id integer Event ID filter (optional)
-     * @queryParam status string Payment status: paid|pending|failed|refunded (optional)
+     * Downloads a CSV report of event ticket sales filtered by date range, event, or status.
      *
-     * @response 200 CSV file
+     * @group Admin - Billing Operations
+     * @authenticated
+     *
+     * @queryParam start_date string optional Filter by start date (YYYY-MM-DD). Example: 2025-01-01
+     * @queryParam end_date string optional Filter by end date (YYYY-MM-DD). Example: 2025-12-31
+     * @queryParam event_id integer optional Filter by Event ID. Example: 5
+     * @queryParam status string optional Filter by status (paid, pending, failed, refunded). Example: paid
+     *
+     * @response 200 CSV file download
      */
-    public function exportEventOrders(Request $request): StreamedResponse
+    public function exportEventOrders(Request $request)
     {
         try {
             $validated = $request->validate([
@@ -329,14 +355,19 @@ class BillingController extends Controller
     }
 
     /**
-     * Export donation summary by county
+     * Export Donation Summary (County)
      *
-     * @queryParam start_date string Date in format YYYY-MM-DD (optional)
-     * @queryParam end_date string Date in format YYYY-MM-DD (optional)
+     * Downloads a summary CSV report aggregating donations by county for the specified period.
      *
-     * @response 200 CSV file
+     * @group Admin - Billing Operations
+     * @authenticated
+     *
+     * @queryParam start_date string optional Filter by start date (YYYY-MM-DD). Example: 2025-01-01
+     * @queryParam end_date string optional Filter by end date (YYYY-MM-DD). Example: 2025-12-31
+     *
+     * @response 200 CSV file download
      */
-    public function exportDonationSummary(Request $request): StreamedResponse
+    public function exportDonationSummary(Request $request)
     {
         try {
             $validated = $request->validate([
@@ -366,14 +397,19 @@ class BillingController extends Controller
     }
 
     /**
-     * Export event sales summary
+     * Export Event Sales Summary
      *
-     * @queryParam start_date string Date in format YYYY-MM-DD (optional)
-     * @queryParam end_date string Date in format YYYY-MM-DD (optional)
+     * Downloads a summary CSV report aggregating ticket sales data.
      *
-     * @response 200 CSV file
+     * @group Admin - Billing Operations
+     * @authenticated
+     *
+     * @queryParam start_date string optional Filter by start date (YYYY-MM-DD). Example: 2025-01-01
+     * @queryParam end_date string optional Filter by end date (YYYY-MM-DD). Example: 2025-12-31
+     *
+     * @response 200 CSV file download
      */
-    public function exportEventSalesSummary(Request $request): StreamedResponse
+    public function exportEventSalesSummary(Request $request)
     {
         try {
             $validated = $request->validate([
@@ -403,14 +439,19 @@ class BillingController extends Controller
     }
 
     /**
-     * Export financial reconciliation report
+     * Export Financial Reconciliation
      *
-     * @queryParam start_date string Date in format YYYY-MM-DD (optional)
-     * @queryParam end_date string Date in format YYYY-MM-DD (optional)
+     * Downloads the detailed financial reconciliation report, matching internal records against potential payment gateway entries.
      *
-     * @response 200 CSV file
+     * @group Admin - Billing Operations
+     * @authenticated
+     *
+     * @queryParam start_date string optional Filter by start date (YYYY-MM-DD). Example: 2025-01-01
+     * @queryParam end_date string optional Filter by end date (YYYY-MM-DD). Example: 2025-12-31
+     *
+     * @response 200 CSV file download
      */
-    public function exportFinancialReconciliation(Request $request): StreamedResponse
+    public function exportFinancialReconciliation(Request $request)
     {
         try {
             $validated = $request->validate([

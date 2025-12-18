@@ -9,9 +9,9 @@ use App\Services\AutoRenewalService;
 use Illuminate\Http\JsonResponse;
 
 /**
- * @group Admin - Auto Renewal Jobs
- * Manage automatic subscription renewal jobs, view status, retry failed renewals, and cancel pending jobs.
- * All endpoints require Sanctum authentication and admin authorization.
+ * @group Admin - Auto Renewals
+ * @groupDescription Endpoints for monitoring and managing the background jobs responsible for subscription renewals. Allows manual retries of failed jobs.
+ * @authenticated
  */
 class AutoRenewalJobController extends Controller
 {
@@ -22,15 +22,18 @@ class AutoRenewalJobController extends Controller
     }
 
     /**
-     * List all auto renewal jobs with pagination and status filtering.
+     * List Renewal Jobs
      *
      * Retrieves paginated list of subscription renewal jobs across all users,
      * with optional filtering by job status (scheduled, completed, failed, cancelled, retry_scheduled).
      * Useful for monitoring renewal operations and identifying failed renewals.
      *
+     * @group Admin - Auto Renewals
      * @authenticated
-     * @queryParam status string Filter by job status (scheduled, completed, failed, cancelled, retry_scheduled). Example: failed
-     * @queryParam per_page integer Items per page. Default: 25. Example: 50
+     *
+     * @queryParam status string optional Filter by job status (scheduled, completed, failed, cancelled, retry_scheduled). Example: failed
+     * @queryParam per_page integer optional Items per page. Default: 25. Example: 50
+     *
      * @response 200 {
      *   "success": true,
      *   "data": [
@@ -48,7 +51,10 @@ class AutoRenewalJobController extends Controller
      *   ],
      *   "pagination": {"total": 45, "per_page": 25, "current_page": 1, "last_page": 2}
      * }
-     * @response 403 {"success": false, "message": "This action is unauthorized"}
+     * @response 403 {
+     *   "success": false,
+     *   "message": "This action is unauthorized"
+     * }
      */
     public function index(Request $request): JsonResponse
     {
@@ -66,13 +72,17 @@ class AutoRenewalJobController extends Controller
     }
 
     /**
-     * Show details of a specific auto renewal job.
+     * Get Renewal Job Details
      *
      * Retrieves detailed information about a single renewal job including associated
      * subscription and user details. Use this to inspect renewal status, failure reasons,
      * and historical data for a specific job.
      *
+     * @group Admin - Auto Renewals
      * @authenticated
+     *
+     * @urlParam id integer required The ID of the renewal job. Example: 1
+     *
      * @response 200 {
      *   "success": true,
      *   "data": {
@@ -89,8 +99,14 @@ class AutoRenewalJobController extends Controller
      *     "user": {"id": 10, "name": "John Doe", "email": "john@example.com"}
      *   }
      * }
-     * @response 403 {"success": false, "message": "This action is unauthorized"}
-     * @response 404 {"success": false, "message": "Renewal job not found"}
+     * @response 403 {
+     *   "success": false,
+     *   "message": "This action is unauthorized"
+     * }
+     * @response 404 {
+     *   "success": false,
+     *   "message": "Renewal job not found"
+     * }
      */
     public function show($id): JsonResponse
     {
@@ -100,13 +116,17 @@ class AutoRenewalJobController extends Controller
     }
 
     /**
-     * Retry a failed or scheduled renewal job immediately.
+     * Retry Renewal Job
      *
      * Triggers an immediate renewal attempt for a failed or scheduled job without waiting
      * for the regular schedule. Useful for testing renewal logic or forcing immediate retry
      * after issue resolution. Uses AutoRenewalService to process the renewal.
      *
+     * @group Admin - Auto Renewals
      * @authenticated
+     *
+     * @urlParam id integer required The ID of the renewal job. Example: 1
+     *
      * @response 200 {
      *   "success": true,
      *   "data": {
@@ -118,8 +138,14 @@ class AutoRenewalJobController extends Controller
      *     "message": "Renewal job created for immediate processing"
      *   }
      * }
-     * @response 403 {"success": false, "message": "This action is unauthorized"}
-     * @response 404 {"success": false, "message": "Subscription not found for this job"}
+     * @response 403 {
+     *   "success": false,
+     *   "message": "This action is unauthorized"
+     * }
+     * @response 404 {
+     *   "success": false,
+     *   "message": "Subscription not found for this job"
+     * }
      */
     public function retry($id): JsonResponse
     {
@@ -138,13 +164,17 @@ class AutoRenewalJobController extends Controller
     }
 
     /**
-     * Cancel a pending or scheduled renewal job.
+     * Cancel Renewal Job
      *
      * Cancels a renewal job that is pending or scheduled. The associated subscription
-     * will enter a grace period state. Useful for pausing automatic renewal while user
-     * resolves payment issues or account problems. Only affects the job, not the subscription.
+     * will enter a grace period state (if applicable) or expire normally at the end of the term.
+     * Useful for pausing automatic renewal while user resolves payment issues.
      *
+     * @group Admin - Auto Renewals
      * @authenticated
+     *
+     * @urlParam id integer required The ID of the renewal job. Example: 1
+     *
      * @response 200 {
      *   "success": true,
      *   "data": {
@@ -155,8 +185,14 @@ class AutoRenewalJobController extends Controller
      *     "cancelled_at": "2025-12-12T10:30:00Z"
      *   }
      * }
-     * @response 403 {"success": false, "message": "This action is unauthorized"}
-     * @response 404 {"success": false, "message": "Renewal job not found"}
+     * @response 403 {
+     *   "success": false,
+     *   "message": "This action is unauthorized"
+     * }
+     * @response 404 {
+     *   "success": false,
+     *   "message": "Renewal job not found"
+     * }
      */
     public function cancel($id): JsonResponse
     {

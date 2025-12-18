@@ -11,8 +11,11 @@ class ExchangeRatePolicy
      * Determine whether the user can view exchange rate configuration.
      * Users with view_exchange_rates permission can access
      */
-    public function view(User $user): bool
+    public function view(?User $user): bool
     {
+        // Allow public access for viewing the rate (pricing switchers)
+        if (!$user) return true;
+        
         return $user->hasPermissionTo('view_exchange_rates');
     }
 
