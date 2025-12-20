@@ -155,6 +155,15 @@ class AuthController extends Controller
             ]);
         }
 
+        // Check if 2FA is enabled - require TOTP verification before issuing token
+        if ($user->two_factor_enabled) {
+            return response()->json([
+                'requires_2fa' => true,
+                'email' => $user->email,
+                'message' => 'Two-factor authentication required.',
+            ], 200);
+        }
+
         // Create token and optionally set per-token expiration when remember_me is true.
         $tokenResult = $user->createToken($request->email);
         $plainText = $tokenResult->plainTextToken;
@@ -185,11 +194,10 @@ class AuthController extends Controller
      * Revokes the authenticated user's current API token.
      * This effectively invalidates the current session. The endpoint attempts to cleanup other tokens for the user as well where possible.
      *
-     * @authenticated
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Logged out successfully."
-     * }
+    * @authenticated
+    * @response 200 {
+    *   // No content returned on successful logout. HTTP 200 OK with empty body.
+    * }
      */
     public function logout(Request $request) {
         // Revoke the token used in this request (logout single device/session).

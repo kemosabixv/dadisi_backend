@@ -142,6 +142,8 @@ class MediaController extends Controller
             'file' => 'required|file',
             'attached_to' => 'nullable|string|max:50',
             'attached_to_id' => 'nullable|integer',
+            // Optional flag to mark upload as temporary (for dev editor fallback)
+            'temporary' => 'sometimes|boolean',
         ]);
 
         $file = $request->file('file');
@@ -176,6 +178,13 @@ class MediaController extends Controller
 
             $path = Storage::disk('public')->putFileAs($directory, $file, $uniqueName);
 
+            // Determine temporary expiration from retention settings if flag set
+            $temporaryUntil = null;
+            if ($request->boolean('temporary')) {
+                $minutes = \App\Models\UserDataRetentionSetting::getRetentionMinutes('temporary_media');
+                $temporaryUntil = now()->addMinutes($minutes);
+            }
+
             // Create media record
             $media = Media::create([
                 'user_id' => Auth::id(),
@@ -187,6 +196,7 @@ class MediaController extends Controller
                 'is_public' => false,
                 'attached_to' => $validated['attached_to'] ?? null,
                 'attached_to_id' => $validated['attached_to_id'] ?? null,
+                'temporary_until' => $temporaryUntil,
             ]);
 
             $this->logAuditAction('create', Media::class, $media->id, null, $media->only(['file_name', 'type', 'file_size']), "Uploaded media: {$media->file_name}");

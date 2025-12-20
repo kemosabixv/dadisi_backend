@@ -8,12 +8,16 @@
     "require": {
         "php": "^8.2",
         "ashallendesign/laravel-exchange-rates": "*",
+        "bacon/bacon-qr-code": "^3.0",
         "cknow/laravel-money": "*",
+        "laragear/webauthn": "^4.0",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.23",
         "laravel/tinker": "^2.10.1",
         "laravelcm/laravel-subscriptions": "^1.5",
+        "pragmarx/google2fa-laravel": "^2.3",
+        "pusher/pusher-php-server": "^7.2",
         "spatie/laravel-permission": "^6.22"
     },
     "require-dev": {

@@ -56,7 +56,7 @@ class UserPaymentMethodController extends Controller
      *
      * @group Payment Methods
      * @authenticated
-     * @bodyParam type string required The type of payment method. Valid options: `phone_pattern`, `card`. Example: phone_pattern
+    * @bodyParam type string required The type of payment method. Valid options: `phone_pattern`, `card`, `pesapal`. Example: phone_pattern
      * @bodyParam identifier string optional The masked identifier or phone number. Example: 254712345678
      * @bodyParam label string optional A user-friendly label for this method. Example: Work phone
      * @bodyParam is_primary boolean optional Set this as the default payment method. Example: true
@@ -134,10 +134,9 @@ class UserPaymentMethodController extends Controller
      *
      * @group Payment Methods
      * @authenticated
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Payment method deleted"
-     * }
+    * @response 200 {
+    *   "success": true
+    * }
      */
     public function destroy(Request $request, $id): JsonResponse
     {

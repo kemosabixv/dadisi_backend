@@ -126,7 +126,8 @@ class UserDataRetentionController extends Controller
     public function update(Request $request, UserDataRetentionSetting $retention): JsonResponse
     {
         $validated = $request->validate([
-            'retention_days' => 'required|integer|min:1|max:3650', // Max 10 years
+            'retention_days' => 'nullable|integer|min:0|max:3650', // Max 10 years
+            'retention_minutes' => 'nullable|integer|min:1|max:525600', // Max 1 year in minutes
             'auto_delete' => 'boolean',
             'description' => 'nullable|string|max:500',
         ]);
@@ -189,7 +190,7 @@ class UserDataRetentionController extends Controller
      * @bodyParam data_type string required The data type (e.g., 'orphaned_media'). Example: orphaned_media
      * @bodyParam retention_days integer required Retention period in days. Example: 90
      *
-     * @response 200 {
+    * @response 200 {
      *   "success": true,
      *   "message": "Retention days updated successfully",
      *   "data": {
@@ -197,12 +198,17 @@ class UserDataRetentionController extends Controller
      *     "retention_days": 90
      *   }
      * }
+    * @response 404 {
+    *   "success": false,
+    *   "message": "Data type 'orphaned_media' not found"
+    * }
      */
     public function updateRetentionDays(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'data_type' => 'required|string|in:orphaned_media,user_accounts,audit_logs,session_data,failed_jobs',
-            'retention_days' => 'required|integer|min:1|max:3650',
+            'data_type' => 'required|string|in:orphaned_media,temporary_media,user_accounts,audit_logs,session_data,failed_jobs,temp_files,backups',
+            'retention_days' => 'nullable|integer|min:0|max:3650',
+            'retention_minutes' => 'nullable|integer|min:1|max:525600', // Max 1 year in minutes
         ]);
 
         $setting = UserDataRetentionSetting::where('data_type', $validated['data_type'])->first();
@@ -214,22 +220,32 @@ class UserDataRetentionController extends Controller
             ], 404);
         }
 
-        $oldValue = $setting->retention_days;
-        $setting->update([
-            'retention_days' => $validated['retention_days'],
-            'updated_by' => auth()->id(),
-        ]);
+        $oldValues = [
+            'retention_days' => $setting->retention_days,
+            'retention_minutes' => $setting->retention_minutes,
+        ];
+
+        $updateData = ['updated_by' => auth()->id()];
+        
+        if (isset($validated['retention_days'])) {
+            $updateData['retention_days'] = $validated['retention_days'];
+        }
+        if (isset($validated['retention_minutes'])) {
+            $updateData['retention_minutes'] = $validated['retention_minutes'];
+        }
+
+        $setting->update($updateData);
 
         $this->logAuditAction('update', UserDataRetentionSetting::class, $setting->id,
-            ['retention_days' => $oldValue],
-            ['retention_days' => $validated['retention_days']],
-            "Updated retention days for {$validated['data_type']} to {$validated['retention_days']} days"
+            $oldValues,
+            array_intersect_key($updateData, ['retention_days' => 1, 'retention_minutes' => 1]),
+            "Updated retention for {$validated['data_type']}"
         );
 
         return response()->json([
             'success' => true,
-            'message' => 'Retention days updated successfully',
-            'data' => $setting->only(['data_type', 'retention_days']),
+            'message' => 'Retention settings updated successfully',
+            'data' => $setting->only(['data_type', 'retention_days', 'retention_minutes']),
         ]);
     }
 

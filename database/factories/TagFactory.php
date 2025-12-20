@@ -17,6 +17,11 @@ class TagFactory extends Factory
         return [
             'name' => $name,
             'slug' => Str::slug($name),
+            'description' => null,
+            'created_by' => null,
+            'requested_deletion_at' => null,
+            'deletion_requested_by' => null,
         ];
     }
 }
+

@@ -24,14 +24,23 @@ class DatabaseSeeder extends Seeder
         // Seed reference data
         $this->call([
             CountiesTableSeeder::class,
-            SubscriptionPlansSeeder::class,
+            PlanSeeder::class,
             UserDataRetentionSettingsSeeder::class,
             SchedulerSettingsSeeder::class,
             ExchangeRateSeeder::class,
             AdminUserSeeder::class,
+            EventManagementSeeder::class,
             SampleEventsSeeder::class,
             SampleAuthorsSeeder::class,
             BlogPostsSeeder::class,
+            DonationCampaignSeeder::class,
+            DonationSeeder::class,
+            SampleRegistrationsSeeder::class,
+            SamplePromoCodesSeeder::class,
+            ForumCategoriesSeeder::class,
+            CountyGroupsSeeder::class,
+            TaxonomySeeder::class,
+            ForumThreadsSeeder::class,
         ]);
 
         // Optionally seed a demo user

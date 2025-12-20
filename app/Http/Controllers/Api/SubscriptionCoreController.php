@@ -8,7 +8,7 @@ use App\Models\Plan;
 use App\Models\PlanSubscription;
 use App\Models\RenewalPreference;
 use App\Models\SubscriptionEnhancement;
-use App\Services\MockPaymentService;
+use App\Services\PaymentGatewayFactory;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -317,7 +317,7 @@ class SubscriptionCoreController extends Controller
                 'billing_period' => $billingPeriod,
             ];
 
-            $paymentResponse = MockPaymentService::initiatePayment($paymentData);
+            $paymentResponse = PaymentGatewayFactory::initiatePayment($paymentData);
 
             // Set the user's active subscription
             $user->update(['active_subscription_id' => $subscription->id]);
@@ -468,6 +468,10 @@ class SubscriptionCoreController extends Controller
      *   "success": true,
      *   "message": "Subscription cancelled successfully"
      * }
+    * @response 404 {
+    *   "success": false,
+    *   "message": "No active subscription found"
+    * }
      */
     public function cancelSubscription(Request $request): JsonResponse
     {

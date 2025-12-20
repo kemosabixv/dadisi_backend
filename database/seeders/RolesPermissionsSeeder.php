@@ -82,6 +82,21 @@ class RolesPermissionsSeeder extends Seeder
             'manage_own_profile',
             'rsvp_events',
             'make_donations',
+
+            // Forum (Planned)
+            'view_forum',
+            'create_threads',
+            'reply_threads',
+            'moderate_forum',
+            'lock_threads',
+            'pin_threads',
+            'delete_any_thread',
+            'ban_forum_users',
+            'mute_forum_users',
+            'view_forum_reports',
+            'manage_forum_categories',
+            'send_messages',
+            'view_messages',
         ];
 
         foreach ($permissions as $permission) {
@@ -126,6 +141,13 @@ class RolesPermissionsSeeder extends Seeder
             ],
             'member' => [
                 'manage_own_profile', 'rsvp_events', 'make_donations', 'view_plans',
+                'view_forum', 'create_threads', 'reply_threads', 'send_messages', 'view_messages',
+            ],
+            'moderator' => [
+                // Forum moderation role
+                'view_forum', 'create_threads', 'reply_threads', 'send_messages', 'view_messages',
+                'moderate_forum', 'lock_threads', 'pin_threads', 'delete_any_thread',
+                'ban_forum_users', 'mute_forum_users', 'view_forum_reports',
             ],
         ];
 

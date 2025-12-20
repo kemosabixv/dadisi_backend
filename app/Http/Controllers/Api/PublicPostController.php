@@ -323,6 +323,79 @@ class PublicPostController extends Controller
         ]);
     }
 
+    /**
+     * List Categories with Post Counts
+     *
+     * Retrieves all categories that have at least one published post.
+     * Returns category details along with the count of published posts in each category.
+     *
+     * @group Blog Content (Public)
+     * @unauthenticated
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": [
+     *     {"id": 1, "name": "Technology", "slug": "technology", "description": "Tech articles", "post_count": 15}
+     *   ]
+     * }
+     */
+    public function categories(): JsonResponse
+    {
+        $categories = \App\Models\Category::query()
+            ->withCount(['posts' => fn($q) => $q->published()])
+            ->having('posts_count', '>', 0)
+            ->orderBy('name')
+            ->get()
+            ->map(fn($cat) => [
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'slug' => $cat->slug,
+                'description' => $cat->description,
+                'post_count' => $cat->posts_count,
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $categories,
+        ]);
+    }
+
+    /**
+     * List Tags with Post Counts
+     *
+     * Retrieves all tags that have at least one published post.
+     * Returns tag details along with the count of published posts for each tag.
+     *
+     * @group Blog Content (Public)
+     * @unauthenticated
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": [
+     *     {"id": 1, "name": "laravel", "slug": "laravel", "post_count": 8}
+     *   ]
+     * }
+     */
+    public function tags(): JsonResponse
+    {
+        $tags = \App\Models\Tag::query()
+            ->withCount(['posts' => fn($q) => $q->published()])
+            ->having('posts_count', '>', 0)
+            ->orderBy('name')
+            ->get()
+            ->map(fn($tag) => [
+                'id' => $tag->id,
+                'name' => $tag->name,
+                'slug' => $tag->slug,
+                'post_count' => $tag->posts_count,
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $tags,
+        ]);
+    }
+
     private function logAuditAction(string $action, string $modelType, int $modelId, ?array $oldValues, ?array $newValues, ?string $notes = null): void
     {
         try {

@@ -17,14 +17,22 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);
         
+        // Apply security headers globally (CSP, HSTS, X-Frame-Options)
+        $middleware->append(\App\Http\Middleware\SecurityHeadersMiddleware::class);
+        
         // Configure API authentication to return JSON instead of redirecting
         $middleware->redirectGuestsTo(function ($request) {
             // For API routes, return null to prevent redirect and let Sanctum handle it
             if ($request->is('api/*')) {
                 return null;
             }
-            // For web routes, redirect to login (if we had one)
-            return route('login');
+            // Mock payment pages need to be accessible without authentication
+            if ($request->is('mock-payment/*')) {
+                return null;
+            }
+            // For other web routes, return null since we have no login page
+            // (authentication is handled via the frontend SPA)
+            return null;
         });
     })
     ->withSchedule(function (Schedule $schedule): void {

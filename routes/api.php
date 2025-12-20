@@ -4,15 +4,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
+use App\Http\Controllers\Api\Auth\RefreshTokenController;
+use App\Http\Controllers\Api\Auth\TwoFactorController;
+use App\Http\Controllers\Api\Auth\PasskeyController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Admin\ReconciliationController;
 
 Route::prefix('auth')->group(function () {
-	Route::post('signup', [AuthController::class, 'signup'])->name('auth.signup');
-	Route::post('login', [AuthController::class, 'login'])->name('auth.login');
+	Route::post('signup', [AuthController::class, 'signup'])->middleware('throttle:5,1')->name('auth.signup');
+	Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1')->name('auth.login');
 	Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
 	Route::get('user', [AuthController::class, 'getAuthenticatedUser'])->middleware('auth:sanctum')->name('auth.user');
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum')->name('auth.me');
+    
+    // Token refresh for silent token rotation
+    Route::post('refresh', [RefreshTokenController::class, 'refresh'])->middleware('auth:sanctum')->name('auth.refresh');
 
 	Route::post('/password/email', [AuthController::class, 'sendPasswordResetLinkEmail'])->middleware('throttle:5,1')->name('password.email');
 	Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('password.reset');
@@ -24,6 +30,37 @@ Route::prefix('auth')->group(function () {
 		->name('auth.send-verification');
 	Route::post('verify-email', [EmailVerificationController::class, 'verify'])
 		->name('auth.verify-email');
+
+    // Two-Factor Authentication - TOTP
+    Route::prefix('2fa/totp')->middleware('auth:sanctum')->group(function () {
+        Route::post('enable', [TwoFactorController::class, 'enable'])->name('auth.2fa.totp.enable');
+        Route::post('verify', [TwoFactorController::class, 'verify'])->name('auth.2fa.totp.verify');
+        Route::post('disable', [TwoFactorController::class, 'disable'])->name('auth.2fa.totp.disable');
+        Route::post('recovery-codes', [TwoFactorController::class, 'recoveryCodes'])->name('auth.2fa.totp.recovery-codes');
+        Route::post('regenerate-recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->name('auth.2fa.totp.regenerate');
+    });
+    // TOTP validation at login (no auth required - user just provided password)
+    Route::post('2fa/totp/validate', [TwoFactorController::class, 'validateCode'])
+        ->middleware('throttle:5,1')
+        ->name('auth.2fa.totp.validate');
+
+    // Passkeys (WebAuthn)
+    Route::prefix('passkeys')->group(function () {
+        // Registration requires auth
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::post('register/options', [PasskeyController::class, 'registerOptions'])->name('auth.passkeys.register.options');
+            Route::post('register', [PasskeyController::class, 'register'])->name('auth.passkeys.register');
+            Route::get('/', [PasskeyController::class, 'index'])->name('auth.passkeys.index');
+            Route::delete('{id}', [PasskeyController::class, 'destroy'])->name('auth.passkeys.destroy');
+        });
+        // Authentication doesn't require existing auth
+        Route::post('authenticate/options', [PasskeyController::class, 'authenticateOptions'])
+            ->middleware('throttle:10,1')
+            ->name('auth.passkeys.authenticate.options');
+        Route::post('authenticate', [PasskeyController::class, 'authenticate'])
+            ->middleware('throttle:5,1')
+            ->name('auth.passkeys.authenticate');
+    });
 });
 
 // Member Profile routes (authenticated)
@@ -82,7 +119,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 // Data Retention Management routes (Super Admin only)
 use App\Http\Controllers\Api\UserDataRetentionController;
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
     // Specific routes before parameterized routes
     Route::get('retention-settings-summary', [UserDataRetentionController::class, 'summary']);
     Route::post('retention-settings/update-days', [UserDataRetentionController::class, 'updateRetentionDays']);
@@ -162,12 +199,64 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::delete('plans/{plan}', [PlanController::class, 'destroy'])->name('plans.destroy');
 });
 
+// Donation Campaign routes
+use App\Http\Controllers\Api\PublicDonationCampaignController;
+use App\Http\Controllers\Api\DonationCampaignAdminController;
+
+// Public: list and view active donation campaigns
+Route::prefix('donation-campaigns')->group(function () {
+    Route::get('/', [PublicDonationCampaignController::class, 'index'])->name('donation-campaigns.index');
+    Route::get('/{campaign:slug}', [PublicDonationCampaignController::class, 'show'])->name('donation-campaigns.show');
+    Route::post('/{campaign:slug}/donate', [PublicDonationCampaignController::class, 'donate'])->name('donation-campaigns.donate');
+});
+
+// Admin-only donation campaign management
+Route::prefix('admin/donation-campaigns')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('/', [DonationCampaignAdminController::class, 'index'])->name('admin.donation-campaigns.index');
+    Route::get('/create', [DonationCampaignAdminController::class, 'create'])->name('admin.donation-campaigns.create');
+    Route::post('/', [DonationCampaignAdminController::class, 'store'])->name('admin.donation-campaigns.store');
+    Route::get('/{campaign:slug}', [DonationCampaignAdminController::class, 'show'])->name('admin.donation-campaigns.show');
+    Route::get('/{campaign:slug}/edit', [DonationCampaignAdminController::class, 'edit'])->name('admin.donation-campaigns.edit');
+    Route::put('/{campaign:slug}', [DonationCampaignAdminController::class, 'update'])->name('admin.donation-campaigns.update');
+    Route::delete('/{campaign:slug}', [DonationCampaignAdminController::class, 'destroy'])->name('admin.donation-campaigns.destroy');
+    Route::post('/{campaign:slug}/restore', [DonationCampaignAdminController::class, 'restore'])->name('admin.donation-campaigns.restore');
+    Route::post('/{campaign:slug}/publish', [DonationCampaignAdminController::class, 'publish'])->name('admin.donation-campaigns.publish');
+    Route::post('/{campaign:slug}/unpublish', [DonationCampaignAdminController::class, 'unpublish'])->name('admin.donation-campaigns.unpublish');
+    Route::post('/{campaign:slug}/complete', [DonationCampaignAdminController::class, 'complete'])->name('admin.donation-campaigns.complete');
+});
+
+// Donations - Public and User routes
+use App\Http\Controllers\Api\PublicDonationController;
+
+Route::prefix('donations')->group(function () {
+    // Public: Get donation by reference (for checkout page)
+    Route::get('/ref/{reference}', [PublicDonationController::class, 'show'])->name('donations.show');
+
+    // Authenticated: List user's donations and create new donation
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/', [PublicDonationController::class, 'index'])->name('donations.index');
+        Route::post('/', [PublicDonationController::class, 'store'])->name('donations.store');
+    });
+});
+
+// Admin Donations Management
+use App\Http\Controllers\Api\Admin\DonationAdminController;
+
+Route::prefix('admin/donations')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('/', [DonationAdminController::class, 'index'])->name('admin.donations.index');
+    Route::get('/stats', [DonationAdminController::class, 'stats'])->name('admin.donations.stats');
+    Route::get('/{donation}', [DonationAdminController::class, 'show'])->name('admin.donations.show');
+});
+
+
 // Blog Management - Public routes (read-only)
 use App\Http\Controllers\Api\PublicPostController;
 
 Route::prefix('blog')->group(function () {
     Route::get('posts', [PublicPostController::class, 'index'])->name('blog.posts.index');
     Route::get('posts/{post}', [PublicPostController::class, 'show'])->name('blog.posts.show');
+    Route::get('categories', [PublicPostController::class, 'categories'])->name('blog.categories.index');
+    Route::get('tags', [PublicPostController::class, 'tags'])->name('blog.tags.index');
 });
 
 // Blog Management - Admin routes (CRUD)
@@ -176,16 +265,19 @@ use App\Http\Controllers\Api\CategoryAdminController;
 use App\Http\Controllers\Api\TagAdminController;
 
 Route::prefix('admin/blog')->middleware(['auth:sanctum', 'admin'])->group(function () {
-    // Posts management - explicit routes for full control
+    // Posts management - using slug as primary identifier
     Route::get('posts', [PostAdminController::class, 'index'])->name('admin.blog.posts.index');
     Route::get('posts/create', [PostAdminController::class, 'create'])->name('admin.blog.posts.create');
     Route::post('posts', [PostAdminController::class, 'store'])->name('admin.blog.posts.store');
-    Route::get('posts/{post}', [PostAdminController::class, 'show'])->name('admin.blog.posts.show');
-    Route::get('posts/{post}/edit', [PostAdminController::class, 'edit'])->name('admin.blog.posts.edit');
-    Route::put('posts/{post}', [PostAdminController::class, 'update'])->name('admin.blog.posts.update');
-    Route::delete('posts/{post}', [PostAdminController::class, 'destroy'])->name('admin.blog.posts.destroy');
-    Route::post('posts/{post}/restore', [PostAdminController::class, 'restore'])->name('admin.blog.posts.restore');
-    Route::delete('posts/{post}/force', [PostAdminController::class, 'forceDelete'])->name('admin.blog.posts.forceDelete');
+    Route::get('posts/{post:slug}', [PostAdminController::class, 'show'])->name('admin.blog.posts.show');
+    Route::get('posts/{post:slug}/edit', [PostAdminController::class, 'edit'])->name('admin.blog.posts.edit');
+    Route::put('posts/{post:slug}', [PostAdminController::class, 'update'])->name('admin.blog.posts.update');
+    Route::delete('posts/{post:slug}', [PostAdminController::class, 'destroy'])->name('admin.blog.posts.destroy');
+    Route::post('posts/{post:slug}/restore', [PostAdminController::class, 'restore'])->name('admin.blog.posts.restore');
+    Route::delete('posts/{post:slug}/force', [PostAdminController::class, 'forceDelete'])->name('admin.blog.posts.forceDelete');
+    Route::post('posts/{post:slug}/publish', [PostAdminController::class, 'publish'])->name('admin.blog.posts.publish');
+    Route::post('posts/{post:slug}/unpublish', [PostAdminController::class, 'unpublish'])->name('admin.blog.posts.unpublish');
+
 
     // Categories management - explicit routes
     Route::get('categories', [CategoryAdminController::class, 'index'])->name('admin.blog.categories.index');
@@ -204,6 +296,41 @@ Route::prefix('admin/blog')->middleware(['auth:sanctum', 'admin'])->group(functi
     Route::get('tags/{tag}/edit', [TagAdminController::class, 'edit'])->name('admin.blog.tags.edit');
     Route::put('tags/{tag}', [TagAdminController::class, 'update'])->name('admin.blog.tags.update');
     Route::delete('tags/{tag}', [TagAdminController::class, 'destroy'])->name('admin.blog.tags.destroy');
+
+    // Deletion Reviews (staff only)
+    Route::get('deletion-reviews', [\App\Http\Controllers\Api\DeletionReviewController::class, 'index'])->name('admin.blog.deletion-reviews.index');
+    Route::post('deletion-reviews/{type}/{id}/approve', [\App\Http\Controllers\Api\DeletionReviewController::class, 'approve'])->name('admin.blog.deletion-reviews.approve');
+    Route::post('deletion-reviews/{type}/{id}/reject', [\App\Http\Controllers\Api\DeletionReviewController::class, 'reject'])->name('admin.blog.deletion-reviews.reject');
+});
+
+// Author Blog Management - user's own categories and tags with deletion request workflow
+use App\Http\Controllers\Api\AuthorBlogController;
+use App\Http\Controllers\Api\AuthorPostController;
+
+Route::prefix('user/blog')->middleware('auth:sanctum')->group(function () {
+    // Posts (author's own) - using slug as primary identifier
+    Route::get('posts', [AuthorPostController::class, 'index'])->name('user.blog.posts.index');
+    Route::get('posts/create', [AuthorPostController::class, 'create'])->name('user.blog.posts.create');
+    Route::post('posts', [AuthorPostController::class, 'store'])->name('user.blog.posts.store');
+    Route::get('posts/{post:slug}', [AuthorPostController::class, 'show'])->name('user.blog.posts.show');
+    Route::get('posts/{post:slug}/edit', [AuthorPostController::class, 'edit'])->name('user.blog.posts.edit');
+    Route::put('posts/{post:slug}', [AuthorPostController::class, 'update'])->name('user.blog.posts.update');
+    Route::delete('posts/{post:slug}', [AuthorPostController::class, 'destroy'])->name('user.blog.posts.destroy');
+    Route::post('posts/{post:slug}/restore', [AuthorPostController::class, 'restore'])->name('user.blog.posts.restore');
+    Route::post('posts/{post:slug}/publish', [AuthorPostController::class, 'publish'])->name('user.blog.posts.publish');
+    Route::post('posts/{post:slug}/unpublish', [AuthorPostController::class, 'unpublish'])->name('user.blog.posts.unpublish');
+
+    // Categories (author's own)
+    Route::get('categories', [AuthorBlogController::class, 'listCategories'])->name('user.blog.categories.index');
+    Route::post('categories', [AuthorBlogController::class, 'storeCategory'])->name('user.blog.categories.store');
+    Route::put('categories/{category}', [AuthorBlogController::class, 'updateCategory'])->name('user.blog.categories.update');
+    Route::post('categories/{category}/request-delete', [AuthorBlogController::class, 'requestCategoryDeletion'])->name('user.blog.categories.request-delete');
+
+    // Tags (author's own)
+    Route::get('tags', [AuthorBlogController::class, 'listTags'])->name('user.blog.tags.index');
+    Route::post('tags', [AuthorBlogController::class, 'storeTag'])->name('user.blog.tags.store');
+    Route::put('tags/{tag}', [AuthorBlogController::class, 'updateTag'])->name('user.blog.tags.update');
+    Route::post('tags/{tag}/request-delete', [AuthorBlogController::class, 'requestTagDeletion'])->name('user.blog.tags.request-delete');
 });
 
 // Blog Management - User routes (user's own posts)
@@ -296,6 +423,7 @@ Route::prefix('payments')->group(function () {
         Route::post('process', [PaymentController::class, 'processPayment'])->name('payments.process');
         Route::get('history', [PaymentController::class, 'getPaymentHistory'])->name('payments.history');
         Route::post('refund', [PaymentController::class, 'refundPayment'])->name('payments.refund');
+        Route::post('test-mock-payment', [PaymentController::class, 'createTestMockPayment'])->name('payments.test-mock-payment');
     });
 });
 
@@ -347,4 +475,123 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::put('system-settings', [\App\Http\Controllers\Api\Admin\SystemSettingController::class, 'update'])->name('admin.system-settings.update');
 });
 
-// Additional API routes can be added here
+// Event Management - Public routes
+use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\TicketController;
+use App\Http\Controllers\Api\RegistrationController;
+use App\Http\Controllers\Api\SpeakerController;
+
+Route::get('events', [EventController::class, 'index'])->name('events.index');
+Route::get('events/{slug}', [EventController::class, 'show'])->name('events.show');
+Route::get('events/{event}/tickets', [TicketController::class, 'index'])->name('events.tickets.index');
+Route::get('events/{event}/speakers', [SpeakerController::class, 'index'])->name('events.speakers.index');
+
+// Event Management - User routes (Organizers & Attendees)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('events/my', [EventController::class, 'myEvents'])->name('events.my');
+    Route::get('events/quotas', [EventController::class, 'getQuotas'])->name('events.quotas');
+    Route::post('events', [EventController::class, 'store'])->name('events.store');
+    Route::put('events/{event}', [EventController::class, 'update'])->name('events.update');
+    Route::delete('events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+
+    // Tickets management for organizers
+    Route::post('events/{event}/tickets', [TicketController::class, 'store'])->name('events.tickets.store');
+    Route::put('tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
+    Route::delete('tickets/{ticket}', [TicketController::class, 'destroy'])->name('tickets.destroy');
+
+    // Speakers management for organizers
+    Route::post('events/{event}/speakers', [SpeakerController::class, 'store'])->name('events.speakers.store');
+    Route::put('speakers/{speaker}', [SpeakerController::class, 'update'])->name('speakers.update');
+    Route::delete('speakers/{speaker}', [SpeakerController::class, 'destroy'])->name('speakers.destroy');
+
+    // Registration/RSVP
+    Route::post('events/{event}/register', [RegistrationController::class, 'store'])->name('events.register');
+    Route::get('registrations/my', [RegistrationController::class, 'myRegistrations'])->name('registrations.my');
+    Route::delete('registrations/{registration}', [RegistrationController::class, 'destroy'])->name('registrations.destroy');
+
+    // Organizer scanning/check-in
+    Route::post('events/{event}/scan', [RegistrationController::class, 'scan'])->name('events.scan');
+    Route::post('events/{event}/registrations/{registration}/check-in', [RegistrationController::class, 'checkIn'])->name('events.check-in');
+});
+
+// Event Management - Admin routes
+use App\Http\Controllers\Api\Admin\AdminEventController;
+
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('events', [AdminEventController::class, 'index'])->name('admin.events.index');
+    Route::post('events', [AdminEventController::class, 'store'])->name('admin.events.store');
+    Route::get('events/{event}', [AdminEventController::class, 'show'])->name('admin.events.show');
+    Route::post('events/{event}/suspend', [AdminEventController::class, 'suspend'])->name('admin.events.suspend');
+    Route::post('events/{event}/feature', [AdminEventController::class, 'feature'])->name('admin.events.feature');
+    Route::post('events/{event}/unfeature', [AdminEventController::class, 'unfeature'])->name('admin.events.unfeature');
+    Route::delete('events/{event}', [AdminEventController::class, 'destroy'])->name('admin.events.destroy');
+});
+
+// Event Categories & Tags
+use App\Http\Controllers\Api\EventCategoryController;
+use App\Http\Controllers\Api\EventTagController;
+
+Route::get('event-categories', [EventCategoryController::class, 'index'])->name('event-categories.index');
+Route::get('event-tags', [EventTagController::class, 'index'])->name('event-tags.index');
+
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::apiResource('event-categories', EventCategoryController::class)->except(['index']);
+    Route::apiResource('event-tags', EventTagController::class)->only(['store', 'destroy']);
+});
+
+// Groups (County-based networking hubs)
+use App\Http\Controllers\Api\GroupController;
+
+// Public group routes
+Route::get('groups', [GroupController::class, 'index'])->name('groups.index');
+Route::get('groups/{slug}', [GroupController::class, 'show'])->name('groups.show');
+Route::get('groups/{slug}/members', [GroupController::class, 'members'])->name('groups.members');
+
+// Authenticated group actions
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('groups/{slug}/join', [GroupController::class, 'join'])->name('groups.join');
+    Route::post('groups/{slug}/leave', [GroupController::class, 'leave'])->name('groups.leave');
+});
+
+// Forum API Routes
+use App\Http\Controllers\Api\ForumCategoryController;
+use App\Http\Controllers\Api\ForumThreadController;
+use App\Http\Controllers\Api\ForumPostController;
+
+Route::prefix('forum')->group(function () {
+    // Categories
+    Route::get('categories', [ForumCategoryController::class, 'index'])->name('forum.categories.index');
+    Route::get('categories/{category}', [ForumCategoryController::class, 'show'])->name('forum.categories.show');
+    
+    // Threads
+    Route::get('threads/{thread}', [ForumThreadController::class, 'show'])->name('forum.threads.show');
+    
+    // Posts for a thread
+    Route::get('threads/{thread}/posts', [ForumPostController::class, 'index'])->name('forum.posts.index');
+    
+    // Authenticated forum actions
+    Route::middleware('auth:sanctum')->group(function () {
+        // Thread CRUD
+        Route::post('categories/{category}/threads', [ForumThreadController::class, 'store'])->name('forum.threads.store');
+        Route::put('threads/{thread}', [ForumThreadController::class, 'update'])->name('forum.threads.update');
+        Route::delete('threads/{thread}', [ForumThreadController::class, 'destroy'])->name('forum.threads.destroy');
+        
+        // Thread moderation (admin/moderator)
+        Route::post('threads/{thread}/pin', [ForumThreadController::class, 'pin'])->name('forum.threads.pin');
+        Route::post('threads/{thread}/unpin', [ForumThreadController::class, 'unpin'])->name('forum.threads.unpin');
+        Route::post('threads/{thread}/lock', [ForumThreadController::class, 'lock'])->name('forum.threads.lock');
+        Route::post('threads/{thread}/unlock', [ForumThreadController::class, 'unlock'])->name('forum.threads.unlock');
+        
+        // Post CRUD
+        Route::post('threads/{thread}/posts', [ForumPostController::class, 'store'])->name('forum.posts.store');
+        Route::put('posts/{post}', [ForumPostController::class, 'update'])->name('forum.posts.update');
+        Route::delete('posts/{post}', [ForumPostController::class, 'destroy'])->name('forum.posts.destroy');
+    });
+    
+    // Admin-only category management
+    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+        Route::post('categories', [ForumCategoryController::class, 'store'])->name('forum.categories.store');
+        Route::put('categories/{category}', [ForumCategoryController::class, 'update'])->name('forum.categories.update');
+        Route::delete('categories/{category}', [ForumCategoryController::class, 'destroy'])->name('forum.categories.destroy');
+    });
+});

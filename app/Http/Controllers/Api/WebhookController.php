@@ -24,6 +24,11 @@ class WebhookController extends Controller
      * @group Integrations - Pesapal
      * @groupDescription Endpoints for handling external callbacks and system integrations, specifically the Pesapal payment gateway.
      * @unauthenticated
+    * @header X-Pesapal-Signature string required HMAC signature sent by Pesapal for webhook verification.
+    * @bodyParam OrderTrackingId string optional External tracking id provided by Pesapal. Example: 12345-abc
+    * @bodyParam OrderMerchantReference string optional Merchant reference or order id. Example: ORD-98765
+    * @bodyParam reference string optional Generic reference field sometimes used by providers. Example: ref_123
+    * @bodyParam OrderNotificationType string optional Notification type (e.g., COMPLETED, FAILED). Example: COMPLETED
      *
      * @response 200 {
      *   "status": "OK"
@@ -31,7 +36,10 @@ class WebhookController extends Controller
      * @response 400 {
      *   "error": "Invalid signature"
      * }
-     * @response 500 {
+    * @response 404 {
+    *   "error": "Payment not found"
+    * }
+    * @response 500 {
      *   "error": "Processing failed"
      * }
      */

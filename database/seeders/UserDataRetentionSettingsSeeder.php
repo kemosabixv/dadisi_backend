@@ -50,6 +50,13 @@ class UserDataRetentionSettingsSeeder extends Seeder
                 'auto_delete' => true,
                 'description' => 'Failed job records and error logs',
             ],
+            [
+                'data_type' => 'temporary_media',
+                'retention_days' => 0,
+                'retention_minutes' => 30,
+                'auto_delete' => true,
+                'description' => 'Temporary media uploads not attached to saved posts',
+            ],
         ];
 
         foreach ($retentionSettings as $setting) {

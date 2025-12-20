@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\Category;
 use App\Models\Tag;
 use App\Models\AuditLog;
+use App\Models\Media;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use Illuminate\Http\Request;
@@ -190,6 +191,11 @@ class PostAdminController extends Controller
 
         $this->logAuditAction('create', Post::class, $post->id, null, $post->only(['title', 'slug', 'status']), "Created post: {$post->title}");
 
+        // Mark hero image as permanent (clear temporary_until)
+        if (!empty($validated['hero_image_path'])) {
+            $this->markMediaAsPermanent($validated['hero_image_path']);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Post created successfully',
@@ -328,6 +334,11 @@ class PostAdminController extends Controller
 
         $this->logAuditAction('update', Post::class, $post->id, $oldValues, $validated, "Updated post: {$post->title}");
 
+        // Mark hero image as permanent (clear temporary_until)
+        if (!empty($validated['hero_image_path'])) {
+            $this->markMediaAsPermanent($validated['hero_image_path']);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Post updated successfully',
@@ -426,6 +437,96 @@ class PostAdminController extends Controller
     }
 
     /**
+     * Publish Post
+     *
+     * Changes the post status from draft to published.
+     * Sets the published_at timestamp if not already set.
+     *
+     * @group Blog Management - Admin
+     * @authenticated
+     *
+     * @urlParam post integer required The post ID. Example: 1
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Post published successfully",
+     *   "data": {"id": 1, "title": "Post Title", "status": "published", "published_at": "2025-01-01T00:00:00Z"}
+     * }
+     * @response 400 {
+     *   "success": false,
+     *   "message": "Post is already published."
+     * }
+     */
+    public function publish(Post $post): JsonResponse
+    {
+        $this->authorize('publish', $post);
+
+        if ($post->status === 'published') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Post is already published.',
+            ], 400);
+        }
+
+        $oldStatus = $post->status;
+        $post->update([
+            'status' => 'published',
+            'published_at' => $post->published_at ?? now(),
+        ]);
+
+        $this->logAuditAction('publish', Post::class, $post->id, ['status' => $oldStatus], ['status' => 'published'], "Admin published post: {$post->title}");
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Post published successfully',
+            'data' => $post->fresh()->load('author:id,username', 'categories', 'tags'),
+        ]);
+    }
+
+    /**
+     * Unpublish Post
+     *
+     * Changes the post status from published back to draft.
+     * The post will no longer be visible to the public.
+     *
+     * @group Blog Management - Admin
+     * @authenticated
+     *
+     * @urlParam post integer required The post ID. Example: 1
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Post unpublished successfully",
+     *   "data": {"id": 1, "title": "Post Title", "status": "draft"}
+     * }
+     * @response 400 {
+     *   "success": false,
+     *   "message": "Post is not published."
+     * }
+     */
+    public function unpublish(Post $post): JsonResponse
+    {
+        $this->authorize('unpublish', $post);
+
+        if ($post->status !== 'published') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Post is not published.',
+            ], 400);
+        }
+
+        $post->update(['status' => 'draft']);
+
+        $this->logAuditAction('unpublish', Post::class, $post->id, ['status' => 'published'], ['status' => 'draft'], "Admin unpublished post: {$post->title}");
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Post unpublished successfully',
+            'data' => $post->fresh()->load('author:id,username', 'categories', 'tags'),
+        ]);
+    }
+
+    /**
      * Log audit actions
      */
     private function logAuditAction(string $action, string $modelType, int $modelId, ?array $oldValues, ?array $newValues, ?string $notes = null): void
@@ -444,6 +545,24 @@ class PostAdminController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to create audit log', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Mark media as permanent by clearing the temporary_until field.
+     * Extracts media path from URL and finds matching record.
+     */
+    private function markMediaAsPermanent(string $heroImagePath): void
+    {
+        try {
+            // Extract file path from URL (e.g., /storage/media/2025-12/image.jpg -> /media/2025-12/image.jpg)
+            $filePath = preg_replace('#^.*/storage#', '', $heroImagePath);
+            
+            Media::where('file_path', $filePath)
+                ->whereNotNull('temporary_until')
+                ->update(['temporary_until' => null]);
+        } catch (\Exception $e) {
+            Log::error('Failed to mark media as permanent', ['error' => $e->getMessage()]);
         }
     }
 }

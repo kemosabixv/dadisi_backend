@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use App\Models\Plan;
 use App\Models\ReconciliationRun;
+use App\Models\DonationCampaign;
+use App\Policies\DonationCampaignPolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\PlanPolicy;
 use App\Policies\ReconciliationRunPolicy;
@@ -20,6 +22,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array
      */
     protected $policies = [
+        DonationCampaign::class => DonationCampaignPolicy::class,
         Permission::class => PermissionPolicy::class,
         Plan::class => PlanPolicy::class,
         ReconciliationRun::class => ReconciliationRunPolicy::class,

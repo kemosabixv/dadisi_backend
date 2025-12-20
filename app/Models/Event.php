@@ -15,17 +15,24 @@ class Event extends Model
         'title',
         'slug',
         'description',
+        'category_id',
         'venue',
         'is_online',
         'online_link',
         'capacity',
+        'waitlist_enabled',
+        'waitlist_capacity',
         'county_id',
         'image_path',
         'price',
         'currency',
         'status',
+        'featured',
+        'featured_until',
         'created_by',
+        'organizer_id',
         'published_at',
+        'registration_deadline',
         'starts_at',
         'ends_at',
     ];
@@ -33,10 +40,15 @@ class Event extends Model
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
+        'registration_deadline' => 'datetime',
         'capacity' => 'integer',
+        'waitlist_enabled' => 'boolean',
+        'waitlist_capacity' => 'integer',
         'is_online' => 'boolean',
         'price' => 'decimal:2',
         'published_at' => 'datetime',
+        'featured' => 'boolean',
+        'featured_until' => 'datetime',
     ];
 
     /**
@@ -48,11 +60,75 @@ class Event extends Model
     }
 
     /**
-     * Get the user who created this event
+     * Get the category for this event
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(EventCategory::class, 'category_id');
+    }
+
+    /**
+     * Get the user who created this event (staff/admin usually)
      */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the organizer of this event (can be staff or a user)
+     */
+    public function organizer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'organizer_id');
+    }
+
+    /**
+     * Get all tickets for this event
+     */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
+    /**
+     * Get all promo codes for this event
+     */
+    public function promoCodes(): HasMany
+    {
+        return $this->hasMany(PromoCode::class);
+    }
+
+    /**
+     * Get all registrations for this event
+     */
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(Registration::class);
+    }
+
+    /**
+     * Get all speakers for this event
+     */
+    public function speakers(): HasMany
+    {
+        return $this->hasMany(Speaker::class);
+    }
+
+    /**
+     * Get all tags for this event
+     */
+    public function tags(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(EventTag::class, 'event_tag', 'event_id', 'tag_id');
+    }
+
+    /**
+     * Get all payouts for this event
+     */
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(Payout::class);
     }
 
     /**
@@ -98,6 +174,18 @@ class Event extends Model
     }
 
     /**
+     * Scope: get featured events
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('featured', true)
+            ->where(function ($q) {
+                $q->whereNull('featured_until')
+                  ->orWhere('featured_until', '>', now());
+            });
+    }
+
+    /**
      * Scope: filter by county
      */
     public function scopeByCounty($query, $countyId)
@@ -110,19 +198,47 @@ class Event extends Model
      */
     public function getTotalRevenue(): float
     {
-        return $this->orders()
+        return (float) $this->orders()
             ->where('status', 'paid')
             ->sum('total_amount');
     }
 
     /**
-     * Get total attendees/tickets sold
+     * Get total attendees (confirmed/attended registrations)
      */
     public function getTotalAttendees(): int
     {
-        return $this->orders()
-            ->where('status', 'paid')
-            ->sum('quantity');
+        return $this->registrations()
+            ->whereIn('status', ['confirmed', 'attended'])
+            ->count();
+    }
+
+    /**
+     * Check if event has available capacity
+     */
+    public function hasCapacity(): bool
+    {
+        if (!$this->capacity) return true;
+        return $this->getTotalAttendees() < $this->capacity;
+    }
+
+    /**
+     * Get remaining capacity
+     */
+    public function getRemainingCapacity(): ?int
+    {
+        if (!$this->capacity) return null;
+        return max(0, $this->capacity - $this->getTotalAttendees());
+    }
+
+    /**
+     * Check if registration is open
+     */
+    public function isRegistrationOpen(): bool
+    {
+        if ($this->status !== 'published') return false;
+        if (now()->isAfter($this->starts_at)) return false;
+        if ($this->registration_deadline && now()->isAfter($this->registration_deadline)) return false;
+        return true;
     }
 }
-

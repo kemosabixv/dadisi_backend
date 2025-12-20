@@ -61,6 +61,7 @@ class PlanController extends Controller
             return [
                 'id' => $plan->id,
                 'name' => json_decode($plan->name, true) ?? [$plan->name],
+                'description' => json_decode($plan->description, true)['en'] ?? $plan->description,
                 'pricing' => $plan->pricing,
                 'promotions' => $plan->promotions,
                 'features' => $plan->features->map(function ($feature) {
@@ -121,6 +122,7 @@ class PlanController extends Controller
             'data' => [
                 'id' => $plan->id,
                 'name' => json_decode($plan->name, true) ?? [$plan->name],
+                'description' => json_decode($plan->description, true)['en'] ?? $plan->description,
                 'pricing' => $plan->pricing,
                 'promotions' => $plan->promotions,
                 'features' => $plan->features->map(function ($feature) {
@@ -176,7 +178,7 @@ class PlanController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'monthly_price_kes' => 'required|numeric|min:100|max:100000',
+            'monthly_price_kes' => 'required|numeric|min:' . ((app()->isLocal() || app()->environment('staging')) ? 1 : 100) . '|max:100000',
             'currency' => 'required|string|in:KES',
             'monthly_promotion' => 'nullable|array',
             'monthly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
@@ -185,8 +187,9 @@ class PlanController extends Controller
             'yearly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
             'yearly_promotion.expires_at' => 'nullable|date|after:now',
             'features' => 'nullable|array',
-            'features.*.id' => 'required_with:features|exists:plan_features,id',
-            'features.*.limit' => 'nullable|integer|min:0',
+            'features.*.name' => 'required_with:features|string|max:255',
+            'features.*.limit' => 'nullable|integer|min:-1',
+            'features.*.description' => 'nullable|string|max:500',
         ]);
 
         $plan = DB::transaction(function () use ($validated) {
@@ -228,8 +231,11 @@ class PlanController extends Controller
 
             if (!empty($validated['features'])) {
                 foreach ($validated['features'] as $featureData) {
-                    $plan->features()->attach($featureData['id'], [
-                        'limit' => $featureData['limit'] ?? null,
+                    $plan->features()->create([
+                        'name' => json_encode(['en' => $featureData['name']]),
+                        'slug' => \Str::slug($featureData['name'] . '-' . $plan->id . '-' . uniqid()),
+                        'value' => $featureData['limit'] ?? 'true',
+                        'description' => json_encode(['en' => $featureData['description'] ?? '']),
                     ]);
                 }
             }
@@ -290,7 +296,7 @@ class PlanController extends Controller
     {
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'monthly_price_kes' => 'nullable|numeric|min:100|max:100000',
+            'monthly_price_kes' => 'nullable|numeric|min:' . ((app()->isLocal() || app()->environment('staging')) ? 1 : 100) . '|max:100000',
             'monthly_promotion' => 'nullable|array',
             'monthly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
             'monthly_promotion.expires_at' => 'nullable|date|after:now',
@@ -299,8 +305,9 @@ class PlanController extends Controller
             'yearly_promotion.expires_at' => 'nullable|date|after:now',
             'is_active' => 'nullable|boolean',
             'features' => 'nullable|array',
-            'features.*.id' => 'required_with:features|exists:plan_features,id',
-            'features.*.limit' => 'nullable|integer|min:0',
+            'features.*.name' => 'required_with:features|string|max:255',
+            'features.*.limit' => 'nullable|integer|min:-1',
+            'features.*.description' => 'nullable|string|max:500',
         ]);
 
         DB::transaction(function () use ($plan, $validated) {
@@ -355,14 +362,17 @@ class PlanController extends Controller
             }
 
             if (isset($validated['features'])) {
-                // Sync features
-                $featuresData = [];
+                // HasMany doesn't support sync() - manually delete and recreate
+                $plan->features()->delete();
+
                 foreach ($validated['features'] as $featureData) {
-                    $featuresData[$featureData['id']] = [
-                        'limit' => $featureData['limit'] ?? null,
-                    ];
+                    $plan->features()->create([
+                        'name' => json_encode(['en' => $featureData['name'] ?? 'Feature']),
+                        'slug' => \Str::slug(($featureData['name'] ?? 'feature') . '-' . $plan->id . '-' . ($featureData['id'] ?? uniqid())),
+                        'value' => $featureData['limit'] ?? 'true',
+                        'description' => json_encode(['en' => $featureData['description'] ?? '']),
+                    ]);
                 }
-                $plan->features()->sync($featuresData);
             }
         });
 

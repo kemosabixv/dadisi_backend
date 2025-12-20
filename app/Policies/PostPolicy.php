@@ -97,4 +97,13 @@ class PostPolicy
     {
         return $user->hasPermissionTo('publish_posts');
     }
+
+    /**
+     * Determine if user can unpublish a post
+     */
+    public function unpublish(User $user, Post $post): bool
+    {
+        return $user->hasPermissionTo('publish_posts');
+    }
 }
+

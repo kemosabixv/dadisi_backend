@@ -17,6 +17,7 @@ class Plan extends BasePlan
         // Add custom fillable fields
         $this->fillable = array_merge(parent::getFillable(), [
             'type',
+            'description',
             'base_monthly_price',
             'yearly_discount_percent',
             'default_billing_period',
@@ -26,6 +27,8 @@ class Plan extends BasePlan
             'yearly_promotion_expires_at',
         ]);
     }
+
+
 
     /**
      * Override setAttribute to filter out invalid 'active' column
@@ -67,6 +70,7 @@ class Plan extends BasePlan
         'monthly_promotion_expires_at' => 'datetime',
         'yearly_promotion_discount_percent' => 'decimal:2',
         'yearly_promotion_expires_at' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
     /**
@@ -124,9 +128,9 @@ class Plan extends BasePlan
     public function getEffectiveMonthlyPrice(): float
     {
         if ($this->isMonthlyPromotionActive()) {
-            return $this->base_monthly_price * (1 - $this->monthly_promotion_discount_percent / 100);
+            return (float) ($this->base_monthly_price * (1 - $this->monthly_promotion_discount_percent / 100));
         }
-        return $this->base_monthly_price;
+        return (float) $this->base_monthly_price;
     }
 
     /**
@@ -135,7 +139,7 @@ class Plan extends BasePlan
     public function getEffectiveYearlyPrice(): float
     {
         if ($this->isYearlyPromotionActive()) {
-            return ($this->base_monthly_price * 12) * (1 - $this->yearly_promotion_discount_percent / 100);
+            return (float) (($this->base_monthly_price * 12) * (1 - $this->yearly_promotion_discount_percent / 100));
         }
         return $this->yearly_price ?? ($this->base_monthly_price * 12);
     }

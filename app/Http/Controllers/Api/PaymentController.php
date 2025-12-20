@@ -21,7 +21,244 @@ class PaymentController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:sanctum')->except(['handleWebhook', 'checkPaymentStatus']);
+        $this->middleware('auth:sanctum')->except(['handleWebhook', 'checkPaymentStatus', 'showMockPaymentPage', 'completeMockPayment']);
+    }
+
+    /**
+     * Show mock payment page for local development testing
+     *
+     * @param string $paymentId The payment tracking ID (e.g., MOCK-1234567890-ABCDE)
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
+     */
+    public function showMockPaymentPage(string $paymentId)
+    {
+        // Find payment by external_reference (tracking ID) or by numeric ID
+        $payment = \App\Models\Payment::where('external_reference', $paymentId)
+            ->orWhere('id', $paymentId)
+            ->first();
+
+        if (!$payment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment not found',
+                'payment_id' => $paymentId,
+            ], 404);
+        }
+
+        // Get the associated subscription if it's a subscription payment
+        $subscription = null;
+        $plan = null;
+
+        if ($payment->payable_type === 'Laravelcm\\Subscriptions\\Models\\Subscription' || 
+            $payment->payable_type === 'App\\Models\\PlanSubscription') {
+            $subscription = $payment->payable;
+            if ($subscription) {
+                $plan = $subscription->plan;
+            }
+        }
+
+        return view('mock-payment', [
+            'payment' => $payment,
+            'subscription' => $subscription,
+            'plan' => $plan,
+        ]);
+    }
+
+    /**
+     * Complete mock payment (simulate successful payment)
+     *
+     * @param string $paymentId The payment tracking ID
+     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+     */
+    public function completeMockPayment(Request $request, string $paymentId): \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+    {
+        $payment = \App\Models\Payment::where('external_reference', $paymentId)
+            ->orWhere('id', $paymentId)
+            ->first();
+
+        if (!$payment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment not found',
+            ], 404);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Update payment status
+            $payment->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+            ]);
+
+            // Only process payable if it's a real payment (not a test payment)
+            // Check payable_type before accessing the relationship to avoid loading non-existent classes
+            $isTestPayment = $payment->payable_type === null || 
+                             str_contains($payment->payable_type ?? '', 'Test') ||
+                             ($payment->meta['test_payment'] ?? false);
+
+            if (!$isTestPayment && $payment->payable_type && $payment->payable_id) {
+                try {
+                    $payable = $payment->payable;
+                    
+                    if ($payable) {
+                        // Update subscription status if it's a subscription payment
+                        if (method_exists($payable, 'activate')) {
+                            $payable->activate();
+                        } else {
+                            $payable->update(['status' => 'active']);
+                        }
+
+                        // Update user subscription status
+                        if (method_exists($payable, 'user') && $payable->user) {
+                            $payable->user->update([
+                                'subscription_status' => 'active',
+                                'subscription_activated_at' => now(),
+                                'last_payment_date' => now(),
+                            ]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Log but don't fail if payable can't be loaded (test payments)
+                    Log::warning('Could not load payable for payment', [
+                        'payment_id' => $payment->id,
+                        'payable_type' => $payment->payable_type,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            Log::info('Mock payment completed successfully', [
+                'payment_id' => $payment->id,
+                'external_reference' => $payment->external_reference,
+            ]);
+
+            // Return success page or redirect
+            return response()->view('mock-payment-success', [
+                'payment' => $payment,
+                'message' => 'Payment completed successfully!',
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Mock payment completion failed', [
+                'payment_id' => $paymentId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment completion failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Create a test mock payment record for development testing
+     *
+     * @group Payments
+     * @authenticated
+     *
+     * @bodyParam amount numeric required The payment amount. Example: 2500
+     * @bodyParam description string optional Payment description. Example: Test subscription payment
+     * @bodyParam user_email string optional Email for test user. Example: test@example.com
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Test payment created successfully",
+     *   "data": {
+     *     "payment_id": 123,
+     *     "tracking_id": "MOCK-1234567890-ABCDE",
+     *     "mock_payment_url": "http://localhost:8000/mock-payment/MOCK-1234567890-ABCDE",
+     *     "amount": 2500,
+     *     "status": "pending"
+     *   }
+     * }
+     */
+    public function createTestMockPayment(Request $request): JsonResponse
+    {
+        // Only allow in local/staging environments
+        if (!in_array(app()->environment(), ['local', 'testing', 'staging'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Test payments are only available in development environments',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'description' => 'nullable|string|max:500',
+            'user_email' => 'nullable|email',
+            'payment_type' => 'nullable|string|in:test,subscription,donation,event',
+        ]);
+
+        $paymentType = $validated['payment_type'] ?? 'test';
+
+        try {
+            // Generate unique tracking ID with payment type prefix
+            $typePrefix = strtoupper(substr($paymentType, 0, 3));
+            $trackingId = "MOCK-{$typePrefix}-" . time() . '-' . strtoupper(substr(md5(uniqid()), 0, 5));
+            $orderReference = strtoupper($paymentType) . '-ORDER-' . time();
+
+            // Create the payment record (using placeholder values for test payments since columns are NOT NULL)
+            $payment = \App\Models\Payment::create([
+                'payable_type' => 'TestPayment', // Marker for test payments (column is NOT NULL)
+                'payable_id' => 0,               // Zero indicates no real payable
+                'gateway' => 'mock',
+                'method' => 'test',
+                'status' => 'pending',
+                'amount' => $validated['amount'],
+                'currency' => 'KES',
+                'external_reference' => $trackingId,
+                'order_reference' => $orderReference,
+                'meta' => [
+                    'description' => $validated['description'] ?? 'Test payment',
+                    'user_email' => $validated['user_email'] ?? auth()->user()?->email,
+                    'test_payment' => true,
+                    'created_by' => auth()->id(),
+                    'payment_type' => $paymentType, // For routing in webhook
+                ],
+            ]);
+
+            $mockPaymentUrl = url("/mock-payment/{$trackingId}");
+
+            Log::info('Test mock payment created', [
+                'payment_id' => $payment->id,
+                'tracking_id' => $trackingId,
+                'payment_type' => $paymentType,
+                'amount' => $validated['amount'],
+                'created_by' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test payment created successfully',
+                'data' => [
+                    'payment_id' => $payment->id,
+                    'tracking_id' => $trackingId,
+                    'order_reference' => $orderReference,
+                    'mock_payment_url' => $mockPaymentUrl,
+                    'amount' => $payment->amount,
+                    'currency' => $payment->currency,
+                    'status' => $payment->status,
+                    'payment_type' => $paymentType,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create test mock payment', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create test payment: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

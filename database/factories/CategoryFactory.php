@@ -18,6 +18,10 @@ class CategoryFactory extends Factory
             'name' => $name,
             'slug' => Str::slug($name),
             'description' => $this->faker->sentence(),
+            'created_by' => null,
+            'requested_deletion_at' => null,
+            'deletion_requested_by' => null,
         ];
     }
 }
+

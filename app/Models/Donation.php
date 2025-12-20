@@ -24,6 +24,7 @@ class Donation extends Model
         'reference',
         'receipt_number',
         'payment_id',
+        'campaign_id',
         'notes',
     ];
 
@@ -45,6 +46,14 @@ class Donation extends Model
     public function county(): BelongsTo
     {
         return $this->belongsTo(County::class);
+    }
+
+    /**
+     * Get the campaign this donation belongs to (optional)
+     */
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(DonationCampaign::class);
     }
 
     /**

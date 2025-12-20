@@ -24,6 +24,12 @@ class BlogPostsSeeder extends Seeder
             'Bioinformatics',
             'Agricultural Biotechnology',
             'Medical Biotechnology',
+            'Marine Biotechnology',
+            'Industrial Biotechnology',
+            'Forensic Science',
+            'Neuroinformatics',
+            'Environmental Sustainability',
+            'Immunology',
         ];
 
         $categoryModels = [];
@@ -43,6 +49,13 @@ class BlogPostsSeeder extends Seeder
             'Bioremediation',
             'Stem Cells',
             'Genetic Engineering',
+            'Bioplastics',
+            'DNA Profiling',
+            'Biofuels',
+            'Microbiome',
+            'Data Science',
+            'CRISPR-Cas12',
+            'Nanobiotechnology',
         ];
 
         $tagModels = [];
@@ -70,7 +83,7 @@ class BlogPostsSeeder extends Seeder
 
         $county = County::first() ?? County::create(['name' => 'Nairobi']);
 
-        // 4. Define Post Data (Total 10)
+        // 4. Define Post Data (Total 20)
         $postsData = [
             // Super Admin (3)
             [
@@ -149,6 +162,78 @@ class BlogPostsSeeder extends Seeder
                 'status' => 'published',
                 'is_featured' => false,
             ],
+
+            // NEW POSTS (10 more)
+            [
+                'user_id' => $superAdmin->id,
+                'title' => 'Forensic DNA Profiling: Solving Crimes in the 21st Century',
+                'body' => '<p>How DNA profiling has revolutionized the criminal justice system in Kenya. A look at current forensic labs and future capabilities.</p>',
+                'status' => 'published',
+                'is_featured' => false,
+            ],
+            [
+                'user_id' => $superAdmin->id,
+                'title' => 'Neuroinformatics: Mapping the Mysteries of the Human Brain',
+                'body' => '<p>Computational tools are allowing us to model brain activity like never before. Exploring the intersection of neuroscience and big data.</p>',
+                'status' => 'published',
+                'is_featured' => false,
+            ],
+            [
+                'user_id' => $superAdmin->id,
+                'title' => 'Environmental Sustainability through Bioremediation',
+                'body' => '<p>Targeting oil spills and heavy metal contamination with specialized microorganisms. A biotechnical approach to environmental restoration.</p>',
+                'status' => 'published',
+                'is_featured' => false,
+            ],
+            [
+                'user_id' => $contentEditor->id,
+                'title' => 'Marine Biotechnology: Treasures from the Kenyan Coast',
+                'body' => '<p>Exploring the unique biodiversity of the Indian Ocean for potential bioactive compounds and new pharmaceutical leads.</p>',
+                'status' => 'published',
+                'is_featured' => false,
+            ],
+            [
+                'user_id' => $contentEditor->id,
+                'title' => 'Industrial Biotech: Fermenting the Future of Kenyan Industry',
+                'body' => '<p>Using enzymes and microorganisms for industrial processes, reducing emissions and increasing efficiency in local factories.</p>',
+                'status' => 'published',
+                'is_featured' => false,
+            ],
+            [
+                'user_id' => $contentEditor->id,
+                'title' => 'The Rise of Biofuels: Powering Kenya with Algae',
+                'body' => '<p>Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.</p>',
+                'status' => 'published',
+                'is_featured' => false,
+            ],
+            [
+                'user_id' => $contentEditor->id,
+                'title' => 'Immunology Breakthroughs: Developing Next-Gen Antibodies',
+                'body' => '<p>A deep dive into monoclonal antibodies and their use in treating chronic diseases and emerging infections in the region.</p>',
+                'status' => 'published',
+                'is_featured' => false,
+            ],
+            [
+                'user_id' => $contentEditor->id,
+                'title' => 'Nanobiotechnology in Cancer Detection: Tiny Tools, Big Impact',
+                'body' => '<p>How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.</p>',
+                'status' => 'published',
+                'is_featured' => false,
+            ],
+            [
+                'user_id' => $premiumUser->id,
+                'title' => 'Microbiome Research: The Secret Life of Our Gut Bacteria',
+                'body' => '<p>Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.</p>',
+                'status' => 'published',
+                'is_featured' => false,
+            ],
+            [
+                'user_id' => $studentUser->id,
+                'title' => 'Bioplastics: A Bio-based Solution to Kenya\'s Pollution',
+                'body' => '<p>Exploring biopolymers derived from agricultural waste as a sustainable alternative to conventional plastics in local markets.</p>',
+                'status' => 'published',
+                'is_featured' => false,
+            ],
         ];
 
         foreach ($postsData as $pData) {
@@ -180,6 +265,6 @@ class BlogPostsSeeder extends Seeder
             );
         }
 
-        $this->command->info('10 Biotechnology posts seeded successfully!');
+        $this->command->info('20 Biotechnology posts seeded successfully!');
     }
 }

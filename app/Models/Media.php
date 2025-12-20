@@ -24,6 +24,7 @@ class Media extends Model
         'is_public',
         'attached_to',
         'attached_to_id',
+        'temporary_until',
     ];
 
     protected $casts = [
@@ -32,6 +33,7 @@ class Media extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'temporary_until' => 'datetime',
     ];
 
     /**

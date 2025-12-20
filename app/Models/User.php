@@ -240,4 +240,68 @@ class User extends Authenticatable
     {
         return $this->canAccessAdminPanel();
     }
+
+    /**
+     * Events organized by this user
+     */
+    public function organizedEvents(): HasMany
+    {
+        return $this->hasMany(Event::class, 'organizer_id');
+    }
+
+    /**
+     * Event registrations by this user
+     */
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(Registration::class);
+    }
+
+    /**
+     * Payouts for events organized by this user
+     */
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(Payout::class, 'organizer_id');
+    }
+
+    /**
+     * Forum threads created by this user
+     */
+    public function forumThreads(): HasMany
+    {
+        return $this->hasMany(ForumThread::class);
+    }
+
+    /**
+     * Forum posts (replies) by this user
+     */
+    public function forumPosts(): HasMany
+    {
+        return $this->hasMany(ForumPost::class);
+    }
+
+    /**
+     * User's public key for encrypted messaging
+     */
+    public function publicKey(): HasOne
+    {
+        return $this->hasOne(UserPublicKey::class);
+    }
+
+    /**
+     * Private messages sent by this user
+     */
+    public function sentMessages(): HasMany
+    {
+        return $this->hasMany(PrivateMessage::class, 'sender_id');
+    }
+
+    /**
+     * Private messages received by this user
+     */
+    public function receivedMessages(): HasMany
+    {
+        return $this->hasMany(PrivateMessage::class, 'recipient_id');
+    }
 }
