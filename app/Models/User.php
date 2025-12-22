@@ -228,8 +228,8 @@ class User extends Authenticatable
     public function canAccessAdminPanel(): bool
     {
         // Check if user has specific admin roles or is a staff member
-        // Roles: super_admin, admin, finance, events_manager, content_editor
-        return $this->hasAnyRole(['super_admin', 'admin', 'finance', 'events_manager', 'content_editor']) 
+        // Roles: super_admin, admin, finance, events_manager, content_editor, lab_manager
+        return $this->hasAnyRole(['super_admin', 'admin', 'finance', 'events_manager', 'content_editor', 'lab_manager']) 
                || ($this->memberProfile && $this->memberProfile->is_staff);
     }
 
@@ -303,5 +303,13 @@ class User extends Authenticatable
     public function receivedMessages(): HasMany
     {
         return $this->hasMany(PrivateMessage::class, 'recipient_id');
+    }
+
+    /**
+     * Lab bookings made by this user
+     */
+    public function labBookings(): HasMany
+    {
+        return $this->hasMany(LabBooking::class);
     }
 }

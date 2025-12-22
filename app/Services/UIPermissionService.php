@@ -50,6 +50,15 @@ class UIPermissionService
             'can_view_reports' => $this->user->can('view_reports'),
             'can_manage_plans' => $this->user->can('manage_plans'),
             
+            // Lab Space Booking
+            'can_view_lab_spaces' => $this->user->can('view_all_lab_bookings') || $this->user->can('manage_lab_spaces'),
+            'can_manage_lab_spaces' => $this->user->can('manage_lab_spaces'),
+            'can_view_lab_bookings' => $this->user->can('view_all_lab_bookings'),
+            'can_approve_lab_bookings' => $this->user->can('approve_lab_bookings'),
+            'can_manage_lab_maintenance' => $this->user->can('manage_lab_maintenance'),
+            'can_view_lab_reports' => $this->user->can('view_lab_reports'),
+            'can_mark_lab_attendance' => $this->user->can('mark_lab_attendance'),
+            
             // General Admin
             'can_access_admin_panel' => $this->user->canAccessAdminPanel(),
         ];
@@ -129,6 +138,16 @@ class UIPermissionService
                 'title' => 'Reports',
                 'path' => '/admin/reports',
                 'icon' => 'bar-chart',
+            ];
+        }
+
+        // Lab Spaces
+        if ($this->user->can('view_all_lab_bookings') || $this->user->can('manage_lab_spaces')) {
+            $menu[] = [
+                'title' => 'Lab Spaces',
+                'path' => '/admin/spaces',
+                'icon' => 'flask',
+                'badge' => $this->user->can('manage_lab_spaces') ? 'manage' : null,
             ];
         }
 

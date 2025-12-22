@@ -13,10 +13,12 @@ use Illuminate\Http\UploadedFile;
 class EventService
 {
     protected $quotaService;
+    protected $qrCodeService;
 
-    public function __construct(EventQuotaService $quotaService)
+    public function __construct(EventQuotaService $quotaService, QrCodeService $qrCodeService)
     {
         $this->quotaService = $quotaService;
+        $this->qrCodeService = $qrCodeService;
     }
 
     /**
@@ -89,15 +91,22 @@ class EventService
         }
 
         // 5. Create registration
-        return Registration::create([
+        $registration = Registration::create([
             'event_id' => $event->id,
             'user_id' => $user->id,
             'ticket_id' => $ticket->id,
             'confirmation_code' => $this->generateConfirmationCode(),
             'status' => $status,
             'waitlist_position' => $waitlistPosition,
-            'qr_code_token' => Str::random(32),
+            'qr_code_token' => $this->qrCodeService->generateQrToken(),
         ]);
+
+        // 6. Generate QR code image
+        if ($status === 'confirmed') {
+            $this->qrCodeService->generateQrCode($registration);
+        }
+
+        return $registration;
     }
 
     /**

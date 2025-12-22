@@ -20,6 +20,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Services\PaymentGateway\GatewayManager::class, function ($app) {
             return new \App\Services\PaymentGateway\GatewayManager();
         });
+
+        // Register QR Code Facade Alias
+        if (class_exists(\SimpleSoftwareIO\QrCode\Facades\QrCode::class)) {
+            \Illuminate\Foundation\AliasLoader::getInstance()->alias(
+                'QrCode', 
+                \SimpleSoftwareIO\QrCode\Facades\QrCode::class
+            );
+        }
     }
 
     /**

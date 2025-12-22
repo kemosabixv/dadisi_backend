@@ -41,6 +41,7 @@ class DatabaseSeeder extends Seeder
             CountyGroupsSeeder::class,
             TaxonomySeeder::class,
             ForumThreadsSeeder::class,
+            LabSpaceSeeder::class,
         ]);
 
         // Optionally seed a demo user

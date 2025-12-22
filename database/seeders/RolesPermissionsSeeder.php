@@ -97,6 +97,17 @@ class RolesPermissionsSeeder extends Seeder
             'manage_forum_categories',
             'send_messages',
             'view_messages',
+
+            // County Management
+            'manage_counties',
+
+            // Lab Space Booking
+            'manage_lab_spaces',
+            'view_all_lab_bookings',
+            'approve_lab_bookings',
+            'manage_lab_maintenance',
+            'view_lab_reports',
+            'mark_lab_attendance',
         ];
 
         foreach ($permissions as $permission) {
@@ -118,6 +129,10 @@ class RolesPermissionsSeeder extends Seeder
                 'view_plans', 'manage_plans',
                 'view_reconciliation', 'manage_reconciliation',
                 'manage_permissions', 'manage_roles',
+                'manage_counties',
+                // Lab Space Booking
+                'manage_lab_spaces', 'view_all_lab_bookings', 'approve_lab_bookings',
+                'manage_lab_maintenance', 'view_lab_reports', 'mark_lab_attendance',
             ],
             'finance' => [
                 'view_donation_ledger', 'export_donations', 'reconcile_payments', 'view_reports',
@@ -135,10 +150,6 @@ class RolesPermissionsSeeder extends Seeder
             'editor' => [
                 'create_posts', 'edit_posts', 'publish_posts', 'view_posts',
             ],
-            'author' => [
-                // Premium members that can create and publish their own posts
-                'view_posts', 'create_posts', 'edit_posts', 'publish_posts', 'upload_post_media',
-            ],
             'member' => [
                 'manage_own_profile', 'rsvp_events', 'make_donations', 'view_plans',
                 'view_forum', 'create_threads', 'reply_threads', 'send_messages', 'view_messages',
@@ -148,6 +159,11 @@ class RolesPermissionsSeeder extends Seeder
                 'view_forum', 'create_threads', 'reply_threads', 'send_messages', 'view_messages',
                 'moderate_forum', 'lock_threads', 'pin_threads', 'delete_any_thread',
                 'ban_forum_users', 'mute_forum_users', 'view_forum_reports',
+            ],
+            'lab_manager' => [
+                // Lab space management role (not full admin)
+                'view_all_lab_bookings', 'approve_lab_bookings',
+                'manage_lab_maintenance', 'view_lab_reports', 'mark_lab_attendance',
             ],
         ];
 

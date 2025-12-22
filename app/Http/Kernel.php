@@ -29,12 +29,13 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\SecurityHeadersMiddleware::class,
         ],
 
         'api' => [
             \App\Http\Middleware\HandleCors::class,
+            \App\Http\Middleware\SecurityHeadersMiddleware::class,
             'throttle:60,1',
-            'auth:sanctum',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];

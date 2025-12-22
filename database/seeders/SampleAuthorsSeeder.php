@@ -4,10 +4,13 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Schema;
 
+/**
+ * Creates sample users for testing content creation.
+ * Note: The 'author' role was removed - access to authoring is now
+ * controlled via subscription features, not roles.
+ */
 class SampleAuthorsSeeder extends Seeder
 {
     /**
@@ -15,13 +18,7 @@ class SampleAuthorsSeeder extends Seeder
      */
     public function run(): void
     {
-        // Ensure permissions cache is cleared
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-
-        // Ensure the role exists
-        $authorRole = Role::firstWhere('name', 'author');
-
-        // Create a demo author user if none exists
+        // Create a demo content creator user if none exists
         $desiredUsername = Str::slug('Demo Author');
         $uniqueUsername = $desiredUsername;
         $counter = 1;
@@ -38,37 +35,7 @@ class SampleAuthorsSeeder extends Seeder
             ]
         );
 
-        if ($authorRole) {
-            $demo->assignRole($authorRole);
-        }
-
-        // Assign 'author' role to existing premium/subscribed users if any
-        // This attempts common column names - it's resilient if columns don't exist.
-        $query = User::query();
-
-        // If users table has subscription_plan_id, use it
-        try {
-            if (\Schema::hasColumn('users', 'subscription_plan_id')) {
-                $query->orWhereNotNull('subscription_plan_id');
-            }
-        } catch (\Exception $e) {
-            // Ignore if schema check fails in some environments
-        }
-
-        // If there is a 'is_premium' column
-        try {
-            if (\Schema::hasColumn('users', 'is_premium')) {
-                $query->orWhere('is_premium', true);
-            }
-        } catch (\Exception $e) {
-        }
-
-        $users = $query->limit(50)->get();
-
-        foreach ($users as $user) {
-            $user->assignRole('author');
-        }
-
-        $this->command->info('Sample authors seeder completed. Demo author: author@example.com (password: password)');
+        $this->command->info('Sample authors seeder completed. Demo user: author@example.com (password: password)');
+        $this->command->info('Note: Author role was removed. Authoring access is controlled via subscriptions.');
     }
 }

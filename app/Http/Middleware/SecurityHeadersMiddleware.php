@@ -92,13 +92,13 @@ class SecurityHeadersMiddleware
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
 
             // Images - allow self, data URIs, and common image hosts
-            "img-src 'self' data: blob: https:",
+            "img-src 'self' data: blob: http://localhost:8000 http://127.0.0.1:8000 https:",
 
             // Fonts - allow self and Google Fonts
             "font-src 'self' https://fonts.gstatic.com",
 
             // API connections
-            "connect-src 'self' {$apiUrl} {$frontendUrl} https://api.exchangerate-api.com",
+            "connect-src 'self' {$apiUrl} {$frontendUrl} http://localhost:8000 http://127.0.0.1:8000 https://api.exchangerate-api.com",
 
             // Forms
             "form-action 'self'",
@@ -111,10 +111,12 @@ class SecurityHeadersMiddleware
 
             // Object/embed/applet
             "object-src 'none'",
-
-            // Upgrade insecure requests in production
-            "upgrade-insecure-requests",
         ];
+
+        // Upgrade insecure requests in production/staging
+        if (app()->environment('production', 'staging')) {
+            $directives[] = "upgrade-insecure-requests";
+        }
 
         return implode('; ', $directives);
     }

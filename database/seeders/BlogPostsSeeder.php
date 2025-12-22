@@ -77,9 +77,7 @@ class BlogPostsSeeder extends Seeder
             return;
         }
 
-        // Ensure members have author role if they need to publish
-        $studentUser->assignRole('author');
-        $premiumUser->assignRole('author');
+        // Note: Author role was removed - authoring access is now controlled via subscriptions
 
         $county = County::first() ?? County::create(['name' => 'Nairobi']);
 

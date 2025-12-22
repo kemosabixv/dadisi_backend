@@ -63,6 +63,18 @@ Route::prefix('auth')->group(function () {
     });
 });
 
+// Counties - Public read access (no auth required)
+use App\Http\Controllers\Api\CountyController;
+Route::get('counties', [CountyController::class, 'index'])->name('counties.index');
+Route::get('counties/{county}', [CountyController::class, 'show'])->name('counties.show');
+
+// Counties - Authenticated CUD (policy handles permission check)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('counties', [CountyController::class, 'store'])->name('counties.store');
+    Route::put('counties/{county}', [CountyController::class, 'update'])->name('counties.update');
+    Route::delete('counties/{county}', [CountyController::class, 'destroy'])->name('counties.destroy');
+});
+
 // Member Profile routes (authenticated)
 use App\Http\Controllers\Api\MemberProfileController;
 
@@ -74,8 +86,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('member-profiles/{id}', [MemberProfileController::class, 'update']);
     Route::delete('member-profiles/{id}', [MemberProfileController::class, 'destroy']);
     Route::post('member-profiles/profile-picture', [MemberProfileController::class, 'uploadProfilePicture']);
-    // Custom route for getting counties
-    Route::get('counties', [MemberProfileController::class, 'getCounties'])->name('counties.index');
 });
 
 // User Management routes (authenticated)
@@ -512,6 +522,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Organizer scanning/check-in
     Route::post('events/{event}/scan', [RegistrationController::class, 'scan'])->name('events.scan');
     Route::post('events/{event}/registrations/{registration}/check-in', [RegistrationController::class, 'checkIn'])->name('events.check-in');
+    Route::get('events/{event}/attendance-stats', [RegistrationController::class, 'getAttendanceStats'])->name('events.attendance-stats');
 });
 
 // Event Management - Admin routes
@@ -563,7 +574,9 @@ Route::prefix('forum')->group(function () {
     Route::get('categories', [ForumCategoryController::class, 'index'])->name('forum.categories.index');
     Route::get('categories/{category}', [ForumCategoryController::class, 'show'])->name('forum.categories.show');
     
-    // Threads
+    // Threads - list all or filter by category
+    Route::get('threads', [ForumThreadController::class, 'index'])->name('forum.threads.index');
+    Route::get('categories/{category}/threads', [ForumThreadController::class, 'index'])->name('forum.categories.threads');
     Route::get('threads/{thread}', [ForumThreadController::class, 'show'])->name('forum.threads.show');
     
     // Posts for a thread
@@ -594,4 +607,45 @@ Route::prefix('forum')->group(function () {
         Route::put('categories/{category}', [ForumCategoryController::class, 'update'])->name('forum.categories.update');
         Route::delete('categories/{category}', [ForumCategoryController::class, 'destroy'])->name('forum.categories.destroy');
     });
+});
+
+// Lab Space Booking Routes
+use App\Http\Controllers\Api\LabSpaceController;
+use App\Http\Controllers\Api\LabBookingController;
+use App\Http\Controllers\Admin\AdminLabSpaceController;
+use App\Http\Controllers\Admin\AdminLabBookingController;
+
+// Public lab space routes (anyone can browse)
+Route::prefix('spaces')->group(function () {
+    Route::get('/', [LabSpaceController::class, 'index'])->name('lab-spaces.index');
+    Route::get('/{slug}', [LabSpaceController::class, 'show'])->name('lab-spaces.show');
+    Route::get('/{slug}/availability', [LabSpaceController::class, 'availability'])->name('lab-spaces.availability');
+});
+
+// Authenticated lab booking routes
+Route::prefix('bookings')->middleware('auth:sanctum')->group(function () {
+    Route::get('/quota', [LabBookingController::class, 'quotaStatus'])->name('lab-bookings.quota');
+    Route::get('/', [LabBookingController::class, 'index'])->name('lab-bookings.index');
+    Route::post('/', [LabBookingController::class, 'store'])->name('lab-bookings.store');
+    Route::get('/{id}', [LabBookingController::class, 'show'])->name('lab-bookings.show');
+    Route::delete('/{id}', [LabBookingController::class, 'destroy'])->name('lab-bookings.destroy');
+});
+
+// Admin lab management routes
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    // Lab Spaces CRUD
+    Route::get('spaces', [AdminLabSpaceController::class, 'index'])->name('admin.lab-spaces.index');
+    Route::post('spaces', [AdminLabSpaceController::class, 'store'])->name('admin.lab-spaces.store');
+    Route::get('spaces/{id}', [AdminLabSpaceController::class, 'show'])->name('admin.lab-spaces.show');
+    Route::put('spaces/{id}', [AdminLabSpaceController::class, 'update'])->name('admin.lab-spaces.update');
+    Route::delete('spaces/{id}', [AdminLabSpaceController::class, 'destroy'])->name('admin.lab-spaces.destroy');
+
+    // Lab Bookings Management
+    Route::get('lab-bookings', [AdminLabBookingController::class, 'index'])->name('admin.lab-bookings.index');
+    Route::get('lab-bookings/{id}', [AdminLabBookingController::class, 'show'])->name('admin.lab-bookings.show');
+    Route::put('lab-bookings/{id}/approve', [AdminLabBookingController::class, 'approve'])->name('admin.lab-bookings.approve');
+    Route::put('lab-bookings/{id}/reject', [AdminLabBookingController::class, 'reject'])->name('admin.lab-bookings.reject');
+    Route::put('lab-bookings/{id}/check-in', [AdminLabBookingController::class, 'checkIn'])->name('admin.lab-bookings.check-in');
+    Route::put('lab-bookings/{id}/check-out', [AdminLabBookingController::class, 'checkOut'])->name('admin.lab-bookings.check-out');
+    Route::put('lab-bookings/{id}/no-show', [AdminLabBookingController::class, 'markNoShow'])->name('admin.lab-bookings.no-show');
 });
