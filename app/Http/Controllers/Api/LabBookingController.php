@@ -32,12 +32,12 @@ class LabBookingController extends Controller
      *   "success": true,
      *   "data": {
      *     "has_access": true,
-     *     "plan_name": "Premium",
-     *     "limit": 16,
+     *     "plan_name": "Premium Member",
+     *     "limit": 20,
      *     "unlimited": false,
-     *     "used": 4.5,
-     *     "remaining": 11.5,
-     *     "resets_at": "2024-01-31T23:59:59.000000Z"
+     *     "used": 4.0,
+     *     "remaining": 16.0,
+     *     "resets_at": "2026-01-31T23:59:59Z"
      *   }
      * }
      * @response 200 {
@@ -69,14 +69,14 @@ class LabBookingController extends Controller
      *   "data": [
      *     {
      *       "id": 1,
-     *       "title": "PCR Experiment",
-     *       "purpose": "DNA amplification for research",
-     *       "starts_at": "2024-01-15T09:00:00Z",
-     *       "ends_at": "2024-01-15T12:00:00Z",
+     *       "title": "Bioinformatics Workshop",
+     *       "purpose": "Training session for genomics tools",
+     *       "starts_at": "2025-02-15T09:00:00Z",
+     *       "ends_at": "2025-02-15T12:00:00Z",
      *       "duration_hours": 3,
      *       "slot_type": "hourly",
      *       "status": "approved",
-     *       "lab_space": {...}
+     *       "lab_space": {"id": 1, "name": "Nairobi Central Wet Lab"}
      *     }
      *   ]
      * }

@@ -1,25 +1,174 @@
-name: 'Admin - Dashboard'
+name: Endpoints
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
-      - GET
-    uri: api/admin/menu
+      - POST
+    uri: api/admin/users/invite
     metadata:
       custom: []
-      groupName: 'Admin - Dashboard'
+      groupName: Endpoints
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Get Authorized Admin Menu'
-      description: |-
-        Retrieves the list of navigation menu items accessible to the currently authenticated user.
-        The response is dynamically filtered based on the user's assigned roles and permissions (e.g., Finance role sees "Exchange Rates" but not "System Settings").
-      authenticated: true
+      title: 'Invite a new user'
+      description: ''
+      authenticated: false
       deprecated: false
     headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      email:
+        custom: []
+        name: email
+        description: 'Must be a valid email address.'
+        required: true
+        example: gbailey@example.net
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      username:
+        custom: []
+        name: username
+        description: 'Must not be greater than 255 characters.'
+        required: true
+        example: m
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      roles:
+        custom: []
+        name: roles
+        description: 'The <code>name</code> of an existing record in the roles table.'
+        required: false
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      email: gbailey@example.net
+      username: m
+      roles:
+        - architecto
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/admin/users/bulk-invite
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Bulk invite users'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      users:
+        custom: []
+        name: users
+        description: 'Must have at least 1 items. Must not have more than 50 items.'
+        required: true
+        example:
+          - []
+        type: 'object[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      'users[].email':
+        custom: []
+        name: 'users[].email'
+        description: 'Must be a valid email address.'
+        required: true
+        example: gbailey@example.net
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      'users[].username':
+        custom: []
+        name: 'users[].username'
+        description: ''
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      'users[].roles':
+        custom: []
+        name: 'users[].roles'
+        description: 'The <code>name</code> of an existing record in the roles table.'
+        required: false
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      users:
+        -
+          email: gbailey@example.net
+          username: architecto
+          roles:
+            - architecto
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/admin/audit-logs
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get all audit logs (Admin only)'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -32,30 +181,79 @@ endpoints:
     responses:
       -
         custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/users/{username}/public'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      username:
+        custom: []
+        name: username
+        description: 'The username of the member to view.'
+        required: true
+        example: jane_doe
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      username: jane_doe
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
         status: 200
         content: |-
           {
             "success": true,
-            "data": [
-              {
-                "key": "overview",
-                "href": "/admin",
-                "label": "Overview"
-              },
-              {
-                "key": "analytics",
-                "href": "/admin/analytics",
-                "label": "Analytics"
-              }
-            ]
+            "data": {
+              "id": 2,
+              "username": "jane_doe",
+              "profile_picture_url": "https://...",
+              "joined_at": "2025-01-15T10:30:00.000000Z",
+              "thread_count": 12,
+              "post_count": 45,
+              "bio": "Graduate researcher in Genomics interested in drought-resistant crops.",
+              "location": "Nairobi",
+              "interests": ["Genomics", "Sustainability"],
+              "occupation": "Research assistant"
+            }
           }
         headers: []
         description: ''
     responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    auth: []
     controller: null
     method: null
     route: null

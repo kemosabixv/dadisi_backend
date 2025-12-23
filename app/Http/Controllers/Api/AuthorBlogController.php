@@ -23,7 +23,7 @@ class AuthorBlogController extends Controller
      * Returns all categories created by the authenticated user.
      *
      * @authenticated
-     * @response 200 {"data": [{"id": 1, "name": "My Category", "slug": "my-category", "description": null, "post_count": 5, "requested_deletion_at": null}]}
+     * @response 200 {"data": [{"id": 1, "name": "Agriculture", "slug": "agriculture", "description": "Urban farming tips", "post_count": 5, "requested_deletion_at": null}]}
      */
     public function listCategories(Request $request): JsonResponse
     {

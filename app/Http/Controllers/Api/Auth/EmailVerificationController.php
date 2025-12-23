@@ -111,9 +111,9 @@ class EmailVerificationController extends Controller
      *   "message": "Email verified",
      *   "token": "2|zIF5K7csJqxfM9...",
      *   "user": {
-     *     "id": 1,
-     *     "username": "Example User",
-     *     "email": "user@example.com",
+     *     "id": 2,
+     *     "username": "jane_doe",
+     *     "email": "jane.doe@example.com",
      *     "email_verified_at": "2025-10-24T12:00:00.000000Z"
      *   }
      * }

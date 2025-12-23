@@ -189,7 +189,8 @@ class Post extends Model
      */
     public function getFeaturedImageAttribute(): ?string
     {
-        return $this->hero_image_path;
+        $path = $this->getFeaturedImagePath();
+        return $path ? asset('storage/' . $path) : null;
     }
 
     /**

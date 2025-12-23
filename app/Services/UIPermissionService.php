@@ -59,6 +59,12 @@ class UIPermissionService
             'can_view_lab_reports' => $this->user->can('view_lab_reports'),
             'can_mark_lab_attendance' => $this->user->can('mark_lab_attendance'),
             
+            // Forum Management
+            'can_moderate_forum' => $this->user->can('moderate_forum'),
+            'can_manage_forum_tags' => $this->user->can('manage_forum_tags'),
+            'can_manage_forum_categories' => $this->user->can('manage_forum_categories'),
+            'can_manage_groups' => $this->user->can('manage_groups'),
+
             // General Admin
             'can_access_admin_panel' => $this->user->canAccessAdminPanel(),
         ];

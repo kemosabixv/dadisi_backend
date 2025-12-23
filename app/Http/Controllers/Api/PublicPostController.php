@@ -22,11 +22,11 @@ class PublicPostController extends Controller
      * @groupDescription Publicly accessible endpoints for retrieving, searching, and reading blog content. No authentication is required for reading.
      * @unauthenticated
      *
-     * @queryParam category_id integer optional Filter by Category ID. Example: 5
-     * @queryParam tag_id integer optional Filter by Tag ID. Example: 12
-     * @queryParam county_id integer optional Filter by specific County context. Example: 47
-     * @queryParam search string optional Keyword search against title and excerpt. Example: "farm management"
-     * @queryParam sort string optional Sort order: `latest` (default), `oldest`, or `views`. Example: views
+     * @queryParam category_id integer optional Filter by Category ID. Matches `categories.id`. Example: 1
+     * @queryParam tag_id integer optional Filter by Tag ID. Matches `tags.id`. Example: 1
+     * @queryParam county_id integer optional Filter by specific County context (NGO compliance). Example: 1
+     * @queryParam search string optional Keyword search against title and excerpt. Example: CRISPR
+     * @queryParam sort string optional Sort order: `latest` (default), `oldest`, or `views`. Example: latest
      * @queryParam per_page integer optional Number of posts per page (default 20). Example: 10
      *
      * @response 200 {
@@ -34,18 +34,18 @@ class PublicPostController extends Controller
      *   "data": [
      *     {
      *       "id": 1,
-     *       "title": "Getting Started with Laravel",
-     *       "slug": "getting-started-with-laravel",
-     *       "excerpt": "Learn the basics...",
-     *       "author": {"id": 1, "name": "John Doe"},
-     *       "categories": [{"id": 1, "name": "Tutorial"}],
-     *       "tags": [{"id": 1, "name": "laravel"}],
+     *       "title": "Revolutionizing Medicine with CRISPR Gene Editing",
+     *       "slug": "revolutionizing-medicine-with-crispr-gene-editing",
+     *       "excerpt": "CRISPR-Cas9 has transformed our ability to edit genomes precisely...",
+     *       "author": {"id": 1, "username": "superadmin", "email": "superadmin@dadisilab.com"},
+     *       "categories": [{"id": 1, "name": "Genomics"}],
+     *       "tags": [{"id": 1, "name": "CRISPR"}],
      *       "views_count": 150,
      *       "published_at": "2025-12-04T10:00:00Z",
      *       "is_featured": true
      *     }
      *   ],
-     *   "pagination": {"total": 42, "per_page": 20, "current_page": 1}
+     *   "pagination": {"total": 20, "per_page": 20, "current_page": 1}
      * }
      */
     public function index(Request $request): JsonResponse
@@ -335,7 +335,8 @@ class PublicPostController extends Controller
      * @response 200 {
      *   "success": true,
      *   "data": [
-     *     {"id": 1, "name": "Technology", "slug": "technology", "description": "Tech articles", "post_count": 15}
+     *     {"id": 1, "name": "Genomics", "slug": "genomics", "description": "Deep dive into Genomics and its impact on the future.", "post_count": 3},
+     *     {"id": 2, "name": "Synthetic Biology", "slug": "synthetic-biology", "description": "Designing life forms of tomorrow.", "post_count": 2}
      *   ]
      * }
      */
@@ -372,7 +373,8 @@ class PublicPostController extends Controller
      * @response 200 {
      *   "success": true,
      *   "data": [
-     *     {"id": 1, "name": "laravel", "slug": "laravel", "post_count": 8}
+     *     {"id": 1, "name": "CRISPR", "slug": "crispr", "post_count": 3},
+     *     {"id": 2, "name": "DNA Sequencing", "slug": "dna-sequencing", "post_count": 2}
      *   ]
      * }
      */

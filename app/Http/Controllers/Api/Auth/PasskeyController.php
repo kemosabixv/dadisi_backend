@@ -61,7 +61,11 @@ class PasskeyController extends Controller
      * @bodyParam type string required Must be "public-key". Example: public-key
      * @response 201 {
      *   "message": "Passkey registered successfully.",
-     *   "passkey": { "id": 1, "name": "iPhone 15 Pro", "created_at": "..." }
+     *   "passkey": {
+     *     "id": 1,
+     *     "name": "iPhone 15 Pro",
+     *     "created_at": "2025-12-20T10:00:00Z"
+     *   }
      * }
      */
     public function register(Request $request)
@@ -113,8 +117,8 @@ class PasskeyController extends Controller
      * @authenticated
      * @response 200 {
      *   "passkeys": [
-     *     { "id": 1, "name": "iPhone 15 Pro", "created_at": "...", "last_used_at": "..." },
-     *     { "id": 2, "name": "Yubikey 5C", "created_at": "...", "last_used_at": null }
+     *     { "id": 1, "name": "iPhone 15 Pro", "created_at": "2025-12-20T10:00:00Z", "last_used_at": "2025-12-22T09:00:00Z" },
+     *     { "id": 2, "name": "Yubikey 5C", "created_at": "2025-12-21T14:00:00Z", "last_used_at": null }
      *   ]
      * }
      */
@@ -230,8 +234,12 @@ class PasskeyController extends Controller
      * @bodyParam response object required The authenticator response.
      * @bodyParam type string required Must be "public-key". Example: public-key
      * @response 200 {
-     *   "user": {...},
-     *   "access_token": "1|abc123..."
+     *   "user": {
+     *     "id": 2,
+     *     "username": "jane_doe",
+     *     "email": "jane.doe@example.com"
+     *   },
+     *   "access_token": "4|passkey-token-secret-123..."
      * }
      * @response 422 {
      *   "message": "Passkey authentication failed."

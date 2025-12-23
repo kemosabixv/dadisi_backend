@@ -42,33 +42,25 @@ class UserController extends Controller
      *     "current_page": 1,
      *     "data": [
      *       {
-     *         "id": 1,
-     *         "username": "johndoe",
-     *         "email": "john@example.com",
-     *         "email_verified_at": "2025-01-01T00:00:00Z",
+     *         "id": 2,
+     *         "username": "jane_doe",
+     *         "email": "jane.doe@example.com",
+     *         "email_verified_at": "2025-01-15T00:00:00Z",
      *         "roles": [
-     *           {"id": 1, "name": "member", "description": "Regular member user"}
+     *           {"id": 2, "name": "member", "description": "Regular member user"}
      *         ],
      *         "profile": {
-     *           "id": 1,
-     *           "first_name": "John",
+     *           "id": 2,
+     *           "first_name": "Jane",
      *           "last_name": "Doe",
      *           "county": {"id": 1, "name": "Nairobi"}
      *         },
      *         "deleted_at": null,
-     *         "created_at": "2025-01-01T00:00:00Z"
+     *         "created_at": "2025-01-15T00:00:00Z"
      *       }
      *     ],
-     *     "first_page_url": "http://localhost:8000/api/users?page=1",
-     *     "from": 1,
-     *     "last_page": 5,
-     *     "last_page_url": "http://localhost:8000/api/users?page=5",
-     *     "next_page_url": "http://localhost:8000/api/users?page=2",
-     *     "path": "http://localhost:8000/api/users",
      *     "per_page": 20,
-     *     "prev_page_url": null,
-     *     "to": 20,
-     *     "total": 100
+     *     "total": 12
      *   }
      * }
      *
@@ -133,19 +125,19 @@ class UserController extends Controller
      * @response 200 {
      *   "success": true,
      *   "data": {
-     *     "id": 1,
-     *     "username": "johndoe",
-     *     "email": "john@example.com",
-     *     "email_verified_at": "2025-01-01T00:00:00Z",
+     *     "id": 2,
+     *     "username": "jane_doe",
+     *     "email": "jane.doe@example.com",
+     *     "email_verified_at": "2025-01-15T00:00:00Z",
      *     "roles": [
      *       {"id": 2, "name": "member", "guard_name": "web"}
      *     ],
      *     "profile": {
-     *       "first_name": "John",
+     *       "first_name": "Jane",
      *       "last_name": "Doe",
-     *       "county": {"name": "Nairobi"}
+     *       "county": {"id": 1, "name": "Nairobi"}
      *     },
-     *     "last_login_at": "2025-01-01T00:00:00Z",
+     *     "last_login_at": "2025-12-25T10:00:00Z",
      *     "deleted_at": null
      *   }
      * }

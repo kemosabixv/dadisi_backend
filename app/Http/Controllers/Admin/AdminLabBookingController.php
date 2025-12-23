@@ -11,8 +11,8 @@ use Illuminate\Http\Request;
 /**
  * @group Admin - Lab Bookings
  *
- * Admin endpoints for managing lab bookings, approvals, and attendance.
- * @authenticated
+ * APIs for administrative moderation of lab space bookings.
+ * Includes approving/rejecting requests and managing usage statistics.
  */
 class AdminLabBookingController extends Controller
 {
@@ -21,11 +21,12 @@ class AdminLabBookingController extends Controller
     ) {}
 
     /**
-     * List all lab bookings (paginated).
+     * List all lab bookings (Admin)
      *
-     * @queryParam status string Filter by status. Example: pending
-     * @queryParam lab_space_id integer Filter by lab space. Example: 1
-     * @queryParam user_id integer Filter by user. Example: 5
+     * Retrieves a paginated list of all lab bookings across all users and spaces.
+     *
+     * @authenticated
+     * @queryParam status string Filter by status (pending, approved, rejected). Example: pending
      * @queryParam date_from string Filter bookings from this date. Example: 2024-01-01
      * @queryParam date_to string Filter bookings to this date. Example: 2024-01-31
      * @queryParam per_page integer Items per page. Default: 15. Example: 15
@@ -283,4 +284,150 @@ class AdminLabBookingController extends Controller
             'data' => $booking->load(['labSpace', 'user:id,username']),
         ]);
     }
+
+    /**
+     * Get lab booking statistics.
+     *
+     * Returns aggregate statistics for lab usage and attendance.
+     *
+     * @queryParam period string Filter period (week, month, quarter, year). Default: month. Example: month
+     * @queryParam lab_space_id integer Filter by specific lab space. Example: 1
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": {
+     *     "total_bookings": 150,
+     *     "by_status": {
+     *       "approved": 100,
+     *       "pending": 10,
+     *       "rejected": 15,
+     *       "completed": 80,
+     *       "no_show": 5,
+     *       "cancelled": 20
+     *     },
+     *     "hours": {
+     *       "total_booked": 400,
+     *       "total_used": 320,
+     *       "average_per_booking": 4.0
+     *     },
+     *     "attendance": {
+     *       "show_rate": 94.1,
+     *       "no_show_count": 5,
+     *       "completed_count": 80
+     *     },
+     *     "top_spaces": [...],
+     *     "top_users": [...]
+     *   }
+     * }
+     */
+    public function stats(Request $request): JsonResponse
+    {
+        $this->authorize('viewAll', LabBooking::class);
+
+        // Determine date range
+        $period = $request->input('period', 'month');
+        $startDate = match ($period) {
+            'week' => now()->subWeek(),
+            'month' => now()->subMonth(),
+            'quarter' => now()->subQuarter(),
+            'year' => now()->subYear(),
+            default => now()->subMonth(),
+        };
+
+        $query = LabBooking::where('created_at', '>=', $startDate);
+
+        if ($request->has('lab_space_id')) {
+            $query->where('lab_space_id', $request->lab_space_id);
+        }
+
+        // Get counts by status
+        $byStatus = $query->clone()
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        $totalBookings = array_sum($byStatus);
+
+        // Get hours statistics
+        $hoursStats = $query->clone()
+            ->selectRaw('
+                SUM(TIMESTAMPDIFF(HOUR, starts_at, ends_at)) as total_booked,
+                SUM(COALESCE(actual_duration_hours, 0)) as total_used,
+                COUNT(CASE WHEN status = "completed" THEN 1 END) as completed_count
+            ')
+            ->first();
+
+        $totalBooked = (int) ($hoursStats->total_booked ?? 0);
+        $totalUsed = (float) ($hoursStats->total_used ?? 0);
+        $completedCount = (int) ($hoursStats->completed_count ?? 0);
+
+        // Calculate attendance rate
+        $approvedAndCompleted = ($byStatus['approved'] ?? 0) + ($byStatus['completed'] ?? 0);
+        $noShowCount = $byStatus['no_show'] ?? 0;
+        $showRate = $approvedAndCompleted > 0
+            ? round((($approvedAndCompleted - $noShowCount) / $approvedAndCompleted) * 100, 1)
+            : 0;
+
+        // Top spaces by usage
+        $topSpaces = $query->clone()
+            ->with('labSpace:id,name,slug')
+            ->selectRaw('lab_space_id, COUNT(*) as booking_count')
+            ->groupBy('lab_space_id')
+            ->orderByDesc('booking_count')
+            ->limit(5)
+            ->get()
+            ->map(fn ($item) => [
+                'space' => $item->labSpace?->name ?? 'Unknown',
+                'slug' => $item->labSpace?->slug,
+                'bookings' => $item->booking_count,
+            ]);
+
+        // Top users by bookings
+        $topUsers = $query->clone()
+            ->with('user:id,username,email')
+            ->selectRaw('user_id, COUNT(*) as booking_count')
+            ->groupBy('user_id')
+            ->orderByDesc('booking_count')
+            ->limit(5)
+            ->get()
+            ->map(fn ($item) => [
+                'user' => $item->user?->username ?? 'Unknown',
+                'email' => $item->user?->email,
+                'bookings' => $item->booking_count,
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'period' => $period,
+                'date_range' => [
+                    'from' => $startDate->toDateString(),
+                    'to' => now()->toDateString(),
+                ],
+                'total_bookings' => $totalBookings,
+                'by_status' => [
+                    'pending' => $byStatus['pending'] ?? 0,
+                    'approved' => $byStatus['approved'] ?? 0,
+                    'rejected' => $byStatus['rejected'] ?? 0,
+                    'completed' => $byStatus['completed'] ?? 0,
+                    'no_show' => $byStatus['no_show'] ?? 0,
+                    'cancelled' => $byStatus['cancelled'] ?? 0,
+                ],
+                'hours' => [
+                    'total_booked' => $totalBooked,
+                    'total_used' => $totalUsed,
+                    'average_per_booking' => $completedCount > 0 ? round($totalUsed / $completedCount, 1) : 0,
+                ],
+                'attendance' => [
+                    'show_rate' => $showRate,
+                    'no_show_count' => $noShowCount,
+                    'completed_count' => $completedCount,
+                ],
+                'top_spaces' => $topSpaces,
+                'top_users' => $topUsers,
+            ],
+        ]);
+    }
 }
+

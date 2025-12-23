@@ -529,13 +529,27 @@ Route::middleware('auth:sanctum')->group(function () {
 use App\Http\Controllers\Api\Admin\AdminEventController;
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('events/stats', [AdminEventController::class, 'stats'])->name('admin.events.stats');
     Route::get('events', [AdminEventController::class, 'index'])->name('admin.events.index');
     Route::post('events', [AdminEventController::class, 'store'])->name('admin.events.store');
     Route::get('events/{event}', [AdminEventController::class, 'show'])->name('admin.events.show');
+    Route::put('events/{event}', [AdminEventController::class, 'update'])->name('admin.events.update');
+    Route::post('events/{event}/approve', [AdminEventController::class, 'approve'])->name('admin.events.approve');
+    Route::post('events/{event}/reject', [AdminEventController::class, 'reject'])->name('admin.events.reject');
+    Route::post('events/{event}/publish', [AdminEventController::class, 'publish'])->name('admin.events.publish');
+    Route::post('events/{event}/cancel', [AdminEventController::class, 'cancel'])->name('admin.events.cancel');
     Route::post('events/{event}/suspend', [AdminEventController::class, 'suspend'])->name('admin.events.suspend');
     Route::post('events/{event}/feature', [AdminEventController::class, 'feature'])->name('admin.events.feature');
     Route::post('events/{event}/unfeature', [AdminEventController::class, 'unfeature'])->name('admin.events.unfeature');
+    Route::get('events/{event}/registrations', [AdminEventController::class, 'registrations'])->name('admin.events.registrations');
     Route::delete('events/{event}', [AdminEventController::class, 'destroy'])->name('admin.events.destroy');
+
+    // Finance Payouts Management
+    Route::get('payouts', [\App\Http\Controllers\Api\Admin\AdminPayoutController::class, 'index'])->name('admin.payouts.index');
+    Route::get('payouts/{payout}', [\App\Http\Controllers\Api\Admin\AdminPayoutController::class, 'show'])->name('admin.payouts.show');
+    Route::post('payouts/{payout}/approve', [\App\Http\Controllers\Api\Admin\AdminPayoutController::class, 'approve'])->name('admin.payouts.approve');
+    Route::post('payouts/{payout}/complete', [\App\Http\Controllers\Api\Admin\AdminPayoutController::class, 'complete'])->name('admin.payouts.complete');
+    Route::post('payouts/{payout}/reject', [\App\Http\Controllers\Api\Admin\AdminPayoutController::class, 'reject'])->name('admin.payouts.reject');
 });
 
 // Event Categories & Tags
@@ -568,6 +582,7 @@ Route::middleware('auth:sanctum')->group(function () {
 use App\Http\Controllers\Api\ForumCategoryController;
 use App\Http\Controllers\Api\ForumThreadController;
 use App\Http\Controllers\Api\ForumPostController;
+use App\Http\Controllers\Api\ForumTagController;
 
 Route::prefix('forum')->group(function () {
     // Categories
@@ -607,6 +622,32 @@ Route::prefix('forum')->group(function () {
         Route::put('categories/{category}', [ForumCategoryController::class, 'update'])->name('forum.categories.update');
         Route::delete('categories/{category}', [ForumCategoryController::class, 'destroy'])->name('forum.categories.destroy');
     });
+
+    // Tags - public read, admin CUD
+    Route::get('tags', [ForumTagController::class, 'index'])->name('forum.tags.index');
+    Route::get('tags/{tag}', [ForumTagController::class, 'show'])->name('forum.tags.show');
+    
+    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+        Route::post('tags', [ForumTagController::class, 'store'])->name('forum.tags.store');
+        Route::put('tags/{tag}', [ForumTagController::class, 'update'])->name('forum.tags.update');
+        Route::delete('tags/{tag}', [ForumTagController::class, 'destroy'])->name('forum.tags.destroy');
+    });
+
+    // Forum Users - member directory
+    Route::get('users', [\App\Http\Controllers\Api\ForumUserController::class, 'index'])->name('forum.users.index');
+});
+
+// Public Profile Routes
+use App\Http\Controllers\Api\PublicProfileController;
+
+// Public: View user profile
+Route::get('users/{username}/public', [PublicProfileController::class, 'show'])->name('profile.public.show');
+
+// Authenticated: Privacy settings
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('profile/privacy-settings', [PublicProfileController::class, 'getPrivacySettings'])->name('profile.privacy.get');
+    Route::put('profile/privacy-settings', [PublicProfileController::class, 'updatePrivacySettings'])->name('profile.privacy.update');
+    Route::get('profile/preview', [PublicProfileController::class, 'preview'])->name('profile.preview');
 });
 
 // Lab Space Booking Routes
@@ -648,4 +689,22 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::put('lab-bookings/{id}/check-in', [AdminLabBookingController::class, 'checkIn'])->name('admin.lab-bookings.check-in');
     Route::put('lab-bookings/{id}/check-out', [AdminLabBookingController::class, 'checkOut'])->name('admin.lab-bookings.check-out');
     Route::put('lab-bookings/{id}/no-show', [AdminLabBookingController::class, 'markNoShow'])->name('admin.lab-bookings.no-show');
+    Route::get('lab-bookings/stats', [AdminLabBookingController::class, 'stats'])->name('admin.lab-bookings.stats');
+
+    // Lab Maintenance Blocks
+    Route::get('lab-maintenance', [\App\Http\Controllers\Admin\AdminLabMaintenanceController::class, 'index'])->name('admin.lab-maintenance.index');
+    Route::post('lab-maintenance', [\App\Http\Controllers\Admin\AdminLabMaintenanceController::class, 'store'])->name('admin.lab-maintenance.store');
+    Route::get('lab-maintenance/{id}', [\App\Http\Controllers\Admin\AdminLabMaintenanceController::class, 'show'])->name('admin.lab-maintenance.show');
+    Route::put('lab-maintenance/{id}', [\App\Http\Controllers\Admin\AdminLabMaintenanceController::class, 'update'])->name('admin.lab-maintenance.update');
+    Route::delete('lab-maintenance/{id}', [\App\Http\Controllers\Admin\AdminLabMaintenanceController::class, 'destroy'])->name('admin.lab-maintenance.destroy');
+
+    // Forum Stats
+    Route::get('forum/stats', [\App\Http\Controllers\Api\Admin\ForumStatsController::class, 'index'])->name('admin.forum.stats');
+
+    // Forum Groups Management
+    Route::get('groups', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'index'])->name('admin.groups.index');
+    Route::put('groups/{group}', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'update'])->name('admin.groups.update');
+    Route::delete('groups/{group}', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'destroy'])->name('admin.groups.destroy');
+    Route::get('groups/{group}/members', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'members'])->name('admin.groups.members');
+    Route::delete('groups/{group}/members/{id}', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'removeMember'])->name('admin.groups.members.remove');
 });

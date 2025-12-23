@@ -95,6 +95,7 @@ class RolesPermissionsSeeder extends Seeder
             'mute_forum_users',
             'view_forum_reports',
             'manage_forum_categories',
+            'manage_forum_tags',
             'send_messages',
             'view_messages',
 
@@ -108,6 +109,10 @@ class RolesPermissionsSeeder extends Seeder
             'manage_lab_maintenance',
             'view_lab_reports',
             'mark_lab_attendance',
+
+            // Group Management
+            'manage_groups',
+            'manage_group_members',
         ];
 
         foreach ($permissions as $permission) {
@@ -129,7 +134,7 @@ class RolesPermissionsSeeder extends Seeder
                 'view_plans', 'manage_plans',
                 'view_reconciliation', 'manage_reconciliation',
                 'manage_permissions', 'manage_roles',
-                'manage_counties',
+                'manage_counties', 'manage_forum_tags',
                 // Lab Space Booking
                 'manage_lab_spaces', 'view_all_lab_bookings', 'approve_lab_bookings',
                 'manage_lab_maintenance', 'view_lab_reports', 'mark_lab_attendance',
@@ -159,6 +164,7 @@ class RolesPermissionsSeeder extends Seeder
                 'view_forum', 'create_threads', 'reply_threads', 'send_messages', 'view_messages',
                 'moderate_forum', 'lock_threads', 'pin_threads', 'delete_any_thread',
                 'ban_forum_users', 'mute_forum_users', 'view_forum_reports',
+                'manage_groups', 'manage_group_members',
             ],
             'lab_manager' => [
                 // Lab space management role (not full admin)

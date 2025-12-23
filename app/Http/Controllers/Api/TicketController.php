@@ -18,8 +18,21 @@ class TicketController extends Controller
 
     /**
      * List Tickets for Event
-     * 
+     *
      * @group Tickets
+     * @unauthenticated
+     * @urlParam event integer required The event ID. Example: 5
+     *
+     * @response 200 {
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "name": "Early Bird",
+     *       "price": 1000,
+     *       "currency": "KES"
+     *     }
+     *   ]
+     * }
      */
     public function index(Event $event)
     {

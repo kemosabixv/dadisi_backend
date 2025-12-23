@@ -31,16 +31,14 @@ class LabSpaceController extends Controller
      *   "data": [
      *     {
      *       "id": 1,
-     *       "name": "Wet Lab",
-     *       "slug": "wet-lab",
+     *       "name": "Nairobi Biotech Hub",
+     *       "slug": "nairobi-biotech-hub",
      *       "type": "wet_lab",
      *       "type_name": "Wet Lab",
-     *       "description": "Fully equipped wet laboratory...",
-     *       "capacity": 6,
-     *       "image_url": "https://...",
-     *       "amenities": ["fume_hood", "pcr_machine"],
-     *       "safety_requirements": ["lab_safety_training"],
-     *       "hourly_rate": 0,
+     *       "description": "State-of-the-art biotechnology facility with advanced PCR and gene sequencing equipment.",
+     *       "capacity": 10,
+     *       "amenities": ["fume_hood", "biosafety_cabinet", "nanodrop"],
+     *       "safety_requirements": ["lab_safety_training", "ppe_required"],
      *       "is_active": true
      *     }
      *   ]
@@ -86,16 +84,14 @@ class LabSpaceController extends Controller
      *   "success": true,
      *   "data": {
      *     "id": 1,
-     *     "name": "Wet Lab",
-     *     "slug": "wet-lab",
+     *     "name": "Nairobi Central Wet Lab",
+     *     "slug": "nairobi-central-wet-lab",
      *     "type": "wet_lab",
      *     "type_name": "Wet Lab",
-     *     "description": "Fully equipped wet laboratory...",
-     *     "capacity": 6,
-     *     "image_url": "https://...",
-     *     "amenities": ["fume_hood", "pcr_machine"],
-     *     "safety_requirements": ["lab_safety_training"],
-     *     "hourly_rate": 0,
+     *     "description": "Primary biotechnology facility with PCR and electrophoresis capability.",
+     *     "capacity": 8,
+     *     "amenities": ["fume_hood", "pcr_machine", "centrifuge"],
+     *     "safety_requirements": ["lab_safety_training", "biosafety_level_1"],
      *     "is_active": true
      *   }
      * }

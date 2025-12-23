@@ -32,6 +32,7 @@ class EventResource extends JsonResource
             'price' => (float) $this->price,
             'currency' => $this->currency,
             'status' => $this->status,
+            'event_type' => $this->event_type,
             'featured' => (bool) $this->featured,
             'featured_until' => $this->featured_until,
             'registration_deadline' => $this->registration_deadline,
@@ -43,6 +44,7 @@ class EventResource extends JsonResource
             'speakers' => SpeakerResource::collection($this->whenLoaded('speakers')),
             'tags' => EventTagResource::collection($this->whenLoaded('tags')),
             'payouts' => PayoutResource::collection($this->whenLoaded('payouts')),
+            'registrations_count' => $this->when(isset($this->registrations_count), $this->registrations_count),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

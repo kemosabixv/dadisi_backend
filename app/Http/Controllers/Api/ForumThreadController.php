@@ -21,6 +21,24 @@ class ForumThreadController extends Controller
      * 
      * @queryParam category string filter by category slug
      * @queryParam page integer page number
+     * 
+     * @response 200 {
+     *   "data": [
+     *     {
+     *       "id": 10,
+     *       "title": "Welcome to Dadisi Forum!",
+     *       "slug": "welcome-to-dadisi-forum-x1y2z3",
+     *       "user": {"id": 1, "username": "admin"},
+     *       "category": {"id": 1, "name": "Announcements", "slug": "announcements"},
+     *       "posts_count": 1,
+     *       "views_count": 150,
+     *       "is_pinned": true,
+     *       "created_at": "2025-12-01T10:00:00Z"
+     *     }
+     *   ],
+     *   "links": {"first": "...", "last": "...", "prev": null, "next": null},
+     *   "meta": {"current_page": 1, "from": 1, "last_page": 1, "per_page": 20, "total": 1}
+     * }
      */
     public function index(Request $request): JsonResponse
     {
@@ -30,6 +48,10 @@ class ForumThreadController extends Controller
         if ($request->has('category')) {
             $category = ForumCategory::where('slug', $request->category)->firstOrFail();
             $query->where('category_id', $category->id);
+        }
+
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
         }
 
         $threads = $query->paginate($request->get('per_page', 20));
@@ -44,6 +66,25 @@ class ForumThreadController extends Controller
      * @group Forum Threads
      * @unauthenticated
      * @urlParam thread string required The slug of the thread.
+     * 
+     * @response 200 {
+     *   "thread": {
+     *     "id": 10,
+     *     "title": "Welcome to Dadisi Forum!",
+     *     "user": {"id": 1, "username": "admin"},
+     *     "category": {"id": 1, "name": "Announcements"}
+     *   },
+     *   "posts": {
+     *     "data": [
+     *       {
+     *         "id": 20,
+     *         "content": "Welcome everyone! This is our new community space.",
+     *         "user": {"id": 1, "username": "admin"}
+     *       }
+     *     ],
+     *     "total": 1
+     *   }
+     * }
      */
     public function show(ForumThread $thread): JsonResponse
     {

@@ -21,9 +21,13 @@ class RefreshTokenController extends Controller
      *
      * @authenticated
      * @response 200 {
-     *   "user": { "id": 1, "username": "user", "email": "user@example.com", ... },
-     *   "access_token": "3|newToken...",
-     *   "expires_at": "2025-01-27T12:00:00Z"
+     *   "user": {
+     *     "id": 2,
+     *     "username": "jane_doe",
+     *     "email": "jane.doe@example.com"
+     *   },
+     *   "access_token": "5|newTokenExample123...",
+     *   "expires_at": "2026-01-15T12:00:00Z"
      * }
      * @response 401 {
      *   "message": "Unauthenticated."

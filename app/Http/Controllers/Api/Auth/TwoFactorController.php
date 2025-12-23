@@ -22,7 +22,7 @@ class TwoFactorController extends Controller
      * @authenticated
      * @response 200 {
      *   "secret": "JBSWY3DPEHPK3PXP",
-     *   "qr_code_url": "otpauth://totp/Dadisi:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Dadisi"
+     *   "qr_code_url": "otpauth://totp/Dadisi:jane_doe@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Dadisi"
      * }
      */
     public function enable(Request $request)
@@ -65,7 +65,12 @@ class TwoFactorController extends Controller
      * @bodyParam code string required The 6-digit code from the authenticator app. Example: 123456
      * @response 200 {
      *   "message": "Two-factor authentication has been enabled.",
-     *   "recovery_codes": ["abc123", "def456", "ghi789", ...]
+     *   "recovery_codes": [
+     *     "abc12345-def67890",
+     *     "xyz98765-qrs43210",
+     *     "...",
+     *     "jkl09876-mno54321"
+     *   ]
      * }
      * @response 422 {
      *   "message": "The provided code is invalid."
@@ -160,8 +165,12 @@ class TwoFactorController extends Controller
      * @bodyParam email string required The user's email. Example: user@example.com
      * @bodyParam code string required The 6-digit code from the authenticator app. Example: 123456
      * @response 200 {
-     *   "user": {...},
-     *   "access_token": "1|abc123..."
+     *   "user": {
+     *     "id": 2,
+     *     "username": "jane_doe",
+     *     "email": "jane.doe@example.com"
+     *   },
+     *   "access_token": "3|abcdef1234567890..."
      * }
      * @response 422 {
      *   "message": "The provided code is invalid."

@@ -51,18 +51,18 @@ class MediaController extends Controller
      *   "data": [
      *     {
      *       "id": 1,
-     *       "file_name": "profile.jpg",
-     *       "file_path": "/media/2025-12/profile.jpg",
+     *       "file_name": "jane_doe_avatar.jpg",
+     *       "file_path": "/media/2025-12/jane_doe_avatar.jpg",
      *       "type": "image",
      *       "mime_type": "image/jpeg",
      *       "file_size": 245000,
      *       "is_public": false,
-     *       "attached_to": null,
+     *       "attached_to": "profile_picture",
      *       "created_at": "2025-12-04T10:00:00Z",
-     *       "url": "https://api.dadisilab.com/storage/media/2025-12/profile.jpg"
+     *       "url": "https://api.dadisilab.com/storage/media/2025-12/jane_doe_avatar.jpg"
      *     }
      *   ],
-     *   "pagination": {"total": 24, "per_page": 30, "current_page": 1}
+     *   "pagination": {"total": 1, "per_page": 30, "current_page": 1}
      * }
      */
     public function index(Request $request): JsonResponse
@@ -120,14 +120,14 @@ class MediaController extends Controller
      *   "success": true,
      *   "message": "Media uploaded successfully",
      *   "data": {
-     *     "id": 1,
-     *     "file_name": "photo.jpg",
-     *     "file_path": "/media/2025-12/photo-abc123.jpg",
-     *     "type": "image",
-     *     "mime_type": "image/jpeg",
-     *     "file_size": 245000,
+     *     "id": 2,
+     *     "file_name": "research_notes.pdf",
+     *     "file_path": "/media/2025-12/research_notes-abc123.pdf",
+     *     "type": "pdf",
+     *     "mime_type": "application/pdf",
+     *     "file_size": 1540000,
      *     "is_public": false,
-     *     "url": "https://api.dadisilab.com/storage/media/2025-12/photo-abc123.jpg"
+     *     "url": "https://api.dadisilab.com/storage/media/2025-12/research_notes-abc123.pdf"
      *   }
      * }
      * @response 422 {
@@ -288,13 +288,13 @@ class MediaController extends Controller
      *   "success": true,
      *   "data": {
      *     "id": 1,
-     *     "file_name": "photo.jpg",
+     *     "file_name": "jane_doe_avatar.jpg",
      *     "type": "image",
      *     "mime_type": "image/jpeg",
      *     "file_size": 245000,
      *     "is_public": false,
      *     "created_at": "2025-12-04T10:00:00Z",
-     *     "url": "https://api.dadisilab.com/storage/media/2025-12/photo.jpg"
+     *     "url": "https://api.dadisilab.com/storage/media/2025-12/jane_doe_avatar.jpg"
      *   }
      * }
      */

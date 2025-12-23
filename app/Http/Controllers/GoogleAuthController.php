@@ -9,21 +9,40 @@ use App\Models\MemberProfile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * @group Authentication
+ * @subgroup Social Authentication (Google)
+ *
+ * One-tap and OAuth flows for signing in with Google.
+ */
 class GoogleAuthController extends Controller
 {
     /**
      * Redirect to Google OAuth
+     *
+     * Initiates the Google OAuth2 flow by redirecting the user to Google's consent page.
+     * Use this for starting the login process from the frontend.
+     *
+     * @unauthenticated
      */
     public function redirectToGoogle()
     {
+        /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
+        $driver = Socialite::driver('google');
+
         // Always show account picker to prevent popup suppression after first login
-        return Socialite::driver('google')
+        return $driver
             ->with(['prompt' => 'select_account'])
             ->redirect();
     }
 
     /**
-     * Handle Google OAuth callback (API-based - redirects to frontend with tokens)
+     * Handle Google OAuth callback
+     *
+     * The callback endpoint that Google redirects back to after user consent.
+     * This method handles account creation or linking and redirects to the frontend with an authentication token.
+     *
+     * @unauthenticated
      */
     public function handleGoogleCallbackApi(Request $request)
     {

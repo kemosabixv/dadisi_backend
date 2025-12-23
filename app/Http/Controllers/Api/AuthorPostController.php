@@ -131,8 +131,8 @@ class AuthorPostController extends Controller
      *   "message": "Post created successfully",
      *   "data": {
      *     "id": 1,
-     *     "title": "My First Post",
-     *     "slug": "my-first-post",
+     *     "title": "Sustainable Urban Farming",
+     *     "slug": "sustainable-urban-farming",
      *     "status": "draft"
      *   }
      * }

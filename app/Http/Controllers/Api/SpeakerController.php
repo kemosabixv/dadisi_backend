@@ -19,8 +19,22 @@ class SpeakerController extends Controller
 
     /**
      * List Speakers for Event
-     * 
+     *
      * @group Speakers
+     * @unauthenticated
+     * @urlParam event integer required The event ID. Example: 5
+     *
+     * @response 200 {
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "name": "Dr. Sarah Kimani",
+     *       "company": "KEMRI",
+     *       "designation": "Chief Researcher",
+     *       "photo_url": "https://api.dadisilab.com/storage/events/speakers/sarah.jpg"
+     *     }
+     *   ]
+     * }
      */
     public function index(Event $event)
     {

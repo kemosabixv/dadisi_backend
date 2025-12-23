@@ -31,13 +31,23 @@ class PublicDonationController extends Controller
      *
      * @authenticated
      *
-     * @queryParam page integer Page number. Example: 1
-     * @queryParam per_page integer Items per page (max 50). Example: 15
+     * @queryParam page integer Page number for pagination. Example: 1
+     * @queryParam per_page integer Items per page (max 50, default 15). Example: 15
      *
      * @response 200 {
      *   "success": true,
-     *   "data": [...],
-     *   "pagination": {...}
+     *   "data": [
+     *     {
+     *       "id": 123,
+     *       "reference": "DON-NBI-7X9Z",
+     *       "amount": 5000,
+     *       "currency": "KES",
+     *       "status": "completed",
+     *       "created_at": "2025-12-20T14:30:00Z",
+     *       "campaign": {"id": 1, "title": "Nairobi Biotech Hub Equipment Fund"}
+     *     }
+     *   ],
+     *   "pagination": {"total": 1, "per_page": 15, "current_page": 1, "last_page": 1}
      * }
      */
     public function index(Request $request): JsonResponse
@@ -69,22 +79,24 @@ class PublicDonationController extends Controller
      * Creates a new donation not tied to any campaign.
      * Works for both authenticated and guest users.
      *
-     * @bodyParam amount number required Donation amount. Example: 1000.00
-     * @bodyParam currency string Currency (KES or USD). Example: KES
-     * @bodyParam first_name string required Donor first name. Example: John
-     * @bodyParam last_name string required Donor last name. Example: Doe
-     * @bodyParam email string required Donor email. Example: john@example.com
-     * @bodyParam phone_number string Donor phone. Example: +254700123456
-     * @bodyParam message string Optional message. Example: Keep up the good work!
-     * @bodyParam county_id integer Donor's county. Example: 1
+     * @bodyParam amount number required Donation amount. Example: 2500.00
+     * @bodyParam currency string Currency code (KES or USD). Example: KES
+     * @bodyParam first_name string required Legal first name. Example: John
+     * @bodyParam last_name string required Legal last name. Example: Doe
+     * @bodyParam email string required Valid email address. Example: john@example.com
+     * @bodyParam phone_number string Optional phone number. Example: +254700123456
+     * @bodyParam message string optional Personal message. Example: Go Dadisi!
+     * @bodyParam county_id integer Donor's county ID. Example: 1
      *
      * @response 201 {
      *   "success": true,
      *   "message": "Donation initiated",
      *   "data": {
-     *     "donation_id": 1,
-     *     "reference": "DON-ABC123XYZ",
-     *     "redirect_url": "/donations/checkout/DON-ABC123XYZ"
+     *     "donation_id": 456,
+     *     "reference": "GEN-789-DEF",
+     *     "amount": 2500,
+     *     "currency": "KES",
+     *     "redirect_url": "https://dadisilab.com/donations/checkout/GEN-789-DEF"
      *   }
      * }
      */
@@ -159,11 +171,19 @@ class PublicDonationController extends Controller
      * Retrieves donation details by its reference code.
      * Used on the checkout page.
      *
-     * @urlParam reference string required Donation reference. Example: DON-ABC123XYZ
+     * @urlParam reference string required Unique donation reference code. Example: GEN-789-DEF
      *
      * @response 200 {
      *   "success": true,
-     *   "data": {...}
+     *   "data": {
+     *     "id": 456,
+     *     "reference": "GEN-789-DEF",
+     *     "amount": 2500,
+     *     "currency": "KES",
+     *     "status": "pending",
+     *     "donor_name": "John Doe",
+     *     "created_at": "2025-12-22T10:00:00Z"
+     *   }
      * }
      */
     public function show(string $reference): JsonResponse

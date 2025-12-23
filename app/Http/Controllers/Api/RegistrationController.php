@@ -27,8 +27,25 @@ class RegistrationController extends Controller
 
     /**
      * Create Registration (RSVP)
-     * 
+     *
+     * Registers the authenticated user for a specific event with a chosen ticket type.
+     * Returns the registration details including QR code token for check-in.
+     *
      * @group Registrations
+     * @authenticated
+     * @urlParam event integer required The ID of the event. Example: 1
+     * @bodyParam ticket_id integer required The ID of the ticket to reserve. Example: 1
+     * @bodyParam additional_data object optional Custom fields required by the event. Example: {"t_shirt_size": "L"}
+     *
+     * @response 201 {
+     *   "data": {
+     *     "id": 1,
+     *     "status": "confirmed",
+     *     "event": {"id": 1, "title": "Intro to Synthetic Biology"},
+     *     "ticket": {"id": 1, "name": "General Admission"},
+     *     "qr_code_token": "reg-abc-123-xyz"
+     *   }
+     * }
      */
     public function store(Request $request, Event $event)
     {
@@ -50,9 +67,22 @@ class RegistrationController extends Controller
     }
 
     /**
-     * List user's registrations
-     * 
+     * List my registrations
+     *
+     * Returns a paginated list of all events the user has registered for.
+     *
      * @group Registrations
+     * @authenticated
+     * @response 200 {
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "status": "confirmed",
+     *       "event": {"id": 1, "title": "Intro to Synthetic Biology"},
+     *       "created_at": "2025-01-15T10:00:00Z"
+     *     }
+     *   ]
+     * }
      */
     public function myRegistrations()
     {

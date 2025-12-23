@@ -35,21 +35,21 @@ class PlanController extends Controller
      *   "success": true,
      *   "data": [
      *     {
-     *       "id": 1,
-     *       "name": {"en": "Premium Plan"},
+     *       "id": 2,
+     *       "name": {"en": "Premium Member"},
      *       "pricing": {
      *         "kes": {"base_monthly": 2500, "discounted_monthly": 2000, "base_yearly": 30000, "discounted_yearly": 22500},
-     *         "usd": {"base_monthly": 17.24, "discounted_monthly": 13.79, "base_yearly": 206.90, "discounted_yearly": 155.17},
-     *         "exchange_rate": 145.00,
-     *         "last_updated": "2025-12-03T17:13:35Z"
+     *         "usd": {"base_monthly": 18.52, "discounted_monthly": 14.81, "base_yearly": 222.22, "discounted_yearly": 166.67},
+     *         "exchange_rate": 135.00,
+     *         "last_updated": "2025-12-28T10:00:00Z"
      *       },
      *       "promotions": {
-     *         "monthly": {"discount_percent": 20, "expires_at": "2025-12-15T23:59:59Z", "active": true},
-     *         "yearly": {"discount_percent": 25, "expires_at": "2025-12-31T23:59:59Z", "active": true}
+     *         "monthly": {"discount_percent": 20, "expires_at": "2026-01-15T23:59:59Z", "active": true},
+     *         "yearly": {"discount_percent": 25, "expires_at": "2026-01-31T23:59:59Z", "active": true}
      *       },
      *       "features": [
-     *         {"id": 1, "name": "Feature 1", "limit": null},
-     *         {"id": 2, "name": "Feature 2", "limit": 100}
+     *         {"id": 1, "name": "Lab Access", "limit": 16},
+     *         {"id": 2, "name": "Community Events", "limit": null}
      *       ]
      *     }
      *   ]

@@ -261,6 +261,41 @@ class BlogPostsSeeder extends Seeder
             $post->tags()->sync(
                 collect($tagModels)->pluck('id')->random(rand(2, 3))
             );
+
+            // 5. Assign Seed Images (Local/Testing only)
+            if (app()->environment('local', 'testing')) {
+                $seedImages = [
+                    'seed-images/biotech-lab.png',
+                    'seed-images/genomics-viz.png',
+                    'seed-images/tech-hub.png',
+                ];
+                
+                // Assign a random seed image
+                $randomImage = $seedImages[array_rand($seedImages)];
+                $post->update(['hero_image_path' => $randomImage]);
+
+                // Create a Media record to exercise the media system
+                if (file_exists(storage_path('app/public/' . $randomImage))) {
+                    try {
+                        $media = \App\Models\Media::firstOrCreate(
+                            ['file_path' => $randomImage],
+                            [
+                                'user_id' => $post->user_id,
+                                'file_name' => basename($randomImage),
+                                'mime_type' => 'image/png',
+                                'file_size' => filesize(storage_path('app/public/' . $randomImage)),
+                                'type' => 'image',
+                                'is_public' => true,
+                            ]
+                        );
+                        
+                        // Attach to post via post_media table
+                        $post->media()->syncWithoutDetaching([$media->id]);
+                    } catch (\Exception $e) {
+                        $this->command->warn('Failed to link media for post: ' . $post->title);
+                    }
+                }
+            }
         }
 
         $this->command->info('20 Biotechnology posts seeded successfully!');

@@ -16,13 +16,13 @@ class ForumCategoryController extends Controller
      * @group Forum Categories
      * @unauthenticated
      * 
-     * @response {
+     * @response 200 {
      *  "data": [
      *    {
      *      "id": 1,
      *      "name": "General Discussion",
      *      "slug": "general-discussion",
-     *      "description": "Talk about anything here.",
+     *      "description": "Talk about lab life, science, and anything community related.",
      *      "icon": "message-circle",
      *      "color": "#3b82f6",
      *      "threads_count": 5,

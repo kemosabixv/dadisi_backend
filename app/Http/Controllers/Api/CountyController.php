@@ -19,9 +19,11 @@ class CountyController extends Controller
      * @unauthenticated
      * 
      * @response 200 {
+     *   "success": true,
      *   "data": [
-     *     {"id": 1, "name": "Baringo"},
-     *     {"id": 2, "name": "Bomet"}
+     *     {"id": 1, "name": "Nairobi"},
+     *     {"id": 2, "name": "Mombasa"},
+     *     {"id": 3, "name": "Kisumu"}
      *   ]
      * }
      */
@@ -39,7 +41,10 @@ class CountyController extends Controller
      * @unauthenticated
      * @urlParam county integer required The ID of the county. Example: 1
      * 
-     * @response 200 {"data": {"id": 1, "name": "Nairobi"}}
+     * @response 200 {
+     *   "success": true,
+     *   "data": {"id": 1, "name": "Nairobi"}
+     * }
      */
     public function show(County $county): JsonResponse
     {
@@ -56,7 +61,11 @@ class CountyController extends Controller
      * @authenticated
      * @bodyParam name string required The name of the county. Example: Nairobi
      * 
-     * @response 201 {"data": {"id": 48, "name": "New County"}, "message": "County created"}
+     * @response 201 {
+     *   "success": true,
+     *   "data": {"id": 48, "name": "Nakuru"},
+     *   "message": "County created successfully"
+     * }
      */
     public function store(Request $request): JsonResponse
     {
@@ -84,7 +93,11 @@ class CountyController extends Controller
      * @urlParam county integer required The ID of the county. Example: 1
      * @bodyParam name string required The name of the county. Example: Nairobi
      * 
-     * @response 200 {"data": {"id": 1, "name": "Updated Name"}, "message": "County updated"}
+     * @response 200 {
+     *   "success": true,
+     *   "data": {"id": 1, "name": "Nairobi City"},
+     *   "message": "County updated successfully"
+     * }
      */
     public function update(Request $request, County $county): JsonResponse
     {

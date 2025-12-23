@@ -9,6 +9,7 @@ use App\Models\PlanSubscription;
 use App\Models\RenewalPreference;
 use App\Models\SubscriptionEnhancement;
 use App\Services\PaymentGatewayFactory;
+use App\Services\MockPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -39,9 +40,9 @@ class SubscriptionCoreController extends Controller
      * @response 200 {
      *   "success": true,
      *   "data": {
-     *     "user_id": 1,
-     *     "plan": {"id": 1, "name": "Premium", "price": 99.99},
-     *     "subscription": {"id": 1, "status": "active", "expires_at": "2026-12-06"},
+     *     "user_id": 2,
+     *     "plan": {"id": 2, "name": "Premium Member", "price": 2500},
+     *     "subscription": {"id": 1, "status": "active", "expires_at": "2026-12-06T00:00:00Z"},
      *     "enhancement": {"status": "active", "grace_period_ends_at": null}
      *   }
      * }
@@ -256,9 +257,9 @@ class SubscriptionCoreController extends Controller
      * @response 201 {
      *   "success": true,
      *   "data": {
-     *     "transaction_id": "MOCK_abc123xyz",
-     *     "redirect_url": "http://localhost:8000/api/payments/mock/checkout?...",
-     *     "order_tracking_id": "ORDER_def456"
+     *     "transaction_id": "MOCK_TRAN_987654",
+     *     "redirect_url": "https://api.dadisilab.com/api/payments/mock/checkout?id=MOCK_TRAN_987654",
+     *     "order_tracking_id": "ORDER_SUBS_001"
      *   }
      * }
      */

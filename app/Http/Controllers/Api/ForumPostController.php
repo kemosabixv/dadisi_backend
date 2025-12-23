@@ -14,12 +14,23 @@ class ForumPostController extends Controller
 
     /**
      * Create a new post.
-     * 
+     *
+     * Adds a reply to a specific forum thread.
+     * Returns the created post details with user metadata.
+     *
      * @group Forum Posts
      * @authenticated
-     * 
-     * @urlParam thread string required The thread (slug or ID).
-     * @bodyParam content string required The content of the post.
+     * @urlParam thread string required The thread slug or ID. Example: welcome-to-dadisi-forum-x1y2z3
+     * @bodyParam content string required The content of the reply. Example: This is a great initiative!
+     *
+     * @response 201 {
+     *   "data": {
+     *     "id": 21,
+     *     "content": "This is a great initiative!",
+     *     "user": {"id": 2, "username": "jane_doe"}
+     *   },
+     *   "message": "Reply posted successfully."
+     * }
      */
     public function store(Request $request, ForumThread $thread): JsonResponse
     {

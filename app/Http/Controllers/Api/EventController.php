@@ -205,8 +205,17 @@ class EventController extends Controller
      * 
      * @group Events
      * @authenticated
-     * @response {
-     *   "data": [{ "id": 1, "title": "My Event", ... }]
+     * @queryParam status string Filter by status (draft, published, cancelled). Example: published
+     *
+     * @response 200 {
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "title": "My Community Workshop",
+     *       "status": "published",
+     *       "starts_at": "2025-02-15T09:00:00Z"
+     *     }
+     *   ]
      * }
      */
     public function myEvents(Request $request)

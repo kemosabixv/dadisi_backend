@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravelcm\Subscriptions\Models\Plan;
+use Laravelcm\Subscriptions\Models\Subscription;
 
 class MemberProfile extends Model
 {
@@ -30,6 +31,15 @@ class MemberProfile extends Model
         'emergency_contact_phone',
         'terms_accepted',
         'marketing_consent',
+        // Public profile and privacy settings
+        'public_profile_enabled',
+        'public_bio',
+        'show_email',
+        'show_location',
+        'show_join_date',
+        'show_post_count',
+        'show_interests',
+        'show_occupation',
     ];
 
     protected $casts = [
@@ -38,6 +48,14 @@ class MemberProfile extends Model
         'marketing_consent' => 'boolean',
         'is_staff' => 'boolean',
         'date_of_birth' => 'date',
+        // Privacy field casts
+        'public_profile_enabled' => 'boolean',
+        'show_email' => 'boolean',
+        'show_location' => 'boolean',
+        'show_join_date' => 'boolean',
+        'show_post_count' => 'boolean',
+        'show_interests' => 'boolean',
+        'show_occupation' => 'boolean',
     ];
 
     /**

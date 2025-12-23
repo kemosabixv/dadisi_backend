@@ -38,9 +38,9 @@ class AuthController extends Controller
      *
      * @response 201 {
      *  "user": {
-     *      "id": 1,
-     *      "username": "newuser",
-     *      "email": "newuser@example.com",
+     *      "id": 2,
+     *      "username": "jane_doe",
+     *      "email": "jane.doe@example.com",
      *      "email_verified_at": null,
      *      "ui_permissions": {
      *          "can_view_users": false,
@@ -53,8 +53,8 @@ class AuthController extends Controller
      *      },
      *      "member_profile": {
      *          "is_staff": false,
-     *          "first_name": "",
-     *          "last_name": ""
+     *          "first_name": "Jane",
+     *          "last_name": "Doe"
      *      }
      *  }
      * }
@@ -118,14 +118,19 @@ class AuthController extends Controller
      *
      * @response 200 {
      *  "user": {
-     *      "id": 1,
-     *      "username": "curluser",
-     *      "email": "curluser@example.com",
-     *      "created_at": "2023-01-01T12:00:00.000000Z",
-     *      "updated_at": "2023-01-01T12:00:00.000000Z"
+     *      "id": 2,
+     *      "username": "jane_doe",
+     *      "email": "jane.doe@example.com",
+     *      "created_at": "2025-01-15T12:00:00.000000Z",
+     *      "updated_at": "2025-01-15T12:00:00.000000Z"
      *  },
      *  "access_token": "2|zIF5K7csJqxfM9...",
-     *  "email_verified": false
+     *  "email_verified": true
+     * }
+     * @response 200 {
+     *  "requires_2fa": true,
+     *  "email": "jane.doe@example.com",
+     *  "message": "Two-factor authentication required."
      * }
      * @response 422 {
      *   "message": "The provided credentials are incorrect.",

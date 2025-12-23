@@ -25,14 +25,28 @@ class PublicDonationCampaignController extends Controller
      *
      * Retrieves a paginated list of active donation campaigns.
      *
-     * @queryParam page integer Page number. Example: 1
-     * @queryParam per_page integer Items per page (max 50). Example: 12
-     * @queryParam county_id integer Filter by county. Example: 1
+     * @queryParam page integer Page number for pagination. Example: 1
+     * @queryParam per_page integer Items per page (max 50, default 12). Example: 12
+     * @queryParam county_id integer Filter campaigns by County ID. Matches `counties.id`. Example: 1
      *
      * @response 200 {
      *   "success": true,
-     *   "data": [...],
-     *   "pagination": {...}
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "title": "Nairobi Biotech Hub Equipment Fund",
+     *       "slug": "nairobi-biotech-hub-equipment-fund",
+     *       "description": "Raising funds to purchase advanced DNA sequencing equipment...",
+     *       "goal_amount": 5000000,
+     *       "current_amount": 1250000,
+     *       "currency": "KES",
+     *       "starts_at": "2025-12-01T00:00:00Z",
+     *       "ends_at": "2026-03-31T23:59:59Z",
+     *       "status": "active",
+     *       "county": {"id": 1, "name": "Nairobi"}
+     *     }
+     *   ],
+     *   "pagination": {"total": 5, "per_page": 12, "current_page": 1, "last_page": 1}
      * }
      */
     public function index(Request $request): JsonResponse
@@ -66,11 +80,24 @@ class PublicDonationCampaignController extends Controller
      *
      * Retrieves details of a specific campaign including progress.
      *
-     * @urlParam campaign string required Campaign slug. Example: education-fund-2025
+     * @urlParam campaign string required The Slug of the campaign. Example: nairobi-biotech-hub-equipment-fund
      *
      * @response 200 {
      *   "success": true,
-     *   "data": {...}
+     *   "data": {
+     *     "id": 1,
+     *     "title": "Nairobi Biotech Hub Equipment Fund",
+     *     "slug": "nairobi-biotech-hub-equipment-fund",
+     *     "description": "Raising funds to purchase advanced DNA sequencing equipment...",
+     *     "goal_amount": 5000000,
+     *     "current_amount": 1250000,
+     *     "currency": "KES",
+     *     "starts_at": "2025-12-01T00:00:00Z",
+     *     "ends_at": "2026-03-31T23:59:59Z",
+     *     "status": "active",
+     *     "county": {"id": 1, "name": "Nairobi"},
+     *     "creator": {"id": 1, "username": "superadmin"}
+     *   }
      * }
      */
     public function show(DonationCampaign $campaign): JsonResponse
@@ -96,24 +123,27 @@ class PublicDonationCampaignController extends Controller
      *
      * Initiates a donation to a specific campaign.
      *
-     * @urlParam campaign string required Campaign slug. Example: education-fund-2025
+     * @urlParam campaign string required The Slug of the campaign to donate to. Example: nairobi-biotech-hub-equipment-fund
      *
-     * @bodyParam amount number required Donation amount. Example: 1000.00
-     * @bodyParam currency string Currency (KES or USD). Example: KES
-     * @bodyParam first_name string required Donor first name. Example: John
-     * @bodyParam last_name string required Donor last name. Example: Doe
-     * @bodyParam email string required Donor email. Example: john@example.com
-     * @bodyParam phone_number string Donor phone. Example: +254700123456
-     * @bodyParam message string Optional message. Example: Keep up the good work!
-     * @bodyParam is_anonymous boolean Whether to hide donor name. Example: false
-     * @bodyParam county_id integer Donor's county. Example: 1
+     * @bodyParam amount number required Donation amount (must be >= campaign minimum). Example: 5000.00
+     * @bodyParam currency string Currency code (KES or USD). Example: KES
+     * @bodyParam first_name string required Legal first name. Example: John
+     * @bodyParam last_name string required Legal last name. Example: Doe
+     * @bodyParam email string required Valid email address for receipting. Example: john@example.com
+     * @bodyParam phone_number string Optional phone number for M-Pesa. Example: +254700123456
+     * @bodyParam message string optional Message to the organizers. Example: Supporting local innovation!
+     * @bodyParam is_anonymous boolean hide name from public lists. Example: false
+     * @bodyParam county_id integer Donor's home county ID. Example: 1
      *
      * @response 201 {
      *   "success": true,
      *   "message": "Donation initiated",
      *   "data": {
-     *     "donation_id": 1,
-     *     "reference": "DON-ABC123XYZ",
+     *     "donation_id": 123,
+     *     "reference": "DON-NBI-7X9Z",
+     *     "amount": 5000,
+     *     "currency": "KES",
+     *     "campaign": {"id": 1, "title": "Nairobi Biotech Hub Equipment Fund"},
      *     "redirect_url": "https://pay.pesapal.com/..."
      *   }
      * }
@@ -201,7 +231,7 @@ class PublicDonationCampaignController extends Controller
 
                 // TODO: Integrate with Pesapal to get redirect URL
                 // For now, return the donation reference
-                $redirectUrl = config('app.frontend_url') . '/donations/pending?ref=' . $donation->reference;
+                $redirectUrl = config('app.frontend_url') . '/donations/checkout/' . $donation->reference;
 
                 return response()->json([
                     'success' => true,

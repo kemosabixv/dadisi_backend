@@ -172,8 +172,8 @@ class PaymentController extends Controller
      *   "message": "Test payment created successfully",
      *   "data": {
      *     "payment_id": 123,
-     *     "tracking_id": "MOCK-1234567890-ABCDE",
-     *     "mock_payment_url": "http://localhost:8000/mock-payment/MOCK-1234567890-ABCDE",
+     *     "tracking_id": "MOCK-SUB-1735689600-AB123",
+     *     "mock_payment_url": "https://api.dadisilab.com/mock-payment/MOCK-SUB-1735689600-AB123",
      *     "amount": 2500,
      *     "status": "pending"
      *   }
@@ -638,8 +638,8 @@ class PaymentController extends Controller
      *   "data": [
      *     {
      *       "subscription_id": 1,
-     *       "plan_name": "Premium Monthly",
-     *       "amount": 999.00,
+     *       "plan_name": "Premium Member",
+     *       "amount": 2500.00,
      *       "currency": "KES",
      *       "status": "active",
      *       "failure_state": null,

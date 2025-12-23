@@ -97,13 +97,18 @@ class GroupController extends Controller
      * @response 200 {
      *   "data": {
      *     "id": 1,
-     *     "name": "Nairobi Community",
-     *     "description": "Connect with members from Nairobi county.",
+     *     "name": "Nairobi Community Hub",
+     *     "slug": "nairobi-community-hub",
+     *     "description": "The primary hub for biotech enthusiasts in Nairobi county.",
      *     "county": { "id": 1, "name": "Nairobi" },
-     *     "member_count": 124,
+     *     "member_count": 150,
      *     "is_member": true,
-     *     "members": [...],
-     *     "recent_discussions": [...]
+     *     "members": [
+     *       {"id": 1, "username": "superadmin", "profile_picture": null, "joined_at": "2025-01-01"}
+     *     ],
+     *     "recent_discussions": [
+     *       {"id": 1, "title": "New Equipment in Nairobi Hub", "user": {"id": 1, "username": "superadmin"}}
+     *     ]
      *   }
      * }
      */

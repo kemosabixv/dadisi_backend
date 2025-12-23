@@ -159,8 +159,23 @@ class DonationCampaignSeeder extends Seeder
             ],
         ];
 
+        $campaignImages = [
+            'Education Fund 2025' => 'seed-images/stem-education.png',
+            'Community Water Project' => 'seed-images/clean-water.png',
+            'Youth Tech Hub' => 'seed-images/tech-hub.png',
+            'Medical Outreach Program' => 'seed-images/medical-outreach.png',
+            'Environmental Conservation Initiative' => 'seed-images/nature-conservation.png',
+            'Girls Empowerment Program' => 'seed-images/stem-education.png',
+        ];
+
         foreach ($campaigns as $campaignData) {
             $campaignData['created_by'] = $creator->id;
+            
+            // Assign seed image
+            if (app()->environment('local', 'testing')) {
+                $campaignData['hero_image_path'] = $campaignImages[$campaignData['title']] ?? null;
+            }
+            
             DonationCampaign::create($campaignData);
         }
 

@@ -31,10 +31,10 @@ class UserPaymentMethodController extends Controller
      *     {
      *       "id": 1,
      *       "type": "mobile_money",
-     *       "identifier": "2547****1234",
+     *       "identifier": "2547****5678",
      *       "label": "My MPESA",
      *       "is_primary": true,
-     *       "created_at": "2023-01-01T00:00:00Z"
+     *       "created_at": "2025-12-01T10:00:00Z"
      *     }
      *   ]
      * }

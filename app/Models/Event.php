@@ -27,6 +27,7 @@ class Event extends Model
         'price',
         'currency',
         'status',
+        'event_type',
         'featured',
         'featured_until',
         'created_by',
@@ -35,6 +36,10 @@ class Event extends Model
         'registration_deadline',
         'starts_at',
         'ends_at',
+    ];
+
+    protected $appends = [
+        'image_url',
     ];
 
     protected $casts = [
@@ -240,5 +245,17 @@ class Event extends Model
         if (now()->isAfter($this->starts_at)) return false;
         if ($this->registration_deadline && now()->isAfter($this->registration_deadline)) return false;
         return true;
+    }
+
+    /**
+     * Get the full URL for the image. (Matches frontend image_url)
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if (!$this->image_path) {
+            return null;
+        }
+
+        return asset('storage/' . $this->image_path);
     }
 }

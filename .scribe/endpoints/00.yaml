@@ -83,9 +83,9 @@ endpoints:
         content: |-
           {
            "user": {
-               "id": 1,
-               "username": "newuser",
-               "email": "newuser@example.com",
+               "id": 2,
+               "username": "jane_doe",
+               "email": "jane.doe@example.com",
                "email_verified_at": null,
                "ui_permissions": {
                    "can_view_users": false,
@@ -98,8 +98,8 @@ endpoints:
                },
                "member_profile": {
                    "is_staff": false,
-                   "first_name": "",
-                   "last_name": ""
+                   "first_name": "Jane",
+                   "last_name": "Doe"
                }
            }
           }
@@ -192,27 +192,25 @@ endpoints:
         content: |-
           {
            "user": {
-               "id": 1,
-               "username": "curluser",
-               "email": "curluser@example.com",
-               "email_verified_at": "2023-01-01T12:00:00.000000Z",
-               "ui_permissions": {
-                   "can_view_users": false,
-                   "can_create_users": false,
-                   "can_access_admin_panel": false
-               },
-               "admin_access": {
-                   "can_access_admin": false,
-                   "menu": []
-               },
-               "member_profile": {
-                   "is_staff": false,
-                   "first_name": "John",
-                   "last_name": "Doe"
-               }
+               "id": 2,
+               "username": "jane_doe",
+               "email": "jane.doe@example.com",
+               "created_at": "2025-01-15T12:00:00.000000Z",
+               "updated_at": "2025-01-15T12:00:00.000000Z"
            },
            "access_token": "2|zIF5K7csJqxfM9...",
-           "email_verified": false
+           "email_verified": true
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+           "requires_2fa": true,
+           "email": "jane.doe@example.com",
+           "message": "Two-factor authentication required."
           }
         headers: []
         description: ''
@@ -267,8 +265,7 @@ endpoints:
         status: 200
         content: |-
           {
-            "success": true,
-            "message": "Logged out successfully."
+            // No content returned on successful logout. HTTP 200 OK with empty body.
           }
         headers: []
         description: ''
@@ -317,21 +314,9 @@ endpoints:
            "id": 1,
            "username": "curluser",
            "email": "curluser@example.com",
-           "email_verified_at": "2023-01-01T12:00:00.000000Z",
-           "ui_permissions": {
-               "can_view_users": false,
-               "can_create_users": false,
-               "can_access_admin_panel": false
-           },
-           "admin_access": {
-               "can_access_admin": false,
-               "menu": []
-           },
-           "member_profile": {
-               "is_staff": false,
-               "first_name": "John",
-               "last_name": "Doe"
-           }
+           "email_verified_at": null,
+           "created_at": "2023-01-01T12:00:00.000000Z",
+           "updated_at": "2023-01-01T12:00:00.000000Z"
           }
         headers: []
         description: ''
@@ -383,27 +368,72 @@ endpoints:
     responses:
       -
         custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/refresh
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Refresh Token'
+      description: |-
+        Rotates the current authentication token by revoking it and issuing a new one.
+        This endpoint extends the session and returns a fresh token.
+        Use this for silent token refresh before expiry.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
         status: 200
         content: |-
           {
-           "id": 1,
-           "username": "curluser",
-           "email": "curluser@example.com",
-           "email_verified_at": "2023-01-01T12:00:00.000000Z",
-           "ui_permissions": {
-               "can_view_users": false,
-               "can_create_users": false,
-               "can_access_admin_panel": false
-           },
-           "admin_access": {
-               "can_access_admin": false,
-               "menu": []
-           },
-           "member_profile": {
-               "is_staff": false,
-               "first_name": "John",
-               "last_name": "Doe"
-           }
+            "user": {
+              "id": 2,
+              "username": "jane_doe",
+              "email": "jane.doe@example.com"
+            },
+            "access_token": "5|newTokenExample123...",
+            "expires_at": "2026-01-15T12:00:00Z"
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 401
+        content: |-
+          {
+            "message": "Unauthenticated."
           }
         headers: []
         description: ''
@@ -810,9 +840,9 @@ endpoints:
             "message": "Email verified",
             "token": "2|zIF5K7csJqxfM9...",
             "user": {
-              "id": 1,
-              "username": "Example User",
-              "email": "user@example.com",
+              "id": 2,
+              "username": "jane_doe",
+              "email": "jane.doe@example.com",
               "email_verified_at": "2025-10-24T12:00:00.000000Z"
             }
           }
@@ -833,6 +863,821 @@ endpoints:
         content: |-
           {
             "message": "Invalid or expired code"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/2fa/totp/enable
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: 'Two-Factor Authentication (TOTP)'
+      subgroupDescription: ''
+      title: 'Enable TOTP Setup'
+      description: |-
+        Generates a new TOTP secret and returns a QR code URL for the user to scan.
+        The secret is stored temporarily in session until verified.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "secret": "JBSWY3DPEHPK3PXP",
+            "qr_code_url": "otpauth://totp/Dadisi:jane_doe@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Dadisi"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/2fa/totp/verify
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: 'Two-Factor Authentication (TOTP)'
+      subgroupDescription: ''
+      title: 'Verify TOTP Code'
+      description: |-
+        Verifies the TOTP code from the authenticator app and enables 2FA.
+        Returns recovery codes that the user should save securely.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      code:
+        custom: []
+        name: code
+        description: 'The 6-digit code from the authenticator app.'
+        required: true
+        example: '123456'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      code: '123456'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "message": "Two-factor authentication has been enabled.",
+            "recovery_codes": [
+              "abc12345-def67890",
+              "xyz98765-qrs43210",
+              "...",
+              "jkl09876-mno54321"
+            ]
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "The provided code is invalid."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/2fa/totp/disable
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: 'Two-Factor Authentication (TOTP)'
+      subgroupDescription: ''
+      title: 'Disable TOTP'
+      description: 'Disables two-factor authentication. Requires password confirmation.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      password:
+        custom: []
+        name: password
+        description: "The user's current password."
+        required: true
+        example: 'Pass123!@#'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      password: 'Pass123!@#'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "message": "Two-factor authentication has been disabled."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/2fa/totp/recovery-codes
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: 'Two-Factor Authentication (TOTP)'
+      subgroupDescription: ''
+      title: 'Get Recovery Codes'
+      description: 'Returns the current recovery codes. Requires password confirmation.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      password:
+        custom: []
+        name: password
+        description: "The user's current password."
+        required: true
+        example: 'Pass123!@#'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      password: 'Pass123!@#'
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/2fa/totp/regenerate-recovery-codes
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: 'Two-Factor Authentication (TOTP)'
+      subgroupDescription: ''
+      title: 'Regenerate Recovery Codes'
+      description: 'Generates new recovery codes and invalidates the old ones.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      password:
+        custom: []
+        name: password
+        description: "The user's current password."
+        required: true
+        example: 'Pass123!@#'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      password: 'Pass123!@#'
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/2fa/totp/validate
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: 'Two-Factor Authentication (TOTP)'
+      subgroupDescription: ''
+      title: 'Validate TOTP Code (at login)'
+      description: |-
+        Validates the TOTP code during login when 2FA is enabled.
+        Call this after successful password authentication.
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      email:
+        custom: []
+        name: email
+        description: "The user's email."
+        required: true
+        example: user@example.com
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      code:
+        custom: []
+        name: code
+        description: 'The 6-digit code from the authenticator app.'
+        required: true
+        example: '123456'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      email: user@example.com
+      code: '123456'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "user": {
+              "id": 2,
+              "username": "jane_doe",
+              "email": "jane.doe@example.com"
+            },
+            "access_token": "3|abcdef1234567890..."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "The provided code is invalid."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/passkeys/register/options
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: |-
+        Passkeys (WebAuthn)
+
+        Passkey authentication using WebAuthn/FIDO2.
+        Requires the laragear/webauthn package to be installed.
+      subgroupDescription: ''
+      title: 'Get Registration Options'
+      description: |-
+        Returns the options needed to register a new passkey.
+        The frontend uses these options with the WebAuthn API.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "challenge": "base64-encoded-challenge",
+            "rp": { "name": "Dadisi", "id": "dadisilab.com" },
+            "user": { "id": "base64-user-id", "name": "user@example.com", "displayName": "User" },
+            "pubKeyCredParams": [...],
+            "timeout": 60000,
+            "attestation": "none",
+            "authenticatorSelection": { "residentKey": "preferred", "userVerification": "preferred" }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/passkeys/register
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: |-
+        Passkeys (WebAuthn)
+
+        Passkey authentication using WebAuthn/FIDO2.
+        Requires the laragear/webauthn package to be installed.
+      subgroupDescription: ''
+      title: 'Register Passkey'
+      description: 'Registers a new passkey after the user completes the WebAuthn ceremony.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      name:
+        custom: []
+        name: name
+        description: 'A friendly name for this passkey.'
+        required: true
+        example: 'iPhone 15 Pro'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: 'The credential ID from WebAuthn.'
+        required: true
+        example: base64-credential-id
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      rawId:
+        custom: []
+        name: rawId
+        description: 'The raw credential ID.'
+        required: true
+        example: base64-raw-id
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      response:
+        custom: []
+        name: response
+        description: 'The authenticator response containing attestationObject and clientDataJSON.'
+        required: true
+        example: []
+        type: object
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      type:
+        custom: []
+        name: type
+        description: 'Must be "public-key".'
+        required: true
+        example: public-key
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      name: 'iPhone 15 Pro'
+      id: base64-credential-id
+      rawId: base64-raw-id
+      response: []
+      type: public-key
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: |-
+          {
+            "message": "Passkey registered successfully.",
+            "passkey": {
+              "id": 1,
+              "name": "iPhone 15 Pro",
+              "created_at": "2025-12-20T10:00:00Z"
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/auth/passkeys
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: |-
+        Passkeys (WebAuthn)
+
+        Passkey authentication using WebAuthn/FIDO2.
+        Requires the laragear/webauthn package to be installed.
+      subgroupDescription: ''
+      title: 'List Passkeys'
+      description: 'Returns all passkeys registered for the authenticated user.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "passkeys": [
+              { "id": 1, "name": "iPhone 15 Pro", "created_at": "2025-12-20T10:00:00Z", "last_used_at": "2025-12-22T09:00:00Z" },
+              { "id": 2, "name": "Yubikey 5C", "created_at": "2025-12-21T14:00:00Z", "last_used_at": null }
+            ]
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/auth/passkeys/{id}'
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: |-
+        Passkeys (WebAuthn)
+
+        Passkey authentication using WebAuthn/FIDO2.
+        Requires the laragear/webauthn package to be installed.
+      subgroupDescription: ''
+      title: 'Delete Passkey'
+      description: "Removes a passkey from the user's account."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The passkey ID.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "message": "Passkey removed successfully."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+            "message": "Passkey not found."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/passkeys/authenticate/options
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: |-
+        Passkeys (WebAuthn)
+
+        Passkey authentication using WebAuthn/FIDO2.
+        Requires the laragear/webauthn package to be installed.
+      subgroupDescription: ''
+      title: 'Get Authentication Options'
+      description: |-
+        Returns the options needed to authenticate with a passkey.
+        Used on the login page when the user wants to sign in with a passkey.
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      email:
+        custom: []
+        name: email
+        description: "The user's email address."
+        required: true
+        example: user@example.com
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      email: user@example.com
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "challenge": "base64-encoded-challenge",
+            "timeout": 60000,
+            "rpId": "dadisilab.com",
+            "allowCredentials": [...]
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+            "message": "No passkeys found for this user."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/auth/passkeys/authenticate
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: |-
+        Passkeys (WebAuthn)
+
+        Passkey authentication using WebAuthn/FIDO2.
+        Requires the laragear/webauthn package to be installed.
+      subgroupDescription: ''
+      title: 'Authenticate with Passkey'
+      description: 'Validates the passkey assertion and logs the user in.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The credential ID.'
+        required: true
+        example: base64-credential-id
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      rawId:
+        custom: []
+        name: rawId
+        description: 'The raw credential ID.'
+        required: true
+        example: base64-raw-id
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      response:
+        custom: []
+        name: response
+        description: 'The authenticator response.'
+        required: true
+        example: []
+        type: object
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      type:
+        custom: []
+        name: type
+        description: 'Must be "public-key".'
+        required: true
+        example: public-key
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      id: base64-credential-id
+      rawId: base64-raw-id
+      response: []
+      type: public-key
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "user": {
+              "id": 2,
+              "username": "jane_doe",
+              "email": "jane.doe@example.com"
+            },
+            "access_token": "4|passkey-token-secret-123..."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Passkey authentication failed."
           }
         headers: []
         description: ''

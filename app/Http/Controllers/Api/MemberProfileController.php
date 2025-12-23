@@ -36,12 +36,12 @@ class MemberProfileController extends Controller
      *     "data": [
      *       {
      *         "id": 1,
-     *         "user": {"name": "John Smith", "email": "john@example.com"},
-     *         "county": {"name": "Nairobi"},
-     *         "first_name": "John",
-     *         "last_name": "Smith",
+     *         "user": {"id": 1, "username": "superadmin", "email": "superadmin@dadisilab.com"},
+     *         "county": {"id": 1, "name": "Nairobi"},
+     *         "first_name": "Super",
+     *         "last_name": "Admin",
      *         "terms_accepted": true,
-     *         "created_at": "2024-01-01T12:00:00Z"
+     *         "created_at": "2025-01-01T12:00:00Z"
      *       }
      *     ],
      *     "total": 5,
@@ -113,14 +113,14 @@ class MemberProfileController extends Controller
      * @response 200 {
      *   "success": true,
      *   "data": {
-     *     "id": 1,
-     *     "user": {"name": "John Doe", "email": "john@example.com"},
-     *     "county": {"name": "Nairobi", "id": 47},
-     *     "first_name": "John",
+     *     "id": 2,
+     *     "user": {"id": 2, "username": "jane_doe", "email": "jane.doe@example.com"},
+     *     "county": {"id": 1, "name": "Nairobi"},
+     *     "first_name": "Jane",
      *     "last_name": "Doe",
-     *     "gender": "male",
+     *     "gender": "female",
      *     "terms_accepted": true,
-     *     "subscription_plan": {"name": "Free", "price": 0}
+     *     "subscription_plan": {"name": "Basic", "price": 0}
      *   }
      * }
      *
@@ -180,9 +180,10 @@ class MemberProfileController extends Controller
      *   "success": true,
      *   "message": "Profile updated successfully",
      *   "data": {
-     *     "id": 1,
-     *     "first_name": "John",
-     *     "county_id": 47
+     *     "id": 2,
+     *     "first_name": "Jane",
+     *     "last_name": "Doe",
+     *     "county_id": 1
      *   }
      * }
      *
@@ -587,7 +588,7 @@ class MemberProfileController extends Controller
      *   "success": true,
      *   "message": "Profile picture updated successfully",
      *   "data": {
-     *     "profile_picture_url": "http://example.com/storage/profile-pictures/filename.jpg"
+     *     "profile_picture_url": "https://api.dadisilab.com/storage/profile-pictures/jane_doe_avatar.jpg"
      *   }
      * }
      */

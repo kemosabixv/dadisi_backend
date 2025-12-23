@@ -149,7 +149,7 @@ class StudentApprovalController extends Controller
      *   "data": {
      *     "id": 1,
      *     "status": "pending",
-     *     "student_institution": "University of Nairobi",
+     *     "student_institution": "Kenyatta University",
      *     "submitted_at": "2025-12-06T10:30:00Z",
      *     "rejection_reason": null,
      *     "admin_notes": null

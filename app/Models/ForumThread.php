@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -112,5 +113,31 @@ class ForumThread extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /**
+     * Get tags associated with this thread.
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(ForumTag::class, 'forum_thread_tag', 'thread_id', 'tag_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Sync tags and update usage counts.
+     */
+    public function syncTags(array $tagIds): void
+    {
+        $oldTags = $this->tags->pluck('id')->toArray();
+        $this->tags()->sync($tagIds);
+        
+        // Decrement old tags that were removed
+        $removed = array_diff($oldTags, $tagIds);
+        ForumTag::whereIn('id', $removed)->decrement('usage_count');
+        
+        // Increment new tags that were added
+        $added = array_diff($tagIds, $oldTags);
+        ForumTag::whereIn('id', $added)->increment('usage_count');
     }
 }

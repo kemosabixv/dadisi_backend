@@ -1,21 +1,101 @@
-name: 'Data Retention Management'
+name: 'User Management'
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
-      - GET
-    uri: api/retention-settings-summary
+      - DELETE
+    uri: api/users/self
     metadata:
       custom: []
-      groupName: 'Data Retention Management'
+      groupName: 'User Management'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Get Retention Summary'
+      title: 'Delete own account'
       description: |-
-        Provides a quick overview of the active retention periods for key data types.
-        Useful for dashboard widgets or compliance reporting.
+        Allows an authenticated user to permanently deactivate their own account.
+        Requires current password for security verification.
+        Logs the user out from all devices immediately.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      password:
+        custom: []
+        name: password
+        description: 'Current password for confirmation.'
+        required: true
+        example: mypassword123
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      reason:
+        custom: []
+        name: reason
+        description: 'optional Feedback/reason for leaving.'
+        required: false
+        example: 'No longer need account'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      password: mypassword123
+      reason: 'No longer need account'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "Your account has been deactivated. You have been logged out from all devices."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 400
+        content: |-
+          {
+            "success": false,
+            "message": "Current password is incorrect"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/users/self/export
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Export user data for GDPR compliance'
+      description: ''
       authenticated: true
       deprecated: false
     headers:
@@ -37,9 +117,10 @@ endpoints:
           {
             "success": true,
             "data": {
-              "user_accounts": 90,
-              "audit_logs": 365,
-              "backups": 730
+              "user": {...},
+              "profile": {...},
+              "audit_logs": [...],
+              "exported_at": "2025-01-01T00:00:00Z"
             }
           }
         headers: []
@@ -56,17 +137,77 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: api/retention-settings/update-days
+    uri: api/users/self/profile-picture
     metadata:
       custom: []
-      groupName: 'Data Retention Management'
+      groupName: 'User Management'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Update Retention Period (Quick Action)'
+      title: 'Upload Profile Picture'
       description: |-
-        A streamlined endpoint to quickly update the retention duration (days) for a specific data type.
-        This is an alternative to the full update endpoint when only the day count needs changing.
+        Uploads and updates the user's profile picture.
+        Replaces any existing picture.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: multipart/form-data
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      image:
+        custom: []
+        name: image
+        description: 'The image file (jpeg, png, jpg, gif, svg). Max 5MB.'
+        required: true
+        example: null
+        type: file
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters: []
+    fileParameters:
+      image: null
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "Profile picture updated successfully",
+            "data": {
+              "profile_picture_url": "http://localhost:8000/storage/profile-pictures/avatar.jpg"
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/admin/users/bulk/assign-role
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Bulk assign role to multiple users'
+      description: ''
       authenticated: true
       deprecated: false
     headers:
@@ -78,31 +219,37 @@ endpoints:
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      data_type:
+      user_ids:
         custom: []
-        name: data_type
-        description: "The data type (e.g., 'orphaned_media')."
+        name: user_ids
+        description: 'Array of user IDs.'
         required: true
-        example: orphaned_media
+        example:
+          - 1
+          - 2
+          - 3
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      role:
+        custom: []
+        name: role
+        description: 'Role to assign.'
+        required: true
+        example: admin
         type: string
         enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
-      retention_days:
-        custom: []
-        name: retention_days
-        description: 'Retention period in days.'
-        required: true
-        example: 90
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
     cleanBodyParameters:
-      data_type: orphaned_media
-      retention_days: 90
+      user_ids:
+        - 1
+        - 2
+        - 3
+      role: admin
     fileParameters: []
     responses:
       -
@@ -111,10 +258,333 @@ endpoints:
         content: |-
           {
             "success": true,
-            "message": "Retention days updated successfully",
+            "message": "Role assigned to 3 users successfully",
             "data": {
-              "data_type": "orphaned_media",
-              "retention_days": 90
+              "successful": 3,
+              "failed": 0,
+              "errors": []
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/admin/users/bulk/remove-role
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Bulk remove role from multiple users'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      user_ids:
+        custom: []
+        name: user_ids
+        description: 'Array of user IDs.'
+        required: true
+        example:
+          - 1
+          - 2
+          - 3
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      role:
+        custom: []
+        name: role
+        description: 'Role to remove.'
+        required: true
+        example: admin
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      user_ids:
+        - 1
+        - 2
+        - 3
+      role: admin
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "Role removed from 3 users successfully",
+            "data": {
+              "successful": 3,
+              "failed": 0,
+              "errors": []
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/admin/users/bulk/delete
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Bulk delete users'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      user_ids:
+        custom: []
+        name: user_ids
+        description: 'Array of user IDs.'
+        required: true
+        example:
+          - 1
+          - 2
+          - 3
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      user_ids:
+        - 1
+        - 2
+        - 3
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "3 users deleted successfully",
+            "data": {
+              "successful": 3,
+              "failed": 0,
+              "errors": []
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/admin/users/bulk/restore
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Bulk restore users'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      user_ids:
+        custom: []
+        name: user_ids
+        description: 'Array of user IDs.'
+        required: true
+        example:
+          - 1
+          - 2
+          - 3
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      user_ids:
+        - 1
+        - 2
+        - 3
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "3 users restored successfully",
+            "data": {
+              "successful": 3,
+              "failed": 0,
+              "errors": []
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/admin/users/bulk/update
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Bulk update users'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      user_ids:
+        custom: []
+        name: user_ids
+        description: 'Array of user IDs.'
+        required: true
+        example:
+          - 1
+          - 2
+          - 3
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      data:
+        custom: []
+        name: data
+        description: 'Update data.'
+        required: true
+        example:
+          email_verified_at: '2025-01-01T00:00:00Z'
+        type: object
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      data.username:
+        custom: []
+        name: data.username
+        description: 'Must not be greater than 255 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      data.email:
+        custom: []
+        name: data.email
+        description: 'Must be a valid email address.'
+        required: false
+        example: zbailey@example.net
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      user_ids:
+        - 1
+        - 2
+        - 3
+      data:
+        email_verified_at: '2025-01-01T00:00:00Z'
+        username: b
+        email: zbailey@example.net
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "3 users updated successfully",
+            "data": {
+              "successful": 3,
+              "failed": 0,
+              "errors": []
             }
           }
         headers: []
@@ -131,17 +601,22 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: api/retention-settings
+    uri: api/admin/users
     metadata:
       custom: []
-      groupName: 'Data Retention Management'
+      groupName: 'User Management'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'List Retention Policies'
+      title: 'List All Users (Admin Portal)'
       description: |-
-        Retrieves a detailed list of all configured data retention policies.
-        These policies determine how long various types of data (e.g., logs, user history) are kept before being automatically purged.
+        Comprehensive user listing endpoint for administrative user management.
+        Provides paginated results with advanced filtering, search, and role-based access control.
+        Includes soft-deleted users for audit and restoration purposes. Essential for user administration,
+        role assignments, and monitoring user activity across the system.
+
+        Access Requirements: super_admin, admin users only (enforced via UserPolicy)
+        Use Cases: User administration portal, role management interface, user activity monitoring
       authenticated: true
       deprecated: false
     headers:
@@ -151,19 +626,55 @@ endpoints:
     urlParameters: []
     cleanUrlParameters: []
     queryParameters:
-      data_type:
+      include_deleted:
         custom: []
-        name: data_type
-        description: 'Filter by data type.'
+        name: include_deleted
+        description: 'optional Include soft-deleted users in results. Useful for viewing deactivated accounts.'
         required: false
-        example: 0
-        type: integer
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      search:
+        custom: []
+        name: search
+        description: 'optional Search across username, email, and name fields (first_name, last_name from profile). Case-insensitive partial matching.'
+        required: false
+        example: john
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      role:
+        custom: []
+        name: role
+        description: 'optional Filter users by specific role name. Must match existing role names from roles table.'
+        required: false
+        example: member
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      status:
+        custom: []
+        name: status
+        description: 'optional Filter by account status. Options: "active" (non-deleted users), "deleted" (soft-deleted users only).'
+        required: false
+        example: active
+        type: string
         enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanQueryParameters:
-      data_type: 0
+      include_deleted: true
+      search: john
+      role: member
+      status: active
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
@@ -174,19 +685,37 @@ endpoints:
         content: |-
           {
             "success": true,
-            "data": [
-              {
-                "id": 1,
-                "data_type": "user_accounts",
-                "retention_days": 90,
-                "auto_delete": true,
-                "description": "User account data retention",
-                "updated_by": 1,
-                "created_at": "2025-01-01T00:00:00Z",
-                "updated_at": "2025-01-01T00:00:00Z"
-              }
-            ]
+            "data": {
+              "current_page": 1,
+              "data": [
+                {
+                  "id": 2,
+                  "username": "jane_doe",
+                  "email": "jane.doe@example.com",
+                  "email_verified_at": "2025-01-15T00:00:00Z",
+                  "roles": [
+                    {"id": 2, "name": "member", "description": "Regular member user"}
+                  ],
+                  "profile": {
+                    "id": 2,
+                    "first_name": "Jane",
+                    "last_name": "Doe",
+                    "county": {"id": 1, "name": "Nairobi"}
+                  },
+                  "deleted_at": null,
+                  "created_at": "2025-01-15T00:00:00Z"
+                }
+              ],
+              "per_page": 20,
+              "total": 12
+            }
           }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "This action is unauthorized."}'
         headers: []
         description: ''
     responseFields: []
@@ -201,17 +730,18 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: 'api/retention-settings/{retention_id}'
+    uri: 'api/admin/users/{id}'
     metadata:
       custom: []
-      groupName: 'Data Retention Management'
+      groupName: 'User Management'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Get Retention Policy Details'
+      title: 'Get user details'
       description: |-
-        Retrieves the specific configuration for a single data retention policy.
-        Includes information on retention duration, auto-delete status, and the administrator who last modified it.
+        Retrieves full profile information, role assignments, and status for a specific user.
+        This endpoint is restricted to administrators for viewing other users' data.
+        Includes soft-deleted users if they exist.
       authenticated: true
       deprecated: false
     headers:
@@ -219,31 +749,19 @@ endpoints:
       Content-Type: application/json
       Accept: application/json
     urlParameters:
-      retention_id:
+      id:
         custom: []
-        name: retention_id
-        description: 'The ID of the retention.'
+        name: id
+        description: 'The unique ID of the user.'
         required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      retention:
-        custom: []
-        name: retention
-        description: 'The retention setting ID'
-        required: true
-        example: architecto
+        example: '1'
         type: string
         enumValues: []
-        exampleWasSpecified: false
+        exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      retention_id: 1
-      retention: architecto
+      id: '1'
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
@@ -257,14 +775,31 @@ endpoints:
           {
             "success": true,
             "data": {
-              "id": 1,
-              "data_type": "user_accounts",
-              "retention_days": 90,
-              "auto_delete": true,
-              "description": "User account data retention",
-              "updated_by": 1,
-              "updated_by_user": {"username": "admin"}
+              "id": 2,
+              "username": "jane_doe",
+              "email": "jane.doe@example.com",
+              "email_verified_at": "2025-01-15T00:00:00Z",
+              "roles": [
+                {"id": 2, "name": "member", "guard_name": "web"}
+              ],
+              "profile": {
+                "first_name": "Jane",
+                "last_name": "Doe",
+                "county": {"id": 1, "name": "Nairobi"}
+              },
+              "last_login_at": "2025-12-25T10:00:00Z",
+              "deleted_at": null
             }
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+            "success": false,
+            "message": "User not found"
           }
         headers: []
         description: ''
@@ -280,18 +815,18 @@ endpoints:
     custom: []
     httpMethods:
       - PUT
-    uri: 'api/retention-settings/{retention_id}'
+    uri: 'api/admin/users/{id}'
     metadata:
       custom: []
-      groupName: 'Data Retention Management'
+      groupName: 'User Management'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Update Retention Policy'
+      title: 'Update user details'
       description: |-
-        Modifies the parameters of an existing data retention policy.
-        Allows administrators to change the retention period (in days), toggle automatic deletion, or update the policy description.
-        All changes are audit-logged.
+        Modifies core user account information such as username and email.
+        RESTRICTED: Admin or Super Admin access required.
+        Changes are audit logged.
       authenticated: true
       deprecated: false
     headers:
@@ -299,71 +834,47 @@ endpoints:
       Content-Type: application/json
       Accept: application/json
     urlParameters:
-      retention_id:
+      id:
         custom: []
-        name: retention_id
-        description: 'The ID of the retention.'
+        name: id
+        description: 'The user ID to update.'
         required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      retention:
-        custom: []
-        name: retention
-        description: 'The retention setting ID'
-        required: true
-        example: architecto
+        example: '1'
         type: string
         enumValues: []
-        exampleWasSpecified: false
+        exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      retention_id: 1
-      retention: architecto
+      id: '1'
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      retention_days:
+      username:
         custom: []
-        name: retention_days
-        description: 'Retention period in days.'
-        required: true
-        example: 90
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      auto_delete:
-        custom: []
-        name: auto_delete
-        description: 'Enable/disable auto deletion.'
+        name: username
+        description: 'optional New username (must be unique).'
         required: false
-        example: true
-        type: boolean
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      description:
-        custom: []
-        name: description
-        description: 'Description of the setting.'
-        required: false
-        example: 'User account data retention'
+        example: newusername
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: 'optional New email address (must be unique).'
+        required: false
+        example: newemail@example.com
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
         deprecated: false
     cleanBodyParameters:
-      retention_days: 90
-      auto_delete: true
-      description: 'User account data retention'
+      username: newusername
+      email: newemail@example.com
     fileParameters: []
     responses:
       -
@@ -372,12 +883,155 @@ endpoints:
         content: |-
           {
             "success": true,
-            "message": "Retention setting updated successfully",
+            "message": "User updated successfully",
             "data": {
               "id": 1,
-              "data_type": "user_accounts",
-              "retention_days": 90,
-              "auto_delete": true
+              "username": "newusername",
+              "email": "newemail@example.com"
+            }
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "The username has already been taken."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/admin/users/{id}'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Deactivate user (Soft Delete)'
+      description: |-
+        Temporarily deactivates a user account by setting a 'deleted_at' timestamp.
+        The user will no longer be able to log in, but their data is preserved until retention period expires.
+        Admin action or user self-deletion (via separate endpoint) triggers this state.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID to deactivate.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "User account has been deactivated"
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: |-
+          {
+            "success": false,
+            "message": "Unauthorized"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/admin/users/{id}/restore'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Restore deactivated user'
+      description: |-
+        Reactivates a previously soft-deleted user account.
+        The user will regain access to their account and previous roles.
+        RESTRICTED: Super Admin or Admin only.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID to restore.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "User account has been restored",
+            "data": {
+              "id": 1,
+              "username": "johndoe",
+              "deleted_at": null
             }
           }
         headers: []
@@ -393,26 +1047,93 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - GET
-    uri: api/schedulers
+      - DELETE
+    uri: 'api/admin/users/{id}/force'
     metadata:
       custom: []
-      groupName: 'Data Retention Management'
+      groupName: 'User Management'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'List Cleanup Schedules'
-      description: |-
-        Retrieves a list of all defined system maintenance schedules.
-        Shows which commands are enabled, their frequency (e.g., daily), and the specific time they are set to execute.
+      title: 'Force delete a user (permanent deletion)'
+      description: ''
       authenticated: true
       deprecated: false
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID to permanently delete'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "User account permanently deleted"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/admin/users/{id}/audit'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get audit log for a specific user'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
@@ -427,10 +1148,13 @@ endpoints:
             "success": true,
             "data": [
               {
-                "command_name": "media:cleanup",
-                "run_time": "03:00",
-                "frequency": "daily",
-                "enabled": true
+                "id": 1,
+                "action": "update",
+                "model_type": "User",
+                "old_values": {"username": "oldname"},
+                "new_values": {"username": "newname"},
+                "user_id": 2,
+                "created_at": "2025-01-01T00:00:00Z"
               }
             ]
           }
@@ -448,77 +1172,54 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: api/schedulers/update
+    uri: 'api/admin/users/{id}/assign-role'
     metadata:
       custom: []
-      groupName: 'Data Retention Management'
+      groupName: 'User Management'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Configure Cleanup Schedule'
+      title: 'Assign role to user'
       description: |-
-        Configures the timing and frequency of automated cleanup commands.
-        Allows administrators to determine exactly when system maintenance tasks (like purging old data) run to minimize impact on active users.
+        Grants a specific system role to a user.
+        Roles determine permissions within the application.
+        RESTRICTED: Super Admin access required.
       authenticated: true
       deprecated: false
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      command_name:
+      role:
         custom: []
-        name: command_name
-        description: "The command name (e.g., 'media:cleanup')."
+        name: role
+        description: 'The role name to assign. Must be a valid existing role.'
         required: true
-        example: 'media:cleanup'
+        example: admin
         type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      run_time:
-        custom: []
-        name: run_time
-        description: 'Run time in HH:MM format.'
-        required: true
-        example: '03:00'
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      frequency:
-        custom: []
-        name: frequency
-        description: 'Frequency: daily, weekly, monthly, hourly.'
-        required: false
-        example: daily
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      enabled:
-        custom: []
-        name: enabled
-        description: 'Enable/disable the scheduler.'
-        required: false
-        example: true
-        type: boolean
         enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanBodyParameters:
-      command_name: 'media:cleanup'
-      run_time: '03:00'
-      frequency: daily
-      enabled: true
+      role: admin
     fileParameters: []
     responses:
       -
@@ -527,12 +1228,167 @@ endpoints:
         content: |-
           {
             "success": true,
-            "message": "Scheduler updated successfully",
+            "message": "Role assigned successfully",
             "data": {
-              "command_name": "media:cleanup",
-              "run_time": "03:00",
-              "frequency": "daily",
-              "enabled": true
+              "id": 1,
+              "username": "johndoe",
+              "roles": ["member", "admin"]
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/admin/users/{id}/remove-role'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Remove role from user'
+      description: |-
+        Revokes a specific system role from a user.
+        If the user only has one role, removing it may restrict their access significantly.
+        RESTRICTED: Super Admin access required.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      role:
+        custom: []
+        name: role
+        description: 'The role name to remove.'
+        required: true
+        example: admin
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      role: admin
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "Role removed successfully",
+            "data": {
+              "id": 1,
+              "roles": ["member"]
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/admin/users/{id}/sync-roles'
+    metadata:
+      custom: []
+      groupName: 'User Management'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Sync user roles'
+      description: |-
+        Replaces ALL current roles for a user with the provided list.
+        Any roles not in the provided array will be revoked.
+        RESTRICTED: Super Admin access required.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The user ID.'
+        required: true
+        example: '1'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: '1'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      roles:
+        custom: []
+        name: roles
+        description: 'List of role names to assign.'
+        required: true
+        example:
+          - member
+          - admin
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      roles:
+        - member
+        - admin
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "message": "User roles updated successfully",
+            "data": {
+              "id": 1,
+              "roles": ["member", "admin"]
             }
           }
         headers: []

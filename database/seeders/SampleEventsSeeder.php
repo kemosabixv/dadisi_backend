@@ -263,6 +263,22 @@ class SampleEventsSeeder extends Seeder
                 ]
             );
 
+            // Assign Seed Images (Local/Testing only)
+            if (app()->environment('local', 'testing')) {
+                $eventImages = [
+                    'Community Science Day 2025' => 'seed-images/stem-education.png',
+                    'Biotech Workshop: PCR Fundamentals' => 'seed-images/biotech-lab.png',
+                    'Online Python for Data Science' => 'seed-images/tech-hub.png',
+                    'Environmental Awareness Walk' => 'seed-images/nature-conservation.png',
+                    'Advanced Data Science with R' => 'seed-images/genomics-viz.png',
+                    'Youth Tech Camp: Intro to Robotics' => 'seed-images/robotics-camp.png',
+                    'Coastal Health Outreach' => 'seed-images/medical-outreach.png',
+                    'Innovation Summit 2025' => 'seed-images/tech-hub.png',
+                ];
+                
+                $event->update(['image_path' => $eventImages[$eventData['title']] ?? null]);
+            }
+
             // Attach tags
             if (!empty($eventData['tags'])) {
                 $tagIds = [];

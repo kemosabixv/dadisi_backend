@@ -79,7 +79,7 @@ class RenewalController extends Controller
      *       {"type": "mobile_money", "display": "M-Pesa (Mobile Money)"},
      *       {"type": "card", "display": "Card (Mock)"}
      *     ],
-     *     "amount": 99.99,
+     *     "amount": 2500,
      *     "currency": "KES"
      *   }
      * }
