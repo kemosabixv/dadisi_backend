@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Auth\TwoFactorController;
 use App\Http\Controllers\Api\Auth\PasskeyController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Admin\ReconciliationController;
+use App\Http\Controllers\Api\PublicDonationController;
 
 Route::prefix('auth')->group(function () {
 	Route::post('signup', [AuthController::class, 'signup'])->middleware('throttle:5,1')->name('auth.signup');
@@ -86,6 +87,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('member-profiles/{id}', [MemberProfileController::class, 'update']);
     Route::delete('member-profiles/{id}', [MemberProfileController::class, 'destroy']);
     Route::post('member-profiles/profile-picture', [MemberProfileController::class, 'uploadProfilePicture']);
+});
+
+// Notifications routes (authenticated)
+use App\Http\Controllers\Api\NotificationController;
+
+Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
+    Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::post('/clear-all', [NotificationController::class, 'clearAll'])->name('notifications.clear-all');
+    Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
 // User Management routes (authenticated)
@@ -236,7 +249,6 @@ Route::prefix('admin/donation-campaigns')->middleware(['auth:sanctum', 'admin'])
 });
 
 // Donations - Public and User routes
-use App\Http\Controllers\Api\PublicDonationController;
 
 Route::prefix('donations')->group(function () {
     // Public: Get donation by reference (for checkout page)
@@ -246,6 +258,7 @@ Route::prefix('donations')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [PublicDonationController::class, 'index'])->name('donations.index');
         Route::post('/', [PublicDonationController::class, 'store'])->name('donations.store');
+        Route::delete('/{donation}', [PublicDonationController::class, 'destroy'])->name('donations.destroy');
     });
 });
 
@@ -389,6 +402,7 @@ Route::prefix('subscriptions')->middleware('auth:sanctum')->group(function () {
 
     // Subscription management
     Route::post('initiate-payment', [SubscriptionCoreController::class, 'initiatePayment'])->name('subscriptions.initiate-payment');
+    Route::post('cancel-payment', [SubscriptionCoreController::class, 'cancelSubscriptionPayment'])->name('subscriptions.cancel-payment');
     Route::post('process-mock-payment', [SubscriptionCoreController::class, 'processMockPayment'])->name('subscriptions.process-mock-payment');
     Route::post('cancel', [SubscriptionCoreController::class, 'cancelSubscription'])->name('subscriptions.cancel');
 
@@ -405,7 +419,6 @@ Route::prefix('subscriptions')->middleware('auth:sanctum')->group(function () {
     Route::delete('payment-methods/{id}', [UserPaymentMethodController::class, 'destroy'])->name('payments.methods.destroy');
     Route::post('payment-methods/{id}/primary', [UserPaymentMethodController::class, 'setPrimary'])->name('payments.methods.setPrimary');
 });
-
 // Student approval routes
 Route::prefix('student-approvals')->middleware('auth:sanctum')->group(function () {
     // User operations
@@ -707,4 +720,37 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::delete('groups/{group}', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'destroy'])->name('admin.groups.destroy');
     Route::get('groups/{group}/members', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'members'])->name('admin.groups.members');
     Route::delete('groups/{group}/members/{id}', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'removeMember'])->name('admin.groups.members.remove');
+
+    // System Features Management
+    Route::get('system-features', [\App\Http\Controllers\Api\Admin\SystemFeatureController::class, 'index'])->name('admin.system-features.index');
+    Route::get('system-features/{feature}', [\App\Http\Controllers\Api\Admin\SystemFeatureController::class, 'show'])->name('admin.system-features.show');
+    Route::put('system-features/{feature}', [\App\Http\Controllers\Api\Admin\SystemFeatureController::class, 'update'])->name('admin.system-features.update');
+    Route::post('system-features/{feature}/toggle', [\App\Http\Controllers\Api\Admin\SystemFeatureController::class, 'toggle'])->name('admin.system-features.toggle');
+
+    // Refund Management
+    Route::prefix('refunds')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\Admin\RefundController::class, 'index'])->name('admin.refunds.index');
+        Route::get('/stats', [\App\Http\Controllers\Api\Admin\RefundController::class, 'stats'])->name('admin.refunds.stats');
+        Route::get('/{refund}', [\App\Http\Controllers\Api\Admin\RefundController::class, 'show'])->name('admin.refunds.show');
+        Route::post('/{refund}/approve', [\App\Http\Controllers\Api\Admin\RefundController::class, 'approve'])->name('admin.refunds.approve');
+        Route::post('/{refund}/reject', [\App\Http\Controllers\Api\Admin\RefundController::class, 'reject'])->name('admin.refunds.reject');
+        Route::post('/{refund}/process', [\App\Http\Controllers\Api\Admin\RefundController::class, 'process'])->name('admin.refunds.process');
+    });
 });
+
+// Event Ticket Orders
+use App\Http\Controllers\Api\EventOrderController;
+
+// Public ticket routes (no auth required for guest checkout)
+Route::post('events/{event}/purchase', [EventOrderController::class, 'purchase'])->name('event-orders.purchase');
+Route::get('event-orders/status/{reference}', [EventOrderController::class, 'checkPaymentStatus'])->name('event-orders.status');
+
+// Authenticated ticket routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('my-tickets', [EventOrderController::class, 'myTickets'])->name('event-orders.my-tickets');
+    Route::get('event-orders/{order}', [EventOrderController::class, 'show'])->name('event-orders.show');
+    
+    // Organizer check-in (requires event update permission)
+    Route::post('events/{event}/scan-ticket', [EventOrderController::class, 'scanTicket'])->name('event-orders.scan');
+});
+

@@ -15,14 +15,14 @@ class EventManagementSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Seed Categories
+        // 1. Seed Categories with colors for calendar display
         $categories = [
-            ['name' => 'Biotech & Health', 'icon' => 'microscope'],
-            ['name' => 'Community Science', 'icon' => 'users'],
-            ['name' => 'Education & Tutorials', 'icon' => 'graduation-cap'],
-            ['name' => 'Environmental Science', 'icon' => 'leaf'],
-            ['name' => 'Technology & Coding', 'icon' => 'code'],
-            ['name' => 'Workshops & Hands-on', 'icon' => 'wrench'],
+            ['name' => 'Biotech & Health', 'icon' => 'microscope', 'color' => '#0284C7'],      // sky-600
+            ['name' => 'Community Science', 'icon' => 'users', 'color' => '#4F46E5'],         // indigo-600
+            ['name' => 'Education & Tutorials', 'icon' => 'graduation-cap', 'color' => '#059669'], // emerald-600
+            ['name' => 'Environmental Science', 'icon' => 'leaf', 'color' => '#0D9488'],       // teal-600
+            ['name' => 'Technology & Coding', 'icon' => 'code', 'color' => '#7C3AED'],         // violet-600
+            ['name' => 'Workshops & Hands-on', 'icon' => 'wrench', 'color' => '#D97706'],      // amber-600
         ];
 
         foreach ($categories as $cat) {
@@ -31,6 +31,7 @@ class EventManagementSeeder extends Seeder
                 [
                     'name' => $cat['name'],
                     'description' => $cat['name'] . ' events and sessions.',
+                    'color' => $cat['color'],
                     'is_active' => true,
                     'sort_order' => 0
                 ]

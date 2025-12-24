@@ -5,12 +5,62 @@ namespace App\Services;
 use App\Models\LabBooking;
 use App\Models\LabSpace;
 use App\Models\LabMaintenanceBlock;
+use App\Models\Plan;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class LabBookingService
 {
+    /**
+     * Get the user's current plan.
+     * Checks both direct plan relationship and active subscription.
+     */
+    protected function getUserPlan(User $user): ?Plan
+    {
+        // First check direct plan relationship
+        if ($user->plan) {
+            return $user->plan;
+        }
+
+        // Fall back to active subscription's plan
+        $subscription = $user->subscriptions()
+            ->where('status', 'active')
+            ->whereNull('canceled_at')
+            ->where(function ($query) {
+                $query->whereNull('ends_at')
+                    ->orWhere('ends_at', '>', now());
+            })
+            ->with('plan')
+            ->first();
+
+        return $subscription?->plan;
+    }
+
+    /**
+     * Get the lab hours limit for a user's plan.
+     * 
+     * @return float|null null for unlimited, 0 for no access, >0 for limit
+     */
+    protected function getLabHoursLimit(User $user): ?float
+    {
+        $plan = $this->getUserPlan($user);
+        
+        if (!$plan) {
+            return 0; // No plan means no access
+        }
+
+        // Use SystemFeature-based approach
+        $value = $plan->getFeatureValue('lab_hours_monthly', 0);
+        
+        // -1 represents unlimited
+        if ($value === -1 || $value === '-1') {
+            return null; // null = unlimited
+        }
+        
+        return (float) $value;
+    }
+
     /**
      * Check if user can book lab space based on subscription quota.
      *
@@ -20,13 +70,9 @@ class LabBookingService
      */
     public function canBook(User $user, float $requestedHours): array
     {
-        // Get active subscription
-        $subscription = $user->planSubscriptions()
-            ->where('status', 'active')
-            ->with('plan.features')
-            ->first();
+        $plan = $this->getUserPlan($user);
 
-        if (!$subscription) {
+        if (!$plan) {
             return [
                 'allowed' => false,
                 'reason' => 'no_subscription',
@@ -34,25 +80,19 @@ class LabBookingService
             ];
         }
 
-        // Get lab-hours-monthly feature
-        $labHoursFeature = $subscription->plan->features
-            ->first(function ($feature) use ($subscription) {
-                return str_starts_with($feature->slug, 'lab-hours-monthly');
-            });
+        $monthlyLimit = $this->getLabHoursLimit($user);
 
-        $monthlyLimit = $labHoursFeature ? (float) $labHoursFeature->pivot->value : 0;
-
-        // 0 limit on Community plan means no access
-        if ($monthlyLimit === 0.0 && $subscription->plan->slug === 'community') {
+        // Check if plan explicitly denies lab access (0 hours)
+        if ($monthlyLimit === 0.0) {
             return [
                 'allowed' => false,
                 'reason' => 'plan_not_eligible',
-                'message' => 'Lab space booking is not available on the Community plan. Please upgrade.',
+                'message' => 'Lab space booking is not available on your current plan. Please upgrade.',
             ];
         }
 
-        // 0 on paid plans means unlimited
-        if ($monthlyLimit === 0.0) {
+        // Unlimited access
+        if ($monthlyLimit === null) {
             return [
                 'allowed' => true,
                 'remaining_hours' => null,
@@ -89,36 +129,29 @@ class LabBookingService
      */
     public function getQuotaStatus(User $user): array
     {
-        $subscription = $user->planSubscriptions()
-            ->where('status', 'active')
-            ->with('plan.features')
-            ->first();
+        $plan = $this->getUserPlan($user);
 
-        if (!$subscription) {
+        if (!$plan) {
             return ['has_access' => false, 'reason' => 'no_subscription'];
         }
 
-        $labHoursFeature = $subscription->plan->features
-            ->first(function ($feature) {
-                return str_starts_with($feature->slug, 'lab-hours-monthly');
-            });
+        $limit = $this->getLabHoursLimit($user);
 
-        $limit = $labHoursFeature ? (float) $labHoursFeature->pivot->value : 0;
-
-        // Community plan with 0 = no access
-        if ($limit === 0.0 && $subscription->plan->slug === 'community') {
+        // 0 hours = no access
+        if ($limit === 0.0) {
             return ['has_access' => false, 'reason' => 'plan_not_eligible'];
         }
 
         $usedHours = $this->getUsedHoursThisMonth($user);
+        $isUnlimited = $limit === null;
 
         return [
             'has_access' => true,
-            'plan_name' => $subscription->plan->name,
-            'limit' => $limit === 0.0 ? null : $limit,
-            'unlimited' => $limit === 0.0,
+            'plan_name' => $plan->name,
+            'limit' => $isUnlimited ? null : $limit,
+            'unlimited' => $isUnlimited,
             'used' => (float) $usedHours,
-            'remaining' => $limit === 0.0 ? null : max(0, $limit - $usedHours),
+            'remaining' => $isUnlimited ? null : max(0, $limit - $usedHours),
             'resets_at' => now()->endOfMonth()->toISOString(),
         ];
     }
@@ -175,26 +208,21 @@ class LabBookingService
 
     /**
      * Determine if user's bookings should be auto-approved.
-     * Premium and Corporate plan members get auto-approval.
+     * Uses SystemFeature for lab_auto_approve.
      *
      * @param User $user
      * @return bool
      */
     public function shouldAutoApprove(User $user): bool
     {
-        $subscription = $user->planSubscriptions()
-            ->where('status', 'active')
-            ->with('plan')
-            ->first();
+        $plan = $this->getUserPlan($user);
 
-        if (!$subscription) {
+        if (!$plan) {
             return false;
         }
 
-        // Premium and Corporate/Enterprise plans get auto-approval
-        $autoApprovePlans = ['premium', 'corporate-enterprise', 'corporate', 'enterprise'];
-        
-        return in_array($subscription->plan->slug, $autoApprovePlans);
+        // Check the lab_auto_approve system feature
+        return (bool) $plan->getFeatureValue('lab_auto_approve', false);
     }
 
     /**

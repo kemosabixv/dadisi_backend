@@ -253,6 +253,7 @@ class SampleEventsSeeder extends Seeder
                     'price' => $eventData['price'],
                     'currency' => 'KES',
                     'status' => $eventData['status'],
+                    'event_type' => 'organization', // Staff-created events are organization events
                     'featured' => $eventData['featured'] ?? false,
                     'featured_until' => $eventData['featured_until'] ?? null,
                     'organizer_id' => $organizer->id,

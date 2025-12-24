@@ -8,6 +8,10 @@ use App\Http\Controllers\GoogleAuthController;
 // Mock payment routes for local development
 Route::get('/mock-payment/{paymentId}', [PaymentController::class, 'showMockPaymentPage'])->name('mock-payment.show');
 Route::post('/mock-payment/{paymentId}/complete', [PaymentController::class, 'completeMockPayment'])->name('mock-payment.complete');
+Route::post('/mock-payment/{paymentId}/cancel', [PaymentController::class, 'cancelMockPayment'])->name('mock-payment.cancel');
+
+// Donation Receipts
+Route::get('/donations/receipt/{reference}', [\App\Http\Controllers\Api\PublicDonationController::class, 'receipt'])->name('donations.receipt');
 
 // Fallback route for SPA
 Route::fallback(function () {

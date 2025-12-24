@@ -27,33 +27,97 @@ class PaymentController extends Controller
     /**
      * Show mock payment page for local development testing
      *
-     * @param string $paymentId The payment tracking ID (e.g., MOCK-1234567890-ABCDE)
-     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
+     * @param string $paymentId The payment tracking ID (e.g., MOCK-SUB-1234567890-ABCDE)
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function showMockPaymentPage(string $paymentId)
     {
-        // Find payment by external_reference (tracking ID) or by numeric ID
-        $payment = \App\Models\Payment::where('external_reference', $paymentId)
-            ->orWhere('id', $paymentId)
-            ->first();
-
-        if (!$payment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment not found',
-                'payment_id' => $paymentId,
-            ], 404);
-        }
-
-        // Get the associated subscription if it's a subscription payment
+        // Initialize context variables
+        $payment = null;
         $subscription = null;
         $plan = null;
+        $eventOrder = null;
+        $event = null;
+        $donation = null;
+        $cachedData = null;
+        $pendingPayment = null;
 
-        if ($payment->payable_type === 'Laravelcm\\Subscriptions\\Models\\Subscription' || 
-            $payment->payable_type === 'App\\Models\\PlanSubscription') {
-            $subscription = $payment->payable;
-            if ($subscription) {
-                $plan = $subscription->plan;
+        // First, check database for pending payment (more reliable)
+        $pendingPayment = \App\Models\PendingPayment::findByPaymentId($paymentId);
+        
+        // Check if payment is expired
+        if ($pendingPayment && $pendingPayment->isExpired()) {
+            $pendingPayment->markExpired();
+            $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
+            return redirect($frontendUrl . '/dashboard/subscription?payment=expired');
+        }
+        
+        // Check if already completed
+        if ($pendingPayment && $pendingPayment->status === 'completed') {
+            $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
+            return redirect($frontendUrl . '/dashboard/subscription?payment=already_completed');
+        }
+
+        // Fallback to cache for backward compatibility
+        $cacheKey = 'mock_payment_' . $paymentId;
+        $cachedData = cache()->get($cacheKey);
+
+        if ($cachedData) {
+            // This is a subscription payment from initiatePayment flow
+            Log::info('Mock payment page accessed via cache', ['payment_id' => $paymentId, 'cached_data' => $cachedData]);
+            
+            // Look up the subscription
+            if (isset($cachedData['order_id'])) {
+                $subscription = PlanSubscription::with('plan')->find($cachedData['order_id']);
+                if ($subscription) {
+                    $plan = $subscription->plan;
+                }
+            }
+
+            // Create a mock payment object for the view
+            $payment = (object) [
+                'id' => $paymentId,
+                'external_reference' => $paymentId,
+                'order_reference' => $subscription?->slug ?? ('SUB-' . $cachedData['order_id']),
+                'transaction_id' => $cachedData['transaction_id'] ?? null,
+                'amount' => $cachedData['amount'] ?? 0,
+                'currency' => $cachedData['currency'] ?? 'KES',
+                'status' => 'pending',
+                'payable_type' => 'App\\Models\\PlanSubscription',
+                'payable_id' => $cachedData['order_id'] ?? null,
+                'created_at' => $cachedData['created_at'] ?? now()->toIso8601String(),
+            ];
+        } else {
+            // Fall back to looking up Payment model
+            $payment = \App\Models\Payment::where('external_reference', $paymentId)
+                ->orWhere('order_reference', $paymentId)
+                ->orWhere('id', $paymentId)
+                ->first();
+
+            if (!$payment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment not found',
+                    'payment_id' => $paymentId,
+                ], 404);
+            }
+
+            // Get the associated payable based on type
+            if ($payment->payable_type === 'Laravelcm\\Subscriptions\\Models\\Subscription' || 
+                $payment->payable_type === 'App\\Models\\PlanSubscription') {
+                $subscription = $payment->payable;
+                if ($subscription) {
+                    $plan = $subscription->plan;
+                }
+            } elseif ($payment->payable_type === 'event_order' || 
+                      $payment->payable_type === 'App\\Models\\EventOrder') {
+                $eventOrder = \App\Models\EventOrder::with('event')->find($payment->payable_id);
+                if ($eventOrder) {
+                    $event = $eventOrder->event;
+                }
+            } elseif ($payment->payable_type === 'donation' ||
+                      $payment->payable_type === 'App\\Models\\Donation') {
+                $donation = \App\Models\Donation::find($payment->payable_id);
             }
         }
 
@@ -61,6 +125,10 @@ class PaymentController extends Controller
             'payment' => $payment,
             'subscription' => $subscription,
             'plan' => $plan,
+            'eventOrder' => $eventOrder,
+            'event' => $event,
+            'donation' => $donation,
+            'cachedData' => $cachedData,
         ]);
     }
 
@@ -68,11 +136,103 @@ class PaymentController extends Controller
      * Complete mock payment (simulate successful payment)
      *
      * @param string $paymentId The payment tracking ID
-     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    public function completeMockPayment(Request $request, string $paymentId): \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+    public function completeMockPayment(Request $request, string $paymentId): \Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
+        $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
+        
+        // First, check if this is a cached subscription payment (from initiatePayment flow)
+        $cacheKey = 'mock_payment_' . $paymentId;
+        $cachedData = cache()->get($cacheKey);
+
+        if ($cachedData) {
+            // This is a subscription payment - activate the subscription directly
+            try {
+                DB::beginTransaction();
+
+                $subscriptionId = $cachedData['order_id'] ?? null;
+                $subscription = PlanSubscription::find($subscriptionId);
+
+                if (!$subscription) {
+                    // Subscription not found but cache exists - likely already processed
+                    cache()->forget($cacheKey);
+                    return redirect($frontendUrl . '/dashboard/subscription?payment=already_processed');
+                }
+
+                // DUPLICATE PREVENTION: Check if subscription is already active
+                $enhancement = SubscriptionEnhancement::where('subscription_id', $subscription->id)->first();
+                $isAlreadyActive = $enhancement && $enhancement->status === 'active';
+                
+                if ($isAlreadyActive) {
+                    // Already activated (duplicate request) - just clear cache and redirect
+                    cache()->forget($cacheKey);
+                    Log::info('Duplicate payment attempt blocked', [
+                        'payment_id' => $paymentId,
+                        'subscription_id' => $subscription->id,
+                    ]);
+                    return redirect($frontendUrl . '/dashboard/subscription?payment=success');
+                }
+
+                // Update subscription to active
+                if ($enhancement) {
+                    $enhancement->update([
+                        'status' => 'active',
+                        'payment_method' => $request->input('payment_method', 'mpesa')
+                    ]);
+                }
+
+                // Update user subscription status
+                $user = \App\Models\User::find($cachedData['user_id']);
+                if ($user) {
+                    $user->update([
+                        'subscription_status' => 'active',
+                        'active_subscription_id' => $subscription->id,
+                    ]);
+
+                    // Update member profile plan_id
+                    if ($user->memberProfile) {
+                        $user->memberProfile->update(['plan_id' => $subscription->plan_id]);
+                    }
+                }
+
+                // Mark pending payment as completed in database
+                $pendingPayment = \App\Models\PendingPayment::findByPaymentId($paymentId);
+                if ($pendingPayment) {
+                    $pendingPayment->markCompleted();
+                }
+
+                // Clear cache
+                cache()->forget($cacheKey);
+
+                DB::commit();
+
+                Log::info('Mock subscription payment completed', [
+                    'payment_id' => $paymentId,
+                    'subscription_id' => $subscription->id,
+                    'user_id' => $cachedData['user_id'],
+                ]);
+
+                // Redirect to subscription page
+                return redirect($frontendUrl . '/dashboard/subscription?payment=success');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Mock subscription payment completion failed', [
+                    'payment_id' => $paymentId,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment completion failed: ' . $e->getMessage(),
+                ], 500);
+            }
+        }
+
+        // Fall back to Payment model lookup (for events, donations, etc.)
         $payment = \App\Models\Payment::where('external_reference', $paymentId)
+            ->orWhere('order_reference', $paymentId)
             ->orWhere('id', $paymentId)
             ->first();
 
@@ -86,41 +246,61 @@ class PaymentController extends Controller
         try {
             DB::beginTransaction();
 
-            // Update payment status
+            // Get payment method from form (defaults to mpesa)
+            $paymentMethod = $request->input('payment_method', 'mpesa');
+
+            // Update payment status with payment method
+            $meta = $payment->meta ?? [];
+            $meta['payment_method'] = $paymentMethod;
+            
             $payment->update([
                 'status' => 'paid',
                 'paid_at' => now(),
+                'meta' => $meta,
             ]);
 
             // Only process payable if it's a real payment (not a test payment)
-            // Check payable_type before accessing the relationship to avoid loading non-existent classes
             $isTestPayment = $payment->payable_type === null || 
+                             $payment->payable_type === 'TestPayment' ||
                              str_contains($payment->payable_type ?? '', 'Test') ||
                              ($payment->meta['test_payment'] ?? false);
 
             if (!$isTestPayment && $payment->payable_type && $payment->payable_id) {
                 try {
-                    $payable = $payment->payable;
-                    
-                    if ($payable) {
-                        // Update subscription status if it's a subscription payment
-                        if (method_exists($payable, 'activate')) {
-                            $payable->activate();
-                        } else {
-                            $payable->update(['status' => 'active']);
-                        }
+                    // Handle different payable types
+                    if ($payment->payable_type === 'event_order' || 
+                        $payment->payable_type === 'App\\Models\\EventOrder') {
+                        
+                        // Handle event order payment
+                        $this->handleEventOrderPayment($payment);
+                        
+                    } elseif ($payment->payable_type === 'donation' ||
+                              $payment->payable_type === 'App\\Models\\Donation') {
+                        
+                        // Handle donation payment
+                        $this->handleDonationPayment($payment);
+                        
+                    } else {
+                        // Handle subscription/other payments (legacy behavior)
+                        $payable = $payment->payable;
+                        
+                        if ($payable) {
+                            if (method_exists($payable, 'activate')) {
+                                $payable->activate();
+                            } else {
+                                $payable->update(['status' => 'active']);
+                            }
 
-                        // Update user subscription status
-                        if (method_exists($payable, 'user') && $payable->user) {
-                            $payable->user->update([
-                                'subscription_status' => 'active',
-                                'subscription_activated_at' => now(),
-                                'last_payment_date' => now(),
-                            ]);
+                            if (method_exists($payable, 'user') && $payable->user) {
+                                $payable->user->update([
+                                    'subscription_status' => 'active',
+                                    'subscription_activated_at' => now(),
+                                    'last_payment_date' => now(),
+                                ]);
+                            }
                         }
                     }
                 } catch (\Exception $e) {
-                    // Log but don't fail if payable can't be loaded (test payments)
                     Log::warning('Could not load payable for payment', [
                         'payment_id' => $payment->id,
                         'payable_type' => $payment->payable_type,
@@ -134,9 +314,30 @@ class PaymentController extends Controller
             Log::info('Mock payment completed successfully', [
                 'payment_id' => $payment->id,
                 'external_reference' => $payment->external_reference,
+                'payable_type' => $payment->payable_type,
             ]);
 
-            // Return success page or redirect
+            // Determine redirect URL based on payable type
+            if ($payment->payable_type === 'event_order' || 
+                $payment->payable_type === 'App\\Models\\EventOrder') {
+                
+                $order = \App\Models\EventOrder::find($payment->payable_id);
+                $redirectUrl = $frontendUrl . '/checkout/events/success?reference=' . ($order?->reference ?? $payment->order_reference);
+                
+                return redirect($redirectUrl);
+            }
+
+            // Redirect donations to user's donation dashboard
+            if ($payment->payable_type === 'donation' || 
+                $payment->payable_type === 'App\\Models\\Donation') {
+                
+                $donation = \App\Models\Donation::find($payment->payable_id);
+                $redirectUrl = $frontendUrl . '/dashboard/donations?payment=success&reference=' . ($donation?->reference ?? $payment->order_reference);
+                
+                return redirect($redirectUrl);
+            }
+
+            // Return success page for other payment types
             return response()->view('mock-payment-success', [
                 'payment' => $payment,
                 'message' => 'Payment completed successfully!',
@@ -155,6 +356,151 @@ class PaymentController extends Controller
                 'message' => 'Payment completion failed: ' . $e->getMessage(),
             ], 500);
         }
+    }
+    /**
+     * Cancel mock payment (simulate user clicking cancel at gateway)
+     *
+     * @param Request $request
+     * @param string $paymentId
+     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function cancelMockPayment(Request $request, string $paymentId): \Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
+        Log::info('Mock payment cancellation requested', ['payment_id' => $paymentId]);
+        
+        // First, check if this is a cached subscription payment (from initiatePayment flow)
+        $cacheKey = 'mock_payment_' . $paymentId;
+        $cachedData = cache()->get($cacheKey);
+
+        if ($cachedData) {
+            try {
+                DB::beginTransaction();
+                
+                // Find or create the payment record so webhook processing works correctly
+                $payment = \App\Models\Payment::where('external_reference', $paymentId)->first();
+                if (!$payment) {
+                    $payment = \App\Models\Payment::create([
+                        'user_id' => $cachedData['user_id'] ?? null,
+                        'amount' => $cachedData['amount'] ?? 0,
+                        'currency' => $cachedData['currency'] ?? 'KES',
+                        'status' => 'pending',
+                        'payable_type' => 'App\\Models\\PlanSubscription',
+                        'payable_id' => $cachedData['order_id'] ?? null,
+                        'external_reference' => $paymentId,
+                        'order_reference' => $paymentId,
+                        'gateway' => 'mock_pesapal',
+                        'meta' => $cachedData,
+                    ]);
+                }
+
+                // Process cancellation via common webhook logic
+                MockPaymentService::processGenericWebhook([
+                    'transaction_id' => $paymentId,
+                    'status' => 'cancelled'
+                ]);
+
+                // Clear cache
+                cache()->forget($cacheKey);
+
+                DB::commit();
+
+                Log::info('Mock subscription payment cancelled successfully', ['payment_id' => $paymentId]);
+                return redirect($frontendUrl . '/dashboard/subscription?payment=cancelled');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Mock subscription payment cancellation failed', [
+                    'payment_id' => $paymentId,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return redirect($frontendUrl . '/dashboard/subscription?payment=error&message=' . urlencode($e->getMessage()));
+            }
+        }
+
+        // Fall back to Payment model lookup
+        $payment = \App\Models\Payment::where('external_reference', $paymentId)
+            ->orWhere('order_reference', $paymentId)
+            ->first();
+
+        if ($payment) {
+            MockPaymentService::processGenericWebhook([
+                'transaction_id' => $payment->external_reference,
+                'status' => 'cancelled'
+            ]);
+            
+            return redirect($frontendUrl . '/dashboard/subscription?payment=cancelled');
+        }
+
+        return redirect($frontendUrl . '/dashboard/subscription?payment=not_found');
+    }
+
+
+    /**
+     * Handle event order payment completion
+     */
+    protected function handleEventOrderPayment(\App\Models\Payment $payment): void
+    {
+        $order = \App\Models\EventOrder::find($payment->payable_id);
+        
+        if (!$order) {
+            Log::warning('Event order not found for payment', [
+                'payment_id' => $payment->id,
+                'payable_id' => $payment->payable_id,
+            ]);
+            return;
+        }
+
+        // Mark order as paid
+        $order->update([
+            'status' => 'paid',
+            'purchased_at' => now(),
+            'receipt_number' => $order->receipt_number ?? \App\Models\EventOrder::generateReceiptNumber(),
+        ]);
+
+        // Increment promo code usage if applicable
+        if ($order->promo_code_id) {
+            \App\Models\PromoCode::where('id', $order->promo_code_id)
+                ->increment('times_used');
+        }
+
+        Log::info('Event order marked as paid via webhook', [
+            'order_id' => $order->id,
+            'reference' => $order->reference,
+            'payment_id' => $payment->id,
+        ]);
+
+        // TODO: Send confirmation email to attendee
+    }
+
+    /**
+     * Handle donation payment completion
+     */
+    protected function handleDonationPayment(\App\Models\Payment $payment): void
+    {
+        $donation = \App\Models\Donation::find($payment->payable_id);
+        
+        if (!$donation) {
+            Log::warning('Donation not found for payment', [
+                'payment_id' => $payment->id,
+                'payable_id' => $payment->payable_id,
+            ]);
+            return;
+        }
+
+        $donation->update([
+            'status' => 'paid',
+            'payment_date' => now(),
+            'receipt_number' => $donation->receipt_number ?? \App\Models\Donation::generateReceiptNumber(),
+        ]);
+
+        Log::info('Donation marked as paid via webhook', [
+            'donation_id' => $donation->id,
+            'payment_id' => $payment->id,
+        ]);
+
+        // TODO: Send thank you email to donor
     }
 
     /**
@@ -233,6 +579,12 @@ class PaymentController extends Controller
                 'amount' => $validated['amount'],
                 'created_by' => auth()->id(),
             ]);
+
+            \App\Models\AuditLog::log('payment.initiated', $payment, null, [
+                'amount' => $payment->amount,
+                'payment_type' => $paymentType,
+                'tracking_id' => $trackingId
+            ], 'Test mock payment created');
 
             return response()->json([
                 'success' => true,
@@ -722,25 +1074,36 @@ class PaymentController extends Controller
         ]);
 
         try {
-            Log::info('Payment webhook received', $validated);
+            Log::info('Payment webhook received in PaymentController', $validated);
 
-            // In Phase 1, we just log the webhook
-            // In Phase 2, this would trigger automatic renewal logic
+            // Log to webhook_events for transparency/debugging
+            $webhookEvent = \App\Models\WebhookEvent::create([
+                'provider' => 'mock', // Categorize generic/mock webhooks
+                'event_type' => $validated['event_type'],
+                'external_id' => $validated['transaction_id'],
+                'order_reference' => $validated['order_tracking_id'] ?? $validated['transaction_id'],
+                'payload' => $validated,
+                'status' => 'received',
+            ]);
+
+            // Dispatch background job
+            \App\Jobs\ProcessWebhookJob::dispatch($webhookEvent->id);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Webhook processed successfully',
+                'message' => 'Webhook received and queued for processing',
+                'event_id' => $webhookEvent->id
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Webhook processing failed', [
+            Log::error('Webhook reception failed', [
                 'error' => $e->getMessage(),
                 'data' => $validated,
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Webhook processing failed',
+                'message' => 'Webhook reception failed',
             ], 500);
         }
     }

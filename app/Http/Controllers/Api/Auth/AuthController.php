@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\MemberProfile;
+use App\Models\Plan;
+use App\Models\PlanSubscription;
+use App\Models\SubscriptionEnhancement;
 use Laravel\Sanctum\PersonalAccessToken;
 use App\Notifications\ResetPasswordNotification;
 use Illuminate\Support\Facades\DB;
@@ -82,19 +85,78 @@ class AuthController extends Controller
 
         $validatedData['password'] = Hash::make($validatedData['password']);
 
-        $user = User::create($validatedData);
+        // Use a transaction to ensure all related records are created together
+        $user = DB::transaction(function () use ($validatedData) {
+            $user = User::create($validatedData);
 
-        if($user) {
+            // Get the default free plan (price = 0)
+            $freePlan = Plan::getDefaultFreePlan();
+            
+            \Log::info('[Signup] User created', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'free_plan_found' => $freePlan ? true : false,
+                'free_plan_id' => $freePlan?->id,
+                'free_plan_name' => $freePlan?->name,
+            ]);
+
             // Automatically create a basic member profile for the new user
             MemberProfile::create([
                 'user_id' => $user->id,
                 'first_name' => '',
                 'last_name' => '',
                 'county_id' => null,
+                'plan_id' => $freePlan?->id,
                 'terms_accepted' => false,
                 'marketing_consent' => false,
             ]);
 
+            // Create a free subscription if a free plan exists
+            if ($freePlan) {
+                $subscription = PlanSubscription::create([
+                    'subscriber_id' => $user->id,
+                    'subscriber_type' => 'App\Models\User',
+                    'plan_id' => $freePlan->id,
+                    'name' => $freePlan->name,
+                    'slug' => $freePlan->slug . '-' . $user->id . '-' . time(),
+                    'starts_at' => now(),
+                    'ends_at' => null, // Free plan never expires
+                    'trial_ends_at' => null,
+                ]);
+
+                \Log::info('[Signup] Subscription created', [
+                    'user_id' => $user->id,
+                    'subscription_id' => $subscription->id,
+                ]);
+
+                // Create subscription enhancement (active status)
+                SubscriptionEnhancement::create([
+                    'subscription_id' => $subscription->id,
+                    'status' => 'active',
+                    'max_renewal_attempts' => 0,
+                ]);
+
+                // Set user's active subscription
+                $user->update([
+                    'active_subscription_id' => $subscription->id,
+                    'subscription_status' => 'active',
+                    'subscription_activated_at' => now(),
+                ]);
+                
+                \Log::info('[Signup] User subscription updated', [
+                    'user_id' => $user->id,
+                    'active_subscription_id' => $user->active_subscription_id,
+                ]);
+            } else {
+                \Log::warning('[Signup] No free plan found - user has no subscription', [
+                    'user_id' => $user->id,
+                ]);
+            }
+
+            return $user;
+        });
+
+        if($user) {
             $emailVerificationController = new EmailVerificationController();
             $emailVerificationController->sendWelcomeAndVerifyEmail($user);
 

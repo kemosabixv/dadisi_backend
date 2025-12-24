@@ -4,6 +4,9 @@ namespace App\Services;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PaymentSuccessMail;
+use App\Mail\PaymentFailedReminderMail;
 
 /**
  * Mock Payment Service
@@ -37,18 +40,70 @@ class MockPaymentService
     {
         Log::info('Mock payment initiated', $paymentData);
 
-        // Generate mock transaction ID
-        $transactionId = 'MOCK_' . Str::random(12);
+        // Generate a payment ID in the format expected by the web route
+        // Format: MOCK-{TYPE}-{TIMESTAMP}-{RANDOM}
+        $type = 'SUB'; // Subscription payment
+        if (isset($paymentData['type'])) {
+            $type = strtoupper(substr($paymentData['type'], 0, 3));
+        }
+        $paymentId = 'MOCK-' . $type . '-' . time() . '-' . strtoupper(Str::random(5));
+        
+        // Transaction ID for tracking
+        $transactionId = 'TXN_' . Str::random(12);
         $orderTrackingId = 'ORDER_' . Str::random(16);
 
-        // Build a safe redirect URL without depending on named routes (tests may not register it)
-        $redirectUrl = url('/api/payments/mock/checkout') . '?transaction_id=' . urlencode($transactionId) . '&order_id=' . urlencode($paymentData['order_id'] ?? '') . '&amount=' . urlencode($paymentData['amount'] ?? 0);
+        // Prepare payment data for storage
+        $storageData = [
+            'transaction_id' => $transactionId,
+            'order_id' => $paymentData['order_id'] ?? null,
+            'amount' => $paymentData['amount'] ?? 0,
+            'currency' => $paymentData['currency'] ?? 'KES',
+            'user_id' => $paymentData['user_id'] ?? null,
+            'plan_id' => $paymentData['plan_id'] ?? null,
+            'billing_period' => $paymentData['billing_period'] ?? 'month',
+            'gateway' => 'mock_pesapal',
+            'created_at' => now()->toIso8601String(),
+        ];
+
+        // Store in cache (for backward compatibility and quick lookups)
+        $cacheKey = 'mock_payment_' . $paymentId;
+        cache()->put($cacheKey, $storageData, now()->addHours(1));
+
+        // Also persist to database for reliability (if user_id is available)
+        if (!empty($paymentData['user_id'])) {
+            try {
+                \App\Models\PendingPayment::create([
+                    'payment_id' => $paymentId,
+                    'transaction_id' => $transactionId,
+                    'user_id' => $paymentData['user_id'],
+                    'subscription_id' => $paymentData['order_id'] ?? null,
+                    'plan_id' => $paymentData['plan_id'] ?? null,
+                    'amount' => $paymentData['amount'] ?? 0,
+                    'currency' => $paymentData['currency'] ?? 'KES',
+                    'status' => 'pending',
+                    'gateway' => 'mock_pesapal',
+                    'billing_period' => $paymentData['billing_period'] ?? 'month',
+                    'metadata' => $paymentData,
+                    'expires_at' => now()->addHours(1),
+                ]);
+            } catch (\Exception $e) {
+                // Log but don't fail - cache is backup
+                Log::warning('Failed to persist pending payment to database', [
+                    'payment_id' => $paymentId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Build redirect URL using the web route
+        $redirectUrl = url('/mock-payment/' . $paymentId);
 
         return [
             'success' => true,
             'transaction_id' => $transactionId,
             'order_tracking_id' => $orderTrackingId,
             'redirect_url' => $redirectUrl,
+            'payment_id' => $paymentId,
             'message' => 'Mock payment initialized successfully',
             'gateway' => 'mock_pesapal',
         ];
@@ -85,50 +140,202 @@ class MockPaymentService
     }
 
     /**
-     * Query payment status (mock)
+     * Process generic/mock webhook notification
      *
-     * @param string $transactionId Transaction ID
-     * @return array Payment status
+     * @param array $payload Payload from handleWebhook
+     * @return array Result of processing
      */
-    public static function queryPaymentStatus(string $transactionId): array
+    public static function processGenericWebhook(array $payload): array
     {
-        Log::info('Mock payment status queried', ['transaction_id' => $transactionId]);
+        Log::info('Processing generic/mock webhook', ['payload' => $payload]);
 
-        // Simulate status retrieval
-        $statuses = ['completed', 'pending', 'failed'];
-        $status = $statuses[rand(0, 2)];
+        $transactionId = $payload['transaction_id'] ?? null;
+        $orderTrackingId = $payload['order_tracking_id'] ?? null;
+        $status = $payload['status'] ?? 'failed';
 
-        return [
-            'transaction_id' => $transactionId,
-            'status' => $status,
-            'amount' => rand(1000, 50000) / 100,
-            'currency' => 'KES',
-            'timestamp' => now()->toIso8601String(),
-        ];
+        // Find the payment by transaction ID or order tracking ID
+        $payment = \App\Models\Payment::where('transaction_id', $transactionId)
+            ->orWhere('external_reference', $transactionId)
+            ->orWhere('order_reference', $orderTrackingId)
+            ->first();
+
+        if (!$payment) {
+            Log::warning('Payment not found for mock webhook', [
+                'order_reference' => $orderTrackingId, // Changed to use $orderTrackingId as $orderReference is not defined
+            ]);
+            return ['status' => 'payment_not_found'];
+        }
+
+        // Check if already processed (idempotency)
+        if ($payment->status === 'paid') {
+            Log::info('Payment already marked as paid, skipping mock webhook processing', [
+                'payment_id' => $payment->id,
+            ]);
+            return ['status' => 'already_processed']; // Added return value for consistency
+        }
+
+        if ($status === 'completed') {
+            // Update payment status
+            $payment->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+            ]);
+
+            // Activate payable
+            self::activatePayable($payment);
+
+            return [
+                'status' => 'processed',
+                'payment_id' => $payment->id,
+                'new_status' => 'paid'
+            ];
+        } else {
+            $payment->update(['status' => 'failed']);
+            
+            // Handle failure
+            self::failPayable($payment, $status);
+
+            return [
+                'status' => 'processed',
+                'payment_id' => $payment->id,
+                'new_status' => 'failed'
+            ];
+        }
     }
 
     /**
-     * Refund a payment (mock)
-     *
-     * @param string $transactionId Original transaction ID
-     * @param float $amount Amount to refund
-     * @return array Refund response
+     * Handle failed/cancelled payable entity
      */
-    public static function refundPayment(string $transactionId, float $amount): array
+    protected static function failPayable(\App\Models\Payment $payment, string $status): void
     {
-        Log::info('Mock refund initiated', [
-            'transaction_id' => $transactionId,
-            'amount' => $amount,
-        ]);
+        try {
+            if ($payment->payable_type === 'event_order' || 
+                $payment->payable_type === 'App\\Models\\EventOrder') {
+                
+                $order = \App\Models\EventOrder::find($payment->payable_id);
+                $order?->update(['status' => 'failed']);
+                
+            } elseif ($payment->payable_type === 'donation' ||
+                      $payment->payable_type === 'App\\Models\\Donation') {
+                
+                $donation = \App\Models\Donation::find($payment->payable_id);
+                $donation?->update(['status' => 'failed']);
+            } else {
+                // Subscription payments
+                $payable = $payment->payable;
+                if ($payable) {
+                    $enhancement = \App\Models\SubscriptionEnhancement::where('subscription_id', $payable->id)->first();
+                    if ($enhancement) {
+                        $metadata = $enhancement->metadata ?? [];
+                        if (is_string($metadata)) {
+                            $metadata = json_decode($metadata, true);
+                        }
+                        
+                        $previousId = $metadata['previous_subscription_id'] ?? null;
+                        
+                        // Revert user's active subscription
+                        $user = $payable->subscriber ?? $payable->user;
+                        if ($user && $user instanceof \App\Models\User) {
+                            $user->update(['active_subscription_id' => $previousId]);
+                            Log::info('User subscription reverted after failed payment', [
+                                'user_id' => $user->id,
+                                'previous_id' => $previousId,
+                                'failed_id' => $payable->id
+                            ]);
+                        }
+                        
+                        // Mark the failed subscription itself as cancelled
+                        $payable->update(['status' => 'cancelled']);
 
-        return [
-            'success' => true,
-            'refund_id' => 'REFUND_' . Str::random(12),
-            'original_transaction_id' => $transactionId,
-            'refund_amount' => $amount,
-            'status' => 'processing',
-            'message' => 'Refund initiated successfully',
-        ];
+                        $enhancement->update([
+                            'status' => $status === 'cancelled' ? 'cancelled' : 'payment_failed',
+                            'last_renewal_result' => 'failed',
+                            'last_renewal_error' => 'Webhook reported: ' . $status,
+                        ]);
+                    }
+                }
+            }
+            
+            \App\Models\AuditLog::log('payment.failed', $payment, null, ['status' => $status], 'Payment failed/cancelled via mock webhook');
+            
+            // Trigger failure email
+            try {
+                $user = $payment->payable->user ?? $payment->payable->subscriber ?? null;
+                if ($user && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+                    Mail::to($user->email)->queue(new PaymentFailedReminderMail($payment, 'Mock webhook reported: ' . $status));
+                }
+            } catch (\Exception $e) {
+                Log::error('MockPaymentService: Failed to send failure email', ['error' => $e->getMessage()]);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('MockPaymentService: Failed to handle failed payable', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Activate the payable entity after successful payment
+     * (Mirrors PesapalService logic for consistency)
+     */
+    protected static function activatePayable(\App\Models\Payment $payment): void
+    {
+        try {
+            if ($payment->payable_type === 'event_order' || 
+                $payment->payable_type === 'App\\Models\\EventOrder') {
+                
+                $order = \App\Models\EventOrder::find($payment->payable_id);
+                if ($order) {
+                    $order->update(['status' => 'paid', 'purchased_at' => now()]);
+                    if ($order->promo_code_id) {
+                        \App\Models\PromoCode::where('id', $order->promo_code_id)->increment('times_used');
+                    }
+                    \App\Models\AuditLog::log('payment.completed', $payment, null, ['status' => 'paid'], 'Event order activated');
+                }
+            } elseif ($payment->payable_type === 'donation' ||
+                      $payment->payable_type === 'App\\Models\\Donation') {
+                
+                $donation = \App\Models\Donation::find($payment->payable_id);
+                if ($donation) {
+                    $donation->update(['status' => 'paid', 'payment_date' => now()]);
+                    \App\Models\AuditLog::log('payment.completed', $payment, null, ['status' => 'paid'], 'Donation activated');
+                }
+            } else {
+                // Subscription payments
+                $payable = $payment->payable;
+                if ($payable) {
+                    if (method_exists($payable, 'activate')) {
+                        $payable->activate();
+                    } else {
+                        $payable->update(['status' => 'active']);
+                    }
+
+                    if (method_exists($payable, 'user') && $payable->user) {
+                        $payable->user->update([
+                            'subscription_status' => 'active',
+                            'subscription_activated_at' => now(),
+                            'last_payment_date' => now(),
+                        ]);
+                    }
+                    \App\Models\AuditLog::log('payment.completed', $payment, null, ['status' => 'paid'], 'Subscription activated');
+                }
+            }
+
+            // Trigger success email
+            try {
+                $user = $payment->payable->user ?? $payment->payable->subscriber ?? null;
+                if ($user && filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+                    Mail::to($user->email)->queue(new PaymentSuccessMail($payment));
+                }
+            } catch (\Exception $e) {
+                Log::error('MockPaymentService: Failed to send success email', ['error' => $e->getMessage()]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('MockPaymentService: Failed to activate payable', ['error' => $e->getMessage()]);
+        }
     }
 
     /**

@@ -17,6 +17,14 @@ class DonationResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Get payment method from associated payment
+        $payment = $this->relationLoaded('payment') ? $this->payment : (\App\Models\Payment::find($this->payment_id));
+        $paymentMethod = $payment?->meta['payment_method'] ?? null;
+        
+        $receiptUrl = ($this->status === 'paid' && $this->receipt_number) 
+            ? config('app.url') . "/donations/receipt/{$this->reference}"
+            : null;
+
         return [
             'id' => $this->id,
             'reference' => $this->reference,
@@ -26,7 +34,9 @@ class DonationResource extends JsonResource
             'amount' => (float) $this->amount,
             'currency' => $this->currency,
             'status' => $this->status,
+            'payment_method' => $paymentMethod,
             'receipt_number' => $this->receipt_number,
+            'receipt_url' => $receiptUrl,
             'notes' => $this->notes,
             'county' => $this->whenLoaded('county', fn() => [
                 'id' => $this->county->id,

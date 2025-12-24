@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
+use App\Models\SystemFeature;
 use App\Services\CurrencyService;
 use Laravelcm\Subscriptions\Models\Feature;
 use Illuminate\Http\Request;
@@ -57,7 +58,7 @@ class PlanController extends Controller
      */
     public function index()
     {
-        $plans = Plan::with('features')->where('is_active', true)->get()->map(function ($plan) {
+        $plans = Plan::with(['features', 'systemFeatures'])->where('is_active', true)->get()->map(function ($plan) {
             return [
                 'id' => $plan->id,
                 'name' => json_decode($plan->name, true) ?? [$plan->name],
@@ -69,6 +70,17 @@ class PlanController extends Controller
                         'id' => $feature->id,
                         'name' => json_decode($feature->name, true)['en'] ?? $feature->name,
                         'limit' => $feature->pivot?->limit ?? null,
+                    ];
+                }),
+                'system_features' => $plan->systemFeatures->map(function ($sf) {
+                    return [
+                        'id' => $sf->id,
+                        'slug' => $sf->slug,
+                        'name' => $sf->name,
+                        'value' => $sf->pivot->value,
+                        'display_name' => $sf->pivot->display_name ?? $sf->name,
+                        'display_description' => $sf->pivot->display_description ?? $sf->description,
+                        'value_type' => $sf->value_type,
                     ];
                 }),
             ];
@@ -115,7 +127,7 @@ class PlanController extends Controller
      */
     public function show(Plan $plan)
     {
-        $plan->load('features');
+        $plan->load(['features', 'systemFeatures']);
 
         return response()->json([
             'success' => true,
@@ -130,6 +142,17 @@ class PlanController extends Controller
                         'id' => $feature->id,
                         'name' => json_decode($feature->name, true) ?? [$feature->name],
                         'limit' => $feature->pivot?->limit ?? null,
+                    ];
+                }),
+                'system_features' => $plan->systemFeatures->map(function ($sf) {
+                    return [
+                        'id' => $sf->id,
+                        'slug' => $sf->slug,
+                        'name' => $sf->name,
+                        'value' => $sf->pivot->value,
+                        'display_name' => $sf->pivot->display_name ?? $sf->name,
+                        'display_description' => $sf->pivot->display_description ?? $sf->description,
+                        'value_type' => $sf->value_type,
                     ];
                 }),
             ],
@@ -190,6 +213,12 @@ class PlanController extends Controller
             'features.*.name' => 'required_with:features|string|max:255',
             'features.*.limit' => 'nullable|integer|min:-1',
             'features.*.description' => 'nullable|string|max:500',
+            // System Features (new)
+            'system_features' => 'nullable|array',
+            'system_features.*.id' => 'required_with:system_features|integer|exists:system_features,id',
+            'system_features.*.value' => 'required_with:system_features|string',
+            'system_features.*.display_name' => 'nullable|string|max:255',
+            'system_features.*.display_description' => 'nullable|string|max:500',
         ]);
 
         $plan = DB::transaction(function () use ($validated) {
@@ -238,6 +267,19 @@ class PlanController extends Controller
                         'description' => json_encode(['en' => $featureData['description'] ?? '']),
                     ]);
                 }
+            }
+
+            // Sync system features (new pivot-based features)
+            if (!empty($validated['system_features'])) {
+                $syncData = [];
+                foreach ($validated['system_features'] as $sf) {
+                    $syncData[$sf['id']] = [
+                        'value' => $sf['value'],
+                        'display_name' => $sf['display_name'] ?? null,
+                        'display_description' => $sf['display_description'] ?? null,
+                    ];
+                }
+                $plan->systemFeatures()->sync($syncData);
             }
 
             return $plan;
@@ -308,6 +350,12 @@ class PlanController extends Controller
             'features.*.name' => 'required_with:features|string|max:255',
             'features.*.limit' => 'nullable|integer|min:-1',
             'features.*.description' => 'nullable|string|max:500',
+            // System Features (new)
+            'system_features' => 'nullable|array',
+            'system_features.*.id' => 'required_with:system_features|integer|exists:system_features,id',
+            'system_features.*.value' => 'required_with:system_features|string',
+            'system_features.*.display_name' => 'nullable|string|max:255',
+            'system_features.*.display_description' => 'nullable|string|max:500',
         ]);
 
         DB::transaction(function () use ($plan, $validated) {
@@ -373,6 +421,19 @@ class PlanController extends Controller
                         'description' => json_encode(['en' => $featureData['description'] ?? '']),
                     ]);
                 }
+            }
+
+            // Sync system features (new pivot-based features)
+            if (isset($validated['system_features'])) {
+                $syncData = [];
+                foreach ($validated['system_features'] as $sf) {
+                    $syncData[$sf['id']] = [
+                        'value' => $sf['value'],
+                        'display_name' => $sf['display_name'] ?? null,
+                        'display_description' => $sf['display_description'] ?? null,
+                    ];
+                }
+                $plan->systemFeatures()->sync($syncData);
             }
         });
 

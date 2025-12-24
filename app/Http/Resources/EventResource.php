@@ -26,6 +26,7 @@ class EventResource extends JsonResource
             'capacity' => $this->capacity,
             'waitlist_enabled' => (bool) $this->waitlist_enabled,
             'waitlist_capacity' => $this->waitlist_capacity,
+            'county_id' => $this->county_id,
             'county' => $this->whenLoaded('county'),
             'image_path' => $this->image_path,
             'image_url' => $this->image_path ? url('storage/' . $this->image_path) : null,

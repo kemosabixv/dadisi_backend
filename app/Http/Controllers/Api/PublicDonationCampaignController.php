@@ -202,12 +202,20 @@ class PublicDonationCampaignController extends Controller
         try {
             return DB::transaction(function () use ($validated, $campaign, $request) {
                 // Create donation record
+                $userId = $request->user('sanctum')?->id;
+                $countyId = $validated['county_id'] ?? null;
+
+                // If no county provided, try to get from user profile
+                if (!$countyId && $userId) {
+                    $countyId = \App\Models\MemberProfile::where('user_id', $userId)->value('county_id');
+                }
+
                 $donation = Donation::create([
-                    'user_id' => $request->user()?->id,
+                    'user_id' => $userId,
                     'donor_name' => $validated['first_name'] . ' ' . $validated['last_name'],
                     'donor_email' => $validated['email'],
                     'donor_phone' => $validated['phone_number'] ?? null,
-                    'county_id' => $validated['county_id'] ?? $campaign->county_id,
+                    'county_id' => $countyId,
                     'amount' => $validated['amount'],
                     'currency' => $validated['currency'] ?? $campaign->currency,
                     'status' => 'pending',

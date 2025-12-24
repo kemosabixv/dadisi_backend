@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -10,7 +11,7 @@ use Illuminate\Support\Str;
 
 class EventOrder extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -24,17 +25,33 @@ class EventOrder extends Model
         'receipt_number',
         'payment_id',
         'purchased_at',
+        // Guest checkout fields
+        'guest_name',
+        'guest_email',
+        'guest_phone',
+        // Discount tracking
+        'promo_code_id',
+        'promo_discount_amount',
+        'subscriber_discount_amount',
+        'original_amount',
+        // Check-in
+        'qr_code_token',
+        'checked_in_at',
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
         'unit_price' => 'decimal:2',
+        'original_amount' => 'decimal:2',
+        'promo_discount_amount' => 'decimal:2',
+        'subscriber_discount_amount' => 'decimal:2',
         'quantity' => 'integer',
         'purchased_at' => 'datetime',
+        'checked_in_at' => 'datetime',
     ];
 
     /**
-     * Get the user who made this order
+     * Get the user who made this order (null for guest checkout)
      */
     public function user(): BelongsTo
     {
@@ -47,6 +64,14 @@ class EventOrder extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    /**
+     * Get the promo code used for this order
+     */
+    public function promoCode(): BelongsTo
+    {
+        return $this->belongsTo(PromoCode::class);
     }
 
     /**
@@ -115,6 +140,60 @@ class EventOrder extends Model
     }
 
     /**
+     * Check if this is a guest order
+     */
+    public function isGuestOrder(): bool
+    {
+        return $this->user_id === null;
+    }
+
+    /**
+     * Check if attendee has checked in
+     */
+    public function isCheckedIn(): bool
+    {
+        return $this->checked_in_at !== null;
+    }
+
+    /**
+     * Get the attendee name (user or guest)
+     */
+    public function getAttendeeNameAttribute(): string
+    {
+        if ($this->user) {
+            return $this->user->name ?? $this->user->username ?? 'User';
+        }
+        return $this->guest_name ?? 'Guest';
+    }
+
+    /**
+     * Get the attendee email (user or guest)
+     */
+    public function getAttendeeEmailAttribute(): ?string
+    {
+        if ($this->user) {
+            return $this->user->email;
+        }
+        return $this->guest_email;
+    }
+
+    /**
+     * Get total discount applied
+     */
+    public function getTotalDiscountAttribute(): float
+    {
+        return (float) $this->promo_discount_amount + (float) $this->subscriber_discount_amount;
+    }
+
+    /**
+     * Generate unique receipt number
+     */
+    public static function generateReceiptNumber(): string
+    {
+        return 'TKT-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6));
+    }
+
+    /**
      * Generate unique order reference
      */
     public static function generateReference(): string
@@ -123,7 +202,15 @@ class EventOrder extends Model
     }
 
     /**
-     * Boot method to auto-generate reference
+     * Generate unique QR code token
+     */
+    public static function generateQrToken(): string
+    {
+        return 'TKT-' . Str::upper(Str::random(16));
+    }
+
+    /**
+     * Boot method to auto-generate reference and QR token
      */
     protected static function boot()
     {
@@ -133,7 +220,11 @@ class EventOrder extends Model
             if (empty($model->reference)) {
                 $model->reference = static::generateReference();
             }
+            if (empty($model->qr_code_token)) {
+                $model->qr_code_token = static::generateQrToken();
+            }
         });
     }
 }
+
 

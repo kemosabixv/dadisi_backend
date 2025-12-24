@@ -140,12 +140,90 @@
             @if($plan)
                 <div class="detail-row">
                     <span class="label">Plan:</span>
-                    <span class="value">{{ $plan->name ?? 'N/A' }}</span>
+                    <span class="value">
+                        @php
+                            $planName = $plan->name;
+                            if (is_string($planName) && Str::startsWith($planName, '{')) {
+                                $decoded = json_decode($planName, true);
+                                if (json_last_error() === JSON_ERROR_NONE) {
+                                    $planName = $decoded[app()->getLocale()] ?? $decoded['en'] ?? reset($decoded);
+                                }
+                            } elseif (is_array($planName)) {
+                                $planName = $planName[app()->getLocale()] ?? $planName['en'] ?? reset($planName);
+                            }
+                        @endphp
+                        {{ $planName ?? 'N/A' }}
+                    </span>
+                </div>
+            @endif
+            @if($event ?? null)
+                <div class="detail-row">
+                    <span class="label">Event:</span>
+                    <span class="value">
+                        @php
+                            $eventTitle = $event->title;
+                            if (is_string($eventTitle) && Str::startsWith($eventTitle, '{')) {
+                                $decoded = json_decode($eventTitle, true);
+                                if (json_last_error() === JSON_ERROR_NONE) {
+                                    $eventTitle = $decoded[app()->getLocale()] ?? $decoded['en'] ?? reset($decoded);
+                                }
+                            } elseif (is_array($eventTitle)) {
+                                $eventTitle = $eventTitle[app()->getLocale()] ?? $eventTitle['en'] ?? reset($eventTitle);
+                            }
+                        @endphp
+                        {{ $eventTitle ?? 'N/A' }}
+                    </span>
+                </div>
+            @endif
+            @if($eventOrder ?? null)
+                <div class="detail-row">
+                    <span class="label">Tickets:</span>
+                    <span class="value">{{ $eventOrder->quantity }} x {{ $eventOrder->currency }}
+                        {{ number_format($eventOrder->unit_price, 2) }}</span>
+                </div>
+                @if($eventOrder->guest_name)
+                    <div class="detail-row">
+                        <span class="label">Attendee:</span>
+                        <span class="value">{{ $eventOrder->guest_name }} ({{ $eventOrder->guest_email }})</span>
+                    </div>
+                @endif
+                @if($eventOrder->promo_discount_amount > 0 || $eventOrder->subscriber_discount_amount > 0)
+                    <div class="detail-row">
+                        <span class="label">Discounts:</span>
+                        <span class="value" style="color: #28a745;">
+                            @if($eventOrder->promo_discount_amount > 0)
+                                Promo: -{{ $eventOrder->currency }} {{ number_format($eventOrder->promo_discount_amount, 2) }}
+                            @endif
+                            @if($eventOrder->subscriber_discount_amount > 0)
+                                Subscriber: -{{ $eventOrder->currency }}
+                                {{ number_format($eventOrder->subscriber_discount_amount, 2) }}
+                            @endif
+                        </span>
+                    </div>
+                @endif
+            @endif
+            @if($donation ?? null)
+                <div class="detail-row">
+                    <span class="label">Donor:</span>
+                    <span class="value">{{ $donation->donor_name ?? 'Anonymous' }}</span>
                 </div>
             @endif
             <div class="detail-row">
                 <span class="label">Description:</span>
-                <span class="value">{{ $payment->meta['description'] ?? ($plan->name ?? 'Payment') }}</span>
+                <span class="value">
+                    @php
+                        $description = $payment->meta['description'] ?? ($plan->name ?? 'Payment');
+                        if (is_string($description) && Str::startsWith($description, '{')) {
+                            $decoded = json_decode($description, true);
+                            if (json_last_error() === JSON_ERROR_NONE) {
+                                $description = $decoded[app()->getLocale()] ?? $decoded['en'] ?? reset($decoded);
+                            }
+                        } elseif (is_array($description)) {
+                            $description = $description[app()->getLocale()] ?? $description['en'] ?? reset($description);
+                        }
+                    @endphp
+                    {{ $description }}
+                </span>
             </div>
             <div class="detail-row">
                 <span class="label">Amount:</span>
@@ -179,9 +257,84 @@
         @if($payment->status !== 'paid')
             <form action="{{ route('mock-payment.complete', $payment->external_reference ?? $payment->id) }}" method="POST">
                 @csrf
-                <p>Click below to simulate payment completion:</p>
+
+                <div style="margin-bottom: 25px;">
+                    <p style="font-weight: bold; margin-bottom: 15px;">Select Payment Method:</p>
+
+                    <div style="display: flex; gap: 15px;">
+                        <!-- M-Pesa Option -->
+                        <label style="flex: 1; cursor: pointer;">
+                            <input type="radio" name="payment_method" value="mpesa" checked style="display: none;"
+                                onchange="updateSelection(this)">
+                            <div class="payment-option selected">
+                                <div style="font-size: 32px; margin-bottom: 8px;">📱</div>
+                                <div class="option-title" style="font-weight: bold;">M-Pesa</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 5px;">Mobile Money</div>
+                            </div>
+                        </label>
+
+                        <!-- Card Option -->
+                        <label style="flex: 1; cursor: pointer;">
+                            <input type="radio" name="payment_method" value="card" style="display: none;"
+                                onchange="updateSelection(this)">
+                            <div class="payment-option">
+                                <div style="font-size: 32px; margin-bottom: 8px;">💳</div>
+                                <div class="option-title" style="font-weight: bold;">Card</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 5px;">Visa / Mastercard</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <style>
+                    .payment-option {
+                        border: 2px solid #ddd;
+                        border-radius: 8px;
+                        padding: 20px;
+                        text-align: center;
+                        transition: all 0.2s;
+                        background: #fff;
+                    }
+
+                    .payment-option .option-title {
+                        color: #333;
+                    }
+
+                    .payment-option:hover {
+                        border-color: #28a745 !important;
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                    }
+
+                    .payment-option.selected {
+                        border-color: #28a745 !important;
+                        background: #f8fff8 !important;
+                    }
+
+                    .payment-option.selected .option-title {
+                        color: #28a745 !important;
+                    }
+                </style>
+
+                <script>
+                    function updateSelection(input) {
+                        // Remove selected class from all options in the form
+                        input.closest('form').querySelectorAll('.payment-option').forEach(e => {
+                            e.classList.remove('selected');
+                        });
+                        // Add selected class to the div next to the radio input
+                        input.nextElementSibling.classList.add('selected');
+                    }
+                </script>
 
                 <button type="submit" class="btn">✓ Complete Payment Successfully</button>
+            </form>
+
+            <form action="{{ route('mock-payment.cancel', $payment->external_reference ?? $payment->id) }}" method="POST"
+                style="margin-top: 15px;">
+                @csrf
+                <button type="submit" class="btn btn-secondary" style="background-color: #6c757d; width: 100%;">✗ Cancel
+                    Payment</button>
             </form>
 
             <p style="text-align: center; margin: 20px 0; font-size: 14px; color: #666;">Or use the API endpoint:</p>

@@ -60,6 +60,10 @@ class Kernel extends ConsoleKernel
                 ->dailyAt('02:00')
                 ->timezone('Africa/Nairobi')
                 ->name('reconciliation.run');
+            $schedule->command('subscriptions:process-expired')
+                ->dailyAt('06:00')
+                ->timezone('Africa/Nairobi')
+                ->name('subscriptions.process_expired');
         }
     }
 

@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Models\MemberProfile;
 use App\Models\Plan;
+use App\Models\PlanSubscription;
+use App\Models\SubscriptionEnhancement;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -24,27 +26,15 @@ class AdminUserSeeder extends Seeder
             ],
             [
                 'email' => 'admin@dadisilab.com',
-                'username' => 'adminuser',
+                'username' => 'admin',
                 'display_name' => 'Admin User',
                 'role' => 'admin',
             ],
             [
-                'email' => 'finance@dadisilab.com',
-                'username' => 'financeofficer',
-                'display_name' => 'Finance Officer',
-                'role' => 'finance',
-            ],
-            [
-                'email' => 'events@dadisilab.com',
-                'username' => 'eventsmanager',
-                'display_name' => 'Events Manager',
-                'role' => 'events_manager',
-            ],
-            [
-                'email' => 'blog@dadisilab.com',
-                'username' => 'contenteditor',
-                'display_name' => 'Content Editor',
-                'role' => 'content_editor',
+                'email' => 'moderator@dadisilab.com',
+                'username' => 'moderator',
+                'display_name' => 'Mod User',
+                'role' => 'moderator',
             ],
             // Regular member users
             [
@@ -52,21 +42,21 @@ class AdminUserSeeder extends Seeder
                 'username' => 'johndoe',
                 'display_name' => 'John Doe',
                 'role' => 'member',
-                'subscription_plan' => 'Free',
+                'subscription_plan' => 'Community', // Free tier
             ],
             [
                 'email' => 'jane.smith@dadisilab.com',
                 'username' => 'janesmith',
                 'display_name' => 'Jane Smith',
                 'role' => 'member',
-                'subscription_plan' => 'Premium',
+                'subscription_plan' => 'Community', // Free tier for mocking new user
             ],
             [
                 'email' => 'student@dadisilab.com',
                 'username' => 'alexstudent',
                 'display_name' => 'Alex Student',
                 'role' => 'member',
-                'subscription_plan' => 'Student',
+                'subscription_plan' => 'Student/Researcher',
             ],
         ];
 
@@ -101,6 +91,49 @@ class AdminUserSeeder extends Seeder
                     'marketing_consent' => false,
                     'is_staff' => $userData['role'] !== 'member',
                 ]);
+            }
+
+            // Create actual PlanSubscription record for members with a plan
+            if (isset($userData['subscription_plan'])) {
+                $planName = $userData['subscription_plan'];
+                $plan = Plan::where('slug', Str::slug($planName))->first();
+                
+                if ($plan) {
+                    // Check if subscription already exists
+                    $existingSubscription = PlanSubscription::where('subscriber_id', $user->id)
+                        ->where('subscriber_type', 'App\Models\User')
+                        ->where('plan_id', $plan->id)
+                        ->first();
+                    
+                    if (!$existingSubscription) {
+                        $subscription = PlanSubscription::create([
+                            'subscriber_id' => $user->id,
+                            'subscriber_type' => 'App\Models\User',
+                            'plan_id' => $plan->id,
+                            'name' => $plan->name,
+                            'slug' => $plan->slug . '-' . $user->id . '-' . time(),
+                            'starts_at' => now(),
+                            'ends_at' => now()->addYear(), // 1 year subscription
+                            'trial_ends_at' => null,
+                        ]);
+
+                        // Create subscription enhancement (active status)
+                        SubscriptionEnhancement::create([
+                            'subscription_id' => $subscription->id,
+                            'status' => 'active',
+                            'max_renewal_attempts' => 3,
+                        ]);
+
+                        // Set user's active subscription
+                        $user->update([
+                            'active_subscription_id' => $subscription->id,
+                            'subscription_status' => 'active',
+                            'subscription_activated_at' => now(),
+                        ]);
+                        
+                        $this->command->info("  → Created subscription for {$userData['email']}: {$planName}");
+                    }
+                }
             }
 
             $this->command->info("Demo user {$userData['email']} created/updated with {$userData['role']} role");

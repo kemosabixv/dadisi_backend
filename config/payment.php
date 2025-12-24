@@ -23,7 +23,7 @@ return [
         'callback_url' => env('PESAPAL_CALLBACK_URL', config('app.url') . '/payment/callback'),
         
         // IPN webhook configuration
-        'ipn_url' => env('PESAPAL_IPN_URL', config('app.url') . '/webhooks/pesapal/ipn'),
+        'ipn_url' => env('PESAPAL_IPN_URL', config('app.url') . '/api/webhooks/pesapal'),
         'ipn_notification_type' => env('PESAPAL_IPN_TYPE', 'POST'), // POST or GET
     ],
 ];

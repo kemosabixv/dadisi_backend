@@ -8,7 +8,7 @@ use App\Models\Plan;
 use App\Models\PlanSubscription;
 use App\Models\RenewalPreference;
 use App\Models\SubscriptionEnhancement;
-use App\Services\PaymentGatewayFactory;
+use App\Services\PaymentGateway\GatewayManager;
 use App\Services\MockPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -56,7 +56,24 @@ class SubscriptionCoreController extends Controller
             'active_subscription_id' => $user?->active_subscription_id ?? null,
         ]);
 
+        // First try the activeSubscription relationship
         $subscription = $user->activeSubscription()->with('plan:id,name,description,price')->first();
+        
+        // Fallback: If no subscription found via relationship, try direct query using active_subscription_id
+        if (!$subscription && $user->active_subscription_id) {
+            Log::info('getCurrentSubscription: Fallback to direct query', [
+                'active_subscription_id' => $user->active_subscription_id,
+            ]);
+            $subscription = PlanSubscription::with('plan:id,name,description,price')
+                ->find($user->active_subscription_id);
+        }
+        
+        Log::info('getCurrentSubscription: Subscription result', [
+            'subscription_found' => $subscription ? true : false,
+            'subscription_id' => $subscription?->id,
+            'plan_id' => $subscription?->plan_id,
+        ]);
+
         $enhancement = $subscription ?
             SubscriptionEnhancement::where('subscription_id', $subscription->id)->first() :
             null;
@@ -275,6 +292,37 @@ class SubscriptionCoreController extends Controller
         $plan = Plan::findOrFail($validated['plan_id']);
         $billingPeriod = $validated['billing_period'] ?? 'month';
 
+        // ALREADY SUBSCRIBED CHECK: Prevent re-subscription to same plan if already active
+        $existingSubscription = PlanSubscription::where('subscriber_id', $user->id)
+            ->where('subscriber_type', 'App\Models\User')
+            ->where('plan_id', $plan->id)
+            ->first();
+
+        if ($existingSubscription) {
+            $enhancement = SubscriptionEnhancement::where('subscription_id', $existingSubscription->id)->first();
+            $isActive = $enhancement && $enhancement->status === 'active';
+            
+            if ($isActive) {
+                return response()->json([
+                    'success' => false,
+                    'error_code' => 'ALREADY_SUBSCRIBED',
+                    'message' => 'You already have an active subscription to this plan.',
+                    'action' => 'redirect_to_subscription',
+                ], 400);
+            }
+            
+            // Check if there's a pending payment for this subscription
+            $isPending = $enhancement && in_array($enhancement->status, ['pending', 'payment_pending', 'awaiting_payment']);
+            if ($isPending) {
+                return response()->json([
+                    'success' => false,
+                    'error_code' => 'PAYMENT_PENDING',
+                    'message' => 'You have a pending payment for this plan. Please complete or cancel it first.',
+                    'action' => 'resume_or_cancel',
+                ], 400);
+            }
+        }
+
         try {
             DB::beginTransaction();
 
@@ -298,13 +346,19 @@ class SubscriptionCoreController extends Controller
                 'billing_period' => $billingPeriod,
             ]);
 
+            // Store previous active subscription for reversion if payment fails/cancels
+            $previousSubscriptionId = $user->active_subscription_id;
+
             // Create or update enhancement
             $enhancement = SubscriptionEnhancement::firstOrCreate(
                 ['subscription_id' => $subscription->id],
                 [
                     'status' => 'payment_pending',
                     'max_renewal_attempts' => 3,
-                    'metadata' => json_encode(['billing_period' => $billingPeriod]),
+                    'metadata' => [
+                        'billing_period' => $billingPeriod,
+                        'previous_subscription_id' => $previousSubscriptionId
+                    ],
                 ]
             );
 
@@ -318,7 +372,7 @@ class SubscriptionCoreController extends Controller
                 'billing_period' => $billingPeriod,
             ];
 
-            $paymentResponse = PaymentGatewayFactory::initiatePayment($paymentData);
+            $paymentResponse = (new GatewayManager())->initiatePayment($paymentData, $subscription);
 
             // Set the user's active subscription
             $user->update(['active_subscription_id' => $subscription->id]);
@@ -417,6 +471,8 @@ class SubscriptionCoreController extends Controller
                     'last_payment_date' => now(),
                 ]);
 
+                \App\Models\AuditLog::log('payment.completed', $subscription, null, ['status' => 'active'], 'Mock payment completed via dev endpoint');
+
                 $message = 'Payment processed successfully';
             } else {
                 $failureState = $paymentResult['status'] === 'pending'
@@ -478,6 +534,7 @@ class SubscriptionCoreController extends Controller
     {
         $validated = $request->validate([
             'reason' => 'nullable|string|max:500',
+            'immediate' => 'nullable|boolean', // Force immediate cancellation (for pending)
         ]);
 
         $user = auth()->user();
@@ -485,7 +542,12 @@ class SubscriptionCoreController extends Controller
             'user_id' => $user?->id,
             'active_subscription_id' => $user?->active_subscription_id ?? null,
         ]);
+        
+        // Try to find active subscription via relationship first, then by active_subscription_id
         $subscription = $user->activeSubscription()->first();
+        if (!$subscription && $user->active_subscription_id) {
+            $subscription = PlanSubscription::find($user->active_subscription_id);
+        }
 
         if (!$subscription) {
             return response()->json([
@@ -494,39 +556,149 @@ class SubscriptionCoreController extends Controller
             ], 404);
         }
 
+        // Get the plan to check if it's free
+        $currentPlan = Plan::find($subscription->plan_id);
+        $isFreePlan = $currentPlan && $currentPlan->base_monthly_price <= 0;
+
+        // If already on free plan, don't allow cancel (they can't go lower)
+        if ($isFreePlan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are already on the free plan. You cannot cancel further.',
+            ], 400);
+        }
+
+        // Check subscription status - is it pending payment or fully active?
+        $enhancement = SubscriptionEnhancement::where('subscription_id', $subscription->id)->first();
+        $isPending = $enhancement && in_array($enhancement->status, ['pending', 'payment_pending', 'awaiting_payment']);
+        $forceImmediate = $validated['immediate'] ?? false;
+        
+        // Determine if this is immediate cancellation (pending) or end-of-period (active)
+        $isImmediateCancellation = $isPending || $forceImmediate || !$subscription->ends_at;
+
         try {
             DB::beginTransaction();
 
-            // Cancel enhancement
-            $enhancement = SubscriptionEnhancement::where('subscription_id', $subscription->id)->first();
-            if ($enhancement) {
-                $enhancement->update(['status' => 'cancelled']);
+            if ($isImmediateCancellation) {
+                // IMMEDIATE CANCELLATION: Pending subscription or no end date
+                // Cancel enhancement
+                if ($enhancement) {
+                    $enhancement->update(['status' => 'cancelled']);
+                }
+
+                // Update subscription - mark as cancelled immediately
+                $subscription->update([
+                    'canceled_at' => now(),
+                    'cancels_at' => now(),
+                    'ends_at' => now(), // End immediately
+                ]);
+
+                // Revert to free plan immediately
+                $freePlan = Plan::getDefaultFreePlan();
+                
+                if ($freePlan) {
+                    // Create a new free subscription
+                    $freeSubscription = PlanSubscription::create([
+                        'subscriber_id' => $user->id,
+                        'subscriber_type' => 'App\Models\User',
+                        'plan_id' => $freePlan->id,
+                        'name' => $freePlan->name,
+                        'slug' => $freePlan->slug . '-' . $user->id . '-' . time(),
+                        'starts_at' => now(),
+                        'ends_at' => null, // Free plan never expires
+                        'trial_ends_at' => null,
+                    ]);
+
+                    // Create subscription enhancement (active status)
+                    SubscriptionEnhancement::create([
+                        'subscription_id' => $freeSubscription->id,
+                        'status' => 'active',
+                        'max_renewal_attempts' => 0,
+                    ]);
+
+                    // Update user to point to free subscription
+                    $user->update([
+                        'subscription_status' => 'active',
+                        'active_subscription_id' => $freeSubscription->id,
+                    ]);
+
+                    // Update member profile plan_id
+                    if ($user->memberProfile) {
+                        $user->memberProfile->update(['plan_id' => $freePlan->id]);
+                    }
+
+                    Log::info('Subscription cancelled immediately, reverted to free plan', [
+                        'user_id' => $user->id,
+                        'cancelled_subscription_id' => $subscription->id,
+                        'new_subscription_id' => $freeSubscription->id,
+                        'was_pending' => $isPending,
+                        'reason' => $validated['reason'] ?? null,
+                    ]);
+
+                    DB::commit();
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Subscription cancelled. You have been switched to the free plan.',
+                    ]);
+                } else {
+                    // No free plan found, just clear the subscription
+                    $user->update([
+                        'subscription_status' => 'cancelled',
+                        'active_subscription_id' => null,
+                    ]);
+
+                    Log::info('Subscription cancelled immediately, no free plan available', [
+                        'user_id' => $user->id,
+                        'subscription_id' => $subscription->id,
+                        'reason' => $validated['reason'] ?? null,
+                    ]);
+
+                    DB::commit();
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Subscription cancelled successfully.',
+                    ]);
+                }
+            } else {
+                // END-OF-PERIOD CANCELLATION: Active paid subscription with valid end date
+                // User keeps access until the period ends
+                
+                // Mark enhancement as pending cancellation
+                if ($enhancement) {
+                    $enhancement->update(['status' => 'pending_cancellation']);
+                }
+
+                // Update subscription - cancels at end of period
+                $subscription->update([
+                    'canceled_at' => now(),
+                    'cancels_at' => $subscription->ends_at, // Cancels at end of current period
+                ]);
+
+                // Update user status to reflect pending cancellation
+                $user->update([
+                    'subscription_status' => 'pending_cancellation',
+                ]);
+
+                Log::info('Subscription marked for cancellation at period end', [
+                    'user_id' => $user->id,
+                    'subscription_id' => $subscription->id,
+                    'cancels_at' => $subscription->ends_at,
+                    'reason' => $validated['reason'] ?? null,
+                ]);
+
+                DB::commit();
+
+                $endsAt = $subscription->ends_at;
+                $formattedDate = $endsAt ? $endsAt->format('F j, Y') : 'the end of your billing period';
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Your subscription has been cancelled. You will continue to have access until {$formattedDate}, after which you will be switched to the free plan.",
+                    'cancels_at' => $endsAt?->toISOString(),
+                ]);
             }
-
-            // Update subscription - use the laravel-subscriptions fields
-            $subscription->update([
-                'canceled_at' => now(),
-                'cancels_at' => now(),
-            ]);
-
-            // Update user
-            $user->update([
-                'subscription_status' => 'cancelled',
-                'active_subscription_id' => null,
-            ]);
-
-            DB::commit();
-
-            Log::info('Subscription cancelled', [
-                'user_id' => $user->id,
-                'subscription_id' => $subscription->id,
-                'reason' => $validated['reason'] ?? null,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Subscription cancelled successfully',
-            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -539,6 +711,98 @@ class SubscriptionCoreController extends Controller
                 'success' => false,
                 'message' => 'Failed to cancel subscription',
                 'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Cancel a pending subscription payment.
+     * 
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function cancelSubscriptionPayment(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+        
+        // Find the most recent pending payment for this user
+        $pendingPayment = \App\Models\PendingPayment::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->orderBy('created_at', 'desc')
+            ->first();
+            
+        if (!$pendingPayment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No pending payment found to cancel.',
+            ], 404);
+        }
+        
+        try {
+            DB::beginTransaction();
+            
+            // Mark the payment as cancelled
+            $pendingPayment->markCancelled();
+            
+            // If there's an associated subscription, update its status and revert user plan
+            if ($pendingPayment->subscription_id) {
+                $subscription = PlanSubscription::find($pendingPayment->subscription_id);
+                if ($subscription) {
+                    $enhancement = SubscriptionEnhancement::where('subscription_id', $subscription->id)->first();
+                    if ($enhancement) {
+                        $metadata = $enhancement->metadata ?? [];
+                        if (is_string($metadata)) {
+                            $metadata = json_decode($metadata, true);
+                        }
+                        
+                        $previousId = $metadata['previous_subscription_id'] ?? null;
+                        
+                        // Revert user's active subscription
+                        if ($user instanceof \App\Models\User) {
+                            $user->update(['active_subscription_id' => $previousId]);
+                            Log::info('User subscription reverted after manual cancellation', [
+                                'user_id' => $user->id,
+                                'previous_id' => $previousId,
+                                'cancelled_id' => $subscription->id
+                            ]);
+                        }
+                        
+                        // Mark the cancelled subscription itself as cancelled
+                        $subscription->update(['status' => 'cancelled']);
+
+                        // Update enhancement status (handling the 'pending' vs 'payment_pending' issue)
+                        $enhancement->update(['status' => 'cancelled']);
+                    }
+                }
+            }
+            
+            // Clear the mock payment cache if it exists
+            cache()->forget('mock_payment_' . $pendingPayment->payment_id);
+            
+            DB::commit();
+            
+            Log::info('Subscription payment cancelled by user', [
+                'user_id' => $user->id,
+                'payment_id' => $pendingPayment->payment_id,
+            ]);
+
+            \App\Models\AuditLog::log('payment.cancelled', $pendingPayment, null, ['status' => 'cancelled'], 'Payment session cancelled by user');
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment session cancelled successfully.',
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to cancel subscription payment', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to cancel payment: ' . $e->getMessage(),
             ], 500);
         }
     }

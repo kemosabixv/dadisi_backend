@@ -43,6 +43,21 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->runInBackground()
                 ->environments(['local', 'production']) // Enable in both environments
                 ->evenInMaintenanceMode(); // Continue running even during maintenance
+
+        // Cleanup stale pending payments - Hourly
+        $schedule->job(new \App\Jobs\CleanupPendingPaymentsJob())
+                ->hourly()
+                ->withoutOverlapping();
+
+        // Cleanup old webhook events - Daily
+        $schedule->job(new \App\Jobs\CleanupWebhookEventsJob())
+                ->dailyAt('02:00')
+                ->withoutOverlapping();
+
+        // Enqueue due renewals (including retries) - Daily
+        $schedule->command('renewals:enqueue-due')
+                ->dailyAt('01:00')
+                ->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

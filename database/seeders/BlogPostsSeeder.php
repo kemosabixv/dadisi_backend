@@ -68,7 +68,7 @@ class BlogPostsSeeder extends Seeder
 
         // 3. Find target users
         $superAdmin = User::where('email', 'superadmin@dadisilab.com')->first();
-        $contentEditor = User::where('email', 'blog@dadisilab.com')->first();
+        $contentEditor = User::where('email', 'admin@dadisilab.com')->first();
         $studentUser = User::where('email', 'student@dadisilab.com')->first();
         $premiumUser = User::where('email', 'jane.smith@dadisilab.com')->first();
 

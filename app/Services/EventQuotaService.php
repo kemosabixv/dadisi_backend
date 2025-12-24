@@ -3,32 +3,60 @@
 namespace App\Services;
 
 use App\Models\User;
-use App\Models\PlanFeature;
-use Illuminate\Support\Facades\DB;
+use App\Models\Plan;
 
 class EventQuotaService
 {
     /**
      * Get the limit value for a specific feature slug from the user's current plan.
+     * Uses the new SystemFeature-based approach.
      * 
      * @param User $user
      * @param string $featureSlug
-     * @return int|null -1 for unlimited, 0 for not allowed, >0 for limit
+     * @return int -1 for unlimited, 0 for not allowed, >0 for limit
      */
     public function getFeatureLimit(User $user, string $featureSlug): int
     {
-        $plan = $user->plan;
+        $plan = $this->getUserPlan($user);
+        
         if (!$plan) {
             return 0; // No plan, no features
         }
 
-        $feature = $plan->features()->where('slug', $featureSlug)->first();
+        // Use the Plan's getFeatureValue method which works with SystemFeature
+        $value = $plan->getFeatureValue($featureSlug, 0);
         
-        if (!$feature) {
-            return 0; // Feature not defined for this plan
+        // -1 represents unlimited
+        if ($value === -1 || $value === '-1') {
+            return -1;
+        }
+        
+        return (int) $value;
+    }
+
+    /**
+     * Get the user's current plan.
+     * Checks both direct plan relationship and active subscription.
+     */
+    protected function getUserPlan(User $user): ?Plan
+    {
+        // First check direct plan relationship
+        if ($user->plan) {
+            return $user->plan;
         }
 
-        return (int) $feature->value;
+        // Fall back to active subscription's plan
+        $subscription = $user->subscriptions()
+            ->where('status', 'active')
+            ->whereNull('canceled_at')
+            ->where(function ($query) {
+                $query->whereNull('ends_at')
+                    ->orWhere('ends_at', '>', now());
+            })
+            ->with('plan')
+            ->first();
+
+        return $subscription?->plan;
     }
 
     /**
@@ -36,7 +64,7 @@ class EventQuotaService
      */
     public function canCreateEvent(User $user): bool
     {
-        // 1. Staff members have unlimited creation power
+        // Staff members have unlimited creation power
         if ($user->isStaffMember()) {
             return true;
         }
@@ -57,23 +85,48 @@ class EventQuotaService
     }
 
     /**
-     * Check if user can participate in an event based on their monthly quota.
+     * Check if user can purchase tickets based on their plan.
+     * Note: This is different from the old participation quota.
+     * Active subscribers get discounts, but guests can still purchase.
      */
-    public function canParticipate(User $user): bool
+    public function canPurchaseTickets(User $user): bool
     {
-        $limit = $this->getFeatureLimit($user, 'event_participation_limit');
+        // Everyone can purchase tickets
+        // Subscriber discounts are handled in EventOrderService
+        return true;
+    }
 
-        if ($limit === -1) {
-            return true;
+    /**
+     * Get subscriber discount percentage for ticket purchases.
+     */
+    public function getSubscriberDiscount(User $user): float
+    {
+        if (!$user->hasActiveSubscription()) {
+            return 0;
         }
 
-        if ($limit === 0) {
+        $plan = $this->getUserPlan($user);
+        if (!$plan) {
+            return 0;
+        }
+
+        // Get the ticket discount feature value
+        $discount = $plan->getFeatureValue('ticket_discount_percent', 0);
+        
+        return min(100, max(0, (float) $discount));
+    }
+
+    /**
+     * Check if user has priority access to events.
+     */
+    public function hasPriorityAccess(User $user): bool
+    {
+        $plan = $this->getUserPlan($user);
+        if (!$plan) {
             return false;
         }
 
-        $usage = $this->getMonthlyParticipationUsage($user);
-
-        return $usage < $limit;
+        return (bool) $plan->getFeatureValue('priority_event_access', false);
     }
 
     /**
@@ -81,25 +134,50 @@ class EventQuotaService
      */
     public function getRemainingCreations(User $user): ?int
     {
-        if ($user->isStaffMember()) return null; // Unlimited
+        if ($user->isStaffMember()) {
+            return null; // Unlimited
+        }
 
         $limit = $this->getFeatureLimit($user, 'event_creation_limit');
-        if ($limit === -1) return null; // Unlimited
+        
+        if ($limit === -1) {
+            return null; // Unlimited
+        }
 
         $usage = $this->getMonthlyCreationUsage($user);
         return max(0, $limit - $usage);
     }
 
     /**
-     * Get remaining participations for the current month.
+     * Get quota status for display.
      */
-    public function getRemainingParticipations(User $user): ?int
+    public function getQuotaStatus(User $user): array
     {
-        $limit = $this->getFeatureLimit($user, 'event_participation_limit');
-        if ($limit === -1) return null; // Unlimited
+        $plan = $this->getUserPlan($user);
+        
+        if (!$plan) {
+            return [
+                'has_access' => false,
+                'reason' => 'no_subscription',
+            ];
+        }
 
-        $usage = $this->getMonthlyParticipationUsage($user);
-        return max(0, $limit - $usage);
+        $creationLimit = $this->getFeatureLimit($user, 'event_creation_limit');
+        $creationUsage = $this->getMonthlyCreationUsage($user);
+
+        return [
+            'has_access' => true,
+            'plan_name' => $plan->name,
+            'creation' => [
+                'limit' => $creationLimit === -1 ? null : $creationLimit,
+                'unlimited' => $creationLimit === -1,
+                'used' => $creationUsage,
+                'remaining' => $creationLimit === -1 ? null : max(0, $creationLimit - $creationUsage),
+            ],
+            'subscriber_discount' => $this->getSubscriberDiscount($user),
+            'priority_access' => $this->hasPriorityAccess($user),
+            'resets_at' => now()->endOfMonth()->toISOString(),
+        ];
     }
 
     /**
@@ -108,17 +186,6 @@ class EventQuotaService
     public function getMonthlyCreationUsage(User $user): int
     {
         return $user->organizedEvents()
-            ->whereYear('created_at', now()->year)
-            ->whereMonth('created_at', now()->month)
-            ->count();
-    }
-
-    /**
-     * Get usage count for event participations in the current calendar month.
-     */
-    public function getMonthlyParticipationUsage(User $user): int
-    {
-        return $user->registrations()
             ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
             ->count();

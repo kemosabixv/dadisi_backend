@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Laravelcm\Subscriptions\Models\Plan as BasePlan;
 use App\Services\CurrencyService;
 
@@ -63,6 +64,23 @@ class Plan extends BasePlan
         return $query->where('is_active', true);
     }
 
+    /**
+     * Get the default free plan for new registrations.
+     * Returns the first active plan with price = 0 (free tier).
+     *
+     * @return Plan|null
+     */
+    public static function getDefaultFreePlan(): ?self
+    {
+        return static::where('is_active', true)
+            ->where(function ($query) {
+                $query->where('base_monthly_price', '<=', 0)
+                      ->orWhere('price', '<=', 0);
+            })
+            ->orderBy('sort_order')
+            ->first();
+    }
+
     protected $casts = [
         'base_monthly_price' => 'decimal:2',
         'yearly_discount_percent' => 'decimal:2',
@@ -72,6 +90,79 @@ class Plan extends BasePlan
         'yearly_promotion_expires_at' => 'datetime',
         'is_active' => 'boolean',
     ];
+
+    /**
+     * Get the system features associated with this plan.
+     */
+    public function systemFeatures(): BelongsToMany
+    {
+        return $this->belongsToMany(SystemFeature::class, 'plan_system_feature')
+            ->withPivot(['value', 'display_name', 'display_description'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the value of a system feature for this plan.
+     * Returns the feature's default value if not associated with this plan.
+     *
+     * @param string $slug The feature slug
+     * @param mixed $default Default value if feature not found
+     * @return mixed The feature value (typed appropriately)
+     */
+    public function getFeatureValue(string $slug, $default = null)
+    {
+        $feature = $this->systemFeatures()->where('slug', $slug)->first();
+
+        if ($feature) {
+            $value = $feature->pivot->value;
+            
+            // Type cast based on feature type
+            if ($feature->value_type === 'boolean') {
+                return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+            }
+            if ($feature->value_type === 'number') {
+                return (int) $value;
+            }
+            return $value;
+        }
+
+        // Fall back to system feature's default value if it exists
+        $systemFeature = SystemFeature::where('slug', $slug)->first();
+        if ($systemFeature) {
+            return $systemFeature->getTypedDefaultValue();
+        }
+
+        return $default;
+    }
+
+    /**
+     * Check if this plan has a specific feature enabled.
+     *
+     * @param string $slug The feature slug
+     * @return bool
+     */
+    public function hasFeature(string $slug): bool
+    {
+        return $this->systemFeatures()->where('slug', $slug)->exists();
+    }
+
+    /**
+     * Get the display name for a feature on this plan.
+     * Falls back to the feature's default name if not customized.
+     *
+     * @param string $slug The feature slug
+     * @return string|null
+     */
+    public function getFeatureDisplayName(string $slug): ?string
+    {
+        $feature = $this->systemFeatures()->where('slug', $slug)->first();
+
+        if ($feature) {
+            return $feature->pivot->display_name ?? $feature->name;
+        }
+
+        return null;
+    }
 
     /**
      * Get the calculated yearly price (base_monthly_price * 12, promotions applied separately)

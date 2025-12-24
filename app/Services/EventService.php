@@ -23,6 +23,9 @@ class EventService
 
     /**
      * Create a new event with quota check.
+     * 
+     * Staff users (with admin access or edit_events permission) create 'organization' events.
+     * Regular members create 'user' events.
      */
     public function createEvent(User $user, array $data): Event
     {
@@ -33,6 +36,12 @@ class EventService
         $data['created_by'] = $user->id;
         $data['organizer_id'] = $data['organizer_id'] ?? $user->id;
         $data['slug'] = $data['slug'] ?? Str::slug($data['title'] . '-' . uniqid());
+        
+        // Staff users create organization events, regular users create user events
+        if (!isset($data['event_type'])) {
+            $isStaff = $user->canAccessAdminPanel() || $user->hasPermissionTo('edit_events');
+            $data['event_type'] = $isStaff ? 'organization' : 'user';
+        }
 
         return Event::create($data);
     }
@@ -54,6 +63,8 @@ class EventService
 
     /**
      * Register a user for an event.
+     * Note: For paid events, use EventOrderService->purchase() instead.
+     * This method is for free event RSVPs only.
      */
     public function registerUser(Event $event, User $user, Ticket $ticket, array $additionalData = []): Registration
     {
@@ -62,10 +73,8 @@ class EventService
             throw new \Exception("Registration for this event is closed.");
         }
 
-        // 2. Check participation quota
-        if (!$this->quotaService->canParticipate($user)) {
-            throw new \Exception("Monthly event participation quota exceeded for your plan.");
-        }
+        // Note: Participation quota has been replaced by ticket-based purchases.
+        // Subscribers get discounts via EventOrderService, but anyone can register.
 
         // 3. Check if user already registered
         $existing = Registration::where('event_id', $event->id)

@@ -87,23 +87,10 @@ class WebhookController extends Controller
                 return response()->json(['error' => 'Invalid signature'], 400);
             }
 
-            // Process the webhook
-            $result = $this->pesapalService->processWebhook($payload);
+            // Dispatch background job for processing
+            \App\Jobs\ProcessWebhookJob::dispatch($webhookEvent->id);
 
-            // Update webhook event status
-            $webhookEvent->update([
-                'status' => 'processed',
-                'processed_at' => now(),
-                'error' => $result['status'] === 'payment_not_found' ? 'Payment not found' : null,
-            ]);
-
-            // Return appropriate response based on result
-            if ($result['status'] === 'payment_not_found') {
-                Log::warning('Webhook processed but payment not found', ['result' => $result]);
-                return response()->json(['error' => 'Payment not found'], 404);
-            }
-
-            Log::info('Webhook processed successfully', ['result' => $result]);
+            Log::info('Webhook queued for processing', ['id' => $webhookEvent->id]);
 
             // Pesapal expects HTTP 200 OK on success
             return response()->json(['status' => 'OK'], 200);

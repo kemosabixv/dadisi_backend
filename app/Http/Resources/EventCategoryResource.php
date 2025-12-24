@@ -14,6 +14,7 @@ class EventCategoryResource extends JsonResource
             'name' => $this->name,
             'slug' => $this->slug,
             'description' => $this->description,
+            'color' => $this->color,
             'image_path' => $this->image_path,
             'is_active' => (bool) $this->is_active,
             'sort_order' => $this->sort_order,

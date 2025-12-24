@@ -130,6 +130,14 @@ class Donation extends Model
     }
 
     /**
+     * Generate unique receipt number
+     */
+    public static function generateReceiptNumber(): string
+    {
+        return 'RCP-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6));
+    }
+
+    /**
      * Generate unique donation reference
      */
     public static function generateReference(): string

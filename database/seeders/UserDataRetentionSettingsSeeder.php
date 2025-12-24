@@ -57,6 +57,19 @@ class UserDataRetentionSettingsSeeder extends Seeder
                 'auto_delete' => true,
                 'description' => 'Temporary media uploads not attached to saved posts',
             ],
+            [
+                'data_type' => 'pending_payments',
+                'retention_days' => 1,
+                'retention_minutes' => 1440,
+                'auto_delete' => true,
+                'description' => 'Incomplete payment sessions and abandoned checkouts',
+            ],
+            [
+                'data_type' => 'webhook_events',
+                'retention_days' => 30,
+                'auto_delete' => true,
+                'description' => 'Incoming webhook notifications from payment providers',
+            ],
         ];
 
         foreach ($retentionSettings as $setting) {

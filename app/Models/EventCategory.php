@@ -17,6 +17,7 @@ class EventCategory extends Model
         'name',
         'slug',
         'description',
+        'color',
         'image_path',
         'is_active',
         'sort_order',

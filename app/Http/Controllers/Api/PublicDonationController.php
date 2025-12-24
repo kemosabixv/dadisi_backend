@@ -20,8 +20,8 @@ class PublicDonationController extends Controller
 {
     public function __construct()
     {
-        // Only index and store require auth, show by reference is public
-        $this->middleware('auth:sanctum')->only(['index', 'store']);
+        // index and destroy require auth, store and show are public
+        $this->middleware('auth:sanctum')->only(['index', 'destroy']);
     }
 
     /**
@@ -56,7 +56,7 @@ class PublicDonationController extends Controller
 
         $perPage = min((int) $request->input('per_page', 15), 50);
 
-        $donations = Donation::with(['county', 'campaign'])
+        $donations = Donation::with(['county', 'campaign', 'payment'])
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
@@ -115,12 +115,20 @@ class PublicDonationController extends Controller
 
         try {
             return DB::transaction(function () use ($validated, $request) {
+                $userId = $request->user('sanctum')?->id;
+                $countyId = $validated['county_id'] ?? null;
+
+                // If no county provided, try to get from user profile
+                if (!$countyId && $userId) {
+                    $countyId = \App\Models\MemberProfile::where('user_id', $userId)->value('county_id');
+                }
+
                 $donation = Donation::create([
-                    'user_id' => $request->user()?->id,
+                    'user_id' => $userId,
                     'donor_name' => $validated['first_name'] . ' ' . $validated['last_name'],
                     'donor_email' => $validated['email'],
                     'donor_phone' => $validated['phone_number'] ?? null,
-                    'county_id' => $validated['county_id'] ?? null,
+                    'county_id' => $countyId,
                     'amount' => $validated['amount'],
                     'currency' => $validated['currency'] ?? 'KES',
                     'status' => 'pending',
@@ -188,7 +196,7 @@ class PublicDonationController extends Controller
      */
     public function show(string $reference): JsonResponse
     {
-        $donation = Donation::with(['county', 'campaign'])
+        $donation = Donation::with(['county', 'campaign', 'payment'])
             ->where('reference', $reference)
             ->first();
 
@@ -202,6 +210,82 @@ class PublicDonationController extends Controller
         return response()->json([
             'success' => true,
             'data' => new DonationResource($donation),
+        ]);
+    }
+    /**
+     * View/Download Donation Receipt
+     *
+     * Returns a simple HTML view of the donation receipt.
+     *
+     * @urlParam reference string required Unique donation reference code.
+     */
+    public function receipt(string $reference)
+    {
+        $donation = Donation::with(['county', 'campaign', 'payment'])
+            ->where('reference', $reference)
+            ->firstOrFail();
+
+        if ($donation->status !== 'paid') {
+            return response()->json(['message' => 'Receipt only available for completed donations'], 400);
+        }
+
+        return view('donations.receipt', compact('donation'));
+    }
+
+    /**
+     * Cancel Pending Donation
+     *
+     * Cancels a pending donation. Only the authenticated owner can cancel.
+     *
+     * @authenticated
+     * @urlParam donation integer required The donation ID. Example: 1
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Donation cancelled successfully"
+     * }
+     * @response 403 {"success": false, "message": "Unauthorized"}
+     * @response 400 {"success": false, "message": "Only pending donations can be cancelled"}
+     */
+    public function destroy(Request $request, int $donation): JsonResponse
+    {
+        $donationModel = Donation::find($donation);
+
+        if (!$donationModel) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Donation not found',
+            ], 404);
+        }
+
+        // Only the owner can cancel
+        if ($donationModel->user_id !== $request->user()->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        // Only pending donations can be cancelled
+        if ($donationModel->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only pending donations can be cancelled',
+            ], 400);
+        }
+
+        // Mark as failed and soft delete the donation
+        $donationModel->update(['status' => 'failed']);
+        $donationModel->delete();
+
+        // Also mark the associated payment as failed if any
+        if ($donationModel->payment) {
+            $donationModel->payment->update(['status' => 'failed']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Donation cancelled successfully',
         ]);
     }
 }

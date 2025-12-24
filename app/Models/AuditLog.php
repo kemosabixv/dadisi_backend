@@ -23,6 +23,28 @@ class AuditLog extends Model
         'old_values' => 'array',
         'new_values' => 'array',
     ];
+    /**
+     * Helper to quickly log an action
+     */
+    public static function log(
+        string $action,
+        ?Model $model = null,
+        ?array $old = null,
+        ?array $new = null,
+        ?string $notes = null
+    ): self {
+        return self::create([
+            'action' => $action,
+            'model_type' => $model ? get_class($model) : null,
+            'model_id' => $model ? $model->id : null,
+            'user_id' => auth()->id(),
+            'old_values' => $old,
+            'new_values' => $new,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'notes' => $notes,
+        ]);
+    }
 
     /**
      * Get the user who performed the action

@@ -152,12 +152,34 @@ class AdminEventController extends Controller
             'starts_at' => 'required|date|after:now',
             'ends_at' => 'required|date|after:starts_at',
             'venue' => 'nullable|string|max:255',
-            'capacity' => 'nullable|integer',
+            'capacity' => 'nullable|integer|min:1',
             'is_online' => 'required|boolean',
             'online_link' => 'nullable|url|required_if:is_online,true',
+            'image_path' => 'nullable|string|max:500',
             'featured' => 'nullable|boolean',
             'featured_until' => 'nullable|date|after:now',
-            'organizer_id' => 'nullable|exists:users,id', // Allow creating on behalf of users
+            'organizer_id' => 'nullable|exists:users,id',
+            'price' => 'nullable|numeric|min:0',
+            'currency' => 'nullable|string|in:KES,USD',
+            'waitlist_enabled' => 'nullable|boolean',
+            'waitlist_capacity' => 'nullable|integer|min:1',
+            // Tags
+            'tag_ids' => 'nullable|array',
+            'tag_ids.*' => 'integer|exists:event_tags,id',
+            // Tickets
+            'tickets' => 'nullable|array',
+            'tickets.*.name' => 'required_with:tickets|string|max:255',
+            'tickets.*.description' => 'nullable|string',
+            'tickets.*.price' => 'required_with:tickets|numeric|min:0',
+            'tickets.*.quantity' => 'required_with:tickets|integer|min:1',
+            'tickets.*.is_active' => 'nullable|boolean',
+            // Speakers
+            'speakers' => 'nullable|array',
+            'speakers.*.name' => 'required_with:speakers|string|max:255',
+            'speakers.*.designation' => 'nullable|string|max:255',
+            'speakers.*.company' => 'nullable|string|max:255',
+            'speakers.*.bio' => 'nullable|string',
+            'speakers.*.is_featured' => 'nullable|boolean',
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -168,7 +190,58 @@ class AdminEventController extends Controller
 
         $event = Event::create($validated);
 
-        return (new EventResource($event->load(['category', 'county', 'organizer', 'creator'])))
+        // Sync tags
+        if ($request->has('tag_ids')) {
+            $event->tags()->sync($validated['tag_ids'] ?? []);
+        }
+
+        // Create tickets
+        $ticketsCreated = false;
+        if ($request->has('tickets') && !empty($validated['tickets'])) {
+            // Validate total ticket quantity vs capacity
+            $totalQuantity = array_sum(array_column($validated['tickets'], 'quantity'));
+            if ($event->capacity && $totalQuantity > $event->capacity) {
+                return response()->json([
+                    'message' => "Total ticket quantity ({$totalQuantity}) exceeds event capacity ({$event->capacity})."
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            foreach ($validated['tickets'] as $ticketData) {
+                $event->tickets()->create($ticketData);
+            }
+            $ticketsCreated = true;
+        }
+
+        // Auto-create default ticket for paid events without user-defined tiers
+        // Uses 999999 as a sentinel value for "unlimited" when capacity is not set
+        if (!$ticketsCreated && $event->price > 0) {
+            $event->tickets()->create([
+                'name' => 'General Admission',
+                'price' => $event->price,
+                'quantity' => $event->capacity ?? 999999,
+                'is_active' => true,
+            ]);
+        }
+
+        // Auto-create RSVP ticket for free events without user-defined tiers
+        // Uses 999999 as a sentinel value for "unlimited" when capacity is not set
+        if (!$ticketsCreated && (!$event->price || $event->price == 0)) {
+            $event->tickets()->create([
+                'name' => 'RSVP',
+                'price' => 0,
+                'quantity' => $event->capacity ?? 999999,
+                'is_active' => true,
+            ]);
+        }
+
+        // Create speakers
+        if ($request->has('speakers')) {
+            foreach ($validated['speakers'] ?? [] as $speakerData) {
+                $event->speakers()->create($speakerData);
+            }
+        }
+
+        return (new EventResource($event->load(['category', 'county', 'organizer', 'creator', 'tags', 'tickets', 'speakers'])))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
@@ -188,15 +261,64 @@ class AdminEventController extends Controller
             'venue' => 'nullable|string|max:255',
             'is_online' => 'nullable|boolean',
             'online_link' => 'nullable|url',
-            'capacity' => 'nullable|integer',
+            'capacity' => 'nullable|integer|min:1',
+            'waitlist_enabled' => 'nullable|boolean',
+            'waitlist_capacity' => 'nullable|integer|min:1',
+            'image_path' => 'nullable|string|max:500',
             'starts_at' => 'nullable|date',
             'ends_at' => 'nullable|date|after:starts_at',
             'registration_deadline' => 'nullable|date|before:starts_at',
+            'status' => 'nullable|string|in:draft,published,pending_approval,cancelled,suspended',
+            'price' => 'nullable|numeric|min:0',
+            'currency' => 'nullable|string|in:KES,USD',
+            // Tags
+            'tag_ids' => 'nullable|array',
+            'tag_ids.*' => 'integer|exists:event_tags,id',
+            // Tickets
+            'tickets' => 'nullable|array',
+            'tickets.*.id' => 'nullable|integer',
+            'tickets.*.name' => 'required_with:tickets|string|max:255',
+            'tickets.*.description' => 'nullable|string',
+            'tickets.*.price' => 'required_with:tickets|numeric|min:0',
+            'tickets.*.quantity' => 'required_with:tickets|integer|min:1',
+            'tickets.*.is_active' => 'nullable|boolean',
+            // Speakers
+            'speakers' => 'nullable|array',
+            'speakers.*.id' => 'nullable|integer',
+            'speakers.*.name' => 'required_with:speakers|string|max:255',
+            'speakers.*.designation' => 'nullable|string|max:255',
+            'speakers.*.company' => 'nullable|string|max:255',
+            'speakers.*.bio' => 'nullable|string',
+            'speakers.*.is_featured' => 'nullable|boolean',
         ]);
 
+        // Update base event fields
         $event->update($validated);
 
-        return new EventResource($event->load(['category', 'county', 'organizer', 'creator']));
+        // Sync tags
+        if ($request->has('tag_ids')) {
+            $event->tags()->sync($validated['tag_ids'] ?? []);
+        }
+
+        // Sync tickets (delete and recreate)
+        if ($request->has('tickets')) {
+            $event->tickets()->delete();
+            foreach ($validated['tickets'] ?? [] as $ticketData) {
+                unset($ticketData['id']); // Remove id for new creation
+                $event->tickets()->create($ticketData);
+            }
+        }
+
+        // Sync speakers (delete and recreate)
+        if ($request->has('speakers')) {
+            $event->speakers()->delete();
+            foreach ($validated['speakers'] ?? [] as $speakerData) {
+                unset($speakerData['id']); // Remove id for new creation
+                $event->speakers()->create($speakerData);
+            }
+        }
+
+        return new EventResource($event->load(['category', 'county', 'organizer', 'creator', 'tags', 'tickets', 'speakers']));
     }
 
     /**

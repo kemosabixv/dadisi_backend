@@ -29,6 +29,53 @@ class PesapalGateway implements PaymentGatewayInterface
     }
 
     /**
+     * Initiate a payment - creates a payment session with Pesapal and returns redirect URL.
+     * This is the preferred entry point for starting a new payment.
+     * 
+     * @param array $paymentData Payment details including order_id, amount, currency, user details
+     * @return array Payment initiation response with redirect_url
+     */
+    public function initiatePayment(array $paymentData): array
+    {
+        // Generate a unique order identifier
+        $orderId = $paymentData['order_id'] ?? ('ORDER_' . time() . '_' . \Illuminate\Support\Str::random(8));
+        
+        // Call charge with the payment data
+        $result = $this->charge(
+            (string) $orderId,
+            (int) (($paymentData['amount'] ?? 0) * 100), // Convert to cents
+            [
+                'email' => $paymentData['email'] ?? '',
+                'phone' => $paymentData['phone'] ?? '',
+                'first_name' => $paymentData['first_name'] ?? '',
+                'last_name' => $paymentData['last_name'] ?? '',
+                'description' => $paymentData['description'] ?? 'Dadisi Payment',
+            ]
+        );
+
+        // Transform to initiatePayment format
+        return [
+            'success' => $result['success'] ?? false,
+            'transaction_id' => $result['reference'] ?? $orderId,
+            'order_tracking_id' => $result['reference'] ?? null,
+            'redirect_url' => $result['redirect_url'] ?? null,
+            'message' => $result['success'] ? 'Payment initiated successfully' : ($result['error_message'] ?? 'Payment initiation failed'),
+            'gateway' => 'pesapal',
+        ];
+    }
+
+    /**
+     * Query the status of an existing payment.
+     * 
+     * @param string $transactionId The transaction/order tracking ID to query
+     * @return array Payment status information
+     */
+    public function queryStatus(string $transactionId): array
+    {
+        return $this->getTransactionStatus($transactionId);
+    }
+
+    /**
      * Charge via Pesapal using API 3.0 (JWT Bearer token authentication).
      * 
      * Pesapal API 3.0 requires:

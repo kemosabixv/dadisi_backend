@@ -58,6 +58,13 @@ class RegistrationController extends Controller
 
         $ticket = Ticket::findOrFail($validated['ticket_id']);
 
+        // Block RSVP for paid tickets - users must use the purchase flow for those
+        if ($ticket->price > 0) {
+            return response()->json([
+                'message' => 'This event requires a ticket purchase. Please complete the checkout process.'
+            ], Response::HTTP_PAYMENT_REQUIRED);
+        }
+
         try {
             $registration = $this->eventService->registerUser($event, $user, $ticket, $validated['additional_data'] ?? []);
             return new RegistrationResource($registration->load(['event', 'ticket', 'user']));

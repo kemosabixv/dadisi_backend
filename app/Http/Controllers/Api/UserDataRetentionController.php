@@ -206,7 +206,7 @@ class UserDataRetentionController extends Controller
     public function updateRetentionDays(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'data_type' => 'required|string|in:orphaned_media,temporary_media,user_accounts,audit_logs,session_data,failed_jobs,temp_files,backups',
+            'data_type' => 'required|string|in:orphaned_media,temporary_media,user_accounts,audit_logs,session_data,failed_jobs,temp_files,backups,pending_payments,webhook_events',
             'retention_days' => 'nullable|integer|min:0|max:3650',
             'retention_minutes' => 'nullable|integer|min:1|max:525600', // Max 1 year in minutes
         ]);
