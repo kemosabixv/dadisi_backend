@@ -6,6 +6,12 @@ use App\Models\Event;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
+/**
+ * Event Policy
+ * 
+ * All events are now staff-created only (organization events).
+ * Regular users can only view events and RSVP/register.
+ */
 class EventPolicy
 {
     use HandlesAuthorization;
@@ -28,34 +34,24 @@ class EventPolicy
 
     /**
      * Determine whether the user can create models.
+     * Only admin/staff can create events.
      */
     public function create(User $user): bool
     {
-        // Handled by EventQuotaService in Controller/Service
-        return true;
+        return $user->canAccessAdminPanel() || $user->hasPermissionTo('create_events');
     }
 
     /**
      * Determine whether the user can update the model.
-     * 
-     * - Organizers can always update their own events
-     * - Admins can update any event
-     * - Staff with edit_events permission can update organization events (for collaboration)
+     * Only admin/staff can update events.
      */
     public function update(User $user, Event $event): bool
     {
-        // Organizer can always edit their own events
-        if ($user->id === $event->organizer_id) {
-            return true;
-        }
-        
-        // Admin panel access grants full control
         if ($user->canAccessAdminPanel()) {
             return true;
         }
         
-        // Staff with edit_events permission can edit organization events
-        if ($event->event_type === 'organization' && $user->hasPermissionTo('edit_events')) {
+        if ($user->hasPermissionTo('edit_events')) {
             return true;
         }
         
@@ -64,25 +60,15 @@ class EventPolicy
 
     /**
      * Determine whether the user can delete the model.
-     * 
-     * - Organizers can delete their own events
-     * - Admins can delete any event
-     * - Staff with delete_events permission can delete organization events
+     * Only admin/staff can delete events.
      */
     public function delete(User $user, Event $event): bool
     {
-        // Organizer can always delete their own events
-        if ($user->id === $event->organizer_id) {
-            return true;
-        }
-        
-        // Admin panel access grants full control
         if ($user->canAccessAdminPanel()) {
             return true;
         }
         
-        // Staff with delete_events permission can delete organization events
-        if ($event->event_type === 'organization' && $user->hasPermissionTo('delete_events')) {
+        if ($user->hasPermissionTo('delete_events')) {
             return true;
         }
         

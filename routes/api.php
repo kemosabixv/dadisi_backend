@@ -509,33 +509,12 @@ Route::get('events/{slug}', [EventController::class, 'show'])->name('events.show
 Route::get('events/{event}/tickets', [TicketController::class, 'index'])->name('events.tickets.index');
 Route::get('events/{event}/speakers', [SpeakerController::class, 'index'])->name('events.speakers.index');
 
-// Event Management - User routes (Organizers & Attendees)
+// Event Management - User routes (Attendees only - registration/RSVP)
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('events/my', [EventController::class, 'myEvents'])->name('events.my');
-    Route::get('events/quotas', [EventController::class, 'getQuotas'])->name('events.quotas');
-    Route::post('events', [EventController::class, 'store'])->name('events.store');
-    Route::put('events/{event}', [EventController::class, 'update'])->name('events.update');
-    Route::delete('events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
-
-    // Tickets management for organizers
-    Route::post('events/{event}/tickets', [TicketController::class, 'store'])->name('events.tickets.store');
-    Route::put('tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
-    Route::delete('tickets/{ticket}', [TicketController::class, 'destroy'])->name('tickets.destroy');
-
-    // Speakers management for organizers
-    Route::post('events/{event}/speakers', [SpeakerController::class, 'store'])->name('events.speakers.store');
-    Route::put('speakers/{speaker}', [SpeakerController::class, 'update'])->name('speakers.update');
-    Route::delete('speakers/{speaker}', [SpeakerController::class, 'destroy'])->name('speakers.destroy');
-
     // Registration/RSVP
     Route::post('events/{event}/register', [RegistrationController::class, 'store'])->name('events.register');
     Route::get('registrations/my', [RegistrationController::class, 'myRegistrations'])->name('registrations.my');
     Route::delete('registrations/{registration}', [RegistrationController::class, 'destroy'])->name('registrations.destroy');
-
-    // Organizer scanning/check-in
-    Route::post('events/{event}/scan', [RegistrationController::class, 'scan'])->name('events.scan');
-    Route::post('events/{event}/registrations/{registration}/check-in', [RegistrationController::class, 'checkIn'])->name('events.check-in');
-    Route::get('events/{event}/attendance-stats', [RegistrationController::class, 'getAttendanceStats'])->name('events.attendance-stats');
 });
 
 // Event Management - Admin routes
@@ -547,8 +526,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('events', [AdminEventController::class, 'store'])->name('admin.events.store');
     Route::get('events/{event}', [AdminEventController::class, 'show'])->name('admin.events.show');
     Route::put('events/{event}', [AdminEventController::class, 'update'])->name('admin.events.update');
-    Route::post('events/{event}/approve', [AdminEventController::class, 'approve'])->name('admin.events.approve');
-    Route::post('events/{event}/reject', [AdminEventController::class, 'reject'])->name('admin.events.reject');
     Route::post('events/{event}/publish', [AdminEventController::class, 'publish'])->name('admin.events.publish');
     Route::post('events/{event}/cancel', [AdminEventController::class, 'cancel'])->name('admin.events.cancel');
     Route::post('events/{event}/suspend', [AdminEventController::class, 'suspend'])->name('admin.events.suspend');
@@ -556,14 +533,23 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('events/{event}/unfeature', [AdminEventController::class, 'unfeature'])->name('admin.events.unfeature');
     Route::get('events/{event}/registrations', [AdminEventController::class, 'registrations'])->name('admin.events.registrations');
     Route::delete('events/{event}', [AdminEventController::class, 'destroy'])->name('admin.events.destroy');
+    
+    // Tickets management (admin only now)
+    Route::post('events/{event}/tickets', [TicketController::class, 'store'])->name('admin.events.tickets.store');
+    Route::put('tickets/{ticket}', [TicketController::class, 'update'])->name('admin.tickets.update');
+    Route::delete('tickets/{ticket}', [TicketController::class, 'destroy'])->name('admin.tickets.destroy');
 
-    // Finance Payouts Management
-    Route::get('payouts', [\App\Http\Controllers\Api\Admin\AdminPayoutController::class, 'index'])->name('admin.payouts.index');
-    Route::get('payouts/{payout}', [\App\Http\Controllers\Api\Admin\AdminPayoutController::class, 'show'])->name('admin.payouts.show');
-    Route::post('payouts/{payout}/approve', [\App\Http\Controllers\Api\Admin\AdminPayoutController::class, 'approve'])->name('admin.payouts.approve');
-    Route::post('payouts/{payout}/complete', [\App\Http\Controllers\Api\Admin\AdminPayoutController::class, 'complete'])->name('admin.payouts.complete');
-    Route::post('payouts/{payout}/reject', [\App\Http\Controllers\Api\Admin\AdminPayoutController::class, 'reject'])->name('admin.payouts.reject');
+    // Speakers management (admin only now)
+    Route::post('events/{event}/speakers', [SpeakerController::class, 'store'])->name('admin.events.speakers.store');
+    Route::put('speakers/{speaker}', [SpeakerController::class, 'update'])->name('admin.speakers.update');
+    Route::delete('speakers/{speaker}', [SpeakerController::class, 'destroy'])->name('admin.speakers.destroy');
+
+    // Scanning/check-in (admin only now)
+    Route::post('events/{event}/scan', [RegistrationController::class, 'scan'])->name('admin.events.scan');
+    Route::post('events/{event}/registrations/{registration}/check-in', [RegistrationController::class, 'checkIn'])->name('admin.events.check-in');
+    Route::get('events/{event}/attendance-stats', [RegistrationController::class, 'getAttendanceStats'])->name('admin.events.attendance-stats');
 });
+
 
 // Event Categories & Tags
 use App\Http\Controllers\Api\EventCategoryController;

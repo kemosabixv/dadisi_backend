@@ -32,7 +32,6 @@ class Event extends Model
         'featured',
         'featured_until',
         'created_by',
-        'organizer_id',
         'published_at',
         'registration_deadline',
         'starts_at',
@@ -82,14 +81,6 @@ class Event extends Model
     }
 
     /**
-     * Get the organizer of this event (can be staff or a user)
-     */
-    public function organizer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'organizer_id');
-    }
-
-    /**
      * Get all tickets for this event
      */
     public function tickets(): HasMany
@@ -127,14 +118,6 @@ class Event extends Model
     public function tags(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(EventTag::class, 'event_tag', 'event_id', 'tag_id');
-    }
-
-    /**
-     * Get all payouts for this event
-     */
-    public function payouts(): HasMany
-    {
-        return $this->hasMany(Payout::class);
     }
 
     /**

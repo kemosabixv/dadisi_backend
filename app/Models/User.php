@@ -242,27 +242,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Events organized by this user
-     */
-    public function organizedEvents(): HasMany
-    {
-        return $this->hasMany(Event::class, 'organizer_id');
-    }
-
-    /**
      * Event registrations by this user
      */
     public function registrations(): HasMany
     {
         return $this->hasMany(Registration::class);
-    }
-
-    /**
-     * Payouts for events organized by this user
-     */
-    public function payouts(): HasMany
-    {
-        return $this->hasMany(Payout::class, 'organizer_id');
     }
 
     /**

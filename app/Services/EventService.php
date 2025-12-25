@@ -34,14 +34,10 @@ class EventService
         }
 
         $data['created_by'] = $user->id;
-        $data['organizer_id'] = $data['organizer_id'] ?? $user->id;
         $data['slug'] = $data['slug'] ?? Str::slug($data['title'] . '-' . uniqid());
         
-        // Staff users create organization events, regular users create user events
-        if (!isset($data['event_type'])) {
-            $isStaff = $user->canAccessAdminPanel() || $user->hasPermissionTo('edit_events');
-            $data['event_type'] = $isStaff ? 'organization' : 'user';
-        }
+        // All events are now organization events (staff-created only)
+        $data['event_type'] = 'organization';
 
         return Event::create($data);
     }
