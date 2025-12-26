@@ -85,26 +85,32 @@ class SecurityHeadersMiddleware
             // Default fallback
             "default-src 'self'",
 
-            // Scripts - allow self and inline (needed for Next.js)
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            // Scripts - allow self, inline (needed for Next.js), TinyMCE, and Builder.io
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tiny.cloud https://cdn.builder.io",
 
-            // Styles - allow self and inline (needed for Tailwind)
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            // Styles - allow self, inline (needed for Tailwind), Google Fonts, and TinyMCE
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud",
 
-            // Images - allow self, data URIs, and common image hosts
-            "img-src 'self' data: blob: http://localhost:8000 http://127.0.0.1:8000 https:",
+            // Images - allow self, data URIs, blob, localhost, HTTPS sources, TinyMCE, and R2 storage
+            "img-src 'self' data: blob: http://localhost:8000 http://127.0.0.1:8000 https: https://cdn.tiny.cloud https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev",
 
-            // Fonts - allow self and Google Fonts
-            "font-src 'self' https://fonts.gstatic.com",
+            // Fonts - allow self, Google Fonts, and TinyMCE
+            "font-src 'self' https://fonts.gstatic.com https://cdn.tiny.cloud",
 
-            // API connections
-            "connect-src 'self' {$apiUrl} {$frontendUrl} http://localhost:8000 http://127.0.0.1:8000 https://api.exchangerate-api.com",
+            // API connections - allow self, API, frontend, localhost, exchange rate API, Sentry, and TinyMCE
+            "connect-src 'self' {$apiUrl} {$frontendUrl} http://localhost:8000 http://127.0.0.1:8000 https://api.exchangerate-api.com https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://cdn.tiny.cloud",
+
+            // Workers - allow blob for Sentry Replay
+            "worker-src 'self' blob:",
 
             // Forms
             "form-action 'self'",
 
-            // Frames - prevent embedding
+            // Frames - prevent embedding except for TinyMCE dialogs
             "frame-ancestors 'none'",
+
+            // Frame sources - allow TinyMCE dialogs
+            "frame-src 'self' https://cdn.tiny.cloud",
 
             // Base URI
             "base-uri 'self'",
