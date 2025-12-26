@@ -256,7 +256,6 @@ class SampleEventsSeeder extends Seeder
                     'event_type' => 'organization', // Staff-created events are organization events
                     'featured' => $eventData['featured'] ?? false,
                     'featured_until' => $eventData['featured_until'] ?? null,
-                    'organizer_id' => $organizer->id,
                     'created_by' => $organizer->id,
                     'published_at' => $eventData['status'] === 'published' ? now() : null,
                     'starts_at' => $eventData['starts_at'],
