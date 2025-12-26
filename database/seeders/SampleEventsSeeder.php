@@ -264,7 +264,7 @@ class SampleEventsSeeder extends Seeder
             );
 
             // Assign Seed Images (Local/Testing only)
-            if (app()->environment('local', 'testing')) {
+            if (app()->environment('local', 'testing', 'staging')) {
                 $eventImages = [
                     'Community Science Day 2025' => 'seed-images/stem-education.png',
                     'Biotech Workshop: PCR Fundamentals' => 'seed-images/biotech-lab.png',

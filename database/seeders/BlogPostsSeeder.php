@@ -263,7 +263,7 @@ class BlogPostsSeeder extends Seeder
             );
 
             // 5. Assign Seed Images (Local/Testing only)
-            if (app()->environment('local', 'testing')) {
+            if (app()->environment('local', 'testing', 'staging')) {
                 $seedImages = [
                     'seed-images/biotech-lab.png',
                     'seed-images/genomics-viz.png',

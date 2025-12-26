@@ -172,7 +172,7 @@ class DonationCampaignSeeder extends Seeder
             $campaignData['created_by'] = $creator->id;
             
             // Assign seed image
-            if (app()->environment('local', 'testing')) {
+            if (app()->environment('local', 'testing', 'staging')) {
                 $campaignData['hero_image_path'] = $campaignImages[$campaignData['title']] ?? null;
             }
             
