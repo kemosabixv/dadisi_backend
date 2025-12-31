@@ -53,3 +53,6 @@ Thumbs.db
 .env.testing
 .env
 
+full_test_output.txt
+composer.lock
+composer.lock

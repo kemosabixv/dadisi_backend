@@ -412,18 +412,6 @@ Route::prefix('subscriptions')->middleware('auth:sanctum')->group(function () {
     Route::post('process-mock-payment', [SubscriptionCoreController::class, 'processMockPayment'])->name('subscriptions.process-mock-payment');
     Route::post('cancel', [SubscriptionCoreController::class, 'cancelSubscription'])->name('subscriptions.cancel');
 
-    // Manual renewal endpoints (Phase 2)
-    Route::post('{id}/renew/manual', [RenewalController::class, 'requestManualRenewal'])->name('subscriptions.renew.manual');
-    Route::get('{id}/renewal-options', [RenewalController::class, 'getManualRenewalOptions'])->name('subscriptions.renew.options');
-    Route::post('{id}/confirm-renewal', [RenewalController::class, 'confirmManualRenewal'])->name('subscriptions.renew.confirm');
-    Route::get('reminders', [RenewalController::class, 'getPendingReminders'])->name('subscriptions.reminders');
-    Route::post('{id}/extend-grace-period', [RenewalController::class, 'extendGracePeriod'])->name('subscriptions.extend-grace');
-    // User stored payment methods (Phase 2.C)
-    Route::get('payment-methods', [UserPaymentMethodController::class, 'index'])->name('payments.methods.index');
-    Route::post('payment-methods', [UserPaymentMethodController::class, 'store'])->name('payments.methods.store');
-    Route::put('payment-methods/{id}', [UserPaymentMethodController::class, 'update'])->name('payments.methods.update');
-    Route::delete('payment-methods/{id}', [UserPaymentMethodController::class, 'destroy'])->name('payments.methods.destroy');
-    Route::post('payment-methods/{id}/primary', [UserPaymentMethodController::class, 'setPrimary'])->name('payments.methods.setPrimary');
 });
 // Student approval routes
 Route::prefix('student-approvals')->middleware('auth:sanctum')->group(function () {

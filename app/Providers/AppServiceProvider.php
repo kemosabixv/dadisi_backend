@@ -296,17 +296,6 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\UIPermissionService::class
         );
 
-        // User Payment Method Service
-        $this->app->bind(
-            \App\Services\Contracts\UserPaymentMethodServiceContract::class,
-            \App\Services\UserPaymentMethodService::class
-        );
-
-        // Renewal Reminder Service
-        $this->app->bind(
-            \App\Services\Contracts\RenewalReminderServiceContract::class,
-            \App\Services\RenewalReminderService::class
-        );
 
         // Event Order Service
         $this->app->bind(
