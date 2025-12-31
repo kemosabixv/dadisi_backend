@@ -20,7 +20,7 @@ class LabSpaceSeeder extends Seeder
                 'type' => 'wet_lab',
                 'description' => 'A fully equipped wet laboratory designed for biological, chemical, and biochemical research. Features include fume hoods, biosafety cabinets, PCR machines, centrifuges, and specialized workbenches for handling liquids, chemicals, and biological samples safely.',
                 'capacity' => 6,
-                'amenities' => [
+                'equipment_list' => [
                     'Fume hoods (3)',
                     'Biosafety cabinet (Class II)',
                     'PCR thermal cycler',
@@ -39,8 +39,7 @@ class LabSpaceSeeder extends Seeder
                     'Lab coat and safety goggles required',
                     'No food or drinks in lab',
                 ],
-                'hourly_rate' => 0,
-                'is_active' => true,
+                'is_available' => true,
             ],
             [
                 'name' => 'Dry Lab',
@@ -48,7 +47,7 @@ class LabSpaceSeeder extends Seeder
                 'type' => 'dry_lab',
                 'description' => 'A computational and analytical laboratory focused on data analysis, bioinformatics, software development, and theoretical research. Equipped with high-performance computing workstations, large displays for data visualization, and collaborative workspace areas.',
                 'capacity' => 10,
-                'amenities' => [
+                'equipment_list' => [
                     'High-performance computing workstations (10)',
                     'Large 4K displays for data visualization',
                     'High-speed internet (1 Gbps)',
@@ -65,8 +64,7 @@ class LabSpaceSeeder extends Seeder
                     'Computer Lab Usage Agreement',
                     'No food or drinks near equipment',
                 ],
-                'hourly_rate' => 0,
-                'is_active' => true,
+                'is_available' => true,
             ],
             [
                 'name' => 'Greenhouse',
@@ -74,7 +72,7 @@ class LabSpaceSeeder extends Seeder
                 'type' => 'greenhouse',
                 'description' => 'A controlled environment greenhouse for plant science, agricultural research, and sustainability projects. Features automated climate control, irrigation systems, and dedicated areas for seedling propagation, growth experiments, and vertical farming research.',
                 'capacity' => 4,
-                'amenities' => [
+                'equipment_list' => [
                     'Automated climate control system',
                     'Drip irrigation system',
                     'Grow lights (LED full spectrum)',
@@ -93,8 +91,7 @@ class LabSpaceSeeder extends Seeder
                     'Sun protection recommended',
                     'Allergen awareness',
                 ],
-                'hourly_rate' => 0,
-                'is_active' => true,
+                'is_available' => true,
             ],
             [
                 'name' => 'Mobile Lab Unit',
@@ -102,7 +99,7 @@ class LabSpaceSeeder extends Seeder
                 'type' => 'mobile_lab',
                 'description' => 'A fully equipped mobile laboratory unit designed for field research, community outreach, and off-site experiments. Can be deployed to remote locations for environmental sampling, field testing, and educational demonstrations. Booking includes the vehicle and basic equipment setup.',
                 'capacity' => 4,
-                'amenities' => [
+                'equipment_list' => [
                     'Mobile lab vehicle',
                     'Portable PCR machine',
                     'Field microscopes',
@@ -121,8 +118,7 @@ class LabSpaceSeeder extends Seeder
                     'Personal Protective Equipment (PPE) usage',
                     'Emergency communication protocol knowledge',
                 ],
-                'hourly_rate' => 0,
-                'is_active' => true,
+                'is_available' => true,
             ],
         ];
 

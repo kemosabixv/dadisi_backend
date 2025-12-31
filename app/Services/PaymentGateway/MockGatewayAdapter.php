@@ -2,7 +2,10 @@
 
 namespace App\Services\PaymentGateway;
 
-use App\Services\MockPaymentService;
+use App\DTOs\Payments\PaymentRequestDTO;
+use App\DTOs\Payments\PaymentStatusDTO;
+use App\DTOs\Payments\TransactionResultDTO;
+use App\Services\Payments\MockPaymentService;
 
 /**
  * Mock Gateway Adapter
@@ -13,45 +16,79 @@ use App\Services\MockPaymentService;
 class MockGatewayAdapter implements PaymentGatewayInterface
 {
     /**
-     * Initiate a mock payment - creates a payment session and returns redirect URL.
-     * 
-     * @param array $paymentData Payment details
-     * @return array Payment initiation response with redirect_url
+     * Initiate a mock payment session.
      */
-    public function initiatePayment(array $paymentData): array
+    public function initiatePayment(PaymentRequestDTO $request): TransactionResultDTO
     {
-        return MockPaymentService::initiatePayment($paymentData);
+        $data = [
+            'amount' => $request->amount,
+            'currency' => $request->currency,
+            'order_id' => $request->reference,
+            'user_id' => null, // Would need to be passed in if required
+            'description' => $request->description,
+        ];
+
+        $res = MockPaymentService::initiatePayment($data);
+
+        return TransactionResultDTO::success(
+            transactionId: $res['transaction_id'] ?? '',
+            merchantReference: $request->reference ?? '',
+            redirectUrl: $res['redirect_url'] ?? null,
+            status: 'PENDING',
+            message: 'Mock payment initiated',
+            rawResponse: $res
+        );
     }
 
     /**
      * Process a mock payment (charge).
-     * 
-     * @param string $identifier Phone number or payment identifier
-     * @param int $amount Amount in smallest currency unit
-     * @param array $metadata Additional payment context
-     * @return array Normalized response
      */
-    public function charge(string $identifier, int $amount, array $metadata = []): array
+    public function charge(string $identifier, int $amount, array $metadata = []): TransactionResultDTO
     {
-        $res = MockPaymentService::processPayment($identifier, array_merge($metadata, ['amount' => $amount]));
+        $data = array_merge($metadata, ['amount' => $amount / 100]); // Mock service expects decimal
+        $res = MockPaymentService::processPayment($identifier, $data);
 
-        // Normalize response to gateway interface
-        return [
-            'success' => $res['success'] ?? false,
-            'status' => $res['status'] ?? ($res['success'] ? 'success' : 'failed'),
-            'error_message' => $res['error_message'] ?? null,
-            'raw' => $res,
-        ];
+        if (($res['status'] ?? '') === 'failed') {
+            return TransactionResultDTO::failure($res['error_message'] ?? 'Mock payment failed', $res);
+        }
+
+        return TransactionResultDTO::success(
+            transactionId: $res['transaction_id'] ?? '',
+            merchantReference: $identifier,
+            status: strtoupper($res['status'] ?? 'COMPLETED'),
+            message: $res['message'] ?? 'Mock payment processed',
+            rawResponse: $res
+        );
     }
 
     /**
      * Query status of a mock payment.
-     * 
-     * @param string $transactionId Transaction ID to query
-     * @return array Payment status
      */
-    public function queryStatus(string $transactionId): array
+    public function queryStatus(string $transactionId): PaymentStatusDTO
     {
-        return MockPaymentService::queryPaymentStatus($transactionId);
+        $res = MockPaymentService::queryPaymentStatus($transactionId);
+
+        return new PaymentStatusDTO(
+            transactionId: $transactionId,
+            merchantReference: $transactionId,
+            status: strtoupper($res['status'] ?? 'UNKNOWN'),
+            amount: (float) ($res['amount'] ?? 0),
+            currency: $res['currency'] ?? 'KES',
+            rawDetails: $res
+        );
+    }
+
+    /**
+     * Refund a mock payment.
+     */
+    public function refund(string $transactionId, float $amount, string $reason = ''): TransactionResultDTO
+    {
+        return TransactionResultDTO::success(
+            transactionId: 'REF_' . $transactionId,
+            merchantReference: $transactionId,
+            status: 'REFUNDED',
+            message: 'Mock refund processed',
+            rawResponse: ['transaction_id' => $transactionId, 'amount' => $amount, 'reason' => $reason]
+        );
     }
 }

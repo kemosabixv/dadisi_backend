@@ -3,12 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StoreForumCategoryRequest;
+use App\Http\Requests\Api\UpdateForumCategoryRequest;
 use App\Models\ForumCategory;
+use App\Services\Contracts\ForumTaxonomyServiceContract;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ForumCategoryController extends Controller
 {
+    public function __construct(private ForumTaxonomyServiceContract $taxonomyService)
+    {
+    }
 
     /**
      * List all active forum categories.
@@ -35,17 +42,20 @@ class ForumCategoryController extends Controller
      */
     public function index(): JsonResponse
     {
-        $categories = ForumCategory::active()
-            ->with(['children' => function ($query) {
-                $query->active()->ordered()->withCount('threads');
-            }])
-            ->ordered()
-            ->withCount('threads')
-            ->get();
+        try {
+            $categories = ForumCategory::active()
+                ->with(['children' => function ($query) {
+                    $query->active()->ordered()->withCount('threads');
+                }])
+                ->ordered()
+                ->withCount('threads')
+                ->get();
 
-        return response()->json([
-            'data' => $categories,
-        ]);
+            return response()->json(['success' => true, 'data' => $categories]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve forum categories', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve forum categories'], 500);
+        }
     }
 
 
@@ -60,28 +70,31 @@ class ForumCategoryController extends Controller
      */
     public function show(ForumCategory $category): JsonResponse
     {
-        $category->loadCount('threads');
-        $category->load(['children' => function ($query) {
-            $query->active()->ordered()->withCount('threads');
-        }]);
+        try {
+            $category->loadCount('threads');
+            $category->load(['children' => function ($query) {
+                $query->active()->ordered()->withCount('threads');
+            }]);
 
-        $threads = $category->threads()
-            ->with(['user:id,username,profile_picture_path', 'county:id,name', 'lastPost.user:id,username'])
-            ->pinnedFirst()
-            ->paginate(20);
+            $threads = $category->threads()
+                ->with(['user:id,username,profile_picture_path', 'county:id,name', 'lastPost.user:id,username'])
+                ->pinnedFirst()
+                ->paginate(20);
 
-        // Return format frontend expects: { data: { ...category, threads: [] } }
-        $categoryData = $category->toArray();
-        $categoryData['threads'] = $threads->items();
-        $categoryData['threads_meta'] = [
-            'current_page' => $threads->currentPage(),
-            'last_page' => $threads->lastPage(),
-            'total' => $threads->total(),
-        ];
+            // Return format frontend expects: { data: { ...category, threads: [] } }
+            $categoryData = $category->toArray();
+            $categoryData['threads'] = $threads->items();
+            $categoryData['threads_meta'] = [
+                'current_page' => $threads->currentPage(),
+                'last_page' => $threads->lastPage(),
+                'total' => $threads->total(),
+            ];
 
-        return response()->json([
-            'data' => $categoryData,
-        ]);
+            return response()->json(['success' => true, 'data' => $categoryData]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve forum category', ['error' => $e->getMessage(), 'category_id' => $category->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve forum category'], 500);
+        }
     }
 
 
@@ -100,25 +113,26 @@ class ForumCategoryController extends Controller
      * @bodyParam order integer The sort order (lower is first). Example: 0
      * @bodyParam is_active boolean Whether the category is visible. Example: true
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreForumCategoryRequest $request): JsonResponse
     {
-        $this->authorize('create', ForumCategory::class);
+        try {
+            $this->authorize('create', ForumCategory::class);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:forum_categories,slug',
-            'description' => 'nullable|string',
-            'icon' => 'nullable|string|max:100',
-            'order' => 'integer|min:0',
-            'is_active' => 'boolean',
-        ]);
+            $validated = $request->validated();
 
-        $category = ForumCategory::create($validated);
+            $category = ForumCategory::create($validated);
 
-        return response()->json([
-            'data' => $category,
-            'message' => 'Category created successfully.',
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'data' => $category,
+                'message' => 'Category created successfully.',
+            ], 201);
+        } catch (AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => 'You are not authorized to create categories.'], 403);
+        } catch (\Exception $e) {
+            Log::error('Failed to create forum category', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create forum category'], 500);
+        }
     }
 
 
@@ -138,25 +152,26 @@ class ForumCategoryController extends Controller
      * @bodyParam order integer The sort order (lower is first). Example: 0
      * @bodyParam is_active boolean Whether the category is visible. Example: true
      */
-    public function update(Request $request, ForumCategory $category): JsonResponse
+    public function update(UpdateForumCategoryRequest $request, ForumCategory $category): JsonResponse
     {
-        $this->authorize('update', $category);
+        try {
+            $this->authorize('update', $category);
 
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'slug' => 'sometimes|string|max:255|unique:forum_categories,slug,' . $category->id,
-            'description' => 'nullable|string',
-            'icon' => 'nullable|string|max:100',
-            'order' => 'integer|min:0',
-            'is_active' => 'boolean',
-        ]);
+            $validated = $request->validated();
 
-        $category->update($validated);
+            $category->update($validated);
 
-        return response()->json([
-            'data' => $category,
-            'message' => 'Category updated successfully.',
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $category,
+                'message' => 'Category updated successfully.',
+            ]);
+        } catch (AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => 'You are not authorized to update this category.'], 403);
+        } catch (\Exception $e) {
+            Log::error('Failed to update forum category', ['error' => $e->getMessage(), 'category_id' => $category->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update forum category'], 500);
+        }
     }
 
 
@@ -171,12 +186,20 @@ class ForumCategoryController extends Controller
      */
     public function destroy(ForumCategory $category): JsonResponse
     {
-        $this->authorize('delete', $category);
+        try {
+            $this->authorize('delete', $category);
 
-        $category->delete();
+            $category->delete();
 
-        return response()->json([
-            'message' => 'Category deleted successfully.',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Category deleted successfully.',
+            ]);
+        } catch (AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => 'You are not authorized to delete this category.'], 403);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete forum category', ['error' => $e->getMessage(), 'category_id' => $category->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete forum category'], 500);
+        }
     }
 }

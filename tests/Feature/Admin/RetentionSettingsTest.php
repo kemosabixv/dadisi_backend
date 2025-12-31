@@ -14,6 +14,8 @@ class RetentionSettingsTest extends TestCase
     private User $superAdmin;
     private UserDataRetentionSetting $retentionSetting;
 
+    protected $shouldSeedRoles = true;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,7 +46,7 @@ class RetentionSettingsTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function retention_settings_index_requires_authentication()
     {
-        $response = $this->getJson('/api/retention-settings');
+        $response = $this->getJson('/api/admin/retention-settings');
 
         $response->assertStatus(401)
             ->assertJson(['message' => 'Unauthenticated.']);
@@ -54,7 +56,7 @@ class RetentionSettingsTest extends TestCase
     public function super_admin_can_list_retention_settings()
     {
         $response = $this->actingAs($this->superAdmin)
-            ->getJson('/api/retention-settings');
+            ->getJson('/api/admin/retention-settings');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -72,7 +74,7 @@ class RetentionSettingsTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function retention_settings_show_requires_authentication()
     {
-        $response = $this->getJson('/api/retention-settings/1');
+        $response = $this->getJson('/api/admin/retention-settings/1');
 
         $response->assertStatus(401);
     }
@@ -81,7 +83,7 @@ class RetentionSettingsTest extends TestCase
     public function super_admin_can_view_single_retention_setting()
     {
         $response = $this->actingAs($this->superAdmin)
-            ->getJson('/api/retention-settings/' . $this->retentionSetting->id);
+            ->getJson('/api/admin/retention-settings/' . $this->retentionSetting->id);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -98,7 +100,7 @@ class RetentionSettingsTest extends TestCase
     public function retention_settings_show_returns_404_for_nonexistent()
     {
         $response = $this->actingAs($this->superAdmin)
-            ->getJson('/api/retention-settings/99999');
+            ->getJson('/api/admin/retention-settings/99999');
 
         $response->assertStatus(404);
     }
@@ -106,7 +108,7 @@ class RetentionSettingsTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function retention_settings_update_requires_authentication()
     {
-        $response = $this->putJson('/api/retention-settings/1', [
+        $response = $this->putJson('/api/admin/retention-settings/1', [
             'retention_days' => 90,
         ]);
 
@@ -117,7 +119,7 @@ class RetentionSettingsTest extends TestCase
     public function super_admin_can_update_retention_setting()
     {
         $response = $this->actingAs($this->superAdmin)
-            ->putJson('/api/retention-settings/' . $this->retentionSetting->id, [
+            ->putJson('/api/admin/retention-settings/' . $this->retentionSetting->id, [
                 'retention_days' => 120,
             ]);
 
@@ -130,7 +132,7 @@ class RetentionSettingsTest extends TestCase
     public function retention_settings_update_validates_retention_days()
     {
         $response = $this->actingAs($this->superAdmin)
-            ->putJson('/api/retention-settings/' . $this->retentionSetting->id, [
+            ->putJson('/api/admin/retention-settings/' . $this->retentionSetting->id, [
                 'retention_days' => 'invalid',
             ]);
 
@@ -145,7 +147,7 @@ class RetentionSettingsTest extends TestCase
         $user->assignRole('member');
 
         $response = $this->actingAs($user)
-            ->getJson('/api/retention-settings');
+            ->getJson('/api/admin/retention-settings');
 
         $response->assertStatus(403);
     }
@@ -154,7 +156,7 @@ class RetentionSettingsTest extends TestCase
     public function super_admin_can_update_retention_days()
     {
         $response = $this->actingAs($this->superAdmin)
-            ->postJson('/api/retention-settings/update-days', [
+            ->postJson('/api/admin/retention-settings/update-days', [
                 'data_type' => 'audit_logs',
                 'retention_days' => 365,
             ]);
@@ -167,7 +169,7 @@ class RetentionSettingsTest extends TestCase
     public function update_retention_days_validates_input()
     {
         $response = $this->actingAs($this->superAdmin)
-            ->postJson('/api/retention-settings/update-days', [
+            ->postJson('/api/admin/retention-settings/update-days', [
                 'data_type' => 'invalid_type',
                 'retention_days' => 'not_a_number',
             ]);
@@ -180,7 +182,7 @@ class RetentionSettingsTest extends TestCase
     public function super_admin_can_get_retention_summary()
     {
         $response = $this->actingAs($this->superAdmin)
-            ->getJson('/api/retention-settings-summary');
+            ->getJson('/api/admin/retention-settings-summary');
 
         $response->assertStatus(200)
             ->assertJsonStructure([

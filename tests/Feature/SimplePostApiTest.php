@@ -7,6 +7,7 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Models\Post;
 use App\Models\County;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * Simple Post API tests - focused on what actually works
@@ -20,8 +21,8 @@ class SimplePostApiTest extends TestCase
         parent::setUp();
     }
 
+    #[Test]
     /**
-     * @test
      * Public posts endpoint returns 200
      */
     public function test_public_posts_endpoint_returns_success(): void
@@ -31,8 +32,8 @@ class SimplePostApiTest extends TestCase
         $response->assertStatus(200);
     }
 
+    #[Test]
     /**
-     * @test
      * Can create a published post and retrieve it
      */
     public function test_can_retrieve_published_posts(): void
@@ -59,8 +60,8 @@ class SimplePostApiTest extends TestCase
         ]);
     }
 
+    #[Test]
     /**
-     * @test
      * Published posts are returned in list
      */
     public function test_published_posts_appear_in_list(): void
@@ -90,8 +91,8 @@ class SimplePostApiTest extends TestCase
         $this->assertEquals(1, $response->json('pagination.total'));
     }
 
+    #[Test]
     /**
-     * @test
      * Can filter posts by search
      */
     public function test_search_filters_posts(): void
@@ -123,8 +124,8 @@ class SimplePostApiTest extends TestCase
         $this->assertEquals(1, $response->json('pagination.total'));
     }
 
+    #[Test]
     /**
-     * @test
      * Posts are paginated correctly
      */
     public function test_posts_pagination(): void
@@ -146,8 +147,8 @@ class SimplePostApiTest extends TestCase
         $this->assertEquals(10, $response->json('pagination.per_page'));
     }
 
+    #[Test]
     /**
-     * @test
      * Can retrieve single post
      */
     public function test_can_retrieve_single_post(): void
@@ -169,8 +170,8 @@ class SimplePostApiTest extends TestCase
         $response->assertStatus(200);
     }
 
+    #[Test]
     /**
-     * @test
      * Filter posts by county
      */
     public function test_filter_posts_by_county(): void

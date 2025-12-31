@@ -18,14 +18,22 @@ return new class extends Migration {
             $table->boolean('is_online')->default(false);
             $table->string('online_link', 255)->nullable();
             $table->integer('capacity')->nullable();
+            $table->foreignId('category_id')->nullable()->constrained('event_categories')->nullOnDelete();
+            $table->foreignId('organizer_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('county_id')->nullable()->constrained('counties')->nullOnDelete();
             $table->string('image_path', 255)->nullable();
             $table->decimal('price', 12, 2)->nullable();
             $table->char('currency', 3)->default('KES');
+            $table->boolean('featured')->default(false);
+            $table->timestamp('featured_until')->nullable();
+            $table->boolean('waitlist_enabled')->default(false);
+            $table->integer('waitlist_capacity')->nullable();
             $table->enum('status', ['draft','published'])->default('draft');
+            $table->string('event_type', 50)->default('user')->comment('organization = Dadisi events, user = community events');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

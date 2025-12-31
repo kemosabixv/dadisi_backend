@@ -6,13 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\SpeakerResource;
 use App\Models\Event;
 use App\Models\Speaker;
+use App\Services\Contracts\SpeakerServiceContract;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class SpeakerController extends Controller
 {
-    public function __construct()
+    public function __construct(private SpeakerServiceContract $speakerService)
     {
         $this->middleware('auth:sanctum')->except(['index']);
     }
@@ -36,10 +38,15 @@ class SpeakerController extends Controller
      *   ]
      * }
      */
-    public function index(Event $event)
+    public function index(Event $event): JsonResponse
     {
-        $speakers = $event->speakers()->orderBy('sort_order')->get();
-        return SpeakerResource::collection($speakers);
+        try {
+            $speakers = $this->speakerService->listSpeakers($event);
+            return response()->json(['success' => true, 'data' => SpeakerResource::collection($speakers)]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve speakers', ['error' => $e->getMessage(), 'event_id' => $event->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve speakers'], 500);
+        }
     }
 
     /**
@@ -47,29 +54,37 @@ class SpeakerController extends Controller
      * 
      * @group Speakers
      */
-    public function store(Request $request, Event $event)
+    public function store(Request $request, Event $event): JsonResponse
     {
-        $this->authorize('update', $event);
+        try {
+            $this->authorize('update', $event);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'company' => 'nullable|string|max:255',
-            'designation' => 'nullable|string|max:255',
-            'bio' => 'nullable|string',
-            'website_url' => 'nullable|url',
-            'linkedin_url' => 'nullable|url',
-            'is_featured' => 'boolean',
-            'sort_order' => 'integer',
-        ]);
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'company' => 'nullable|string|max:255',
+                'designation' => 'nullable|string|max:255',
+                'bio' => 'nullable|string',
+                'website_url' => 'nullable|url',
+                'linkedin_url' => 'nullable|url',
+                'is_featured' => 'boolean',
+                'sort_order' => 'integer',
+            ]);
 
-        $speaker = $event->speakers()->create($validated);
+            if ($request->hasFile('photo')) {
+                $validated['photo_file'] = $request->file('photo');
+            }
 
-        if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('events/speakers', 'public');
-            $speaker->update(['photo_path' => $path]);
+            $speaker = $this->speakerService->addSpeaker($event, $validated);
+
+            return response()->json([
+                'success' => true,
+                'data' => new SpeakerResource($speaker),
+                'message' => 'Speaker added successfully.'
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to create speaker', ['error' => $e->getMessage(), 'event_id' => $event->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to create speaker'], 500);
         }
-
-        return new SpeakerResource($speaker);
     }
 
     /**
@@ -77,32 +92,37 @@ class SpeakerController extends Controller
      * 
      * @group Speakers
      */
-    public function update(Request $request, Speaker $speaker)
+    public function update(Request $request, Speaker $speaker): JsonResponse
     {
-        $this->authorize('update', $speaker->event);
+        try {
+            $this->authorize('update', $speaker->event);
 
-        $validated = $request->validate([
-            'name' => 'nullable|string|max:255',
-            'company' => 'nullable|string|max:255',
-            'designation' => 'nullable|string|max:255',
-            'bio' => 'nullable|string',
-            'website_url' => 'nullable|url',
-            'linkedin_url' => 'nullable|url',
-            'is_featured' => 'nullable|boolean',
-            'sort_order' => 'nullable|integer',
-        ]);
+            $validated = $request->validate([
+                'name' => 'nullable|string|max:255',
+                'company' => 'nullable|string|max:255',
+                'designation' => 'nullable|string|max:255',
+                'bio' => 'nullable|string',
+                'website_url' => 'nullable|url',
+                'linkedin_url' => 'nullable|url',
+                'is_featured' => 'nullable|boolean',
+                'sort_order' => 'nullable|integer',
+            ]);
 
-        $speaker->update($validated);
-
-        if ($request->hasFile('photo')) {
-            if ($speaker->photo_path) {
-                Storage::disk('public')->delete($speaker->photo_path);
+            if ($request->hasFile('photo')) {
+                $validated['photo_file'] = $request->file('photo');
             }
-            $path = $request->file('photo')->store('events/speakers', 'public');
-            $speaker->update(['photo_path' => $path]);
-        }
 
-        return new SpeakerResource($speaker);
+            $updatedSpeaker = $this->speakerService->updateSpeaker($speaker, $validated);
+
+            return response()->json([
+                'success' => true,
+                'data' => new SpeakerResource($updatedSpeaker),
+                'message' => 'Speaker updated successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update speaker', ['error' => $e->getMessage(), 'speaker_id' => $speaker->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update speaker'], 500);
+        }
     }
 
     /**
@@ -110,16 +130,17 @@ class SpeakerController extends Controller
      * 
      * @group Speakers
      */
-    public function destroy(Speaker $speaker)
+    public function destroy(Speaker $speaker): JsonResponse
     {
-        $this->authorize('update', $speaker->event);
-        
-        if ($speaker->photo_path) {
-            Storage::disk('public')->delete($speaker->photo_path);
-        }
-        
-        $speaker->delete();
+        try {
+            $this->authorize('update', $speaker->event);
+            
+            $this->speakerService->removeSpeaker($speaker);
 
-        return response()->json(null, Response::HTTP_NO_CONTENT);
+            return response()->json(['success' => true], Response::HTTP_NO_CONTENT);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete speaker', ['error' => $e->getMessage(), 'speaker_id' => $speaker->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete speaker'], 500);
+        }
     }
 }

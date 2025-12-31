@@ -109,6 +109,22 @@ class PlanSeeder extends Seeder
                         'resettable_period' => 1,
                         'resettable_interval' => 'month',
                     ],
+                    [
+                        'name' => 'Monthly Forum Threads',
+                        'slug' => 'forum-threads-monthly',
+                        'limit' => 0, // Unlimited for all plans
+                        'description' => 'Number of forum threads you can create per month',
+                        'resettable_period' => 1,
+                        'resettable_interval' => 'month',
+                    ],
+                    [
+                        'name' => 'Monthly Forum Replies',
+                        'slug' => 'forum-replies-monthly',
+                        'limit' => 0, // Unlimited for all plans
+                        'description' => 'Number of forum replies you can post per month',
+                        'resettable_period' => 1,
+                        'resettable_interval' => 'month',
+                    ],
                 ],
             ],
             [
@@ -174,6 +190,22 @@ class PlanSeeder extends Seeder
                         'limit' => 2,
                         'description' => 'Number of research collaborators allowed',
                         'resettable_period' => 0,
+                        'resettable_interval' => 'month',
+                    ],
+                    [
+                        'name' => 'Monthly Forum Threads',
+                        'slug' => 'forum-threads-monthly',
+                        'limit' => 0, // Unlimited for all plans
+                        'description' => 'Number of forum threads you can create per month',
+                        'resettable_period' => 1,
+                        'resettable_interval' => 'month',
+                    ],
+                    [
+                        'name' => 'Monthly Forum Replies',
+                        'slug' => 'forum-replies-monthly',
+                        'limit' => 0, // Unlimited for all plans
+                        'description' => 'Number of forum replies you can post per month',
+                        'resettable_period' => 1,
                         'resettable_interval' => 'month',
                     ],
                 ],
@@ -250,6 +282,22 @@ class PlanSeeder extends Seeder
                         'limit' => 50,
                         'description' => 'Maximum number of samples to track',
                         'resettable_period' => 0,
+                        'resettable_interval' => 'month',
+                    ],
+                    [
+                        'name' => 'Monthly Forum Threads',
+                        'slug' => 'forum-threads-monthly',
+                        'limit' => 0, // Unlimited for all plans
+                        'description' => 'Number of forum threads you can create per month',
+                        'resettable_period' => 1,
+                        'resettable_interval' => 'month',
+                    ],
+                    [
+                        'name' => 'Monthly Forum Replies',
+                        'slug' => 'forum-replies-monthly',
+                        'limit' => 0, // Unlimited for all plans
+                        'description' => 'Number of forum replies you can post per month',
+                        'resettable_period' => 1,
                         'resettable_interval' => 'month',
                     ],
                 ],
@@ -329,6 +377,22 @@ class PlanSeeder extends Seeder
                         'limit' => 0, // 0 = unlimited
                         'description' => 'Maximum number of samples to track (unlimited)',
                         'resettable_period' => 0,
+                        'resettable_interval' => 'month',
+                    ],
+                    [
+                        'name' => 'Monthly Forum Threads',
+                        'slug' => 'forum-threads-monthly',
+                        'limit' => 0, // Unlimited for all plans
+                        'description' => 'Number of forum threads you can create per month',
+                        'resettable_period' => 1,
+                        'resettable_interval' => 'month',
+                    ],
+                    [
+                        'name' => 'Monthly Forum Replies',
+                        'slug' => 'forum-replies-monthly',
+                        'limit' => 0, // Unlimited for all plans
+                        'description' => 'Number of forum replies you can post per month',
+                        'resettable_period' => 1,
                         'resettable_interval' => 'month',
                     ],
                 ],

@@ -9,6 +9,22 @@ use App\Models\User;
 class ForumPostPolicy
 {
     /**
+     * Check if user is staff (via roles or member profile).
+     */
+    private function isStaff(User $user): bool
+    {
+        if ($user->hasAnyRole(['admin', 'super_admin', 'moderator', 'forum_moderator'])) {
+            return true;
+        }
+        
+        if ($user->can('moderate_forum') || ($user->memberProfile && $user->memberProfile->is_staff)) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
      * Determine if the user can create posts in a thread.
      */
     public function create(User $user, ForumThread $thread): bool
@@ -25,8 +41,8 @@ class ForumPostPolicy
      */
     public function update(User $user, ForumPost $post): bool
     {
-        // Author or moderator/admin
-        if ($user->hasAnyRole(['admin', 'super_admin', 'moderator'])) {
+        // Author or staff
+        if ($this->isStaff($user)) {
             return true;
         }
         return $user->id === $post->user_id;
@@ -37,10 +53,7 @@ class ForumPostPolicy
      */
     public function delete(User $user, ForumPost $post): bool
     {
-        // Author or moderator/admin
-        if ($user->hasAnyRole(['admin', 'super_admin', 'moderator'])) {
-            return true;
-        }
-        return $user->id === $post->user_id;
+        // Staff only for deletion
+        return $this->isStaff($user);
     }
 }

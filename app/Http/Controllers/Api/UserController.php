@@ -2,1158 +2,453 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateUserDTO;
+use App\DTOs\UpdateUserDTO;
+use App\Exceptions\UserException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\AssignRoleRequest;
+use App\Http\Requests\Api\BulkAssignRoleRequest;
+use App\Http\Requests\Api\BulkDeleteUserRequest;
+use App\Http\Requests\Api\BulkInviteUserRequest;
+use App\Http\Requests\Api\BulkRemoveRoleRequest;
+use App\Http\Requests\Api\BulkRestoreUserRequest;
+use App\Http\Requests\Api\BulkUpdateUserRequest;
+use App\Http\Requests\Api\DeleteSelfRequest;
+use App\Http\Requests\Api\InviteUserRequest;
+use App\Http\Requests\Api\RemoveRoleRequest;
+use App\Http\Requests\Api\SyncRolesRequest;
+use App\Http\Requests\Api\UpdateUserRequest;
+use App\Http\Requests\Api\UploadProfilePictureRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
-use App\Models\AuditLog;
-use Illuminate\Http\Request;
+use App\Services\Contracts\UserBulkOperationServiceContract;
+use App\Services\Contracts\UserInvitationServiceContract;
+use App\Services\Contracts\UserRoleServiceContract;
+use App\Services\Contracts\UserServiceContract;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
+/**
+ * @group User Management
+ */
 class UserController extends Controller
 {
     /**
-     * List All Users (Admin Portal)
-     *
-     * Comprehensive user listing endpoint for administrative user management.
-     * Provides paginated results with advanced filtering, search, and role-based access control.
-     * Includes soft-deleted users for audit and restoration purposes. Essential for user administration,
-     * role assignments, and monitoring user activity across the system.
-     *
-     * Access Requirements: super_admin, admin users only (enforced via UserPolicy)
-     * Use Cases: User administration portal, role management interface, user activity monitoring
-     *
-     * @group User Management
-     * @authenticated
-     * @description Administrative user listing with advanced filtering and search capabilities. Requires admin privileges.
-     *
-     * @queryParam include_deleted boolean optional Include soft-deleted users in results. Useful for viewing deactivated accounts. Example: true
-     * @queryParam search string optional Search across username, email, and name fields (first_name, last_name from profile). Case-insensitive partial matching. Example: john
-     * @queryParam role string optional Filter users by specific role name. Must match existing role names from roles table. Example: member
-     * @queryParam status string optional Filter by account status. Options: "active" (non-deleted users), "deleted" (soft-deleted users only). Example: active
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "data": {
-     *     "current_page": 1,
-     *     "data": [
-     *       {
-     *         "id": 2,
-     *         "username": "jane_doe",
-     *         "email": "jane.doe@example.com",
-     *         "email_verified_at": "2025-01-15T00:00:00Z",
-     *         "roles": [
-     *           {"id": 2, "name": "member", "description": "Regular member user"}
-     *         ],
-     *         "profile": {
-     *           "id": 2,
-     *           "first_name": "Jane",
-     *           "last_name": "Doe",
-     *           "county": {"id": 1, "name": "Nairobi"}
-     *         },
-     *         "deleted_at": null,
-     *         "created_at": "2025-01-15T00:00:00Z"
-     *       }
-     *     ],
-     *     "per_page": 20,
-     *     "total": 12
-     *   }
-     * }
-     *
-     * @response 403 {"message": "This action is unauthorized."}
+     * UserController constructor.
+     */
+    public function __construct(
+        private UserServiceContract $userService,
+        private UserRoleServiceContract $roleService,
+        private UserBulkOperationServiceContract $bulkService,
+        private UserInvitationServiceContract $invitationService
+    ) {
+        $this->middleware(['auth:sanctum', 'admin'])->except(['deleteSelf', 'uploadProfilePicture', 'exportData']);
+        $this->middleware('auth:sanctum')->only(['deleteSelf', 'uploadProfilePicture', 'exportData']);
+    }
+
+    /**
+     * List All Users
      */
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', User::class);
+        try {
+            $filters = $request->only(['search', 'role', 'status', 'include_deleted', 'verified']);
+            $perPage = min((int) $request->input('per_page', 20), 100);
 
-        $query = User::with(['memberProfile', 'roles'])
-            ->withTrashed($request->boolean('include_deleted'));
+            $users = $this->userService->listUsers($filters, $perPage);
 
-        // Search functionality
-        if ($request->has('search') && !empty($request->search)) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('username', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhereHas('memberProfile', function($profile) use ($search) {
-                      $profile->where('first_name', 'like', "%{$search}%")
-                             ->orWhere('last_name', 'like', "%{$search}%");
-                  });
-            });
+            return response()->json([
+                'success' => true,
+                'data' => UserResource::collection($users),
+                'pagination' => [
+                    'total' => $users->total(),
+                    'per_page' => $users->perPage(),
+                    'current_page' => $users->currentPage(),
+                    'last_page' => $users->lastPage(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve users', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve users'], 500);
         }
-
-        // Role filter
-        if ($request->has('role')) {
-            $query->whereHas('roles', function($q) use ($request) {
-                $q->where('name', $request->role);
-            });
-        }
-
-        // Status filter
-        if ($request->has('status')) {
-            if ($request->status === 'deleted') {
-                $query->onlyTrashed();
-            } elseif ($request->status === 'active') {
-                $query->whereNull('deleted_at');
-            }
-        }
-
-        $users = $query->latest()->paginate(20);
-
-        return response()->json([
-            'success' => true,
-            'data' => $users,
-        ]);
     }
 
     /**
-     * Get user details
-     *
-     * Retrieves full profile information, role assignments, and status for a specific user.
-     * This endpoint is restricted to administrators for viewing other users' data.
-     * Includes soft-deleted users if they exist.
-     *
-     * @group User Management
-     * @authenticated
-     *
-     * @urlParam id required The unique ID of the user. Example: 1
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "data": {
-     *     "id": 2,
-     *     "username": "jane_doe",
-     *     "email": "jane.doe@example.com",
-     *     "email_verified_at": "2025-01-15T00:00:00Z",
-     *     "roles": [
-     *       {"id": 2, "name": "member", "guard_name": "web"}
-     *     ],
-     *     "profile": {
-     *       "first_name": "Jane",
-     *       "last_name": "Doe",
-     *       "county": {"id": 1, "name": "Nairobi"}
-     *     },
-     *     "last_login_at": "2025-12-25T10:00:00Z",
-     *     "deleted_at": null
-     *   }
-     * }
-     * @response 404 {
-     *   "success": false,
-     *   "message": "User not found"
-     * }
+     * Get User Details
      */
-    public function show(Request $request, string $id): JsonResponse
+    public function show(string $id): JsonResponse
     {
-        $user = User::withTrashed()
-            ->with(['memberProfile.county', 'roles'])
-            ->findOrFail($id);
-
-        $this->authorize('view', $user);
-
-        return response()->json([
-            'success' => true,
-            'data' => $user,
-        ]);
+        try {
+            $user = $this->userService->getById($id);
+            return response()->json([
+                'success' => true,
+                'data' => new UserResource($user),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
     }
 
     /**
-     * Update user details
-     *
-     * Modifies core user account information such as username and email.
-     * RESTRICTED: Admin or Super Admin access required.
-     * Changes are audit logged.
-     *
-     * @group User Management
-     * @authenticated
-     *
-     * @urlParam id required The user ID to update. Example: 1
-     * @bodyParam username string optional New username (must be unique). Example: newusername
-     * @bodyParam email string optional New email address (must be unique). Example: newemail@example.com
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "User updated successfully",
-     *   "data": {
-     *     "id": 1,
-     *     "username": "newusername",
-     *     "email": "newemail@example.com"
-     *   }
-     * }
-     * @response 422 {
-     *   "message": "The username has already been taken."
-     * }
+     * Update User
      */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(UpdateUserRequest $request, string $id): JsonResponse
     {
-        $user = User::withTrashed()->findOrFail($id);
-        $this->authorize('update', $user);
+        try {
+            $user = $this->userService->getById($id);
+            $dto = UpdateUserDTO::fromRequest($request);
+            
+            $updatedUser = $this->userService->update($request->user(), $user, $dto);
 
-        $validated = $request->validate([
-            'username' => [
-                'sometimes',
-                'string',
-                'max:255',
-                Rule::unique('users')->ignore($user->id)
-            ],
-            'email' => [
-                'sometimes',
-                'email',
-                Rule::unique('users')->ignore($user->id)
-            ],
-        ]);
-
-        $oldValues = $user->only(array_keys($validated));
-
-        $user->update($validated);
-
-        // Audit log
-        $this->logAuditAction('update', User::class, $user->id, $oldValues, $validated, 'User information updated by admin');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'User updated successfully',
-            'data' => $user->load(['memberProfile', 'roles']),
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'User updated successfully',
+                'data' => new UserResource($updatedUser),
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        } catch (\Exception $e) {
+            Log::error('User update failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to update user'], 500);
+        }
     }
 
     /**
-     * Deactivate user (Soft Delete)
-     *
-     * Temporarily deactivates a user account by setting a 'deleted_at' timestamp.
-     * The user will no longer be able to log in, but their data is preserved until retention period expires.
-     * Admin action or user self-deletion (via separate endpoint) triggers this state.
-     *
-     * @group User Management
-     * @authenticated
-     *
-     * @urlParam id required The user ID to deactivate. Example: 1
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "User account has been deactivated"
-     * }
-     * @response 403 {
-     *   "success": false,
-     *   "message": "Unauthorized"
-     * }
+     * Deactivate User (Soft Delete)
      */
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $user = User::findOrFail($id);
-        $this->authorize('delete', $user);
+        try {
+            $user = $this->userService->getById($id);
+            $this->userService->delete($request->user(), $user);
 
-        $oldValues = $user->toArray();
+            return response()->json([
+                'success' => true,
+                'message' => 'User account deactivated',
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to deactivate user'], 500);
+        }
+    }
 
-        // Revoke all tokens
-        $user->tokens()->delete();
+    /**
+     * Restore User
+     */
+    public function restore(Request $request, string $id): JsonResponse
+    {
+        try {
+            $user = User::withTrashed()->findOrFail($id);
+            $restoredUser = $this->userService->restore($request->user(), $user);
 
-        // Soft delete user (this will cascade to profile due to foreign key)
-        $user->delete();
+            return response()->json([
+                'success' => true,
+                'message' => 'User account restored',
+                'data' => new UserResource($restoredUser),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to restore user'], 500);
+        }
+    }
 
-        // Audit log
-        $this->logAuditAction('delete', User::class, $user->id, $oldValues, null, 'User account soft deleted');
+    /**
+     * Permanently Delete User
+     */
+    public function forceDelete(Request $request, string $id): JsonResponse
+    {
+        try {
+            $user = User::withTrashed()->findOrFail($id);
+            $this->userService->forceDelete($request->user(), $user);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User account has been deactivated',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'User account permanently deleted',
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to permanently delete user'], 500);
+        }
     }
 
     /**
      * Upload Profile Picture
      *
-     * Uploads and updates the user's profile picture.
-     * Replaces any existing picture.
+     * Upload a new profile picture for the authenticated user.
      *
      * @group User Management
      * @authenticated
-     *
-     * @bodyParam image file required The image file (jpeg, png, jpg, gif, svg). Max 5MB.
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Profile picture updated successfully",
-     *   "data": {
-     *     "profile_picture_url": "http://localhost:8000/storage/profile-pictures/avatar.jpg"
-     *   }
-     * }
+     * @responseFile status=200 storage/responses/profile-picture-upload.json
      */
-    public function uploadProfilePicture(Request $request): JsonResponse
+    public function uploadProfilePicture(UploadProfilePictureRequest $request): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $url = $this->userService->uploadProfilePicture($request->user(), $request->file('image'));
 
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:5120', // 5MB
-        ]);
-
-        $file = $request->file('image');
-        $filename = 'profile-' . $user->id . '-' . time() . '.' . $file->getClientOriginalExtension();
-
-        // Delete old picture if exists
-        if ($user->profile_picture_path && Storage::disk('public')->exists($user->profile_picture_path)) {
-            Storage::disk('public')->delete($user->profile_picture_path);
-        }
-
-        // Store new file
-        $path = $file->storeAs('profile-pictures', $filename, 'public');
-
-        // Update user record
-        $oldValues = $user->only(['profile_picture_path']);
-        $user->update(['profile_picture_path' => $path]);
-
-        // Audit log
-        $this->logAuditAction('update_profile_picture', User::class, $user->id, $oldValues, ['profile_picture_path' => $path], 'User uploaded new profile picture');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile picture updated successfully',
-            'data' => [
-                'profile_picture_url' => $user->profile_picture_url,
-                'user' => $user->load(['memberProfile', 'roles']),
-            ],
-        ]);
-    }
-
-    /**
-     * Delete own account
-     *
-     * Allows an authenticated user to permanently deactivate their own account.
-     * Requires current password for security verification.
-     * Logs the user out from all devices immediately.
-     *
-     * @group User Management
-     * @authenticated
-     *
-     * @bodyParam password string required Current password for confirmation. Example: mypassword123
-     * @bodyParam reason string optional Feedback/reason for leaving. Example: No longer need account
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Your account has been deactivated. You have been logged out from all devices."
-     * }
-     * @response 400 {
-     *   "success": false,
-     *   "message": "Current password is incorrect"
-     * }
-     */
-    public function deleteSelf(Request $request): JsonResponse
-    {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'password' => 'required|string',
-            'reason' => 'nullable|string|max:500',
-        ]);
-
-        // Verify password
-        if (!Hash::check($validated['password'], $user->password)) {
             return response()->json([
-                'success' => false,
-                'message' => 'Current password is incorrect',
-            ], 400);
+                'success' => true,
+                'message' => 'Profile picture updated',
+                'data' => ['profile_picture_url' => $url],
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
         }
-
-        $oldValues = $user->toArray();
-
-        // Revoke all tokens (logout from all devices)
-        $user->tokens()->delete();
-
-        // Soft delete user
-        $user->delete();
-
-        // Audit log
-        $this->logAuditAction('self_delete', User::class, $user->id, $oldValues, null,
-            'User self-deleted account. Reason: ' . ($validated['reason'] ?? 'Not specified'));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Your account has been deactivated. You have been logged out from all devices.',
-        ]);
     }
 
     /**
-     * Restore deactivated user
-     *
-     * Reactivates a previously soft-deleted user account.
-     * The user will regain access to their account and previous roles.
-     * RESTRICTED: Super Admin or Admin only.
-     *
-     * @group User Management
-     * @authenticated
-     *
-     * @urlParam id required The user ID to restore. Example: 1
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "User account has been restored",
-     *   "data": {
-     *     "id": 1,
-     *     "username": "johndoe",
-     *     "deleted_at": null
-     *   }
-     * }
+     * Delete Own Account
      */
-    public function restore(Request $request, string $id): JsonResponse
+    public function deleteSelf(DeleteSelfRequest $request): JsonResponse
     {
-        $user = User::withTrashed()->findOrFail($id);
-        $this->authorize('restore', $user);
+        try {
+            $this->userService->deleteSelf(
+                $request->user(),
+                $request->input('password'),
+                $request->input('reason')
+            );
 
-        $user->restore();
-
-        // Audit log
-        $this->logAuditAction('restore', User::class, $user->id, null, $user->toArray(), 'User account restored by admin');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'User account has been restored',
-            'data' => $user->load(['memberProfile', 'roles']),
-        ]);
-    }
-
-    /**
-     * Force delete a user (permanent deletion)
-     *
-     * @group User Management
-     * @authenticated
-     * @description Permanently delete a user after retention period (Super Admin only)
-     *
-     * @urlParam id required The user ID to permanently delete
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "User account permanently deleted"
-     * }
-     */
-    public function forceDelete(Request $request, string $id): JsonResponse
-    {
-        $user = User::withTrashed()->findOrFail($id);
-        $this->authorize('forceDelete', $user);
-
-        // Check retention period from settings
-        $retentionDays = \App\Models\UserDataRetentionSetting::getRetentionDays('user_accounts');
-        if ($user->deleted_at && $user->deleted_at->addDays($retentionDays)->isFuture()) {
             return response()->json([
-                'success' => false,
-                'message' => "Cannot permanently delete user before retention period expires ({$retentionDays} days)",
-            ], 400);
+                'success' => true,
+                'message' => 'Your account has been deactivated',
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
         }
-
-        $oldValues = $user->toArray();
-
-        // Delete associated personal access tokens
-        $user->tokens()->delete();
-
-        // Force delete (permanent)
-        $user->forceDelete();
-
-        // Audit log
-        $this->logAuditAction('force_delete', User::class, $user->id, $oldValues, null, 'User account permanently deleted');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'User account permanently deleted',
-        ]);
     }
 
     /**
-     * Get audit log for a specific user
-     *
-     * @group User Management
-     * @authenticated
-     * @description View audit trail for a specific user (Admin only)
-     *
-     * @urlParam id required The user ID
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "data": [
-     *     {
-     *       "id": 1,
-     *       "action": "update",
-     *       "model_type": "User",
-     *       "old_values": {"username": "oldname"},
-     *       "new_values": {"username": "newname"},
-     *       "user_id": 2,
-     *       "created_at": "2025-01-01T00:00:00Z"
-     *     }
-     *   ]
-     * }
-     */
-    public function auditLog(Request $request, string $id): JsonResponse
-    {
-        $this->authorize('viewAuditLogs', User::class);
-
-        $logs = AuditLog::where('model_type', User::class)
-            ->where('model_id', $id)
-            ->with('user:id,username')
-            ->latest()
-            ->paginate(50);
-
-        return response()->json([
-            'success' => true,
-            'data' => $logs,
-        ]);
-    }
-
-    /**
-     * Export user data for GDPR compliance
-     *
-     * @group User Management
-     * @authenticated
-     * @description Export all user data for GDPR compliance
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "data": {
-     *     "user": {...},
-     *     "profile": {...},
-     *     "audit_logs": [...],
-     *     "exported_at": "2025-01-01T00:00:00Z"
-     *   }
-     * }
+     * Export User Data
      */
     public function exportData(Request $request): JsonResponse
     {
-        $user = $request->user();
-
-        $data = [
-            'user' => $user->toArray(),
-            'profile' => $user->memberProfile?->toArray(),
-            'audit_logs' => AuditLog::where('model_type', User::class)
-                ->where('model_id', $user->id)
-                ->latest()
-                ->get()
-                ->toArray(),
-            'exported_at' => now()->toISOString(),
-        ];
-
-        // Audit log the export
-        $this->logAuditAction('export', User::class, $user->id, null, null, 'User data exported for GDPR compliance');
-
-        return response()->json([
-            'success' => true,
-            'data' => $data,
-        ]);
-    }
-
-    /**
-     * Assign role to user
-     *
-     * Grants a specific system role to a user.
-     * Roles determine permissions within the application.
-     * RESTRICTED: Super Admin access required.
-     *
-     * @group User Management
-     * @authenticated
-     *
-     * @urlParam id required The user ID. Example: 1
-     * @bodyParam role string required The role name to assign. Must be a valid existing role. Example: admin
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Role assigned successfully",
-     *   "data": {
-     *     "id": 1,
-     *     "username": "johndoe",
-     *     "roles": ["member", "admin"]
-     *   }
-     * }
-     */
-    public function assignRole(Request $request, string $id): JsonResponse
-    {
-        $this->authorize('assignRoles', User::class);
-
-        $user = User::findOrFail($id);
-
-        $validated = $request->validate([
-            'role' => 'required|string|exists:roles,name',
-        ]);
-
-        $oldRoles = $user->roles->pluck('name')->toArray();
-
-        $user->assignRole($validated['role']);
-
-        // Audit log
-        $this->logAuditAction('assign_role', User::class, $user->id,
-            ['roles' => $oldRoles],
-            ['roles' => $user->fresh()->roles->pluck('name')->toArray()],
-            "Role '{$validated['role']}' assigned to user"
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Role assigned successfully',
-            'data' => $user->load('roles'),
-        ]);
-    }
-
-    /**
-     * Remove role from user
-     *
-     * Revokes a specific system role from a user.
-     * If the user only has one role, removing it may restrict their access significantly.
-     * RESTRICTED: Super Admin access required.
-     *
-     * @group User Management
-     * @authenticated
-     *
-     * @urlParam id required The user ID. Example: 1
-     * @bodyParam role string required The role name to remove. Example: admin
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Role removed successfully",
-     *   "data": {
-     *     "id": 1,
-     *     "roles": ["member"]
-     *   }
-     * }
-     */
-    public function removeRole(Request $request, string $id): JsonResponse
-    {
-        $this->authorize('assignRoles', User::class);
-
-        $user = User::findOrFail($id);
-
-        $validated = $request->validate([
-            'role' => 'required|string|exists:roles,name',
-        ]);
-
-        $oldRoles = $user->roles->pluck('name')->toArray();
-
-        $user->removeRole($validated['role']);
-
-        // Audit log
-        $this->logAuditAction('remove_role', User::class, $user->id,
-            ['roles' => $oldRoles],
-            ['roles' => $user->fresh()->roles->pluck('name')->toArray()],
-            "Role '{$validated['role']}' removed from user"
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Role removed successfully',
-            'data' => $user->load('roles'),
-        ]);
-    }
-
-    /**
-     * Sync user roles
-     *
-     * Replaces ALL current roles for a user with the provided list.
-     * Any roles not in the provided array will be revoked.
-     * RESTRICTED: Super Admin access required.
-     *
-     * @group User Management
-     * @authenticated
-     *
-     * @urlParam id required The user ID. Example: 1
-     * @bodyParam roles array required List of role names to assign. Example: ["member", "admin"]
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "User roles updated successfully",
-     *   "data": {
-     *     "id": 1,
-     *     "roles": ["member", "admin"]
-     *   }
-     * }
-     */
-    public function syncRoles(Request $request, string $id): JsonResponse
-    {
-        $this->authorize('assignRoles', User::class);
-
-        $user = User::findOrFail($id);
-
-        $validated = $request->validate([
-            'roles' => 'required|array',
-            'roles.*' => 'string|exists:roles,name',
-        ]);
-
-        $oldRoles = $user->roles->pluck('name')->toArray();
-
-        $user->syncRoles($validated['roles']);
-
-        // Audit log
-        $this->logAuditAction('sync_roles', User::class, $user->id,
-            ['roles' => $oldRoles],
-            ['roles' => $validated['roles']],
-            'User roles synchronized'
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'User roles updated successfully',
-            'data' => $user->load('roles'),
-        ]);
-    }
-
-    /**
-     * Bulk assign role to multiple users
-     *
-     * @group User Management
-     * @authenticated
-     * @description Assign a role to multiple users at once (Super Admin only)
-     *
-     * @bodyParam user_ids array required Array of user IDs. Example: [1, 2, 3]
-     * @bodyParam role string required Role to assign. Example: admin
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Role assigned to 3 users successfully",
-     *   "data": {
-     *     "successful": 3,
-     *     "failed": 0,
-     *     "errors": []
-     *   }
-     * }
-     */
-    public function bulkAssignRole(Request $request): JsonResponse
-    {
-        $this->authorize('bulkOperations', User::class);
-
-        $validated = $request->validate([
-            'user_ids' => 'required|array|min:1|max:100',
-            'user_ids.*' => 'integer|exists:users,id',
-            'role' => 'required|string|exists:roles,name',
-        ]);
-
-        $successful = 0;
-        $failed = 0;
-        $errors = [];
-
-        foreach ($validated['user_ids'] as $userId) {
-            try {
-                $user = User::findOrFail($userId);
-                $oldRoles = $user->roles->pluck('name')->toArray();
-
-                $user->assignRole($validated['role']);
-
-                // Audit log
-                $this->logAuditAction('bulk_assign_role', User::class, $user->id,
-                    ['roles' => $oldRoles],
-                    ['roles' => $user->fresh()->roles->pluck('name')->toArray()],
-                    "Role '{$validated['role']}' assigned via bulk operation"
-                );
-
-                $successful++;
-            } catch (\Exception $e) {
-                $failed++;
-                $errors[] = "User {$userId}: " . $e->getMessage();
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => "Role assigned to {$successful} users successfully",
-            'data' => [
-                'successful' => $successful,
-                'failed' => $failed,
-                'errors' => $errors,
-            ],
-        ]);
-    }
-
-    /**
-     * Bulk remove role from multiple users
-     *
-     * @group User Management
-     * @authenticated
-     * @description Remove a role from multiple users at once (Super Admin only)
-     *
-     * @bodyParam user_ids array required Array of user IDs. Example: [1, 2, 3]
-     * @bodyParam role string required Role to remove. Example: admin
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Role removed from 3 users successfully",
-     *   "data": {
-     *     "successful": 3,
-     *     "failed": 0,
-     *     "errors": []
-     *   }
-     * }
-     */
-    public function bulkRemoveRole(Request $request): JsonResponse
-    {
-        $this->authorize('bulkOperations', User::class);
-
-        $validated = $request->validate([
-            'user_ids' => 'required|array|min:1|max:100',
-            'user_ids.*' => 'integer|exists:users,id',
-            'role' => 'required|string|exists:roles,name',
-        ]);
-
-        $successful = 0;
-        $failed = 0;
-        $errors = [];
-
-        foreach ($validated['user_ids'] as $userId) {
-            try {
-                $user = User::findOrFail($userId);
-                $oldRoles = $user->roles->pluck('name')->toArray();
-
-                $user->removeRole($validated['role']);
-
-                // Audit log
-                $this->logAuditAction('bulk_remove_role', User::class, $user->id,
-                    ['roles' => $oldRoles],
-                    ['roles' => $user->fresh()->roles->pluck('name')->toArray()],
-                    "Role '{$validated['role']}' removed via bulk operation"
-                );
-
-                $successful++;
-            } catch (\Exception $e) {
-                $failed++;
-                $errors[] = "User {$userId}: " . $e->getMessage();
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => "Role removed from {$successful} users successfully",
-            'data' => [
-                'successful' => $successful,
-                'failed' => $failed,
-                'errors' => $errors,
-            ],
-        ]);
-    }
-
-    /**
-     * Bulk delete users
-     *
-     * @group User Management
-     * @authenticated
-     * @description Soft delete multiple users at once (Admin only)
-     *
-     * @bodyParam user_ids array required Array of user IDs. Example: [1, 2, 3]
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "3 users deleted successfully",
-     *   "data": {
-     *     "successful": 3,
-     *     "failed": 0,
-     *     "errors": []
-     *   }
-     * }
-     */
-    public function bulkDelete(Request $request): JsonResponse
-    {
-        $this->authorize('bulkOperations', User::class);
-
-        $validated = $request->validate([
-            'user_ids' => 'required|array|min:1|max:50',
-            'user_ids.*' => 'integer|exists:users,id',
-        ]);
-
-        $successful = 0;
-        $failed = 0;
-        $errors = [];
-
-        foreach ($validated['user_ids'] as $userId) {
-            try {
-                $user = User::findOrFail($userId);
-                $oldValues = $user->toArray();
-
-                // Revoke all tokens
-                $user->tokens()->delete();
-
-                // Soft delete user
-                $user->delete();
-
-                // Audit log
-                $this->logAuditAction('bulk_delete', User::class, $user->id, $oldValues, null, 'User account soft deleted via bulk operation');
-
-                $successful++;
-            } catch (\Exception $e) {
-                $failed++;
-                $errors[] = "User {$userId}: " . $e->getMessage();
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => "{$successful} users deleted successfully",
-            'data' => [
-                'successful' => $successful,
-                'failed' => $failed,
-                'errors' => $errors,
-            ],
-        ]);
-    }
-
-    /**
-     * Bulk restore users
-     *
-     * @group User Management
-     * @authenticated
-     * @description Restore multiple soft-deleted users at once (Admin only)
-     *
-     * @bodyParam user_ids array required Array of user IDs. Example: [1, 2, 3]
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "3 users restored successfully",
-     *   "data": {
-     *     "successful": 3,
-     *     "failed": 0,
-     *     "errors": []
-     *   }
-     * }
-     */
-    public function bulkRestore(Request $request): JsonResponse
-    {
-        $this->authorize('bulkOperations', User::class);
-
-        $validated = $request->validate([
-            'user_ids' => 'required|array|min:1|max:50',
-            'user_ids.*' => 'integer',
-        ]);
-
-        $successful = 0;
-        $failed = 0;
-        $errors = [];
-
-        foreach ($validated['user_ids'] as $userId) {
-            try {
-                $user = User::withTrashed()->findOrFail($userId);
-
-                $user->restore();
-
-                // Audit log
-                $this->logAuditAction('bulk_restore', User::class, $user->id, null, $user->toArray(), 'User account restored via bulk operation');
-
-                $successful++;
-            } catch (\Exception $e) {
-                $failed++;
-                $errors[] = "User {$userId}: " . $e->getMessage();
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => "{$successful} users restored successfully",
-            'data' => [
-                'successful' => $successful,
-                'failed' => $failed,
-                'errors' => $errors,
-            ],
-        ]);
-    }
-
-    /**
-     * Bulk update users
-     *
-     * @group User Management
-     * @authenticated
-     * @description Update multiple users with the same data (Admin only)
-     *
-     * @bodyParam user_ids array required Array of user IDs. Example: [1, 2, 3]
-     * @bodyParam data object required Update data. Example: {"email_verified_at": "2025-01-01T00:00:00Z"}
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "3 users updated successfully",
-     *   "data": {
-     *     "successful": 3,
-     *     "failed": 0,
-     *     "errors": []
-     *   }
-     * }
-     */
-    public function bulkUpdate(Request $request): JsonResponse
-    {
-        $this->authorize('bulkOperations', User::class);
-
-        $validated = $request->validate([
-            'user_ids' => 'required|array|min:1|max:50',
-            'user_ids.*' => 'integer|exists:users,id',
-            'data' => 'required|array',
-            'data.username' => 'sometimes|string|max:255',
-            'data.email' => 'sometimes|email',
-        ]);
-
-        $successful = 0;
-        $failed = 0;
-        $errors = [];
-
-        foreach ($validated['user_ids'] as $userId) {
-            try {
-                $user = User::withTrashed()->findOrFail($userId);
-                $oldValues = $user->only(array_keys($validated['data']));
-
-                $user->update($validated['data']);
-
-                // Audit log
-                $this->logAuditAction('bulk_update', User::class, $user->id, $oldValues, $validated['data'], 'User updated via bulk operation');
-
-                $successful++;
-            } catch (\Exception $e) {
-                $failed++;
-                $errors[] = "User {$userId}: " . $e->getMessage();
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => "{$successful} users updated successfully",
-            'data' => [
-                'successful' => $successful,
-                'failed' => $failed,
-                'errors' => $errors,
-            ],
-        ]);
-    }
-
-    /**
-     * Get all audit logs (Admin only)
-     */
-    public function bulkAuditLogs(Request $request): JsonResponse
-    {
-        $this->authorize('viewAuditLogs', User::class);
-
-        $query = AuditLog::with('user:id,username,email');
-
-        if ($request->has('action')) {
-            $query->where('action', $request->action);
-        }
-
-        if ($request->has('model_type')) {
-            $query->where('model_type', 'like', '%' . $request->model_type . '%');
-        }
-
-        $logs = $query->latest()->paginate(50);
-
-        return response()->json([
-            'success' => true,
-            'data' => $logs,
-        ]);
-    }
-
-    /**
-     * Invite a new user
-     */
-    public function invite(Request $request): JsonResponse
-    {
-        $this->authorize('create', User::class);
-
-        $validated = $request->validate([
-            'email' => 'required|email|unique:users,email',
-            'username' => 'required|string|max:255|unique:users,username',
-            'roles' => 'sometimes|array',
-            'roles.*' => 'string|exists:roles,name',
-        ]);
-
-        // Placeholder: In a real app, send invitation email
-        $user = User::create([
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'password' => Hash::make(Str::random(12)),
-        ]);
-
-        if (isset($validated['roles']) && !empty($validated['roles'])) {
-            $user->syncRoles($validated['roles']);
-        } else {
-            $user->assignRole('member');
-        }
-
-        $this->logAuditAction('invite', User::class, $user->id, null, $validated, 'User invited');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'User invited successfully',
-            'data' => $user->load('roles'),
-        ]);
-    }
-
-    /**
-     * Bulk invite users
-     */
-    public function bulkInvite(Request $request): JsonResponse
-    {
-        $this->authorize('create', User::class);
-
-        $validated = $request->validate([
-            'users' => 'required|array|min:1|max:50',
-            'users.*.email' => 'required|email',
-            'users.*.username' => 'required|string',
-            'users.*.roles' => 'sometimes|array',
-            'users.*.roles.*' => 'string|exists:roles,name',
-        ]);
-
-        $successful = 0;
-        $failed = 0;
-        $errors = [];
-
-        foreach ($validated['users'] as $inviteData) {
-            try {
-                // Check if user already exists
-                if (User::where('email', $inviteData['email'])->exists()) {
-                    throw new \Exception("User with email {$inviteData['email']} already exists");
-                }
-
-                $user = User::create([
-                    'username' => $inviteData['username'],
-                    'email' => $inviteData['email'],
-                    'password' => Hash::make(Str::random(12)),
-                ]);
-
-                if (isset($inviteData['roles']) && !empty($inviteData['roles'])) {
-                    $user->syncRoles($inviteData['roles']);
-                } else {
-                    $user->assignRole('member');
-                }
-
-                $this->logAuditAction('bulk_invite', User::class, $user->id, null, $inviteData, 'User invited via bulk operation');
-                $successful++;
-            } catch (\Exception $e) {
-                $failed++;
-                $errors[] = "Invite for {$inviteData['email']} failed: " . $e->getMessage();
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => "Successfully invited {$successful} users",
-            'data' => [
-                'successful' => $successful,
-                'failed' => $failed,
-                'errors' => $errors,
-            ],
-        ]);
-    }
-
-    /**
-     * Log audit actions
-     */
-    private function logAuditAction(string $action, string $modelType, int $modelId, ?array $oldValues, ?array $newValues, ?string $notes = null): void
-    {
         try {
-            AuditLog::create([
-                'action' => $action,
-                'model_type' => $modelType,
-                'model_id' => $modelId,
-                'user_id' => auth()->id(),
-                'old_values' => $oldValues ? json_encode($oldValues) : null,
-                'new_values' => $newValues ? json_encode($newValues) : null,
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'notes' => $notes,
+            $data = $this->userService->exportData($request->user());
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
             ]);
         } catch (\Exception $e) {
-            // Log audit failure but don't fail the main operation
-            Log::error('Failed to create audit log', [
-                'action' => $action,
-                'model_type' => $modelType,
-                'model_id' => $modelId,
-                'error' => $e->getMessage(),
+            Log::error('Failed to export user data', ['error' => $e->getMessage(), 'user_id' => $request->user()->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to export user data'], 500);
+        }
+    }
+
+    /**
+     * Assign Role
+     */
+    public function assignRole(AssignRoleRequest $request, string $id): JsonResponse
+    {
+        try {
+            $user = $this->userService->getById($id);
+            $updatedUser = $this->roleService->assignRole($request->user(), $user, $request->input('role'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Role assigned successfully',
+                'data' => new UserResource($updatedUser),
             ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * Remove Role
+     */
+    public function removeRole(RemoveRoleRequest $request, string $id): JsonResponse
+    {
+        try {
+            $user = $this->userService->getById($id);
+            $updatedUser = $this->roleService->removeRole($request->user(), $user, $request->input('role'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Role removed successfully',
+                'data' => new UserResource($updatedUser),
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * Sync Roles
+     */
+    public function syncRoles(SyncRolesRequest $request, string $id): JsonResponse
+    {
+        try {
+            $user = $this->userService->getById($id);
+            $updatedUser = $this->roleService->syncRoles($request->user(), $user, $request->input('roles'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Roles synchronized',
+                'data' => new UserResource($updatedUser),
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * Bulk Assign Role
+     */
+    public function bulkAssignRole(BulkAssignRoleRequest $request): JsonResponse
+    {
+        try {
+            $count = $this->bulkService->bulkAssignRole(
+                $request->user(),
+                $request->input('user_ids'),
+                $request->input('role')
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => "Role assigned to {$count} users",
+                'data' => ['count' => $count],
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * Bulk Remove Role
+     */
+    public function bulkRemoveRole(BulkRemoveRoleRequest $request): JsonResponse
+    {
+        try {
+            $count = $this->bulkService->bulkRemoveRole(
+                $request->user(),
+                $request->input('user_ids'),
+                $request->input('role')
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => "Role removed from {$count} users",
+                'data' => ['count' => $count],
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * Bulk Delete Users
+     */
+    public function bulkDelete(BulkDeleteUserRequest $request): JsonResponse
+    {
+        try {
+            $count = $this->bulkService->bulkDelete($request->user(), $request->input('user_ids'));
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$count} users deactivated",
+                'data' => ['count' => $count],
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * Bulk Restore Users
+     */
+    public function bulkRestore(BulkRestoreUserRequest $request): JsonResponse
+    {
+        try {
+            $count = $this->bulkService->bulkRestore($request->user(), $request->input('user_ids'));
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$count} users restored",
+                'data' => ['count' => $count],
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * Bulk Update Users
+     */
+    public function bulkUpdate(BulkUpdateUserRequest $request): JsonResponse
+    {
+        try {
+            $count = $this->bulkService->bulkUpdate(
+                $request->user(),
+                $request->input('user_ids'),
+                $request->input('data')
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$count} users updated",
+                'data' => ['count' => $count],
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * Invite User
+     */
+    public function invite(InviteUserRequest $request): JsonResponse
+    {
+        try {
+            $invitation = $this->invitationService->invite($request->user(), $request->validated());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invitation sent successfully',
+                'data' => $invitation,
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * Bulk Invite
+     */
+    public function bulkInvite(BulkInviteUserRequest $request): JsonResponse
+    {
+        try {
+            $count = $this->invitationService->bulkInvite($request->user(), $request->input('invitations'));
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$count} invitations sent",
+                'data' => ['count' => $count],
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+    }
+
+    /**
+     * Get Audit Logs
+     */
+    public function auditLog(string $id): JsonResponse
+    {
+        try {
+            $user = $this->userService->getById($id);
+            $logs = $this->userService->getAuditLog($user);
+
+            return response()->json([
+                'success' => true,
+                'data' => $logs,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'User not found'], 404);
         }
     }
 }

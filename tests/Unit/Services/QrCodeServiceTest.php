@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Services;
 
-use App\Models\Registration;
+use App\Models\EventRegistration;
 use App\Models\Event;
 use App\Models\User;
 use App\Models\Ticket;
@@ -38,7 +38,7 @@ class QrCodeServiceTest extends TestCase
         $event = Event::factory()->create();
         $ticket = Ticket::factory()->create(['event_id' => $event->id]);
         
-        $registration = Registration::create([
+        $registration = EventRegistration::create([
             'event_id' => $event->id,
             'user_id' => $user->id,
             'ticket_id' => $ticket->id,
@@ -49,7 +49,7 @@ class QrCodeServiceTest extends TestCase
         $path = $this->qrCodeService->generateQrCode($registration);
 
         // Assert path is returned and stored in db
-        $this->assertEquals('events/tickets/qr-TEST-CONF-123.png', $path);
+        $this->assertEquals('events/tickets/qr-TEST-CONF-123.svg', $path);
         $this->assertEquals($path, $registration->fresh()->qr_code_path);
         $this->assertNotNull($registration->fresh()->qr_code_token);
 
@@ -64,7 +64,7 @@ class QrCodeServiceTest extends TestCase
         $ticket = Ticket::factory()->create(['event_id' => $event->id]);
         
         $token = 'TKT-EXISTING-TOKEN-123';
-        $registration = Registration::create([
+        $registration = EventRegistration::create([
             'event_id' => $event->id,
             'user_id' => $user->id,
             'ticket_id' => $ticket->id,

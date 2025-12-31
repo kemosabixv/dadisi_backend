@@ -3,14 +3,23 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\StoreForumTagRequest;
+use App\Http\Requests\Api\UpdateForumTagRequest;
 use App\Models\ForumTag;
 use App\Models\ForumThread;
+use App\Services\Contracts\ForumTaxonomyServiceContract;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ForumTagController extends Controller
 {
+    public function __construct(private ForumTaxonomyServiceContract $taxonomyService)
+    {
+    }
+
     /**
      * List all tags with usage counts.
      *
@@ -31,28 +40,31 @@ class ForumTagController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = ForumTag::query();
+        try {
+            $query = ForumTag::query();
 
-        // Optional search
-        if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            // Optional search
+            if ($request->has('search')) {
+                $query->where('name', 'like', '%' . $request->search . '%');
+            }
+
+            // Sort by usage count by default, or by name
+            $sortBy = $request->get('sort', 'usage_count');
+            $sortDir = $request->get('order', 'desc');
+            
+            if ($sortBy === 'name') {
+                $query->orderBy('name', $sortDir);
+            } else {
+                $query->orderByDesc('usage_count');
+            }
+
+            $tags = $query->get();
+
+            return response()->json(['success' => true, 'data' => $tags]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve forum tags', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve forum tags'], 500);
         }
-
-        // Sort by usage count by default, or by name
-        $sortBy = $request->get('sort', 'usage_count');
-        $sortDir = $request->get('order', 'desc');
-        
-        if ($sortBy === 'name') {
-            $query->orderBy('name', $sortDir);
-        } else {
-            $query->orderByDesc('usage_count');
-        }
-
-        $tags = $query->get();
-
-        return response()->json([
-            'data' => $tags,
-        ]);
     }
 
     /**
@@ -64,15 +76,17 @@ class ForumTagController extends Controller
      */
     public function show(ForumTag $tag, Request $request): JsonResponse
     {
-        $threads = $tag->threads()
-            ->with(['user:id,username,profile_picture_path', 'category:id,name,slug'])
-            ->orderByDesc('created_at')
-            ->paginate($request->get('per_page', 15));
+        try {
+            $threads = $tag->threads()
+                ->with(['user:id,username,profile_picture_path', 'category:id,name,slug'])
+                ->orderByDesc('created_at')
+                ->paginate($request->get('per_page', 15));
 
-        return response()->json([
-            'tag' => $tag,
-            'threads' => $threads,
-        ]);
+            return response()->json(['success' => true, 'data' => ['tag' => $tag, 'threads' => $threads]]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve tag with threads', ['error' => $e->getMessage(), 'tag_id' => $tag->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve tag'], 500);
+        }
     }
 
     /**
@@ -85,27 +99,31 @@ class ForumTagController extends Controller
      * @bodyParam color string optional Hex color code (e.g., #6366f1).
      * @bodyParam description string optional Description of the tag.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreForumTagRequest $request): JsonResponse
     {
-        $this->authorize('create', ForumTag::class);
+        try {
+            $this->authorize('create', ForumTag::class);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:forum_tags,name',
-            'color' => 'nullable|string|max:7|regex:/^#[A-Fa-f0-9]{6}$/',
-            'description' => 'nullable|string|max:255',
-        ]);
+            $validated = $request->validated();
 
-        $tag = ForumTag::create([
-            'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
-            'color' => $validated['color'] ?? '#6366f1',
-            'description' => $validated['description'] ?? null,
-        ]);
+            $tag = ForumTag::create([
+                'name' => $validated['name'],
+                'slug' => Str::slug($validated['name']),
+                'color' => $validated['color'] ?? '#6366f1',
+                'description' => $validated['description'] ?? null,
+            ]);
 
-        return response()->json([
-            'data' => $tag,
-            'message' => 'Tag created successfully.',
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'data' => $tag,
+                'message' => 'Tag created successfully.',
+            ], 201);
+        } catch (AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => 'You are not authorized to create tags.'], 403);
+        } catch (\Exception $e) {
+            Log::error('Failed to create forum tag', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create forum tag'], 500);
+        }
     }
 
     /**
@@ -119,26 +137,30 @@ class ForumTagController extends Controller
      * @bodyParam color string optional Hex color code.
      * @bodyParam description string optional Description of the tag.
      */
-    public function update(Request $request, ForumTag $tag): JsonResponse
+    public function update(UpdateForumTagRequest $request, ForumTag $tag): JsonResponse
     {
-        $this->authorize('update', $tag);
+        try {
+            $this->authorize('update', $tag);
 
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:50|unique:forum_tags,name,' . $tag->id,
-            'color' => 'nullable|string|max:7|regex:/^#[A-Fa-f0-9]{6}$/',
-            'description' => 'nullable|string|max:255',
-        ]);
+            $validated = $request->validated();
 
-        if (isset($validated['name'])) {
-            $validated['slug'] = Str::slug($validated['name']);
+            if (isset($validated['name'])) {
+                $validated['slug'] = Str::slug($validated['name']);
+            }
+
+            $tag->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'data' => $tag,
+                'message' => 'Tag updated successfully.',
+            ]);
+        } catch (AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => 'You are not authorized to update this tag.'], 403);
+        } catch (\Exception $e) {
+            Log::error('Failed to update forum tag', ['error' => $e->getMessage(), 'tag_id' => $tag->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update forum tag'], 500);
         }
-
-        $tag->update($validated);
-
-        return response()->json([
-            'data' => $tag,
-            'message' => 'Tag updated successfully.',
-        ]);
     }
 
     /**
@@ -150,12 +172,20 @@ class ForumTagController extends Controller
      */
     public function destroy(ForumTag $tag): JsonResponse
     {
-        $this->authorize('delete', $tag);
+        try {
+            $this->authorize('delete', $tag);
 
-        $tag->delete();
+            $tag->delete();
 
-        return response()->json([
-            'message' => 'Tag deleted successfully.',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Tag deleted successfully.',
+            ]);
+        } catch (AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => 'You are not authorized to delete this tag.'], 403);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete forum tag', ['error' => $e->getMessage(), 'tag_id' => $tag->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete forum tag'], 500);
+        }
     }
 }

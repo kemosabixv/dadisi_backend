@@ -37,6 +37,9 @@ class User extends Authenticatable
         'subscription_activated_at',
         'last_payment_date',
         'profile_picture_path',
+        'deletion_scheduled_at',
+        'deletion_scheduled_for',
+        'deletion_scheduled_reason',
     ];
 
     /**
@@ -59,6 +62,21 @@ class User extends Authenticatable
     ];
 
     /**
+     * Boot method for model events
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Cascade soft-delete to member profile when user is soft-deleted
+        static::deleting(function (User $user) {
+            if ($user->memberProfile) {
+                $user->memberProfile->delete();
+            }
+        });
+    }
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>
@@ -74,6 +92,14 @@ class User extends Authenticatable
     public function memberProfile(): HasOne
     {
         return $this->hasOne(MemberProfile::class);
+    }
+
+    /**
+     * Get the user profile (alias for memberProfile)
+     */
+    public function profile(): HasOne
+    {
+        return $this->memberProfile();
     }
 
     /**
@@ -109,11 +135,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the user's active subscription
+     * Get the user's active subscription (standardized to PlanSubscription)
      */
     public function subscription(): MorphOne
     {
-        return $this->morphOne(Subscription::class, 'subscriber')
+        return $this->morphOne(PlanSubscription::class, 'subscriber')
             ->where('status', 'active')
             ->where(function ($query) {
                 $query->whereNull('ends_at')
@@ -122,7 +148,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get all subscriptions for the user (legacy compatibility)
+     * Get all subscriptions for the user
      */
     public function subscriptions(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
@@ -242,11 +268,19 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is an admin or staff member.
+     */
+    public function isAdmin(): bool
+    {
+        return \App\Support\AdminAccessResolver::canAccessAdmin($this);
+    }
+
+    /**
      * Event registrations by this user
      */
     public function registrations(): HasMany
     {
-        return $this->hasMany(Registration::class);
+        return $this->hasMany(EventRegistration::class);
     }
 
     /**
@@ -295,5 +329,29 @@ class User extends Authenticatable
     public function labBookings(): HasMany
     {
         return $this->hasMany(LabBooking::class);
+    }
+
+    /**
+     * Get the default guard for role/permission checks.
+     * For API requests with Sanctum authentication, use 'api' guard.
+     * For web requests, use 'web' guard.
+     */
+    public function getDefaultGuardName(): string
+    {
+        // If we're in an API context (Sanctum token authentication), use 'api' guard
+        if ($this->tokenCan('*') || auth('sanctum')->check()) {
+            return 'api';
+        }
+
+        // Default to 'web' guard
+        return $this->getGuardNames()->first() ?? 'web';
+    }
+
+    /**
+     * Events organized by this user
+     */
+    public function organizedEvents(): HasMany
+    {
+        return $this->hasMany(Event::class, 'organizer_id');
     }
 }

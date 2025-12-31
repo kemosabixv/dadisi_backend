@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Event;
-use App\Models\Registration;
+use App\Models\EventRegistration;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -42,7 +42,7 @@ class SampleRegistrationsSeeder extends Seeder
                 $ticket = $tickets->random();
 
                 // Avoid duplicate registrations for same user/event
-                $exists = Registration::where('event_id', $event->id)
+                $exists = EventRegistration::where('event_id', $event->id)
                     ->where('user_id', $user->id)
                     ->exists();
                 
@@ -59,7 +59,7 @@ class SampleRegistrationsSeeder extends Seeder
                     $status = rand(0, 10) > 1 ? 'attended' : 'confirmed';
                 }
 
-                $registration = Registration::create([
+                $registration = EventRegistration::create([
                     'event_id' => $event->id,
                     'user_id' => $user->id,
                     'ticket_id' => $ticket->id,

@@ -165,23 +165,23 @@ class Refund extends Model
     /**
      * Approve the refund
      */
-    public function approve(User $approver): void
+    public function approve(\Illuminate\Contracts\Auth\Authenticatable $approver): void
     {
         $this->update([
             'status' => self::STATUS_APPROVED,
             'approved_at' => now(),
-            'processed_by' => $approver->id,
+            'processed_by' => $approver->getAuthIdentifier(),
         ]);
     }
 
     /**
      * Reject the refund
      */
-    public function reject(User $rejector, ?string $reason = null): void
+    public function reject(\Illuminate\Contracts\Auth\Authenticatable $rejector, ?string $reason = null): void
     {
         $this->update([
             'status' => self::STATUS_REJECTED,
-            'processed_by' => $rejector->id,
+            'processed_by' => $rejector->getAuthIdentifier(),
             'admin_notes' => $reason ?? $this->admin_notes,
         ]);
     }

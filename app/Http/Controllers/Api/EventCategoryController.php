@@ -2,16 +2,26 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\EventException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\EventCategoryResource;
 use App\Models\EventCategory;
+use App\Services\Contracts\EventTaxonomyServiceContract;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * @group Admin - Event Categories
+ */
 class EventCategoryController extends Controller
 {
-    public function __construct()
+    protected EventTaxonomyServiceContract $taxonomyService;
+
+    public function __construct(EventTaxonomyServiceContract $taxonomyService)
     {
+        $this->taxonomyService = $taxonomyService;
         $this->middleware(['auth:sanctum', 'admin'])->except(['index', 'show']);
     }
 
@@ -20,10 +30,26 @@ class EventCategoryController extends Controller
      * 
      * @group Event Categories
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
-        $categories = EventCategory::with('children')->whereNull('parent_id')->active()->orderBy('sort_order')->get();
-        return EventCategoryResource::collection($categories);
+        try {
+            $filters = [
+                'parent_only' => true,
+                'active_only' => true,
+            ];
+            
+            $categories = $this->taxonomyService->listCategories($filters);
+            
+            return response()->json([
+                'success' => true, 
+                'data' => EventCategoryResource::collection($categories)
+            ]);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('EventCategoryController index failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve event categories'], 500);
+        }
     }
 
     /**
@@ -31,65 +57,96 @@ class EventCategoryController extends Controller
      * 
      * @group Event Categories
      */
-    public function show(EventCategory $category)
+    public function show(EventCategory $category): JsonResponse
     {
-        return new EventCategoryResource($category->load('children'));
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => new EventCategoryResource($category->load('children'))
+            ]);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('EventCategoryController show failed', ['error' => $e->getMessage(), 'id' => $category->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve event category'], 500);
+        }
     }
 
     /**
-     * Create Category (Admin Only)
+     * Create Category
      * 
-     * @group Event Categories
+     * @group Admin - Event Categories
+     * @authenticated
      */
-    public function store(Request $request)
+    public function store(\App\Http\Requests\Api\StoreEventCategoryRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:event_categories,slug',
-            'description' => 'nullable|string',
-            'color' => 'nullable|string|max:20',
-            'parent_id' => 'nullable|exists:event_categories,id',
-            'image_path' => 'nullable|string',
-            'is_active' => 'boolean',
-            'sort_order' => 'integer',
-        ]);
+        try {
+            $this->authorize('create', EventCategory::class);
 
-        $category = EventCategory::create($validated);
-
-        return new EventCategoryResource($category);
+            $category = $this->taxonomyService->createCategory($request->user(), $request->validated());
+            
+            return response()->json([
+                'success' => true,
+                'data' => new EventCategoryResource($category)
+            ], 201);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('EventCategoryController store failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create event category'], 500);
+        }
     }
 
     /**
-     * Update Category (Admin Only)
+     * Update Category
      * 
-     * @group Event Categories
+     * @group Admin - Event Categories
+     * @authenticated
      */
-    public function update(Request $request, EventCategory $category)
+    public function update(\App\Http\Requests\Api\UpdateEventCategoryRequest $request, EventCategory $category): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'nullable|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:event_categories,slug,' . $category->id,
-            'description' => 'nullable|string',
-            'color' => 'nullable|string|max:20',
-            'parent_id' => 'nullable|exists:event_categories,id',
-            'image_path' => 'nullable|string',
-            'is_active' => 'nullable|boolean',
-            'sort_order' => 'nullable|integer',
-        ]);
+        try {
+            $this->authorize('update', $category);
 
-        $category->update($validated);
-
-        return new EventCategoryResource($category);
+            $updatedCategory = $this->taxonomyService->updateCategory($request->user(), $category, $request->validated());
+            
+            return response()->json([
+                'success' => true,
+                'data' => new EventCategoryResource($updatedCategory)
+            ]);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('EventCategoryController update failed', ['error' => $e->getMessage(), 'id' => $category->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update event category'], 500);
+        }
     }
 
     /**
-     * Delete Category (Admin Only)
+     * Delete Category
      * 
-     * @group Event Categories
+     * @group Admin - Event Categories
+     * @authenticated
      */
-    public function destroy(EventCategory $category)
+    public function destroy(Request $request, EventCategory $category): JsonResponse
     {
-        $category->delete();
-        return response()->json(null, Response::HTTP_NO_CONTENT);
+        try {
+            $this->authorize('delete', $category);
+
+            $this->taxonomyService->deleteCategory($request->user(), $category);
+            
+            return response()->json(['success' => true, 'message' => 'Category deleted successfully'], Response::HTTP_NO_CONTENT);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('EventCategoryController destroy failed', ['error' => $e->getMessage(), 'id' => $category->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete event category'], 500);
+        }
     }
 }

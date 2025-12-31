@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SecureUserResource;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * @group Authentication
@@ -34,18 +36,23 @@ class PasskeyController extends Controller
      *   "authenticatorSelection": { "residentKey": "preferred", "userVerification": "preferred" }
      * }
      */
-    public function registerOptions(Request $request)
+    public function registerOptions(Request $request): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        // Check if WebAuthn is available
-        if (!class_exists(\Laragear\WebAuthn\WebAuthn::class)) {
-            return response()->json([
-                'message' => 'WebAuthn is not configured. Please install laragear/webauthn package.',
-            ], 501);
+            // Check if WebAuthn is available
+            if (!class_exists(\Laragear\WebAuthn\WebAuthn::class)) {
+                return response()->json([
+                    'message' => 'WebAuthn is not configured. Please install laragear/webauthn package.',
+                ], 501);
+            }
+
+            return \Laragear\WebAuthn\WebAuthn::prepareAttestation($user);
+        } catch (\Exception $e) {
+            Log::error('Failed to prepare passkey registration', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to prepare registration'], 500);
         }
-
-        return \Laragear\WebAuthn\WebAuthn::prepareAttestation($user);
     }
 
     /**
@@ -68,22 +75,22 @@ class PasskeyController extends Controller
      *   }
      * }
      */
-    public function register(Request $request)
+    public function register(Request $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
-
-        $user = $request->user();
-
-        // Check if WebAuthn is available
-        if (!class_exists(\Laragear\WebAuthn\WebAuthn::class)) {
-            return response()->json([
-                'message' => 'WebAuthn is not configured. Please install laragear/webauthn package.',
-            ], 501);
-        }
-
         try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+            ]);
+
+            $user = $request->user();
+
+            // Check if WebAuthn is available
+            if (!class_exists(\Laragear\WebAuthn\WebAuthn::class)) {
+                return response()->json([
+                    'message' => 'WebAuthn is not configured. Please install laragear/webauthn package.',
+                ], 501);
+            }
+
             $credential = \Laragear\WebAuthn\WebAuthn::validateAttestation(
                 $request->all(),
                 $user
@@ -103,6 +110,7 @@ class PasskeyController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            Log::error('Failed to register passkey', ['error' => $e->getMessage()]);
             return response()->json([
                 'message' => 'Failed to register passkey: ' . $e->getMessage(),
             ], 422);

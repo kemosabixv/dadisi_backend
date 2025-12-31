@@ -9,6 +9,7 @@ use App\Models\Plan;
 use App\Models\PlanSubscription;
 use App\Models\SubscriptionEnhancement;
 use App\Services\AutoRenewalService;
+use App\Services\PaymentGateway\GatewayManager;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PaymentFailedFinalMail;
 
@@ -62,7 +63,8 @@ class AutoRenewalServiceTest extends TestCase
         $subscription->setRelation('user', $user);
 
         // Act
-        $service = new AutoRenewalService();
+        $gatewayManager = app(GatewayManager::class);
+        $service = new AutoRenewalService($gatewayManager);
         $job = $service->processSubscriptionRenewal($subscription);
 
         // Assert
@@ -112,7 +114,8 @@ class AutoRenewalServiceTest extends TestCase
         $subscription->setRelation('user', $user);
 
         // Act
-        $service = new AutoRenewalService();
+        $gatewayManager = app(GatewayManager::class);
+        $service = new AutoRenewalService($gatewayManager);
         $job = $service->processSubscriptionRenewal($subscription);
 
         // Assert job failed and email queued

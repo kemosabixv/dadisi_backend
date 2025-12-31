@@ -17,6 +17,7 @@ class Event extends Model
         'slug',
         'description',
         'category_id',
+        'organizer_id',
         'venue',
         'is_online',
         'online_link',
@@ -81,6 +82,14 @@ class Event extends Model
     }
 
     /**
+     * Get the organizer of this event
+     */
+    public function organizer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'organizer_id');
+    }
+
+    /**
      * Get all tickets for this event
      */
     public function tickets(): HasMany
@@ -101,7 +110,7 @@ class Event extends Model
      */
     public function registrations(): HasMany
     {
-        return $this->hasMany(Registration::class);
+        return $this->hasMany(EventRegistration::class);
     }
 
     /**
@@ -127,6 +136,7 @@ class Event extends Model
     {
         return $this->hasMany(EventOrder::class);
     }
+
 
     /**
      * Scope: get active events

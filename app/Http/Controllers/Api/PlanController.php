@@ -4,17 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
-use App\Models\SystemFeature;
-use App\Services\CurrencyService;
-use Laravelcm\Subscriptions\Models\Feature;
+use App\Services\Contracts\PlanServiceContract;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class PlanController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        private PlanServiceContract $planService
+    ) {
         $this->middleware('auth:sanctum')->except(['index', 'show']);
     }
 
@@ -30,7 +29,6 @@ class PlanController extends Controller
      * @groupDescription Management of subscription tiers, pricing models, and feature sets. Includes public endpoints for listing plans and administrative endpoints for plan configuration.
      * @authenticated
      * @queryParam include_features boolean optional If true, returns the list of features associated with each plan. Default: true
-
      *
      * @response 200 {
      *   "success": true,
@@ -56,40 +54,22 @@ class PlanController extends Controller
      *   ]
      * }
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
-        $plans = Plan::with(['features', 'systemFeatures'])->where('is_active', true)->get()->map(function ($plan) {
-            return [
-                'id' => $plan->id,
-                'name' => json_decode($plan->name, true) ?? [$plan->name],
-                'description' => json_decode($plan->description, true)['en'] ?? $plan->description,
-                'pricing' => $plan->pricing,
-                'promotions' => $plan->promotions,
-                'features' => $plan->features->map(function ($feature) {
-                    return [
-                        'id' => $feature->id,
-                        'name' => json_decode($feature->name, true)['en'] ?? $feature->name,
-                        'limit' => $feature->pivot?->limit ?? null,
-                    ];
-                }),
-                'system_features' => $plan->systemFeatures->map(function ($sf) {
-                    return [
-                        'id' => $sf->id,
-                        'slug' => $sf->slug,
-                        'name' => $sf->name,
-                        'value' => $sf->pivot->value,
-                        'display_name' => $sf->pivot->display_name ?? $sf->name,
-                        'display_description' => $sf->pivot->display_description ?? $sf->description,
-                        'value_type' => $sf->value_type,
-                    ];
-                }),
-            ];
-        });
+        try {
+            $includeFeatures = $request->boolean('include_features', true);
 
-        return response()->json([
-            'success' => true,
-            'data' => $plans,
-        ]);
+            $filters = [
+                'include_features' => $includeFeatures,
+            ];
+
+            $plans = $this->planService->listActivePlans($filters);
+
+            return response()->json(['success' => true, 'data' => $plans]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve plans', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve plans'], 500);
+        }
     }
 
     /**
@@ -125,38 +105,19 @@ class PlanController extends Controller
      *   }
      * }
      */
-    public function show(Plan $plan)
+    public function show(Plan $plan): JsonResponse
     {
-        $plan->load(['features', 'systemFeatures']);
+        try {
+            $data = $this->planService->getPlanDetails($plan);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $plan->id,
-                'name' => json_decode($plan->name, true) ?? [$plan->name],
-                'description' => json_decode($plan->description, true)['en'] ?? $plan->description,
-                'pricing' => $plan->pricing,
-                'promotions' => $plan->promotions,
-                'features' => $plan->features->map(function ($feature) {
-                    return [
-                        'id' => $feature->id,
-                        'name' => json_decode($feature->name, true) ?? [$feature->name],
-                        'limit' => $feature->pivot?->limit ?? null,
-                    ];
-                }),
-                'system_features' => $plan->systemFeatures->map(function ($sf) {
-                    return [
-                        'id' => $sf->id,
-                        'slug' => $sf->slug,
-                        'name' => $sf->name,
-                        'value' => $sf->pivot->value,
-                        'display_name' => $sf->pivot->display_name ?? $sf->name,
-                        'display_description' => $sf->pivot->display_description ?? $sf->description,
-                        'value_type' => $sf->value_type,
-                    ];
-                }),
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve plan', ['error' => $e->getMessage(), 'plan_id' => $plan->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve plan'], 500);
+        }
     }
 
     /**
@@ -197,102 +158,44 @@ class PlanController extends Controller
      *   }
      * }
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'monthly_price_kes' => 'required|numeric|min:' . ((app()->isLocal() || app()->environment('staging')) ? 1 : 100) . '|max:100000',
-            'currency' => 'required|string|in:KES',
-            'monthly_promotion' => 'nullable|array',
-            'monthly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
-            'monthly_promotion.expires_at' => 'nullable|date|after:now',
-            'yearly_promotion' => 'nullable|array',
-            'yearly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
-            'yearly_promotion.expires_at' => 'nullable|date|after:now',
-            'features' => 'nullable|array',
-            'features.*.name' => 'required_with:features|string|max:255',
-            'features.*.limit' => 'nullable|integer|min:-1',
-            'features.*.description' => 'nullable|string|max:500',
-            // System Features (new)
-            'system_features' => 'nullable|array',
-            'system_features.*.id' => 'required_with:system_features|integer|exists:system_features,id',
-            'system_features.*.value' => 'required_with:system_features|string',
-            'system_features.*.display_name' => 'nullable|string|max:255',
-            'system_features.*.display_description' => 'nullable|string|max:500',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'monthly_price_kes' => 'required|numeric|min:' . ((app()->isLocal() || app()->environment('staging')) ? 1 : 100) . '|max:100000',
+                'currency' => 'required|string|in:KES',
+                'monthly_promotion' => 'nullable|array',
+                'monthly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
+                'monthly_promotion.expires_at' => 'nullable|date|after:now',
+                'yearly_promotion' => 'nullable|array',
+                'yearly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
+                'yearly_promotion.expires_at' => 'nullable|date|after:now',
+                'features' => 'nullable|array',
+                'features.*.name' => 'required_with:features|string|max:255',
+                'features.*.limit' => 'nullable|integer|min:-1',
+                'features.*.description' => 'nullable|string|max:500',
+                'system_features' => 'nullable|array',
+                'system_features.*.id' => 'required_with:system_features|integer|exists:system_features,id',
+                'system_features.*.value' => 'required_with:system_features|string',
+                'system_features.*.display_name' => 'nullable|string|max:255',
+                'system_features.*.display_description' => 'nullable|string|max:500',
+            ]);
 
-        $plan = DB::transaction(function () use ($validated) {
-            $slug = \Str::slug($validated['name']);
+            $plan = $this->planService->createPlan($validated);
 
-            $plansTable = config('laravel-subscriptions.tables.plans', 'plans');
-
-            $createData = [
-                'name' => json_encode(['en' => $validated['name']]),
-                'slug' => $slug,
-                'description' => json_encode(['en' => $validated['name'] . ' Plan']),
-                'price' => $validated['monthly_price_kes'], // Store in base price field
-                'base_monthly_price' => $validated['monthly_price_kes'], // New field
-                'signup_fee' => 0,
-                'currency' => $validated['currency'],
-                'trial_period' => 0,
-                'trial_interval' => 'day',
-                'grace_period' => 0,
-                'grace_interval' => 'day',
-                'is_active' => true,
-            ];
-
-            $createData['sort_order'] = Plan::max('sort_order') + 1;
-
-            // Promotional fields only set if the DB table includes them (tests may run against a schema without promotions)
-            if (Schema::hasColumn($plansTable, 'monthly_promotion_discount_percent')) {
-                $createData['monthly_promotion_discount_percent'] = $validated['monthly_promotion']['discount_percent'] ?? 0;
-                $createData['monthly_promotion_expires_at'] = isset($validated['monthly_promotion']['expires_at']) ?
-                    $validated['monthly_promotion']['expires_at'] : null;
-            }
-
-            if (Schema::hasColumn($plansTable, 'yearly_promotion_discount_percent')) {
-                $createData['yearly_promotion_discount_percent'] = $validated['yearly_promotion']['discount_percent'] ?? 0;
-                $createData['yearly_promotion_expires_at'] = isset($validated['yearly_promotion']['expires_at']) ?
-                    $validated['yearly_promotion']['expires_at'] : null;
-            }
-
-            $plan = Plan::create($createData);
-
-            if (!empty($validated['features'])) {
-                foreach ($validated['features'] as $featureData) {
-                    $plan->features()->create([
-                        'name' => json_encode(['en' => $featureData['name']]),
-                        'slug' => \Str::slug($featureData['name'] . '-' . $plan->id . '-' . uniqid()),
-                        'value' => $featureData['limit'] ?? 'true',
-                        'description' => json_encode(['en' => $featureData['description'] ?? '']),
-                    ]);
-                }
-            }
-
-            // Sync system features (new pivot-based features)
-            if (!empty($validated['system_features'])) {
-                $syncData = [];
-                foreach ($validated['system_features'] as $sf) {
-                    $syncData[$sf['id']] = [
-                        'value' => $sf['value'],
-                        'display_name' => $sf['display_name'] ?? null,
-                        'display_description' => $sf['display_description'] ?? null,
-                    ];
-                }
-                $plan->systemFeatures()->sync($syncData);
-            }
-
-            return $plan;
-        });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Plan created successfully',
-            'data' => [
-                'id' => $plan->id,
-                'name' => $validated['name'],
-            ],
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Plan created successfully',
+                'data' => [
+                    'id' => $plan->id,
+                    'name' => $validated['name'],
+                ],
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to create plan', ['error' => $e->getMessage(), 'data' => $request->all()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create plan'], 500);
+        }
     }
 
     /**
@@ -334,117 +237,44 @@ class PlanController extends Controller
      *   }
      * }
      */
-    public function update(Request $request, Plan $plan)
+    public function update(Request $request, Plan $plan): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'nullable|string|max:255',
-            'monthly_price_kes' => 'nullable|numeric|min:' . ((app()->isLocal() || app()->environment('staging')) ? 1 : 100) . '|max:100000',
-            'monthly_promotion' => 'nullable|array',
-            'monthly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
-            'monthly_promotion.expires_at' => 'nullable|date|after:now',
-            'yearly_promotion' => 'nullable|array',
-            'yearly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
-            'yearly_promotion.expires_at' => 'nullable|date|after:now',
-            'is_active' => 'nullable|boolean',
-            'features' => 'nullable|array',
-            'features.*.name' => 'required_with:features|string|max:255',
-            'features.*.limit' => 'nullable|integer|min:-1',
-            'features.*.description' => 'nullable|string|max:500',
-            // System Features (new)
-            'system_features' => 'nullable|array',
-            'system_features.*.id' => 'required_with:system_features|integer|exists:system_features,id',
-            'system_features.*.value' => 'required_with:system_features|string',
-            'system_features.*.display_name' => 'nullable|string|max:255',
-            'system_features.*.display_description' => 'nullable|string|max:500',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'nullable|string|max:255',
+                'monthly_price_kes' => 'nullable|numeric|min:' . ((app()->isLocal() || app()->environment('staging')) ? 1 : 100) . '|max:100000',
+                'monthly_promotion' => 'nullable|array',
+                'monthly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
+                'monthly_promotion.expires_at' => 'nullable|date|after:now',
+                'yearly_promotion' => 'nullable|array',
+                'yearly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
+                'yearly_promotion.expires_at' => 'nullable|date|after:now',
+                'is_active' => 'nullable|boolean',
+                'features' => 'nullable|array',
+                'features.*.name' => 'required_with:features|string|max:255',
+                'features.*.limit' => 'nullable|integer|min:-1',
+                'features.*.description' => 'nullable|string|max:500',
+                'system_features' => 'nullable|array',
+                'system_features.*.id' => 'required_with:system_features|integer|exists:system_features,id',
+                'system_features.*.value' => 'required_with:system_features|string',
+                'system_features.*.display_name' => 'nullable|string|max:255',
+                'system_features.*.display_description' => 'nullable|string|max:500',
+            ]);
 
-        DB::transaction(function () use ($plan, $validated) {
-            $updateData = [];
+            $plan = $this->planService->updatePlan($plan, $validated);
 
-            if (isset($validated['name'])) {
-                $updateData['name'] = json_encode(['en' => $validated['name']]);
-                $updateData['slug'] = \Str::slug($validated['name']);
-                $updateData['description'] = json_encode(['en' => $validated['name'] . ' Plan']);
-            }
-
-            if (isset($validated['monthly_price_kes'])) {
-                $updateData['price'] = $validated['monthly_price_kes']; // Update base Laravel field
-                $updateData['base_monthly_price'] = $validated['monthly_price_kes']; // Update our custom field
-            }
-
-            if (isset($validated['is_active'])) {
-                $updateData['is_active'] = $validated['is_active'];
-            }
-
-            // Handle promotional updates
-            $plansTable = config('laravel-subscriptions.tables.plans', 'plans');
-
-            if (array_key_exists('monthly_promotion', $validated) && Schema::hasColumn($plansTable, 'monthly_promotion_discount_percent')) {
-                if ($validated['monthly_promotion'] === null) {
-                    // Remove monthly promotion
-                    $updateData['monthly_promotion_discount_percent'] = 0;
-                    $updateData['monthly_promotion_expires_at'] = null;
-                } else {
-                    // Update monthly promotion
-                    $updateData['monthly_promotion_discount_percent'] = $validated['monthly_promotion']['discount_percent'] ?? 0;
-                    $updateData['monthly_promotion_expires_at'] = isset($validated['monthly_promotion']['expires_at']) ?
-                        $validated['monthly_promotion']['expires_at'] : null;
-                }
-            }
-
-            if (array_key_exists('yearly_promotion', $validated) && Schema::hasColumn($plansTable, 'yearly_promotion_discount_percent')) {
-                if ($validated['yearly_promotion'] === null) {
-                    // Remove yearly promotion
-                    $updateData['yearly_promotion_discount_percent'] = 0;
-                    $updateData['yearly_promotion_expires_at'] = null;
-                } else {
-                    // Update yearly promotion
-                    $updateData['yearly_promotion_discount_percent'] = $validated['yearly_promotion']['discount_percent'] ?? 0;
-                    $updateData['yearly_promotion_expires_at'] = isset($validated['yearly_promotion']['expires_at']) ?
-                        $validated['yearly_promotion']['expires_at'] : null;
-                }
-            }
-
-            if (!empty($updateData)) {
-                $plan->update($updateData);
-            }
-
-            if (isset($validated['features'])) {
-                // HasMany doesn't support sync() - manually delete and recreate
-                $plan->features()->delete();
-
-                foreach ($validated['features'] as $featureData) {
-                    $plan->features()->create([
-                        'name' => json_encode(['en' => $featureData['name'] ?? 'Feature']),
-                        'slug' => \Str::slug(($featureData['name'] ?? 'feature') . '-' . $plan->id . '-' . ($featureData['id'] ?? uniqid())),
-                        'value' => $featureData['limit'] ?? 'true',
-                        'description' => json_encode(['en' => $featureData['description'] ?? '']),
-                    ]);
-                }
-            }
-
-            // Sync system features (new pivot-based features)
-            if (isset($validated['system_features'])) {
-                $syncData = [];
-                foreach ($validated['system_features'] as $sf) {
-                    $syncData[$sf['id']] = [
-                        'value' => $sf['value'],
-                        'display_name' => $sf['display_name'] ?? null,
-                        'display_description' => $sf['display_description'] ?? null,
-                    ];
-                }
-                $plan->systemFeatures()->sync($syncData);
-            }
-        });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Plan updated successfully',
-            'data' => [
-                'id' => $plan->id,
-                'name' => json_decode($plan->fresh()->name, true)['en'] ?? $plan->name,
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Plan updated successfully',
+                'data' => [
+                    'id' => $plan->id,
+                    'name' => $this->extractPlanName($plan->name),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update plan', ['error' => $e->getMessage(), 'plan_id' => $plan->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update plan'], 500);
+        }
     }
 
     /**
@@ -466,15 +296,46 @@ class PlanController extends Controller
      *   "error": "Cannot delete plan with active subscriptions"
      * }
      */
-    public function destroy(Plan $plan)
+    public function destroy(Plan $plan): JsonResponse
     {
-        // Check if plan has active subscriptions
-        if ($plan->subscriptions()->where('ends_at', '>', now())->orWhereNull('ends_at')->exists()) {
-            return response()->json(['error' => 'Cannot delete plan with active subscriptions'], 409);
+        try {
+            $this->planService->deletePlan($plan);
+
+            return response()->json(['message' => 'Plan deleted']);
+        } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'Cannot delete plan')) {
+                return response()->json(['error' => 'Cannot delete plan with active subscriptions'], 409);
+            }
+            Log::error('Failed to delete plan', ['error' => $e->getMessage(), 'plan_id' => $plan->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete plan'], 500);
+        }
+    }
+
+    /**
+     * Extract display name from plan name (handles array, JSON string, or plain string)
+     *
+     * @param mixed $name
+     * @return string|mixed
+     */
+    private function extractPlanName(mixed $name): mixed
+    {
+        // If it's already an array (from Eloquent cast)
+        if (is_array($name)) {
+            return $name['en'] ?? reset($name) ?: $name;
         }
 
-        $plan->delete();
+        // If it's a string, check if it's JSON
+        if (is_string($name)) {
+            $trimmed = trim($name);
+            if (str_starts_with($trimmed, '{') || str_starts_with($trimmed, '[')) {
+                $decoded = json_decode($name, true);
+                if (is_array($decoded)) {
+                    return $decoded['en'] ?? reset($decoded) ?: $name;
+                }
+            }
+        }
 
-        return response()->json(['message' => 'Plan deleted']);
+        // Return as-is for plain strings or other types
+        return $name;
     }
 }

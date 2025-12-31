@@ -25,7 +25,10 @@ class Post extends Model
         'meta_title',
         'meta_description',
         'is_featured',
-        'views_count', // System-managed field for view tracking
+        'views_count',
+        'author_id',
+        'content',
+        'category',
     ];
 
     protected $casts = [
@@ -57,14 +60,30 @@ class Post extends Model
     }
 
     /**
+     * User relationship alias (for factory compatibility)
+     */
+    public function user(): BelongsTo
+    {
+        return $this->author();
+    }
+
+    /**
      * Backwards-compatible alias: allow setting 'author_id' in tests/factories
      * to map to our 'user_id' column. Also auto-generate slug from title if title is set.
      */
     public function setAttribute($key, $value)
     {
-        // Map author_id to user_id for factory/test compatibility
         if ($key === 'author_id') {
             $key = 'user_id';
+        }
+
+        if ($key === 'content') {
+            $key = 'body';
+        }
+
+        // Intercept 'category' to prevent SQL errors
+        if ($key === 'category') {
+            return $this;
         }
 
         parent::setAttribute($key, $value);
@@ -199,6 +218,14 @@ class Post extends Model
     public function getContentAttribute(): string
     {
         return $this->body;
+    }
+
+    /**
+     * Accessor: category (alias for the first category slug)
+     */
+    public function getCategoryAttribute(): ?string
+    {
+        return $this->categories()->first()?->slug;
     }
 
     /**

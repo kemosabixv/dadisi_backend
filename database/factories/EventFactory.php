@@ -4,6 +4,8 @@ namespace Database\Factories;
 
 use App\Models\Event;
 use App\Models\User;
+use App\Models\EventCategory;
+use App\Models\County;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -30,8 +32,10 @@ class EventFactory extends Factory
             'currency' => 'KES',
             'status' => 'published',
             'event_type' => $this->faker->randomElement(['workshop', 'meetup', 'conference', 'webinar']),
+            'created_by' => null,
             'organizer_id' => User::factory(),
-            'created_by' => fn(array $attrs) => $attrs['organizer_id'],
+            'category_id' => null,
+            'county_id' => null,
         ];
     }
 
@@ -61,6 +65,15 @@ class EventFactory extends Factory
         return $this->state(fn(array $attrs) => [
             'is_online' => true,
             'venue' => null,
+        ]);
+    }
+
+    public function withRelations(): static
+    {
+        return $this->state(fn(array $attrs) => [
+            'created_by' => User::factory()->create()->id,
+            'category_id' => EventCategory::factory()->create()->id,
+            'county_id' => County::factory()->create()->id,
         ]);
     }
 }

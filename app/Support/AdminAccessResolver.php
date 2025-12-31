@@ -46,8 +46,12 @@ class AdminAccessResolver
             ];
 
             // Spatie's hasAnyRole will handle arrays and return false if roles are absent.
-            if (method_exists($user, 'hasAnyRole') && $user->hasAnyRole($roles)) {
-                return true;
+            if (method_exists($user, 'hasAnyRole')) {
+                 $hasRole = $user->hasAnyRole($roles);
+                 Log::info('AdminAccessResolver check', ['user_id' => $user->id, 'roles_checked' => $roles, 'has_role' => $hasRole, 'user_roles' => $user->getRoleNames()]);
+                 if ($hasRole) {
+                    return true;
+                 }
             }
 
             // Fallback: member profile flag

@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\StudentApprovalRequest;
-use App\Models\Plan;
+use App\Services\Contracts\StudentApprovalServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Models\SubscriptionEnhancement;
 
 /**
  * Student Approval Controller
@@ -20,8 +17,9 @@ use App\Models\SubscriptionEnhancement;
  */
 class StudentApprovalController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        private StudentApprovalServiceContract $studentApprovalService
+    ) {
         $this->middleware('auth:sanctum');
     }
 
@@ -69,45 +67,11 @@ class StudentApprovalController extends Controller
             'additional_notes' => 'nullable|string|max:500',
         ]);
 
-        $user = auth()->user();
-
         try {
-            DB::beginTransaction();
-
-            // Check if user already has a pending/approved student request
-            $existingRequest = StudentApprovalRequest::where('user_id', $user->id)
-                ->whereIn('status', ['pending', 'approved'])
-                ->first();
-
-            if ($existingRequest) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You already have an active student approval request',
-                    'data' => ['existing_request_id' => $existingRequest->id],
-                ], 409);
-            }
-
-            // Create approval request
-            $approvalRequest = StudentApprovalRequest::create([
-                'user_id' => $user->id,
-                'status' => 'pending',
-                'student_institution' => $validated['student_institution'],
-                'student_email' => $validated['student_email'],
-                'documentation_url' => $validated['documentation_url'],
-                'student_birth_date' => $validated['birth_date'],
-                'county' => $validated['county'],
-                'additional_notes' => $validated['additional_notes'] ?? null,
-                'submitted_at' => now(),
-                'expires_at' => now()->addDays(30),
-            ]);
-
-            DB::commit();
-
-            Log::info('Student approval request submitted', [
-                'user_id' => $user->id,
-                'request_id' => $approvalRequest->id,
-                'institution' => $validated['student_institution'],
-            ]);
+            $approvalRequest = $this->studentApprovalService->submitApprovalRequest(
+                $request->user()->id,
+                $validated
+            );
 
             return response()->json([
                 'success' => true,
@@ -119,19 +83,17 @@ class StudentApprovalController extends Controller
                     'expires_at' => $approvalRequest->expires_at,
                 ],
             ], 201);
-
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Student approval request submission failed', [
-                'user_id' => $user->id,
+                'user_id' => $request->user()->id,
                 'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to submit approval request',
+                'message' => str_contains($e->getMessage(), 'already have') ? $e->getMessage() : 'Failed to submit approval request',
                 'error' => $e->getMessage(),
-            ], 500);
+            ], str_contains($e->getMessage(), 'already have') ? 409 : 500);
         }
     }
 
@@ -160,33 +122,38 @@ class StudentApprovalController extends Controller
      *   "message": "No approval request found"
      * }
      */
-    public function getApprovalStatus(): JsonResponse
+    public function getApprovalStatus(Request $request): JsonResponse
     {
-        $user = auth()->user();
-        $approvalRequest = $user->studentApprovalRequests()
-            ->orderBy('created_at', 'desc')
-            ->first();
+        try {
+            $approvalRequest = $this->studentApprovalService->getApprovalStatus($request->user()->id);
 
-        if (!$approvalRequest) {
+            if (!$approvalRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No approval request found',
+                ], 404);
+            }
+
             return response()->json([
-                'success' => false,
-                'message' => 'No approval request found',
-            ], 404);
+                'success' => true,
+                'data' => [
+                    'id' => $approvalRequest->id,
+                    'status' => $approvalRequest->status,
+                    'student_institution' => $approvalRequest->student_institution,
+                    'submitted_at' => $approvalRequest->submitted_at,
+                    'reviewed_at' => $approvalRequest->reviewed_at,
+                    'expires_at' => $approvalRequest->expires_at,
+                    'rejection_reason' => $approvalRequest->rejection_reason,
+                    'admin_notes' => $approvalRequest->admin_notes,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve approval status', [
+                'error' => $e->getMessage(),
+                'user_id' => $request->user()->id,
+            ]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve approval status'], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $approvalRequest->id,
-                'status' => $approvalRequest->status,
-                'student_institution' => $approvalRequest->student_institution,
-                'submitted_at' => $approvalRequest->submitted_at,
-                'reviewed_at' => $approvalRequest->reviewed_at,
-                'expires_at' => $approvalRequest->expires_at,
-                'rejection_reason' => $approvalRequest->rejection_reason,
-                'admin_notes' => $approvalRequest->admin_notes,
-            ],
-        ]);
     }
 
     /**
@@ -216,41 +183,52 @@ class StudentApprovalController extends Controller
      *   "message": "Unauthorized"
      * }
      */
-    public function getApprovalDetails($requestId): JsonResponse
+    public function getApprovalDetails(Request $request, $requestId): JsonResponse
     {
-        $approvalRequest = StudentApprovalRequest::with('user')->findOrFail($requestId);
+        try {
+            $approvalRequest = $this->studentApprovalService->getApprovalDetails($requestId);
 
-        // Check authorization - user can see their own, admins can see all
-        if (auth()->user()->id !== $approvalRequest->user_id &&
-            !auth()->user()->hasRole('admin')) {
+            // Check authorization - user can see their own, admins can see all
+            if ($request->user()->id !== $approvalRequest->user_id &&
+                !$request->user()->hasRole('admin')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 403);
+            }
+
             return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized',
-            ], 403);
+                'success' => true,
+                'data' => [
+                    'id' => $approvalRequest->id,
+                    'user_id' => $approvalRequest->user_id,
+                    'user_name' => $approvalRequest->user->name,
+                    'user_email' => $approvalRequest->user->email,
+                    'status' => $approvalRequest->status,
+                    'student_institution' => $approvalRequest->student_institution,
+                    'student_email' => $approvalRequest->student_email,
+                    'student_birth_date' => $approvalRequest->student_birth_date,
+                    'county' => $approvalRequest->county,
+                    'documentation_url' => $approvalRequest->documentation_url,
+                    'additional_notes' => $approvalRequest->additional_notes,
+                    'submitted_at' => $approvalRequest->submitted_at,
+                    'reviewed_at' => $approvalRequest->reviewed_at,
+                    'reviewed_by' => $approvalRequest->reviewed_by,
+                    'rejection_reason' => $approvalRequest->rejection_reason,
+                    'admin_notes' => $approvalRequest->admin_notes,
+                    'expires_at' => $approvalRequest->expires_at,
+                ],
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::warning('Approval request not found', ['request_id' => $requestId]);
+            return response()->json(['success' => false, 'message' => 'Approval request not found'], 404);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve approval details', [
+                'error' => $e->getMessage(),
+                'request_id' => $requestId,
+            ]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve approval details'], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $approvalRequest->id,
-                'user_id' => $approvalRequest->user_id,
-                'user_name' => $approvalRequest->user->name,
-                'user_email' => $approvalRequest->user->email,
-                'status' => $approvalRequest->status,
-                'student_institution' => $approvalRequest->student_institution,
-                'student_email' => $approvalRequest->student_email,
-                'student_birth_date' => $approvalRequest->student_birth_date,
-                'county' => $approvalRequest->county,
-                'documentation_url' => $approvalRequest->documentation_url,
-                'additional_notes' => $approvalRequest->additional_notes,
-                'submitted_at' => $approvalRequest->submitted_at,
-                'reviewed_at' => $approvalRequest->reviewed_at,
-                'reviewed_by' => $approvalRequest->reviewed_by,
-                'rejection_reason' => $approvalRequest->rejection_reason,
-                'admin_notes' => $approvalRequest->admin_notes,
-                'expires_at' => $approvalRequest->expires_at,
-            ],
-        ]);
     }
 
     /**
@@ -287,44 +265,40 @@ class StudentApprovalController extends Controller
      */
     public function listApprovalRequests(Request $request): JsonResponse
     {
-        // Check admin authorization
-        if (!auth()->user()->hasRole('admin')) {
+        try {
+            // Check admin authorization
+            if (!$request->user()->hasRole('admin')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized - admin only',
+                ], 403);
+            }
+
+            $filters = [
+                'status' => $request->input('status'),
+                'county' => $request->input('county'),
+                'per_page' => $request->input('per_page', 15),
+            ];
+
+            $paginated = $this->studentApprovalService->listApprovalRequests($filters);
+
             return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized - admin only',
-            ], 403);
+                'success' => true,
+                'data' => $paginated->items(),
+                'pagination' => [
+                    'total' => $paginated->total(),
+                    'per_page' => $paginated->perPage(),
+                    'current_page' => $paginated->currentPage(),
+                    'last_page' => $paginated->lastPage(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve approval requests', [
+                'error' => $e->getMessage(),
+                'user_id' => $request->user()->id,
+            ]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve approval requests'], 500);
         }
-
-        $query = StudentApprovalRequest::with('user');
-
-        // Filter by status
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // Filter by county
-        if ($request->has('county')) {
-            $query->where('county', $request->county);
-        }
-
-        // Default: show pending if no filter
-        if (!$request->has('status')) {
-            $query->where('status', 'pending');
-        }
-
-        $perPage = $request->input('per_page', 15);
-        $paginated = $query->orderBy('submitted_at', 'asc')->paginate($perPage);
-
-        return response()->json([
-            'success' => true,
-            'data' => $paginated->items(),
-            'pagination' => [
-                'total' => $paginated->total(),
-                'per_page' => $paginated->perPage(),
-                'current_page' => $paginated->currentPage(),
-                'last_page' => $paginated->lastPage(),
-            ],
-        ]);
     }
 
     /**
@@ -354,10 +328,10 @@ class StudentApprovalController extends Controller
      *   "message": "Request is not in pending status"
      * }
      */
-    public function approveRequest($requestId, Request $request): JsonResponse
+    public function approveRequest(Request $request, $requestId): JsonResponse
     {
         // Check admin authorization
-        if (!auth()->user()->hasRole('admin')) {
+        if (!$request->user()->hasRole('admin')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized - admin only',
@@ -368,50 +342,12 @@ class StudentApprovalController extends Controller
             'admin_notes' => 'nullable|string|max:500',
         ]);
 
-        $approvalRequest = StudentApprovalRequest::findOrFail($requestId);
-
-        if ($approvalRequest->status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Request is not in pending status',
-            ], 409);
-        }
-
         try {
-            DB::beginTransaction();
-
-            // Approve the request
-            $approvalRequest->approve(auth()->user()->id, $validated['admin_notes'] ?? null);
-
-            // Create student subscription
-            $studentPlan = Plan::where('type', 'student')->first();
-            if ($studentPlan) {
-                $approvalRequest->user->activeSubscription()->create([
-                    'plan_id' => $studentPlan->id,
-                    'starts_at' => now(),
-                    'ends_at' => now()->addYear(),
-                    'status' => 'active',
-                ]);
-
-                // Create subscription enhancement
-                $subscription = $approvalRequest->user->activeSubscription()->latest()->first();
-                if ($subscription) {
-                    SubscriptionEnhancement::create([
-                        'subscription_id' => $subscription->id,
-                        'status' => 'active',
-                        'max_renewal_attempts' => 3,
-                        'metadata' => json_encode(['student_plan' => true]),
-                    ]);
-                }
-            }
-
-            DB::commit();
-
-            Log::info('Student approval request approved', [
-                'admin_id' => auth()->user()->id,
-                'request_id' => $requestId,
-                'user_id' => $approvalRequest->user_id,
-            ]);
+            $approvalRequest = $this->studentApprovalService->approveRequest(
+                $requestId,
+                $request->user()->id,
+                $validated['admin_notes'] ?? null
+            );
 
             return response()->json([
                 'success' => true,
@@ -421,11 +357,15 @@ class StudentApprovalController extends Controller
                     'approved_at' => $approvalRequest->reviewed_at,
                 ],
             ]);
-
         } catch (\Exception $e) {
-            DB::rollBack();
+            if (str_contains($e->getMessage(), 'not in pending status')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Request is not in pending status',
+                ], 409);
+            }
             Log::error('Student approval request approval failed', [
-                'admin_id' => auth()->user()->id,
+                'admin_id' => $request->user()->id,
                 'request_id' => $requestId,
                 'error' => $e->getMessage(),
             ]);
@@ -461,10 +401,10 @@ class StudentApprovalController extends Controller
      *   }
      * }
      */
-    public function rejectRequest($requestId, Request $request): JsonResponse
+    public function rejectRequest(Request $request, $requestId): JsonResponse
     {
         // Check admin authorization
-        if (!auth()->user()->hasRole('admin')) {
+        if (!$request->user()->hasRole('admin')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized - admin only',
@@ -476,33 +416,13 @@ class StudentApprovalController extends Controller
             'admin_notes' => 'nullable|string|max:500',
         ]);
 
-        $approvalRequest = StudentApprovalRequest::findOrFail($requestId);
-
-        if ($approvalRequest->status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Request is not in pending status',
-            ], 409);
-        }
-
         try {
-            DB::beginTransaction();
-
-            // Reject the request
-            $approvalRequest->reject(
-                auth()->user()->id,
+            $approvalRequest = $this->studentApprovalService->rejectRequest(
+                $requestId,
+                $request->user()->id,
                 $validated['rejection_reason'],
                 $validated['admin_notes'] ?? null
             );
-
-            DB::commit();
-
-            Log::info('Student approval request rejected', [
-                'admin_id' => auth()->user()->id,
-                'request_id' => $requestId,
-                'user_id' => $approvalRequest->user_id,
-                'reason' => $validated['rejection_reason'],
-            ]);
 
             return response()->json([
                 'success' => true,
@@ -512,11 +432,15 @@ class StudentApprovalController extends Controller
                     'rejection_reason' => $approvalRequest->rejection_reason,
                 ],
             ]);
-
         } catch (\Exception $e) {
-            DB::rollBack();
+            if (str_contains($e->getMessage(), 'not in pending status')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Request is not in pending status',
+                ], 409);
+            }
             Log::error('Student approval request rejection failed', [
-                'admin_id' => auth()->user()->id,
+                'admin_id' => $request->user()->id,
                 'request_id' => $requestId,
                 'error' => $e->getMessage(),
             ]);
@@ -550,43 +474,23 @@ class StudentApprovalController extends Controller
      *   "reason": "You already have an active student subscription"
      * }
      */
-    public function canRequestStudentPlan(): JsonResponse
+    public function canRequestStudentPlan(Request $request): JsonResponse
     {
-        $user = auth()->user();
+        try {
+            $result = $this->studentApprovalService->canRequestStudentPlan($request->user()->id);
 
-        // Check for existing pending/approved requests
-        $existingRequest = StudentApprovalRequest::where('user_id', $user->id)
-            ->whereIn('status', ['pending', 'approved'])
-            ->first();
-
-        if ($existingRequest) {
             return response()->json([
                 'success' => true,
-                'can_request' => false,
-                'reason' => 'You already have an active student plan request',
-                'existing_request' => $existingRequest,
+                'can_request' => $result['can_request'],
+                'reason' => $result['reason'],
+                'existing_request' => $result['existing_request'] ?? null,
             ]);
-        }
-
-        // Check for existing student subscription
-        $subscription = $user->activeSubscription()
-            ->whereHas('plan', function ($q) {
-                $q->where('type', 'student');
-            })
-            ->first();
-
-        if ($subscription) {
-            return response()->json([
-                'success' => true,
-                'can_request' => false,
-                'reason' => 'You already have an active student subscription',
+        } catch (\Exception $e) {
+            Log::error('Failed to check student plan eligibility', [
+                'error' => $e->getMessage(),
+                'user_id' => $request->user()->id,
             ]);
+            return response()->json(['success' => false, 'message' => 'Failed to check eligibility'], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'can_request' => true,
-            'reason' => 'You are eligible to request student plan',
-        ]);
     }
 }

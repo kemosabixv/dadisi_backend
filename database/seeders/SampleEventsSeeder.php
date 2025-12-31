@@ -22,8 +22,14 @@ class SampleEventsSeeder extends Seeder
         $mombasaCounty = County::where('name', 'Mombasa')->first() ?? $nairobiCounty;
         $kisumu = County::where('name', 'Kisumu')->first() ?? $nairobiCounty;
         
+        // Ensure categories and tags exist (call EventManagementSeeder if empty)
+        if (EventCategory::count() === 0) {
+            $this->call(EventManagementSeeder::class);
+        }
+        
         $categories = EventCategory::all()->keyBy('slug');
         $tags = EventTag::all()->keyBy('slug');
+        
         
         // Get or create an organizer user
         $organizer = User::where('email', 'admin@dadisilab.com')->first() 

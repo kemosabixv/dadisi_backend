@@ -1,0 +1,26 @@
+{
+    "success": true,
+    "data": {
+        "id": 1,
+        "title": "Emergency Relief Fund",
+        "slug": "emergency-relief-fund",
+        "description": "Help us support affected communities with essential supplies and resources.",
+        "short_description": "Relief campaign for affected communities",
+        "goal_amount": 1000000,
+        "current_amount": 0,
+        "minimum_amount": 100,
+        "currency": "KES",
+        "hero_image_url": "https://api.dadisilab.com/storage/campaigns/emergency_relief.jpg",
+        "county": {
+            "id": 35,
+            "name": "Nairobi"
+        },
+        "starts_at": "2025-01-01T00:00:00.000000Z",
+        "ends_at": "2025-01-31T23:59:59.000000Z",
+        "status": "draft",
+        "donations_count": 0,
+        "created_at": "2025-01-15T10:30:00.000000Z",
+        "updated_at": "2025-01-15T10:30:00.000000Z"
+    },
+    "message": "Campaign created successfully"
+}

@@ -2,18 +2,50 @@
 
 namespace App\Services;
 
-use App\Models\EventOrder;
 use App\Models\Donation;
+use App\Models\EventOrder;
 use App\Models\Payment;
 use App\Models\Refund;
-use App\Models\User;
+use App\Services\Contracts\RefundServiceContract;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class RefundService
+/**
+ * RefundService
+ *
+ * Implements refund business logic.
+ */
+class RefundService implements RefundServiceContract
 {
     /**
-     * Request a refund for an event order
+     * Create a new RefundService instance.
+     */
+    public function __construct(
+        private \App\Services\PaymentGateway\GatewayManager $gatewayManager
+    ) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    public function listRefunds(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $query = Refund::with(['payment', 'processor'])
+            ->when(! empty($filters['status']), fn ($q) => $q->where('status', $filters['status']))
+            ->when(! empty($filters['reason']), fn ($q) => $q->where('reason', $filters['reason']))
+            ->when(! empty($filters['search']), function ($q) use ($filters) {
+                $q->whereHas('payment', function ($pq) use ($filters) {
+                    $pq->where('external_reference', 'like', "%{$filters['search']}%");
+                });
+            })
+            ->orderBy('created_at', 'desc');
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public function requestEventOrderRefund(
         EventOrder $order,
@@ -22,7 +54,7 @@ class RefundService
         ?float $amount = null
     ): Refund {
         // Validate order can be refunded
-        if (!$order->isPaid()) {
+        if (! $order->isPaid()) {
             throw new \Exception('Only paid orders can be refunded.');
         }
 
@@ -38,13 +70,13 @@ class RefundService
 
         // Get the payment
         $payment = $order->payment;
-        if (!$payment) {
+        if (! $payment) {
             throw new \Exception('No payment found for this order.');
         }
 
         // Calculate refund amount (default to full refund)
         $refundAmount = $amount ?? $order->total_amount;
-        
+
         // Validate amount doesn't exceed original
         if ($refundAmount > $order->total_amount) {
             throw new \Exception('Refund amount cannot exceed the original payment amount.');
@@ -66,7 +98,7 @@ class RefundService
     }
 
     /**
-     * Request a refund for a donation
+     * {@inheritDoc}
      */
     public function requestDonationRefund(
         Donation $donation,
@@ -90,7 +122,7 @@ class RefundService
 
         // Get the payment
         $payment = $donation->payment;
-        if (!$payment) {
+        if (! $payment) {
             throw new \Exception('No payment found for this donation.');
         }
 
@@ -110,11 +142,54 @@ class RefundService
     }
 
     /**
-     * Process an approved refund
+     * {@inheritDoc}
+     */
+    public function approveRefund(Refund $refund, Authenticatable $admin, ?string $adminNotes = null): Refund
+    {
+        if (! $refund->isPending()) {
+            throw new \Exception('Only pending refunds can be approved.');
+        }
+
+        $refund->approve($admin);
+
+        if ($adminNotes) {
+            $refund->update(['admin_notes' => $adminNotes]);
+        }
+
+        Log::info('Refund approved', [
+            'refund_id' => $refund->id,
+            'approved_by' => $admin->getAuthIdentifier(),
+        ]);
+
+        return $refund->fresh();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function rejectRefund(Refund $refund, Authenticatable $admin, string $reason): Refund
+    {
+        if (! $refund->isPending()) {
+            throw new \Exception('Only pending refunds can be rejected.');
+        }
+
+        $refund->reject($admin, $reason);
+
+        Log::info('Refund rejected', [
+            'refund_id' => $refund->id,
+            'rejected_by' => $admin->getAuthIdentifier(),
+            'reason' => $reason,
+        ]);
+
+        return $refund->fresh();
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public function processRefund(Refund $refund): Refund
     {
-        if (!$refund->canBeProcessed()) {
+        if (! $refund->canBeProcessed()) {
             throw new \Exception("Refund cannot be processed in '{$refund->status}' status.");
         }
 
@@ -126,9 +201,9 @@ class RefundService
             // For mock/local environment, auto-complete the refund
             if (in_array(app()->environment(), ['local', 'testing', 'staging']) ||
                 $refund->gateway === 'mock') {
-                
+
                 $this->completeRefund($refund);
-                
+
             } else {
                 // For real gateways (Pesapal), initiate refund via gateway
                 // This would call the payment gateway's refund API
@@ -147,9 +222,9 @@ class RefundService
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             $refund->markFailed(['error' => $e->getMessage()]);
-            
+
             Log::error('Refund processing failed', [
                 'refund_id' => $refund->id,
                 'error' => $e->getMessage(),
@@ -165,14 +240,14 @@ class RefundService
     protected function completeRefund(Refund $refund): void
     {
         // Mark refund as completed
-        $refund->markCompleted('MOCK-' . uniqid(), [
+        $refund->markCompleted('MOCK-'.uniqid(), [
             'processed_at' => now()->toISOString(),
             'mock' => true,
         ]);
 
         // Update the refundable entity
         $refundable = $refund->refundable;
-        
+
         if ($refundable instanceof EventOrder) {
             $refundable->update(['status' => 'refunded']);
         } elseif ($refundable instanceof Donation) {
@@ -200,19 +275,47 @@ class RefundService
      */
     protected function initiateGatewayRefund(Refund $refund): void
     {
-        // TODO: Implement actual gateway refund
-        // For now, mark as processing and wait for webhook
-        
-        Log::info('Gateway refund initiated', [
-            'refund_id' => $refund->id,
-            'gateway' => $refund->gateway,
-            'amount' => $refund->amount,
-        ]);
-        
-        // In production, this would call:
-        // - PesapalService::initiateRefund()
-        // - MpesaService::reverseTransaction()
-        // etc.
+        try {
+            $payment = $refund->payment;
+            if (! $payment) {
+                throw new \Exception('No payment record associated with this refund.');
+            }
+
+            $reason = $refund->reason;
+            if ($refund->customer_notes) {
+                $reason .= ': '.$refund->customer_notes;
+            }
+
+            $result = $this->gatewayManager->refund(
+                $payment->transaction_id ?? $payment->external_reference,
+                (float) $refund->amount,
+                $reason
+            );
+
+            if ($result->success) {
+                $this->completeRefund($refund);
+
+                Log::info('Gateway refund successful', [
+                    'refund_id' => $refund->id,
+                    'transaction_id' => $result->transactionId,
+                ]);
+            } else {
+                $refund->markFailed(['error' => $result->message ?? 'Gateway refund failed']);
+
+                Log::warning('Gateway refund failed', [
+                    'refund_id' => $refund->id,
+                    'message' => $result->message,
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            $refund->markFailed(['error' => $e->getMessage()]);
+            Log::error('Gateway refund initiation failed', [
+                'refund_id' => $refund->id,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 
     /**
@@ -223,15 +326,17 @@ class RefundService
         $refundId = $payload['refund_reference'] ?? null;
         $status = $payload['status'] ?? null;
 
-        if (!$refundId) {
+        if (! $refundId) {
             Log::warning('Refund webhook missing refund_reference', $payload);
+
             return;
         }
 
         $refund = Refund::where('gateway_refund_id', $refundId)->first();
 
-        if (!$refund) {
+        if (! $refund) {
             Log::warning('Refund not found for webhook', ['refund_id' => $refundId]);
+
             return;
         }
 
@@ -248,7 +353,7 @@ class RefundService
     }
 
     /**
-     * Get refund statistics
+     * {@inheritDoc}
      */
     public function getStats(): array
     {

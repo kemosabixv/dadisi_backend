@@ -7,10 +7,11 @@ use App\Models\LabSpace;
 use App\Models\LabMaintenanceBlock;
 use App\Models\Plan;
 use App\Models\User;
+use App\Services\Contracts\LabBookingServiceContract;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class LabBookingService
+class LabBookingService implements LabBookingServiceContract
 {
     /**
      * Get the user's current plan.

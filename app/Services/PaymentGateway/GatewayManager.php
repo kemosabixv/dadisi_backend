@@ -2,34 +2,66 @@
 
 namespace App\Services\PaymentGateway;
 
+use App\DTOs\Payments\PaymentRequestDTO;
+use App\DTOs\Payments\PaymentStatusDTO;
+use App\DTOs\Payments\TransactionResultDTO;
+use Illuminate\Database\Eloquent\Model;
+
 /**
- * Gateway Manager
- * 
+ * GatewayManager
+ *
  * THE SINGLE FORK POINT for payment gateway selection.
- * Reads config('payment.gateway') to determine which gateway to use.
- * 
- * Usage:
- *   $manager = new GatewayManager();
- *   $result = $manager->initiatePayment($paymentData);
+ * This class manages the active payment gateway and delegates
+ * all payment operations to the appropriate implementation.
+ *
+ * Gateway selection is based on the `payment.gateway` config value.
  */
 class GatewayManager
 {
+    /**
+     * The active payment gateway implementation.
+     */
     protected PaymentGatewayInterface $gateway;
 
-    public function __construct(?PaymentGatewayInterface $gateway = null)
-    {
-        // If a gateway instance is provided, use it (useful for testing)
+    /**
+     * Create a new GatewayManager instance.
+     *
+     * @param \App\Services\Contracts\SystemSettingServiceContract|null $settingService
+     * @param PaymentGatewayInterface|null $gateway Optional gateway injection for testing
+     */
+    public function __construct(
+        ?\App\Services\Contracts\SystemSettingServiceContract $settingService = null,
+        ?PaymentGatewayInterface $gateway = null
+    ) {
         if ($gateway) {
             $this->gateway = $gateway;
             return;
         }
 
-        // Otherwise, instantiate based on config
-        $driver = config('payment.gateway', 'mock');
+        // 1. Determine driver from config or database
+        $driver = $settingService ? $settingService->get('payment.gateway') : null;
+        if (!$driver) {
+            $driver = config('payment.gateway', 'mock');
+        }
         
         switch ($driver) {
             case 'pesapal':
-                $this->gateway = new PesapalGateway();
+                // 2. Fetch specific Pesapal settings from database
+                $pesapalConfig = [];
+                if ($settingService) {
+                    $dbSettings = $settingService->getSettings('pesapal');
+                    $pesapalConfig = [
+                        'consumer_key' => $dbSettings->get('pesapal.consumer_key'),
+                        'consumer_secret' => $dbSettings->get('pesapal.consumer_secret'),
+                        'environment' => $dbSettings->get('pesapal.environment'),
+                        'callback_url' => $dbSettings->get('pesapal.callback_url'),
+                        'ipn_url' => $dbSettings->get('pesapal.webhook_url'), // Map to ipn_url
+                    ];
+                    // Filter out nulls to allow fallback in PesapalGateway constructor
+                    $pesapalConfig = array_filter($pesapalConfig);
+                }
+
+                $this->gateway = new PesapalGateway($pesapalConfig);
                 break;
             case 'mock':
             default:
@@ -39,7 +71,9 @@ class GatewayManager
     }
 
     /**
-     * Get the active gateway name.
+     * Get the currently configured gateway driver name.
+     *
+     * @return string The gateway driver name ('pesapal', 'mock', etc.)
      */
     public static function getActiveGateway(): string
     {
@@ -47,31 +81,24 @@ class GatewayManager
     }
 
     /**
-     * Check if mock gateway is active.
+     * Initiate a payment through the active gateway.
+     *
+     * Creates an audit log on successful initiation.
+     *
+     * @param PaymentRequestDTO $request The payment request data
+     * @param Model|null $model Optional model to associate with audit log
+     * @return TransactionResultDTO Contains success status, transaction ID, and redirect URL
      */
-    public static function isMockGateway(): bool
+    public function initiatePayment(PaymentRequestDTO $request, ?Model $model = null): TransactionResultDTO
     {
-        return self::getActiveGateway() === 'mock';
-    }
-
-    /**
-     * Initiate a payment - creates a payment session and returns redirect URL.
-     * This is the main entry point for starting a new payment.
-     * 
-     * @param array $paymentData Payment details including order_id, amount, currency, user_id, etc.
-     * @param \Illuminate\Database\Eloquent\Model|null $model The model associated with this payment (Subscription, Donation, etc.)
-     * @return array Should contain: success, transaction_id, redirect_url, order_tracking_id
-     */
-    public function initiatePayment(array $paymentData, ?\Illuminate\Database\Eloquent\Model $model = null): array
-    {
-        $result = $this->gateway->initiatePayment($paymentData);
+        $result = $this->gateway->initiatePayment($request);
         
-        if ($result['success']) {
+        if ($result->success) {
             \App\Models\AuditLog::log('payment.initiated', $model, null, [
-                'amount' => $paymentData['amount'] ?? 0,
-                'currency' => $paymentData['currency'] ?? 'KES',
-                'order_id' => $paymentData['order_id'] ?? null,
-                'transaction_id' => $result['transaction_id'] ?? null,
+                'amount' => $request->amount,
+                'currency' => $request->currency,
+                'reference' => $request->reference,
+                'transaction_id' => $result->transactionId,
                 'gateway' => self::getActiveGateway()
             ], 'Payment initiated via GatewayManager');
         }
@@ -80,31 +107,46 @@ class GatewayManager
     }
 
     /**
-     * Charge/process a payment.
-     * 
-     * @param string $identifier Payment identifier (phone number, transaction ID, etc.)
-     * @param int $amount Amount in smallest currency unit
-     * @param array $metadata Additional payment context
-     * @return array Should contain: success, status, error_message (if failed)
+     * Process a direct charge through the active gateway.
+     *
+     * @param string $identifier The payment method identifier
+     * @param int $amount The amount to charge
+     * @param array $metadata Additional transaction metadata
+     * @return TransactionResultDTO Contains success status and transaction details
      */
-    public function charge(string $identifier, int $amount, array $metadata = []): array
+    public function charge(string $identifier, int $amount, array $metadata = []): TransactionResultDTO
     {
         return $this->gateway->charge($identifier, $amount, $metadata);
     }
 
     /**
-     * Query the status of an existing payment.
-     * 
-     * @param string $transactionId The transaction ID to query
-     * @return array Payment status information
+     * Query payment status from the active gateway.
+     *
+     * @param string $transactionId The gateway transaction ID
+     * @return PaymentStatusDTO Contains current payment status
      */
-    public function queryStatus(string $transactionId): array
+    public function queryStatus(string $transactionId): PaymentStatusDTO
     {
         return $this->gateway->queryStatus($transactionId);
     }
 
     /**
-     * Get the underlying gateway instance (for advanced usage).
+     * Refund a payment through the active gateway.
+     *
+     * @param string $transactionId The gateway transaction ID to refund
+     * @param float $amount The amount to refund
+     * @param string $reason The reason for the refund
+     * @return TransactionResultDTO Contains success status and refund transaction details
+     */
+    public function refund(string $transactionId, float $amount, string $reason = ''): TransactionResultDTO
+    {
+        return $this->gateway->refund($transactionId, $amount, $reason);
+    }
+
+    /**
+     * Get the underlying gateway implementation.
+     *
+     * @return PaymentGatewayInterface The active gateway instance
      */
     public function getGateway(): PaymentGatewayInterface
     {

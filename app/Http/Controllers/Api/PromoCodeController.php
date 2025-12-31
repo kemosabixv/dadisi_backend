@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PromoCodeResource;
 use App\Models\Event;
 use App\Models\PromoCode;
+use App\Services\Contracts\PromoCodeServiceContract;
+use App\Exceptions\PromoCodeException;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class PromoCodeController extends Controller
 {
-    public function __construct()
+    public function __construct(private PromoCodeServiceContract $promoCodeService)
     {
         $this->middleware('auth:sanctum');
     }
@@ -21,76 +24,53 @@ class PromoCodeController extends Controller
      * 
      * @group Promo Codes
      */
-    public function validateCode(Request $request, Event $event)
+    public function validateCode(ValidatePromoCodeRequest $request, Event $event): JsonResponse
     {
-        $validated = $request->validate([
-            'code' => 'required|string',
-            'ticket_id' => 'required|exists:tickets,id',
-        ]);
-
-        $promo = PromoCode::where('code', $validated['code'])
-            ->where(function ($q) use ($event) {
-                $q->where('event_id', $event->id)
-                  ->orWhereNull('event_id');
-            })
-            ->where('is_active', true)
-            ->where(function ($q) {
-                $q->whereNull('valid_from')->orWhere('valid_from', '<=', now());
-            })
-            ->where(function ($q) {
-                $q->whereNull('valid_until')->orWhere('valid_until', '>=', now());
-            })
-            ->first();
-
-        if (!$promo) {
-            return response()->json(['message' => 'Invalid or expired promo code.'], Response::HTTP_NOT_FOUND);
+        try {
+            $validated = $request->validated();
+            $promo = $this->promoCodeService->redeemPromoCode($validated['code'], auth()->user());
+            return response()->json(['success' => true, 'data' => new PromoCodeResource($promo)]);
+        } catch (PromoCodeException $e) {
+            Log::warning('Promo code validation failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->statusCode ?? 404);
+        } catch (\Exception $e) {
+            Log::error('Failed to validate promo code', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Invalid or expired promo code.'], 404);
         }
-
-        if ($promo->usage_limit && $promo->used_count >= $promo->usage_limit) {
-            return response()->json(['message' => 'Promo code usage limit reached.'], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        return (new PromoCodeResource($promo))->additional([
-            'success' => true,
-        ]);
     }
 
     /**
      * Admin: List all promo codes
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', PromoCode::class);
-        
-        $query = PromoCode::with('event');
-        
-        if ($request->has('event_id')) {
-            $query->where('event_id', $request->event_id);
+        try {
+            $this->authorize('viewAny', PromoCode::class);
+            $filters = ['event_id' => $request->input('event_id')];
+            $promoCodes = $this->promoCodeService->listPromoCodes($filters);
+            return response()->json(['success' => true, 'data' => PromoCodeResource::collection($promoCodes)]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve promo codes', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve promo codes'], 500);
         }
-
-        return PromoCodeResource::collection($query->latest()->paginate());
     }
 
     /**
      * Admin: Create promo code
      */
-    public function store(Request $request)
+    public function store(StorePromoCodeRequest $request): JsonResponse
     {
-        $this->authorize('create', PromoCode::class);
-
-        $validated = $request->validate([
-            'event_id' => 'nullable|exists:events,id',
-            'code' => 'required|string|unique:promo_codes,code',
-            'discount_type' => 'required|in:percentage,fixed',
-            'discount_value' => 'required|numeric|min:0',
-            'usage_limit' => 'nullable|integer|min:1',
-            'valid_from' => 'nullable|date',
-            'valid_until' => 'nullable|date|after_or_equal:valid_from',
-            'is_active' => 'boolean',
-        ]);
-
-        $promo = PromoCode::create($validated);
-
-        return new PromoCodeResource($promo);
+        try {
+            $this->authorize('create', PromoCode::class);
+            $validated = $request->validated();
+            $promo = $this->promoCodeService->createPromoCode(auth()->user(), $validated);
+            return response()->json(['success' => true, 'data' => new PromoCodeResource($promo)], 201);
+        } catch (PromoCodeException $e) {
+            Log::error('Failed to create promo code', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->statusCode ?? 422);
+        } catch (\Exception $e) {
+            Log::error('Failed to create promo code', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create promo code'], 500);
+        }
     }
 }

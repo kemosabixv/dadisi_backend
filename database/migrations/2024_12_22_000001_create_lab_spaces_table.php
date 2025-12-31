@@ -13,21 +13,34 @@ return new class extends Migration
     {
         Schema::create('lab_spaces', function (Blueprint $table) {
             $table->id();
+            
+            // Core Fields
             $table->string('name');
             $table->string('slug')->unique();
-            $table->enum('type', ['wet_lab', 'dry_lab', 'greenhouse', 'mobile_lab']);
             $table->text('description')->nullable();
-            $table->unsignedInteger('capacity')->default(4);
+            $table->integer('capacity')->default(1);
+            $table->string('county')->nullable();
+            
+            // Lab Type and Display
+            $table->enum('type', ['dry_lab', 'wet_lab', 'greenhouse', 'mobile_lab', 'makerspace', 'workshop', 'studio', 'other'])->default('dry_lab');
             $table->string('image_path')->nullable();
-            $table->json('amenities')->nullable();
             $table->json('safety_requirements')->nullable();
-            $table->decimal('hourly_rate', 10, 2)->default(0);
-            $table->boolean('is_active')->default(true);
+            
+            // Availability
+            $table->boolean('is_available')->default(true);
+            $table->time('available_from')->nullable();
+            $table->time('available_until')->nullable();
+            
+            // Metadata
+            $table->json('equipment_list')->nullable();
+            $table->text('rules')->nullable();
+            
             $table->timestamps();
             $table->softDeletes();
-
-            $table->index('type');
-            $table->index('is_active');
+            
+            // Indexes
+            $table->index('is_available');
+            $table->index('county');
         });
     }
 

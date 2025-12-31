@@ -17,6 +17,7 @@ class PlansManagementTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(); // Seed roles and permissions
         $this->ts = time();
         $this->admin = User::create([
             'username' => 'planadmin_' . $this->ts,

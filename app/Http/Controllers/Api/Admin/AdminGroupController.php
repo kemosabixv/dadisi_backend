@@ -4,129 +4,220 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Group;
+use App\Services\Contracts\GroupServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * @group Admin Community Groups
+ * @groupDescription Administrative endpoints for managing community groups and their memberships.
+ */
 class AdminGroupController extends Controller
 {
+    public function __construct(
+        private GroupServiceContract $groupService
+    ) {
+        $this->middleware(['auth:sanctum', 'admin']);
+    }
+
     /**
      * List all groups for administration.
      * 
-     * @group Admin Forum
+     * Returns a paginated list of community groups with member counts.
+     * 
+     * @group Admin Community Groups
      * @authenticated
+     * 
+     * @queryParam search string Filter groups by name. Example: Technology
+     * @queryParam active boolean Filter by active status. Example: true
+     * @queryParam per_page integer Results per page. Example: 20
+     * 
+     * @response 200 {
+     *   "success": true,
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "name": "Tech Enthusiasts",
+     *       "slug": "tech-enthusiasts",
+     *       "description": "A group for tech lovers",
+     *       "is_active": true,
+     *       "members_count": 50,
+     *       "county": {"id": 1, "name": "Nairobi"}
+     *     }
+     *   ],
+     *   "meta": {"current_page": 1, "last_page": 3, "total": 60}
+     * }
      */
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', Group::class);
+        try {
+            $this->authorize('viewAny', Group::class);
 
-        $query = Group::with('county')->withCount('members');
+            $filters = [
+                'search' => $request->input('search'),
+                'active' => $request->has('active') ? $request->boolean('active') : null,
+            ];
 
-        if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $groups = $this->groupService->listGroups($filters, $request->get('per_page', 20));
+
+            return response()->json([
+                'success' => true,
+                'data' => $groups->items(),
+                'meta' => [
+                    'current_page' => $groups->currentPage(),
+                    'last_page' => $groups->lastPage(),
+                    'total' => $groups->total(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to list community groups', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve groups'], 500);
         }
-
-        if ($request->has('active')) {
-            $query->where('is_active', $request->boolean('active'));
-        }
-
-        $groups = $query->orderBy('name')->paginate($request->input('per_page', 20));
-
-        return response()->json([
-            'data' => $groups->items(),
-            'meta' => [
-                'current_page' => $groups->currentPage(),
-                'last_page' => $groups->lastPage(),
-                'total' => $groups->total(),
-            ],
-        ]);
     }
 
     /**
      * Update a group.
      * 
-     * @group Admin Forum
+     * @group Admin Community Groups
      * @authenticated
+     * 
+     * @urlParam group integer required The group ID. Example: 1
+     * @bodyParam name string The name of the group. Example: Science Club
+     * @bodyParam description string The description of the group.
+     * @bodyParam is_active boolean Enable/disable the group.
+     * @bodyParam is_private boolean Set group as private.
+     * 
+     * @response 200 {
+     *   "success": true,
+     *   "data": {"id": 1, "name": "Science Club"},
+     *   "message": "Group updated successfully."
+     * }
      */
     public function update(Request $request, Group $group): JsonResponse
     {
-        $this->authorize('update', $group);
+        try {
+            $this->authorize('update', $group);
 
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:100',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-            'is_private' => 'boolean',
-        ]);
+            $validated = $request->validate([
+                'name' => 'sometimes|string|max:100',
+                'description' => 'nullable|string',
+                'is_active' => 'boolean',
+                'is_private' => 'boolean',
+            ]);
 
-        if (isset($validated['name'])) {
-            $validated['slug'] = Str::slug($validated['name']);
+            $updatedGroup = $this->groupService->updateGroup($group, $validated);
+
+            return response()->json([
+                'success' => true,
+                'data' => $updatedGroup,
+                'message' => 'Group updated successfully.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update community group', ['error' => $e->getMessage(), 'group_id' => $group->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update group'], 500);
         }
-
-        $group->update($validated);
-
-        return response()->json([
-            'data' => $group,
-            'message' => 'Group updated successfully.',
-        ]);
     }
 
     /**
      * Delete a group.
      * 
-     * @group Admin Forum
+     * @group Admin Community Groups
      * @authenticated
+     * 
+     * @urlParam group integer required The group ID. Example: 1
+     * 
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Group deleted successfully."
+     * }
      */
     public function destroy(Group $group): JsonResponse
     {
-        $this->authorize('delete', $group);
+        try {
+            $this->authorize('delete', $group);
 
-        $group->delete();
+            $this->groupService->deleteGroup($group);
 
-        return response()->json([
-            'message' => 'Group deleted successfully.',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Group deleted successfully.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete community group', ['error' => $e->getMessage(), 'group_id' => $group->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete group'], 500);
+        }
     }
 
     /**
      * List group members for management.
      * 
-     * @group Admin Forum
+     * @group Admin Community Groups
      * @authenticated
+     * 
+     * @urlParam group integer required The group ID. Example: 1
+     * @queryParam per_page integer Results per page. Example: 20
+     * 
+     * @response 200 {
+     *   "success": true,
+     *   "data": [{"id": 1, "username": "jane_doe"}],
+     *   "meta": {"total": 100}
+     * }
      */
     public function members(Request $request, Group $group): JsonResponse
     {
-        $this->authorize('manageMembers', $group);
+        try {
+            $this->authorize('manageMembers', $group);
 
-        $members = $group->members()
-            ->with('memberProfile:user_id,first_name,last_name,profile_picture_path')
-            ->paginate($request->input('per_page', 20));
+            $members = $this->groupService->listMembers($group, $request->get('per_page', 20));
 
-        return response()->json([
-            'data' => $members->items(),
-            'meta' => [
-                'current_page' => $members->currentPage(),
-                'last_page' => $members->lastPage(),
-                'total' => $members->total(),
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $members->items(),
+                'meta' => [
+                    'current_page' => $members->currentPage(),
+                    'last_page' => $members->lastPage(),
+                    'total' => $members->total(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to list group members', ['error' => $e->getMessage(), 'group_id' => $group->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve members'], 500);
+        }
     }
 
     /**
      * Remove a member from a group.
      * 
-     * @group Admin Forum
+     * @group Admin Community Groups
      * @authenticated
+     * 
+     * @urlParam group integer required The group ID. Example: 1
+     * @urlParam userId integer required The user ID to remove. Example: 5
+     * 
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Member removed successfully."
+     * }
      */
     public function removeMember(Request $request, Group $group, int $userId): JsonResponse
     {
-        $this->authorize('manageMembers', $group);
+        try {
+            $this->authorize('manageMembers', $group);
 
-        $group->members()->detach($userId);
-        $group->updateMemberCount();
+            $this->groupService->removeMember($group, $userId);
 
-        return response()->json([
-            'message' => 'Member removed successfully.',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Member removed successfully.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to remove group member', [
+                'error' => $e->getMessage(), 
+                'group_id' => $group->id,
+                'user_id' => $userId
+            ]);
+            return response()->json(['success' => false, 'message' => 'Failed to remove member'], 500);
+        }
     }
 }

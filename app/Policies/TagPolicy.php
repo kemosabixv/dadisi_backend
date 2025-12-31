@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Tag;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class TagPolicy
 {
@@ -25,25 +26,67 @@ class TagPolicy
 
     /**
      * Determine if user can create tags
+     * 
+     * Any authenticated user can create tags
      */
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('manage_post_tags');
+        return true;
     }
 
     /**
-     * Determine if user can update tags
+     * Determine if user can update a tag
+     * 
+     * Staff: Can update any tag
+     * Users: Can only update their own tags
      */
     public function update(User $user, Tag $tag): bool
     {
-        return $user->hasPermissionTo('manage_post_tags');
+        // Staff can update any tag
+        if ($user->isStaffMember() && $user->hasPermissionTo('edit_posts')) {
+            return true;
+        }
+
+        // Users can update only their own tags
+        return $user->id === $tag->created_by;
     }
 
     /**
-     * Determine if user can delete tags
+     * Determine if user can delete a tag
+     * 
+     * Only staff members can delete tags (with confirmation)
      */
-    public function delete(User $user, Tag $tag): bool
+    public function delete(User $user, Tag $tag): Response
     {
-        return $user->hasPermissionTo('manage_post_tags');
+        if (!$user->isStaffMember()) {
+            return Response::deny('Only staff members can delete tags.');
+        }
+
+        if (!$user->hasPermissionTo('delete_posts')) {
+            return Response::deny('You do not have permission to delete tags.');
+        }
+
+        return Response::allow();
+    }
+
+    /**
+     * Get information about posts that will be affected by tag deletion
+     * Used for deletion confirmation before cascade delete
+     */
+    public function getAffectedPosts(User $user, Tag $tag): array
+    {
+        if (!$this->delete($user, $tag)->allowed()) {
+            return [];
+        }
+
+        $posts = $tag->posts()
+            ->select('id', 'title', 'slug', 'user_id', 'status')
+            ->with('author:id,username')
+            ->get();
+
+        return [
+            'count' => $posts->count(),
+            'posts' => $posts->toArray(),
+        ];
     }
 }

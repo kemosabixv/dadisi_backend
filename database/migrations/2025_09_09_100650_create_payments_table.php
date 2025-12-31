@@ -9,8 +9,8 @@ return new class extends Migration {
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('payable_type', 100);
-            $table->unsignedBigInteger('payable_id');
+            $table->string('payable_type', 100)->nullable();
+            $table->unsignedBigInteger('payable_id')->nullable();
             $table->string('gateway', 50)->default('pesapal');
             $table->string('method', 50)->nullable();
             $table->enum('status', ['pending','paid','failed','refunded'])->default('pending');

@@ -3,22 +3,29 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\SystemSetting;
+use App\Services\Contracts\SystemSettingServiceContract;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 /**
- * @group System Settings
- *
- * APIs for managing global system configuration.
+ * @group Admin - System Settings
+ * @groupDescription Administrative endpoints for managing global system configurations and environment variables.
  */
 class SystemSettingController extends Controller
 {
+    public function __construct(
+        private SystemSettingServiceContract $settingService
+    ) {
+        $this->middleware(['auth:sanctum', 'admin']);
+    }
+
     /**
      * List System Settings
      *
      * Retrieve a key-value list of system settings. Can be filtered by group (e.g., 'pesapal', 'email').
      *
+     * @authenticated
      * @queryParam group string Filter settings by group name. Example: pesapal
      *
      * @response 200 {
@@ -30,22 +37,19 @@ class SystemSettingController extends Controller
      *   }
      * }
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $query = SystemSetting::query();
+        try {
+            $settings = $this->settingService->getSettings($request->query('group'));
 
-        if ($request->has('group')) {
-            $query->where('group', $request->group);
+            return response()->json([
+                'success' => true,
+                'data' => $settings,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to list system settings', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve settings'], 500);
         }
-
-        $settings = $query->get()->mapWithKeys(function ($item) {
-            return [$item->key => $item->value]; // Accessor handles casting
-        });
-
-        return response()->json([
-            'success' => true,
-            'data' => $settings,
-        ]);
     }
 
     /**
@@ -54,6 +58,7 @@ class SystemSettingController extends Controller
      * Update multiple system settings at once. Keys that don't exist will be created.
      * The system automatically infers the group (prefix before dot) and type (boolean/string/float) for new keys.
      *
+     * @authenticated
      * @bodyParam pesapal.consumer_key string Example: new_key_123
      * @bodyParam pesapal.enabled boolean Example: true
      *
@@ -66,32 +71,24 @@ class SystemSettingController extends Controller
      *   }
      * }
      */
-    public function update(Request $request)
+    public function update(Request $request): JsonResponse
     {
-        $data = $request->all();
-        $updatedSettings = [];
+        try {
+            $data = $request->all();
+            
+            // Remove token and other request metadata if present
+            unset($data['_token']);
+            
+            $updatedSettings = $this->settingService->updateSettings($data, $request->user()?->id);
 
-        foreach ($data as $key => $value) {
-            // Determine group and type based on key naming convention or existing record
-            $setting = SystemSetting::firstOrNew(['key' => $key]);
-
-            // Infer properties if new
-            if (!$setting->exists) {
-                $setting->group = explode('.', $key)[0] ?? 'general';
-                $setting->type = is_bool($value) ? 'boolean' : (is_numeric($value) ? 'float' : 'string');
-            }
-
-            $setting->value = $value;
-            $setting->updated_by = $request->user()->id;
-            $setting->save();
-
-            $updatedSettings[$key] = $setting->value;
+            return response()->json([
+                'success' => true,
+                'message' => 'Settings updated successfully',
+                'data' => $updatedSettings,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update system settings', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to update settings'], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Settings updated successfully',
-            'data' => $updatedSettings,
-        ]);
     }
 }

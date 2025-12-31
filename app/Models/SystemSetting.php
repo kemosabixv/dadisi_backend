@@ -53,4 +53,30 @@ class SystemSetting extends Model
             $this->attributes['value'] = (string) $value;
         }
     }
+
+    /**
+     * Get grace period days for expired subscriptions
+     */
+    public static function getGracePeriodDays(): int
+    {
+        $setting = self::where('key', 'subscription_grace_period_days')->first();
+        return $setting ? (int) $setting->value : 14;
+    }
+
+    /**
+     * Set grace period days
+     */
+    public static function setGracePeriodDays(int $days): self
+    {
+        return self::updateOrCreate(
+            ['key' => 'subscription_grace_period_days'],
+            [
+                'value' => (string) $days,
+                'group' => 'subscriptions',
+                'type' => 'integer',
+                'description' => 'Number of days to allow re-subscription after expiry',
+                'is_public' => false,
+            ]
+        );
+    }
 }

@@ -39,6 +39,6 @@ class Ticket extends Model
 
     public function registrations(): HasMany
     {
-        return $this->hasMany(Registration::class);
+        return $this->hasMany(EventRegistration::class);
     }
 }

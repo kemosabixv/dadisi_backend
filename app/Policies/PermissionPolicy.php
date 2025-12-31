@@ -9,6 +9,18 @@ use Illuminate\Auth\Access\Response;
 class PermissionPolicy
 {
     /**
+     * Allow super_admin to do anything.
+     */
+    public function before(User $user, string $ability): ?bool
+    {
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+
+        return null; // Continue with other checks
+    }
+
+    /**
      * Determine whether the user can view any permissions.
      * Only super admins can manage permissions
      */
@@ -65,3 +77,4 @@ class PermissionPolicy
         return $user->can('manage_permissions');
     }
 }
+

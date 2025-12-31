@@ -3,15 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\MemberProfile;
-use App\Models\County;
+use App\Exceptions\UserException;
+use App\Services\Contracts\UserServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class MemberProfileController extends Controller
 {
+    public function __construct(private UserServiceContract $userService)
+    {
+    }
     /**
      * List all member profiles
      *
@@ -56,49 +60,21 @@ class MemberProfileController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = auth()->user();
-
-        // Only admins can view all profiles
-        if (!$user->hasRole(['super_admin', 'admin'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized to view all profiles',
-            ], 403);
+        try {
+            $filters = [
+                'county_id' => $request->input('county_id'),
+                'membership_type' => $request->input('membership_type'),
+                'search' => $request->input('search'),
+                'page' => $request->input('page', 1),
+            ];
+            $result = $this->userService->listMemberProfiles($filters);
+            return response()->json(['success' => true, 'data' => $result]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 403);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve member profiles', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve member profiles'], 500);
         }
-
-        $query = MemberProfile::with([
-            'user:id,username,email,phone,email_verified_at,profile_picture_path',  
-            'county:id,name',
-            'subscriptionPlan:id,slug,name,price,description'
-        ]);
-
-        // Filter by county if provided
-        if ($request->has('county_id')) {
-            $query->byCounty($request->county_id);
-        }
-
-        // Filter by membership type (plan name)
-        if ($request->has('membership_type')) {
-            $query->whereHas('subscriptionPlan', function($q) use ($request) {
-                $q->where('name', $request->membership_type);
-            });
-        }
-
-        // Search by name/email
-        if ($request->has('search')) {
-            $searchTerm = $request->search;
-            $query->whereHas('user', function($q) use ($searchTerm) {
-                $q->where('name', 'like', "%{$searchTerm}%")
-                  ->orWhere('email', 'like', "%{$searchTerm}%");
-            });
-        }
-
-        $profiles = $query->latest()->paginate(20);
-
-        return response()->json([
-            'success' => true,
-            'data' => \App\Http\Resources\MemberProfileResource::collection($profiles),
-        ]);
     }
 
     /**
@@ -131,25 +107,13 @@ class MemberProfileController extends Controller
      */
     public function me(): JsonResponse
     {
-        $profile = auth()->user()->memberProfile;
-
-        if (!$profile) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Profile not found. Please create a profile first.',
-            ], 404);
+        try {
+            $profile = $this->userService->getCurrentUserProfile();
+            return response()->json(['success' => true, 'data' => $profile]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve current user profile', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Profile not found. Please create a profile first.'], 404);
         }
-
-        // WARNING: This endpoint is NOT to be used for authorization or admin checks.
-        // Use /api/auth/me instead.
-        return response()->json([
-            'success' => true,
-            'data' => \App\Http\Resources\MemberProfileResource::make($profile->load([
-                'user:id,username,email,phone,email_verified_at,profile_picture_path',
-                'county:id,name',
-                'subscriptionPlan:id,slug,name,price,description'
-            ])),
-        ]);
     }
 
     /**
@@ -194,8 +158,6 @@ class MemberProfileController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $user = auth()->user();
-
         $validated = $request->validate([
             'county_id' => ['required', 'integer', Rule::exists('counties', 'id')],
             'first_name' => 'nullable|string|max:100',
@@ -212,65 +174,16 @@ class MemberProfileController extends Controller
             'interests' => 'nullable|array',
             'bio' => 'nullable|string|max:1000',
         ]);
-
-        $profile = $user->memberProfile;
-
-        if (!$profile) {
-            // Map incoming keys to DB columns
-            $createData = $validated;
-            $createData['user_id'] = $user->id;
-
-            // Map phone -> phone_number
-            if (isset($createData['phone'])) {
-                $createData['phone_number'] = $createData['phone'];
-                unset($createData['phone']);
-            }
-
-            // If first/last name not provided, try to parse from user name
-            if (empty($createData['first_name']) && empty($createData['last_name'])) {
-                $nameParts = preg_split('/\s+/', trim($user->name ?? ''), -1, PREG_SPLIT_NO_EMPTY);
-                $createData['first_name'] = $nameParts[0] ?? '';
-                $createData['last_name'] = isset($nameParts[1]) ? implode(' ', array_slice($nameParts, 1)) : '';
-            }
-
-            // Handle membership_type: if a string, try to resolve to subscription plan id
-            if (!empty($createData['membership_type']) && !is_numeric($createData['membership_type'])) {
-                $plan = \App\Models\SubscriptionPlan::where('name', $createData['membership_type'])->first();
-                $createData['membership_type'] = $plan ? $plan->id : null;
-            }
-
-            $profile = MemberProfile::create($createData);
-        } else {
-            // Map updates similarly
-            if (isset($validated['phone'])) {
-                $validated['phone_number'] = $validated['phone'];
-                unset($validated['phone']);
-            }
-
-            // If first/last not provided, try parse from user name only when empty
-            if (empty($validated['first_name']) && empty($validated['last_name'])) {
-                $nameParts = preg_split('/\s+/', trim($user->name ?? ''), -1, PREG_SPLIT_NO_EMPTY);
-                $validated['first_name'] = $nameParts[0] ?? '';
-                $validated['last_name'] = isset($nameParts[1]) ? implode(' ', array_slice($nameParts, 1)) : '';
-            }
-
-            if (!empty($validated['membership_type']) && !is_numeric($validated['membership_type'])) {
-                $plan = \App\Models\SubscriptionPlan::where('name', $validated['membership_type'])->first();
-                $validated['membership_type'] = $plan ? $plan->id : null;
-            }
-
-            $profile->update($validated);
+        
+        try {
+            $profile = $this->userService->createOrUpdateMemberProfile($validated);
+            return response()->json(['success' => true, 'message' => 'Profile updated successfully', 'data' => $profile]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 400);
+        } catch (\Exception $e) {
+            Log::error('Failed to update profile', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to update profile'], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile updated successfully',
-            'data' => \App\Http\Resources\MemberProfileResource::make($profile->load([
-                'user:id,username,email,phone,email_verified_at,profile_picture_path',
-                'county:id,name',
-                'subscriptionPlan:id,slug,name,price,description'
-            ])),
-        ]);
     }
 
     /**
@@ -315,32 +228,15 @@ class MemberProfileController extends Controller
      */
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $user = auth()->user();
-
-        if (!$user->hasRole(['super_admin', 'admin'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot delete profile',
-            ], 403);
+        try {
+            $this->userService->deleteMemberProfile($id);
+            return response()->json(['success' => true, 'message' => 'Profile deleted successfully']);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 403);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete profile', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Cannot delete profile'], 403);
         }
-
-        $profile = MemberProfile::findOrFail($id);
-
-        // Prevent admins from deleting their own profile
-        if ($profile->user_id === $user->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot delete profile',
-            ], 403);
-        }
-
-        // Perform a hard delete for admin-initiated removals (tests expect hard delete)
-        $profile->forceDelete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile deleted successfully',
-        ]);
     }
     /**
      * Get specific profile details
@@ -380,42 +276,13 @@ class MemberProfileController extends Controller
      */
     public function show(Request $request, $id = null): JsonResponse
     {
-        $user = auth()->user();
-
-        // Check if requesting own profile
-        if (!$id) {
-            $profile = $user->memberProfile;
-            if (!$profile) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Profile not found. Please create a profile first.',
-                ], 404);
-            }
-        } else {
-            // Check if requesting own profile or has admin role
-            $profile = MemberProfile::with([
-                'user:id,username,email,phone,email_verified_at,profile_picture_path',  
-                'county:id,name',
-                'subscriptionPlan:id,slug,name,price,description'
-            ])->findOrFail($id);
-
-            // If not the profile owner and not admin, deny access
-            if ($profile->user_id !== $user->id && !$user->hasRole(['super_admin', 'admin'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to view this profile',
-                ], 403);
-            }
+        try {
+            $profile = $this->userService->getMemberProfile($id);
+            return response()->json(['success' => true, 'data' => $profile]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve profile', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Profile not found'], 404);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => \App\Http\Resources\MemberProfileResource::make($profile->load([
-                'user:id,username,email,phone,email_verified_at,profile_picture_path',
-                'county:id,name',
-                'subscriptionPlan:id,slug,name,price,description'
-            ])),
-        ]);
     }
 
     /**
@@ -494,54 +361,29 @@ class MemberProfileController extends Controller
      */
     public function update(Request $request, string $id): JsonResponse
     {
-        $user = auth()->user();
-        $profile = MemberProfile::findOrFail($id);
-
-        // Only allow updating own profile or admin managing users
-        if ($profile->user_id !== $user->id && !$user->hasRole(['super_admin', 'admin'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized to update this profile',
-            ], 403);
+        try {
+            $validated = $request->validate([
+                'county_id' => ['sometimes', 'required', 'integer', Rule::exists('counties', 'id')],
+                'phone_number' => 'nullable|string|max:15',
+                'gender' => 'nullable|in:male,female',
+                'date_of_birth' => 'nullable|date|before:today',
+                'sub_county' => 'nullable|string|max:50',
+                'ward' => 'nullable|string|max:50',
+                'occupation' => 'nullable|string|max:255',
+                'membership_type' => ['nullable', 'integer', Rule::exists('subscription_plans', 'id')],
+                'emergency_contact_name' => 'nullable|string|max:255',
+                'emergency_contact_phone' => 'nullable|string|max:15',
+                'terms_accepted' => 'sometimes|boolean',
+                'marketing_consent' => 'sometimes|boolean',
+                'interests' => 'nullable|array',
+                'bio' => 'nullable|string|max:1000',
+            ]);
+            $profile = $this->userService->updateMemberProfile($id, $validated);
+            return response()->json(['success' => true, 'message' => 'Profile updated successfully', 'data' => $profile]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update profile', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Unauthorized to update this profile'], 403);
         }
-
-        $validated = $request->validate([
-            'county_id' => [
-                'sometimes',
-                'required',
-                'integer',
-                Rule::exists('counties', 'id')
-            ],
-            'phone_number' => 'nullable|string|max:15',
-            'gender' => 'nullable|in:male,female',
-            'date_of_birth' => 'nullable|date|before:today',
-            'sub_county' => 'nullable|string|max:50',
-            'ward' => 'nullable|string|max:50',
-            'occupation' => 'nullable|string|max:255',
-            'membership_type' => [
-                'nullable',
-                'integer',
-                Rule::exists('subscription_plans', 'id')
-            ],
-            'emergency_contact_name' => 'nullable|string|max:255',
-            'emergency_contact_phone' => 'nullable|string|max:15',
-            'terms_accepted' => 'sometimes|boolean',
-            'marketing_consent' => 'sometimes|boolean',
-            'interests' => 'nullable|array',
-            'bio' => 'nullable|string|max:1000',
-        ]);
-
-        $profile->update($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile updated successfully',
-            'data' => \App\Http\Resources\MemberProfileResource::make($profile->load([
-                'user:id,username,email,phone,email_verified_at,profile_picture_path',
-                'county:id,name',
-                'subscriptionPlan:id,slug,name,price,description'
-            ])),
-        ]);
     }
 
 
@@ -565,12 +407,13 @@ class MemberProfileController extends Controller
      */
     public function getCounties(): JsonResponse
     {
-        $counties = County::select('id', 'name')->orderBy('name')->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $counties,
-        ]);
+        try {
+            $counties = $this->userService->listCounties();
+            return response()->json(['success' => true, 'data' => $counties]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve counties', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve counties'], 500);
+        }
     }
 
     /**
@@ -594,38 +437,13 @@ class MemberProfileController extends Controller
      */
     public function uploadProfilePicture(Request $request): JsonResponse
     {
-        $request->validate([
-            'profile_picture' => ['required', 'image', 'max:5120'],
-        ]);
-
-        $user = auth()->user();
-
-        if ($request->hasFile('profile_picture')) {
-            // delete old image if exists
-            if ($user->profile_picture_path) {
-                Storage::disk('public')->delete($user->profile_picture_path);
-            }
-
-            // store new image
-            $path = $request->file('profile_picture')->store('profile-pictures', 'public');
-
-            // update user
-            $user->profile_picture_path = $path;
-            $user->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Profile picture updated successfully',
-                'data' => [
-                    'profile_picture_url' => $user->profile_picture_url,
-                    'user' => $user->load('memberProfile') // Return updated user for frontend state
-                ]
-            ]);
+        try {
+            $request->validate(['profile_picture' => ['required', 'image', 'max:5120']]);
+            $result = $this->userService->uploadProfilePicture($request->user(), $request->file('profile_picture'));
+            return response()->json(['success' => true, 'message' => 'Profile picture updated successfully', 'data' => $result]);
+        } catch (\Exception $e) {
+            Log::error('Failed to upload profile picture', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to upload profile picture'], 500);
         }
-
-        return response()->json([
-            'success' => false,
-            'message' => 'No file uploaded',
-        ], 400);
     }
 }

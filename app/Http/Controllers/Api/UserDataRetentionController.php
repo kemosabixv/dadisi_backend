@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\UpdateUserDataRetentionRequest;
+use App\Http\Requests\Api\UpdateRetentionDaysRequest;
+use App\Http\Requests\Api\UpdateSchedulerRequest;
 use App\Models\UserDataRetentionSetting;
 use App\Models\SchedulerSetting;
 use App\Models\AuditLog;
+use App\Services\Contracts\UserDataRetentionServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +17,7 @@ use Illuminate\Validation\Rule;
 
 class UserDataRetentionController extends Controller
 {
-    public function __construct()
+    public function __construct(private UserDataRetentionServiceContract $retentionService)
     {
         $this->authorizeResource(UserDataRetentionSetting::class, 'retention');
     }
@@ -49,18 +53,18 @@ class UserDataRetentionController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = UserDataRetentionSetting::with('updatedBy:id,username');
+        try {
+            $filters = ['data_type' => $request->input('data_type')];
+            $settings = $this->retentionService->listPolicies($filters);
 
-        if ($request->has('data_type')) {
-            $query->where('data_type', $request->data_type);
+            return response()->json([
+                'success' => true,
+                'data' => $settings,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve retention policies', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve retention policies'], 500);
         }
-
-        $settings = $query->latest()->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $settings,
-        ]);
     }
 
     /**
@@ -90,10 +94,16 @@ class UserDataRetentionController extends Controller
      */
     public function show(UserDataRetentionSetting $retention): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => $retention->load('updatedBy:id,username'),
-        ]);
+        try {
+            $data = $this->retentionService->getPolicyDetails($retention->id);
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve retention policy', ['error' => $e->getMessage(), 'retention_id' => $retention->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve retention policy'], 500);
+        }
     }
 
 /**
@@ -123,29 +133,21 @@ class UserDataRetentionController extends Controller
      *   }
      * }
      */
-    public function update(Request $request, UserDataRetentionSetting $retention): JsonResponse
+    public function update(UpdateUserDataRetentionRequest $request, UserDataRetentionSetting $retention): JsonResponse
     {
-        $validated = $request->validate([
-            'retention_days' => 'nullable|integer|min:0|max:3650', // Max 10 years
-            'retention_minutes' => 'nullable|integer|min:1|max:525600', // Max 1 year in minutes
-            'auto_delete' => 'boolean',
-            'description' => 'nullable|string|max:500',
-        ]);
+        try {
+            $validated = $request->validated();
+            $result = $this->retentionService->updatePolicy($retention->id, $validated);
 
-        $oldValues = $retention->only(array_keys($validated));
-
-        $validated['updated_by'] = auth()->id();
-        $retention->update($validated);
-
-        // Audit log
-        $this->logAuditAction('update', UserDataRetentionSetting::class, $retention->id, $oldValues, $validated,
-            "Updated retention settings for {$retention->data_type}");
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Retention setting updated successfully',
-            'data' => $retention->load('updatedBy:id,username'),
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Retention setting updated successfully',
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update retention policy', ['error' => $e->getMessage(), 'retention_id' => $retention->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update retention policy'], 500);
+        }
     }
 
     /**
@@ -169,12 +171,17 @@ class UserDataRetentionController extends Controller
      */
     public function summary(): JsonResponse
     {
-        $settings = UserDataRetentionSetting::getActiveSettings();
+        try {
+            $settings = $this->retentionService->getSummary();
 
-        return response()->json([
-            'success' => true,
-            'data' => $settings,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $settings,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve retention summary', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve retention summary'], 500);
+        }
     }
 
     /**
@@ -203,50 +210,21 @@ class UserDataRetentionController extends Controller
     *   "message": "Data type 'orphaned_media' not found"
     * }
      */
-    public function updateRetentionDays(Request $request): JsonResponse
+    public function updateRetentionDays(UpdateRetentionDaysRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'data_type' => 'required|string|in:orphaned_media,temporary_media,user_accounts,audit_logs,session_data,failed_jobs,temp_files,backups,pending_payments,webhook_events',
-            'retention_days' => 'nullable|integer|min:0|max:3650',
-            'retention_minutes' => 'nullable|integer|min:1|max:525600', // Max 1 year in minutes
-        ]);
+        try {
+            $validated = $request->validated();
+            $result = $this->retentionService->updateRetentionDays($validated['data_type'], $validated);
 
-        $setting = UserDataRetentionSetting::where('data_type', $validated['data_type'])->first();
-
-        if (!$setting) {
             return response()->json([
-                'success' => false,
-                'message' => "Data type '{$validated['data_type']}' not found",
-            ], 404);
+                'success' => true,
+                'message' => 'Retention settings updated successfully',
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update retention days', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to update retention days'], 500);
         }
-
-        $oldValues = [
-            'retention_days' => $setting->retention_days,
-            'retention_minutes' => $setting->retention_minutes,
-        ];
-
-        $updateData = ['updated_by' => auth()->id()];
-        
-        if (isset($validated['retention_days'])) {
-            $updateData['retention_days'] = $validated['retention_days'];
-        }
-        if (isset($validated['retention_minutes'])) {
-            $updateData['retention_minutes'] = $validated['retention_minutes'];
-        }
-
-        $setting->update($updateData);
-
-        $this->logAuditAction('update', UserDataRetentionSetting::class, $setting->id,
-            $oldValues,
-            array_intersect_key($updateData, ['retention_days' => 1, 'retention_minutes' => 1]),
-            "Updated retention for {$validated['data_type']}"
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Retention settings updated successfully',
-            'data' => $setting->only(['data_type', 'retention_days', 'retention_minutes']),
-        ]);
     }
 
     /**
@@ -275,48 +253,21 @@ class UserDataRetentionController extends Controller
      *   }
      * }
      */
-    public function updateScheduler(Request $request): JsonResponse
+    public function updateScheduler(UpdateSchedulerRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'command_name' => 'required|string',
-            'run_time' => 'required|date_format:H:i',
-            'frequency' => 'in:daily,weekly,monthly,hourly',
-            'enabled' => 'boolean',
-        ]);
+        try {
+            $validated = $request->validated();
+            $result = $this->retentionService->updateScheduler($validated);
 
-        $scheduler = SchedulerSetting::firstOrCreate(
-            ['command_name' => $validated['command_name']],
-            [
-                'run_time' => $validated['run_time'],
-                'frequency' => $validated['frequency'] ?? 'daily',
-                'enabled' => $validated['enabled'] ?? true,
-                'updated_by' => auth()->id(),
-            ]
-        );
-
-        // If scheduler already existed, update it
-        if ($scheduler->wasRecentlyCreated === false) {
-            $oldValues = $scheduler->only(['run_time', 'frequency', 'enabled']);
-            $scheduler->update(array_merge($validated, ['updated_by' => auth()->id()]));
-
-            $this->logAuditAction('update', SchedulerSetting::class, $scheduler->id,
-                $oldValues,
-                $scheduler->only(['run_time', 'frequency', 'enabled']),
-                "Updated scheduler '{$validated['command_name']}' to run at {$validated['run_time']}"
-            );
-        } else {
-            $this->logAuditAction('create', SchedulerSetting::class, $scheduler->id,
-                null,
-                $scheduler->only(['command_name', 'run_time', 'frequency', 'enabled']),
-                "Created scheduler '{$validated['command_name']}'"
-            );
+            return response()->json([
+                'success' => true,
+                'message' => 'Scheduler updated successfully',
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update scheduler', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to update scheduler'], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Scheduler updated successfully',
-            'data' => $scheduler->only(['command_name', 'run_time', 'frequency', 'enabled']),
-        ]);
     }
 
     /**
@@ -343,38 +294,16 @@ class UserDataRetentionController extends Controller
      */
     public function getSchedulers(): JsonResponse
     {
-        $schedulers = SchedulerSetting::latest()->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $schedulers,
-        ]);
-    }
-
-    /**
-     * Log audit actions
-     */
-    private function logAuditAction(string $action, string $modelType, int $modelId, ?array $oldValues, ?array $newValues, ?string $notes = null): void
-    {
         try {
-            AuditLog::create([
-                'action' => $action,
-                'model_type' => $modelType,
-                'model_id' => $modelId,
-                'user_id' => auth()->id(),
-                'old_values' => $oldValues ? json_encode($oldValues) : null,
-                'new_values' => $newValues ? json_encode($newValues) : null,
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'notes' => $notes,
+            $schedulers = $this->retentionService->listSchedulers();
+
+            return response()->json([
+                'success' => true,
+                'data' => $schedulers,
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to create audit log', [
-                'action' => $action,
-                'model_type' => $modelType,
-                'model_id' => $modelId,
-                'error' => $e->getMessage(),
-            ]);
+            Log::error('Failed to retrieve schedulers', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve schedulers'], 500);
         }
     }
 }

@@ -2,38 +2,39 @@
 
 namespace Tests\Feature\Admin;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\User;
-use App\Models\ReconciliationRun;
 use App\Models\ReconciliationItem;
-use Spatie\Permission\Models\Role;
+use App\Models\ReconciliationRun;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 class ReconciliationAdminApiTest extends TestCase
 {
     use RefreshDatabase;
 
     protected User $adminUser;
+
     protected User $financeUser;
+
     protected User $unauthorizedUser;
+
+    protected $shouldSeedRoles = true;
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        // Seed permissions and roles
-        $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
 
         // Create users with different roles
         $this->adminUser = User::factory()->create(['email' => 'admin@example.com']);
         $this->financeUser = User::factory()->create(['email' => 'finance@example.com']);
         $this->unauthorizedUser = User::factory()->create(['email' => 'user@example.com']);
 
-        // Assign roles
-        $adminRole = Role::findByName('admin');
-        $financeRole = Role::findByName('finance');
-        $memberRole = Role::findByName('member');
+        // Assign roles for API guard to ensure correct permission resolution in API tests
+        $adminRole = Role::where('name', 'admin')->where('guard_name', 'api')->first();
+        $financeRole = Role::where('name', 'finance')->where('guard_name', 'api')->first();
+        $memberRole = Role::where('name', 'member')->where('guard_name', 'api')->first();
 
         $this->adminUser->assignRole($adminRole);
         $this->financeUser->assignRole($financeRole);
@@ -48,7 +49,7 @@ class ReconciliationAdminApiTest extends TestCase
         // Create sample runs
         ReconciliationRun::factory()->count(3)->create();
 
-        $response = $this->actingAs($this->adminUser)
+        $response = $this->actingAs($this->adminUser, 'sanctum')
             ->get('/api/admin/reconciliation');
 
         $response->assertStatus(200);
@@ -67,7 +68,7 @@ class ReconciliationAdminApiTest extends TestCase
     {
         ReconciliationRun::factory()->count(3)->create();
 
-        $response = $this->actingAs($this->unauthorizedUser)
+        $response = $this->actingAs($this->unauthorizedUser, 'sanctum')
             ->get('/api/admin/reconciliation');
 
         $response->assertStatus(403);
@@ -96,7 +97,7 @@ class ReconciliationAdminApiTest extends TestCase
             'reconciliation_status' => 'unmatched_app',
         ]);
 
-        $response = $this->actingAs($this->adminUser)
+        $response = $this->actingAs($this->adminUser, 'sanctum')
             ->get("/api/admin/reconciliation/{$run->id}");
 
         $response->assertStatus(200);
@@ -134,7 +135,7 @@ class ReconciliationAdminApiTest extends TestCase
      */
     public function test_trigger_reconciliation_dry_run()
     {
-        $response = $this->actingAs($this->adminUser)
+        $response = $this->actingAs($this->adminUser, 'sanctum')
             ->post('/api/admin/reconciliation/trigger', [
                 'dry_run' => true,
                 'sync' => false,
@@ -181,7 +182,7 @@ class ReconciliationAdminApiTest extends TestCase
      */
     public function test_trigger_reconciliation_unauthorized()
     {
-        $response = $this->actingAs($this->unauthorizedUser)
+        $response = $this->actingAs($this->unauthorizedUser, 'sanctum')
             ->post('/api/admin/reconciliation/trigger', [
                 'dry_run' => true,
                 'sync' => false,
@@ -202,12 +203,12 @@ class ReconciliationAdminApiTest extends TestCase
             'reconciliation_status' => 'matched',
         ]);
 
-        $response = $this->actingAs($this->adminUser)
+        $response = $this->actingAs($this->adminUser, 'sanctum')
             ->get("/api/admin/reconciliation/export?run_id={$run->id}");
 
         $response->assertStatus(200);
         $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
-        $this->assertStringContainsString('reconciliation-run-' . $run->run_id, $response->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('reconciliation-run-'.$run->run_id, $response->headers->get('Content-Disposition'));
     }
 
     /**
@@ -245,7 +246,7 @@ class ReconciliationAdminApiTest extends TestCase
             'reconciliation_run_id' => $run->id,
         ]);
 
-        $response = $this->actingAs($this->adminUser)
+        $response = $this->actingAs($this->adminUser, 'sanctum')
             ->delete("/api/admin/reconciliation/{$run->id}");
 
         $response->assertStatus(200);
@@ -262,7 +263,7 @@ class ReconciliationAdminApiTest extends TestCase
     {
         $run = ReconciliationRun::factory()->create();
 
-        $response = $this->actingAs($this->unauthorizedUser)
+        $response = $this->actingAs($this->unauthorizedUser, 'sanctum')
             ->delete("/api/admin/reconciliation/{$run->id}");
 
         $response->assertStatus(403);
@@ -276,7 +277,7 @@ class ReconciliationAdminApiTest extends TestCase
         $run = ReconciliationRun::factory()->create();
 
         // View: should succeed
-        $response = $this->actingAs($this->financeUser)
+        $response = $this->actingAs($this->financeUser, 'sanctum')
             ->get('/api/admin/reconciliation');
         $response->assertStatus(200);
 

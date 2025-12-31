@@ -2,512 +2,326 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\DonationCampaignException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDonationCampaignRequest;
 use App\Http\Requests\UpdateDonationCampaignRequest;
 use App\Http\Resources\DonationCampaignResource;
-use App\Models\AuditLog;
-use App\Models\County;
 use App\Models\DonationCampaign;
+use App\Services\Contracts\DonationCampaignServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 /**
- * @group Donation Campaigns - Admin
- *
- * APIs for managing donation campaigns (staff only).
+ * @group Admin - Donation Campaigns
  */
 class DonationCampaignAdminController extends Controller
 {
-    public function __construct()
+    protected DonationCampaignServiceContract $campaignService;
+
+    public function __construct(DonationCampaignServiceContract $campaignService)
     {
-        $this->authorizeResource(DonationCampaign::class, 'campaign');
+        $this->campaignService = $campaignService;
+        $this->middleware(['auth:sanctum', 'admin']);
     }
 
     /**
-     * List All Campaigns (Admin)
-     *
-     * Retrieves a paginated list of all donation campaigns with filters.
-     *
+     * List All Campaigns
+     * 
+     * @group Admin - Donation Campaigns
      * @authenticated
-     *
-     * @queryParam page integer Page number for pagination. Example: 1
-     * @queryParam per_page integer Items per page (max 100). Example: 15
-     * @queryParam status string Filter by status (draft, active, completed, cancelled). Example: active
-     * @queryParam search string Search by title. Example: Education
-     * @queryParam county_id integer Filter by county. Example: 1
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "data": [...],
-     *   "pagination": {"total": 10, "per_page": 15, "current_page": 1}
-     * }
      */
     public function index(Request $request): JsonResponse
     {
-        $query = DonationCampaign::with(['county', 'creator'])
-            ->withCount('donations');
+        try {
+            $filters = $request->only(['status', 'search', 'county_id']);
+            $perPage = min((int) $request->input('per_page', 15), 100);
 
-        // Search filter
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where('title', 'like', "%{$search}%");
+            $campaigns = $this->campaignService->listCampaigns($filters, $perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => DonationCampaignResource::collection($campaigns),
+                'pagination' => [
+                    'total' => $campaigns->total(),
+                    'per_page' => $campaigns->perPage(),
+                    'current_page' => $campaigns->currentPage(),
+                    'last_page' => $campaigns->lastPage(),
+                ],
+                'message' => 'Campaigns retrieved successfully'
+            ]);
+        } catch (DonationCampaignException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('DonationCampaignAdminController index failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve campaigns'], 500);
         }
-
-        // Status filter
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
-        // County filter
-        if ($request->filled('county_id')) {
-            $query->where('county_id', $request->input('county_id'));
-        }
-
-        $perPage = min((int) $request->input('per_page', 15), 100);
-        $campaigns = $query->orderBy('created_at', 'desc')->paginate($perPage);
-
-        return response()->json([
-            'success' => true,
-            'data' => DonationCampaignResource::collection($campaigns),
-            'pagination' => [
-                'total' => $campaigns->total(),
-                'per_page' => $campaigns->perPage(),
-                'current_page' => $campaigns->currentPage(),
-                'last_page' => $campaigns->lastPage(),
-            ],
-        ]);
     }
 
     /**
      * Get Campaign Creation Metadata
-     *
-     * Retrieves metadata needed to create a new campaign (counties list).
-     *
+     * 
+     * @group Admin - Donation Campaigns
      * @authenticated
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "data": {
-     *     "counties": [{"id": 1, "name": "Nairobi"}]
-     *   }
-     * }
      */
     public function create(): JsonResponse
     {
-        $counties = County::select('id', 'name')->orderBy('name')->get();
+        try {
+            $counties = $this->campaignService->getCounties();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'counties' => $counties,
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'counties' => $counties,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('DonationCampaignAdminController create failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve metadata'], 500);
+        }
     }
 
     /**
-     * Create New Campaign
+     * Store New Campaign
+     * 
+     * Create a new donation campaign with optional hero image.
      *
-     * Creates a new donation campaign.
-     *
+     * @group Admin - Donation Campaigns
      * @authenticated
-     *
-     * @bodyParam title string required Campaign title. Example: Education Fund 2025
-     * @bodyParam description string required Rich text campaign description.
-     * @bodyParam short_description string Summary for listings. Example: Help fund education.
-     * @bodyParam goal_amount number Fundraising goal amount. Example: 100000.00
-     * @bodyParam minimum_amount number Minimum donation amount. Example: 100.00
-     * @bodyParam currency string required Currency code (KES or USD). Example: KES
-     * @bodyParam hero_image file Campaign hero image.
-     * @bodyParam county_id integer County ID. Example: 1
-     * @bodyParam starts_at string Campaign start date. Example: 2025-01-01
-     * @bodyParam ends_at string Campaign end date. Example: 2025-12-31
-     * @bodyParam status string Status (draft or active). Example: draft
-     *
-     * @response 201 {
-     *   "success": true,
-     *   "message": "Campaign created successfully",
-     *   "data": {...}
-     * }
+     * @responseFile status=201 storage/responses/donation-campaign-store.json
      */
     public function store(StoreDonationCampaignRequest $request): JsonResponse
     {
         try {
             $data = $request->validated();
-            $data['created_by'] = $request->user()->id;
-
-            // Handle hero image upload
+            
             if ($request->hasFile('hero_image')) {
                 $path = $request->file('hero_image')->store('campaigns', 'public');
                 $data['hero_image_path'] = $path;
             }
 
-            $campaign = DonationCampaign::create($data);
-            $campaign->load(['county', 'creator']);
-
-            // Audit log
-            AuditLog::create([
-                'user_id' => $request->user()->id,
-                'action' => 'created',
-                'auditable_type' => DonationCampaign::class,
-                'auditable_id' => $campaign->id,
-                'new_values' => $campaign->toArray(),
-            ]);
+            $campaign = $this->campaignService->createCampaign($request->user(), $data);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Campaign created successfully',
                 'data' => new DonationCampaignResource($campaign),
+                'message' => 'Campaign created successfully'
             ], 201);
+        } catch (DonationCampaignException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            Log::error('Failed to create campaign', ['error' => $e->getMessage()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create campaign',
-            ], 500);
+            Log::error('DonationCampaignAdminController store failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create campaign'], 500);
         }
     }
 
     /**
-     * Get Campaign Details (Admin)
-     *
-     * Retrieves full details of a specific campaign.
-     *
+     * Show Campaign
+     * 
+     * @group Admin - Donation Campaigns
      * @authenticated
-     *
-     * @urlParam campaign string required Campaign slug. Example: education-fund-2025
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "data": {...}
-     * }
      */
-    public function show(DonationCampaign $campaign): JsonResponse
+    public function show(int $id): JsonResponse
     {
-        $campaign->load(['county', 'creator']);
+        try {
+            $campaign = $this->campaignService->getCampaign($id);
 
-        return response()->json([
-            'success' => true,
-            'data' => new DonationCampaignResource($campaign),
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => new DonationCampaignResource($campaign)
+            ]);
+        } catch (DonationCampaignException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('DonationCampaignAdminController show failed', ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve campaign details'], 500);
+        }
     }
 
     /**
-     * Get Campaign Edit Data
-     *
-     * Retrieves campaign data along with counties for the edit form.
-     *
+     * Get Edit Data
+     * 
+     * @group Admin - Donation Campaigns
      * @authenticated
-     *
-     * @urlParam campaign string required Campaign slug. Example: education-fund-2025
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "data": {
-     *     "campaign": {...},
-     *     "counties": [...]
-     *   }
-     * }
      */
-    public function edit(DonationCampaign $campaign): JsonResponse
+    public function edit(int $id): JsonResponse
     {
-        $campaign->load(['county', 'creator']);
-        $counties = County::select('id', 'name')->orderBy('name')->get();
+        try {
+            $campaign = $this->campaignService->getCampaign($id);
+            $counties = $this->campaignService->getCounties();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'campaign' => new DonationCampaignResource($campaign),
-                'counties' => $counties,
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'campaign' => new DonationCampaignResource($campaign),
+                    'counties' => $counties,
+                ]
+            ]);
+        } catch (DonationCampaignException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('DonationCampaignAdminController edit failed', ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve metadata'], 500);
+        }
     }
 
     /**
      * Update Campaign
+     * 
+     * Update an existing donation campaign with optional hero image update.
      *
-     * Updates an existing donation campaign.
-     *
+     * @group Admin - Donation Campaigns
      * @authenticated
-     *
-     * @urlParam campaign string required Campaign slug. Example: education-fund-2025
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Campaign updated successfully",
-     *   "data": {...}
-     * }
+     * @urlParam campaign integer required The campaign ID. Example: 1
+     * @responseFile status=200 storage/responses/donation-campaign-update.json
      */
-    public function update(UpdateDonationCampaignRequest $request, DonationCampaign $campaign): JsonResponse
+    public function update(UpdateDonationCampaignRequest $request, int $id): JsonResponse
     {
         try {
-            $oldValues = $campaign->toArray();
+            $campaign = DonationCampaign::withTrashed()->findOrFail($id);
             $data = $request->validated();
 
-            // Handle hero image upload
             if ($request->hasFile('hero_image')) {
-                // Delete old image
-                if ($campaign->hero_image_path) {
-                    Storage::disk('public')->delete($campaign->hero_image_path);
-                }
                 $path = $request->file('hero_image')->store('campaigns', 'public');
                 $data['hero_image_path'] = $path;
             }
 
-            $campaign->update($data);
-            $campaign->load(['county', 'creator']);
-
-            // Audit log
-            AuditLog::create([
-                'user_id' => $request->user()->id,
-                'action' => 'updated',
-                'auditable_type' => DonationCampaign::class,
-                'auditable_id' => $campaign->id,
-                'old_values' => $oldValues,
-                'new_values' => $campaign->toArray(),
-            ]);
+            $updatedCampaign = $this->campaignService->updateCampaign($request->user(), $campaign, $data);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Campaign updated successfully',
-                'data' => new DonationCampaignResource($campaign),
+                'data' => new DonationCampaignResource($updatedCampaign),
+                'message' => 'Campaign updated successfully'
             ]);
+        } catch (DonationCampaignException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            Log::error('Failed to update campaign', ['error' => $e->getMessage()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update campaign',
-            ], 500);
+            Log::error('DonationCampaignAdminController update failed', ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update campaign'], 500);
         }
     }
 
     /**
-     * Delete Campaign (Soft)
-     *
-     * Soft deletes a campaign.
-     *
+     * Delete Campaign
+     * 
+     * @group Admin - Donation Campaigns
      * @authenticated
-     *
-     * @urlParam campaign string required Campaign slug. Example: education-fund-2025
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Campaign deleted successfully"
-     * }
      */
-    public function destroy(DonationCampaign $campaign): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         try {
-            $campaign->delete();
-
-            // Audit log
-            AuditLog::create([
-                'user_id' => request()->user()->id,
-                'action' => 'deleted',
-                'auditable_type' => DonationCampaign::class,
-                'auditable_id' => $campaign->id,
-            ]);
+            $campaign = DonationCampaign::findOrFail($id);
+            $this->campaignService->deleteCampaign($request->user(), $campaign);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Campaign deleted successfully',
+                'message' => 'Campaign moved to trash'
             ]);
+        } catch (DonationCampaignException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            Log::error('Failed to delete campaign', ['error' => $e->getMessage()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete campaign',
-            ], 500);
+            Log::error('DonationCampaignAdminController destroy failed', ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete campaign'], 500);
         }
     }
 
     /**
-     * Restore Deleted Campaign
-     *
-     * Restores a soft-deleted campaign.
-     *
+     * Restore Campaign
+     * 
+     * @group Admin - Donation Campaigns
      * @authenticated
-     *
-     * @urlParam campaign string required Campaign slug. Example: education-fund-2025
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Campaign restored successfully"
-     * }
      */
-    public function restore(string $slug): JsonResponse
+    public function restore(Request $request, string $slug): JsonResponse
     {
         try {
-            $campaign = DonationCampaign::withTrashed()->where('slug', $slug)->firstOrFail();
-
-            $this->authorize('restore', $campaign);
-
-            $campaign->restore();
-            $campaign->load(['county', 'creator']);
-
-            // Audit log
-            AuditLog::create([
-                'user_id' => request()->user()->id,
-                'action' => 'restored',
-                'auditable_type' => DonationCampaign::class,
-                'auditable_id' => $campaign->id,
-            ]);
+            $campaign = $this->campaignService->restoreCampaign($request->user(), $slug);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Campaign restored successfully',
                 'data' => new DonationCampaignResource($campaign),
+                'message' => 'Campaign restored successfully'
             ]);
+        } catch (DonationCampaignException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            Log::error('Failed to restore campaign', ['error' => $e->getMessage()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to restore campaign',
-            ], 500);
+            Log::error('DonationCampaignAdminController restore failed', ['error' => $e->getMessage(), 'slug' => $slug]);
+            return response()->json(['success' => false, 'message' => 'Failed to restore campaign'], 500);
         }
     }
 
     /**
      * Publish Campaign
-     *
-     * Sets campaign status to active and records published_at timestamp.
-     *
+     * 
+     * @group Admin - Donation Campaigns
      * @authenticated
-     *
-     * @urlParam campaign string required Campaign slug. Example: education-fund-2025
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Campaign published successfully"
-     * }
      */
-    public function publish(DonationCampaign $campaign): JsonResponse
+    public function publish(Request $request, int $id): JsonResponse
     {
         try {
-            $this->authorize('publish', $campaign);
-
-            $campaign->update([
-                'status' => 'active',
-                'published_at' => now(),
-            ]);
-
-            $campaign->load(['county', 'creator']);
-
-            // Audit log
-            AuditLog::create([
-                'user_id' => request()->user()->id,
-                'action' => 'published',
-                'auditable_type' => DonationCampaign::class,
-                'auditable_id' => $campaign->id,
-            ]);
+            $campaign = DonationCampaign::findOrFail($id);
+            $publishedCampaign = $this->campaignService->publishCampaign($request->user(), $campaign);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Campaign published successfully',
-                'data' => new DonationCampaignResource($campaign),
+                'data' => new DonationCampaignResource($publishedCampaign),
+                'message' => 'Campaign published successfully'
             ]);
+        } catch (DonationCampaignException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            Log::error('Failed to publish campaign', ['error' => $e->getMessage()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to publish campaign',
-            ], 500);
+            Log::error('DonationCampaignAdminController publish failed', ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to publish campaign'], 500);
         }
     }
 
     /**
      * Unpublish Campaign
-     *
-     * Sets campaign status back to draft.
-     *
+     * 
+     * @group Admin - Donation Campaigns
      * @authenticated
-     *
-     * @urlParam campaign string required Campaign slug. Example: education-fund-2025
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Campaign unpublished successfully"
-     * }
      */
-    public function unpublish(DonationCampaign $campaign): JsonResponse
+    public function unpublish(Request $request, int $id): JsonResponse
     {
         try {
-            $this->authorize('unpublish', $campaign);
-
-            $campaign->update([
-                'status' => 'draft',
-            ]);
-
-            $campaign->load(['county', 'creator']);
-
-            // Audit log
-            AuditLog::create([
-                'user_id' => request()->user()->id,
-                'action' => 'unpublished',
-                'auditable_type' => DonationCampaign::class,
-                'auditable_id' => $campaign->id,
-            ]);
+            $campaign = DonationCampaign::findOrFail($id);
+            $unpublishedCampaign = $this->campaignService->unpublishCampaign($request->user(), $campaign);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Campaign unpublished successfully',
-                'data' => new DonationCampaignResource($campaign),
+                'data' => new DonationCampaignResource($unpublishedCampaign),
+                'message' => 'Campaign reverted to draft'
             ]);
+        } catch (DonationCampaignException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            Log::error('Failed to unpublish campaign', ['error' => $e->getMessage()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to unpublish campaign',
-            ], 500);
+            Log::error('DonationCampaignAdminController unpublish failed', ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to unpublish campaign'], 500);
         }
     }
 
     /**
      * Complete Campaign
-     *
-     * Marks the campaign as completed.
-     *
+     * 
+     * @group Admin - Donation Campaigns
      * @authenticated
-     *
-     * @urlParam campaign string required Campaign slug. Example: education-fund-2025
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Campaign marked as completed"
-     * }
      */
-    public function complete(DonationCampaign $campaign): JsonResponse
+    public function complete(Request $request, int $id): JsonResponse
     {
         try {
-            $this->authorize('complete', $campaign);
-
-            $campaign->update([
-                'status' => 'completed',
-            ]);
-
-            $campaign->load(['county', 'creator']);
-
-            // Audit log
-            AuditLog::create([
-                'user_id' => request()->user()->id,
-                'action' => 'completed',
-                'auditable_type' => DonationCampaign::class,
-                'auditable_id' => $campaign->id,
-            ]);
+            $campaign = DonationCampaign::findOrFail($id);
+            $completedCampaign = $this->campaignService->completeCampaign($request->user(), $campaign);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Campaign marked as completed',
-                'data' => new DonationCampaignResource($campaign),
+                'data' => new DonationCampaignResource($completedCampaign),
+                'message' => 'Campaign marked as completed'
             ]);
+        } catch (DonationCampaignException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            Log::error('Failed to complete campaign', ['error' => $e->getMessage()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to complete campaign',
-            ], 500);
+            Log::error('DonationCampaignAdminController complete failed', ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to complete campaign'], 500);
         }
     }
 }

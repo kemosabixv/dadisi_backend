@@ -7,14 +7,17 @@ use App\Models\EventOrder;
 use App\Models\PromoCode;
 use App\Models\User;
 use App\Models\Payment;
+use App\Services\Contracts\EventOrderServiceContract;
 use App\Services\PaymentGateway\GatewayManager;
+use App\DTOs\Payments\PaymentRequestDTO;
+use App\DTOs\Payments\TransactionResultDTO;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Service for handling event ticket purchases.
  */
-class EventOrderService
+class EventOrderService implements EventOrderServiceContract
 {
     /**
      * Create a new ticket order and initiate payment.
@@ -125,6 +128,18 @@ class EventOrderService
                     'purchased_at' => now(),
                 ]);
 
+                // Send confirmation notification if user exists
+                if ($order->user) {
+                    try {
+                        $order->user->notify(new \App\Notifications\TicketPurchaseConfirmation($order));
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send ticket notification for discounted order', [
+                            'order_id' => $order->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+
                 return [
                     'success' => true,
                     'order' => $order,
@@ -133,28 +148,31 @@ class EventOrderService
                 ];
             }
 
-            // Initiate payment
-            $paymentData = [
-                'amount' => (int) ($totalAmount * 100), // Convert to cents
-                'description' => "Ticket for {$event->title}",
-                'email' => $user?->email ?? $purchaserData['email'],
-                'phone' => $purchaserData['phone'] ?? null,
-                'first_name' => $user?->memberProfile?->first_name ?? $purchaserData['name'] ?? 'Guest',
-                'last_name' => $user?->memberProfile?->last_name ?? '',
-                'order_id' => $order->reference,
-                'order_type' => 'event_order',
-                'payable_id' => $order->id,
-            ];
+            // Initiate payment using DTO
+            $paymentRequest = new PaymentRequestDTO(
+                amount: (float) $totalAmount,
+                currency: $order->currency ?? 'KES',
+                description: "Ticket for {$event->title}",
+                reference: $order->reference,
+                payment_method: 'pesapal', // Default or selector
+                email: $user?->email ?? $purchaserData['email'],
+                phone: $purchaserData['phone'] ?? null,
+                first_name: $user?->memberProfile?->first_name ?? $purchaserData['name'] ?? 'Guest',
+                last_name: $user?->memberProfile?->last_name ?? '',
+                payable_id: $order->id,
+                payable_type: 'event_order',
+                county: $event->county?->name ?? 'Nairobi' // Attribution
+            );
 
-            $paymentResult = (new GatewayManager())->initiatePayment($paymentData, $order);
+            $paymentResult = (new GatewayManager())->initiatePayment($paymentRequest, $order);
 
-            if (!$paymentResult['success']) {
+            if (!$paymentResult->success) {
                 // Payment initiation failed, mark order as failed
                 $order->update(['status' => 'failed']);
 
                 Log::error('Event order payment initiation failed', [
                     'order_id' => $order->id,
-                    'error' => $paymentResult['message'] ?? 'Unknown error',
+                    'error' => $paymentResult->message ?? 'Unknown error',
                 ]);
 
                 return [
@@ -172,16 +190,16 @@ class EventOrderService
                 'currency' => $order->currency,
                 'status' => 'pending',
                 'gateway' => GatewayManager::getActiveGateway(),
-                'transaction_id' => $paymentResult['transaction_id'] ?? null,
-                'order_tracking_id' => $paymentResult['order_tracking_id'] ?? null,
+                'transaction_id' => $paymentResult->transactionId,
+                'external_reference' => $paymentResult->merchantReference,
             ]);
 
             return [
                 'success' => true,
                 'order' => $order,
                 'payment_required' => true,
-                'redirect_url' => $paymentResult['redirect_url'] ?? null,
-                'transaction_id' => $paymentResult['transaction_id'] ?? null,
+                'redirect_url' => $paymentResult->redirectUrl,
+                'transaction_id' => $paymentResult->transactionId,
             ];
         });
     }
@@ -269,6 +287,18 @@ class EventOrderService
             'order_id' => $order->id,
             'transaction_id' => $transactionId,
         ]);
+
+        // Dispatch notification if user exists
+        if ($order->user) {
+            try {
+                $order->user->notify(new \App\Notifications\TicketPurchaseConfirmation($order));
+            } catch (\Exception $e) {
+                Log::error('Failed to send ticket notification after payment', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
     }
 
     /**
@@ -302,6 +332,66 @@ class EventOrderService
             'success' => true,
             'message' => 'Check-in successful!',
             'order' => $order->fresh(),
+        ];
+    }
+
+    /**
+     * Check payment status of an order by reference.
+     */
+    public function checkPaymentStatus(string $reference): array
+    {
+        $order = EventOrder::where('reference', $reference)->firstOrFail();
+
+        return [
+            'status' => $order->status,
+            'qr_code_token' => $order->qr_code_token,
+        ];
+    }
+
+    /**
+     * Get order details for a specific user.
+     */
+    public function getOrderDetails(User $user, int $orderId): array
+    {
+        $order = EventOrder::where('id', $orderId)
+            ->where('user_id', $user->id)
+            ->with(['event', 'promoCode'])
+            ->firstOrFail();
+
+        return [
+            'id' => $order->id,
+            'reference' => $order->reference,
+            'qr_code_token' => $order->qr_code_token,
+            'event' => $order->event,
+            'quantity' => $order->quantity,
+            'total_amount' => $order->total_amount,
+            'status' => $order->status,
+            'purchased_at' => $order->purchased_at,
+        ];
+    }
+
+    /**
+     * Get user's orders with filters.
+     */
+    public function getUserOrders(User $user, array $filters, int $perPage): array
+    {
+        $query = EventOrder::where('user_id', $user->id)
+            ->with(['event'])
+            ->latest();
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        $paginated = $query->paginate($perPage);
+
+        return [
+            'data' => $paginated->items(),
+            'meta' => [
+                'total' => $paginated->total(),
+                'per_page' => $paginated->perPage(),
+                'current_page' => $paginated->currentPage(),
+            ],
         ];
     }
 }

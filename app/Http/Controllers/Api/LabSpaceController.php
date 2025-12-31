@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LabSpace;
-use App\Services\LabBookingService;
+use App\Services\Contracts\LabBookingServiceContract;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,9 +16,7 @@ use Illuminate\Http\Request;
  */
 class LabSpaceController extends Controller
 {
-    public function __construct(
-        protected LabBookingService $bookingService
-    ) {}
+    public function __construct(private LabBookingServiceContract $bookingService) {}
 
     /**
      * List all active lab spaces.
@@ -46,33 +44,38 @@ class LabSpaceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = LabSpace::active();
+        try {
+            $query = LabSpace::active();
 
-        // Filter by type
-        if ($request->has('type')) {
-            $query->byType($request->type);
-        }
+            // Filter by type
+            if ($request->has('type')) {
+                $query->byType($request->type);
+            }
 
-        // Search
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+            // Search
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            $spaces = $query->orderBy('name')->get();
+
+            // Add computed attributes
+            $spaces->each(function ($space) {
+                $space->append(['image_url', 'type_name']);
             });
+
+            return response()->json([
+                'success' => true,
+                'data' => $spaces,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to retrieve lab spaces', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve lab spaces'], 500);
         }
-
-        $spaces = $query->orderBy('name')->get();
-
-        // Add computed attributes
-        $spaces->each(function ($space) {
-            $space->append(['image_url', 'type_name']);
-        });
-
-        return response()->json([
-            'success' => true,
-            'data' => $spaces,
-        ]);
     }
 
     /**
@@ -99,21 +102,26 @@ class LabSpaceController extends Controller
      */
     public function show(string $slug): JsonResponse
     {
-        $space = LabSpace::where('slug', $slug)->active()->first();
+        try {
+            $space = LabSpace::where('slug', $slug)->active()->first();
 
-        if (!$space) {
+            if (!$space) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lab space not found',
+                ], 404);
+            }
+
+            $space->append(['image_url', 'type_name']);
+
             return response()->json([
-                'success' => false,
-                'message' => 'Lab space not found',
-            ], 404);
+                'success' => true,
+                'data' => $space,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to retrieve lab space', ['error' => $e->getMessage(), 'slug' => $slug]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve lab space'], 500);
         }
-
-        $space->append(['image_url', 'type_name']);
-
-        return response()->json([
-            'success' => true,
-            'data' => $space,
-        ]);
     }
 
     /**
@@ -153,32 +161,37 @@ class LabSpaceController extends Controller
      */
     public function availability(Request $request, string $slug): JsonResponse
     {
-        $space = LabSpace::where('slug', $slug)->active()->first();
+        try {
+            $space = LabSpace::where('slug', $slug)->active()->first();
 
-        if (!$space) {
+            if (!$space) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lab space not found',
+                ], 404);
+            }
+
+            // Default to current month if not specified
+            $start = $request->has('start') 
+                ? Carbon::parse($request->start) 
+                : Carbon::now()->startOfMonth();
+            
+            $end = $request->has('end') 
+                ? Carbon::parse($request->end) 
+                : Carbon::now()->endOfMonth();
+
+            $events = $this->bookingService->getAvailabilityCalendar($space, $start, $end);
+
             return response()->json([
-                'success' => false,
-                'message' => 'Lab space not found',
-            ], 404);
+                'success' => true,
+                'data' => [
+                    'space' => $space->only(['id', 'name', 'slug', 'type', 'capacity']),
+                    'events' => $events,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to retrieve lab space availability', ['error' => $e->getMessage(), 'slug' => $slug]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve availability'], 500);
         }
-
-        // Default to current month if not specified
-        $start = $request->has('start') 
-            ? Carbon::parse($request->start) 
-            : Carbon::now()->startOfMonth();
-        
-        $end = $request->has('end') 
-            ? Carbon::parse($request->end) 
-            : Carbon::now()->endOfMonth();
-
-        $events = $this->bookingService->getAvailabilityCalendar($space, $start, $end);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'space' => $space->only(['id', 'name', 'slug', 'type', 'capacity']),
-                'events' => $events,
-            ],
-        ]);
     }
 }

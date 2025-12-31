@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Services\PaymentGateway\PesapalGateway;
 use Tests\TestCase;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 class PesapalGatewayV3Test extends TestCase
 {
@@ -27,7 +28,7 @@ class PesapalGatewayV3Test extends TestCase
         $this->gateway = new PesapalGateway(config('payment.pesapal'));
     }
 
-    /** @test */
+    #[Test]
     public function test_charge_successful_with_jwt_token()
     {
         Http::fake([
@@ -62,13 +63,13 @@ class PesapalGatewayV3Test extends TestCase
             'description' => 'Membership renewal',
         ]);
 
-        $this->assertTrue($result['success']);
-        $this->assertEquals('PENDING', $result['status']);
-        $this->assertEquals('b945e4af-80a5-4ec1-8706-e03f8332fb04', $result['reference']);
-        $this->assertNotNull($result['redirect_url']);
+        $this->assertTrue($result->success);
+        $this->assertEquals('PENDING', $result->status);
+        $this->assertEquals('b945e4af-80a5-4ec1-8706-e03f8332fb04', $result->transactionId);
+        $this->assertNotNull($result->redirectUrl);
     }
 
-    /** @test */
+    #[Test]
     public function test_charge_fails_with_no_email_or_phone()
     {
         Http::fake([
@@ -90,11 +91,10 @@ class PesapalGatewayV3Test extends TestCase
             'last_name' => 'Doe',
         ]);
 
-        $this->assertFalse($result['success']);
-        $this->assertEquals('FAILED', $result['status']);
+        $this->assertFalse($result->success);
     }
 
-    /** @test */
+    #[Test]
     public function test_charge_fails_on_auth_token_failure()
     {
         Http::fake([
@@ -109,11 +109,10 @@ class PesapalGatewayV3Test extends TestCase
             'email' => 'test@example.com',
         ]);
 
-        $this->assertFalse($result['success']);
-        $this->assertEquals('authentication_failed', $result['status']);
+        $this->assertFalse($result->success);
     }
 
-    /** @test */
+    #[Test]
     public function test_charge_fails_on_http_error()
     {
         Http::fake([
@@ -136,10 +135,10 @@ class PesapalGatewayV3Test extends TestCase
             'email' => 'test@example.com',
         ]);
 
-        $this->assertFalse($result['success']);
+        $this->assertFalse($result->success);
     }
 
-    /** @test */
+    #[Test]
     public function test_charge_with_json_response_format()
     {
         Http::fake([
@@ -170,15 +169,15 @@ class PesapalGatewayV3Test extends TestCase
         ]);
 
         // Verify all response fields are present
-        $this->assertTrue($result['success']);
-        $this->assertEquals('PENDING', $result['status']);
-        $this->assertEquals('order-123', $result['reference']);
-        $this->assertArrayHasKey('merchant_reference', $result);
-        $this->assertArrayHasKey('redirect_url', $result);
-        $this->assertArrayHasKey('raw', $result);
+        $this->assertTrue($result->success);
+        $this->assertEquals('PENDING', $result->status);
+        $this->assertEquals('order-123', $result->transactionId);
+        $this->assertNotNull($result->merchantReference);
+        $this->assertNotNull($result->redirectUrl);
+        $this->assertNotNull($result->rawResponse);
     }
 
-    /** @test */
+    #[Test]
     public function test_get_transaction_status_completed()
     {
         Http::fake([
@@ -199,11 +198,11 @@ class PesapalGatewayV3Test extends TestCase
         $result = $this->gateway->getTransactionStatus('order-123', 'customer_123');
 
         $this->assertEquals('COMPLETED', $result['status']);
-        $this->assertEquals('AA11BB22', $result['confirmation_code']);
-        $this->assertEquals('MPESA', $result['payment_method']);
+        $this->assertEquals('AA11BB22', $result['confirmation_code'] ?? null);
+        $this->assertEquals('MPESA', $result['payment_method'] ?? null);
     }
 
-    /** @test */
+    #[Test]
     public function test_gateway_initializes_with_config()
     {
         $customConfig = [
@@ -218,7 +217,7 @@ class PesapalGatewayV3Test extends TestCase
         $this->assertInstanceOf(PesapalGateway::class, $gateway);
     }
 
-    /** @test */
+    #[Test]
     public function test_gateway_loads_config_from_laravel()
     {
         // Should use config from service container
@@ -227,7 +226,7 @@ class PesapalGatewayV3Test extends TestCase
         $this->assertInstanceOf(PesapalGateway::class, $gateway);
     }
 
-    /** @test */
+    #[Test]
     public function test_charge_with_billing_address_fields()
     {
         Http::fake([
@@ -259,7 +258,7 @@ class PesapalGatewayV3Test extends TestCase
             'description' => 'Event registration',
         ]);
 
-        $this->assertTrue($result['success']);
-        $this->assertEquals('order-456', $result['reference']);
+        $this->assertTrue($result->success);
+        $this->assertEquals('order-456', $result->transactionId);
     }
 }

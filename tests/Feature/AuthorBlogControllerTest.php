@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\Category;
@@ -35,23 +36,24 @@ class AuthorBlogControllerTest extends TestCase
      * Categories Tests
      */
 
-    /** @test */
+    #[Test]
     public function author_can_list_their_own_categories(): void
     {
         // Create categories owned by author
         Category::factory()->count(3)->create(['created_by' => $this->author->id]);
 
-        // Create categories owned by other user (should not appear)
+        // Create categories owned by other user (should also appear - authors see all)
         Category::factory()->count(2)->create(['created_by' => $this->otherUser->id]);
 
         $response = $this->actingAs($this->author)
             ->getJson('/api/user/blog/categories');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(3);
+        // Authors see ALL categories (3 + 2 = 5) for selection when tagging posts
+        $response->assertJsonCount(5, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function author_can_create_category(): void
     {
         $response = $this->actingAs($this->author)
@@ -69,7 +71,7 @@ class AuthorBlogControllerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function author_cannot_create_category_with_duplicate_name(): void
     {
         Category::factory()->create(['name' => 'Existing Category']);
@@ -83,7 +85,7 @@ class AuthorBlogControllerTest extends TestCase
         $response->assertJsonValidationErrors(['name']);
     }
 
-    /** @test */
+    #[Test]
     public function author_can_update_their_own_category(): void
     {
         $category = Category::factory()->create([
@@ -101,7 +103,7 @@ class AuthorBlogControllerTest extends TestCase
         $response->assertJsonFragment(['name' => 'Updated Name']);
     }
 
-    /** @test */
+    #[Test]
     public function author_cannot_update_other_users_category(): void
     {
         $category = Category::factory()->create([
@@ -116,7 +118,7 @@ class AuthorBlogControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function author_cannot_update_category_pending_deletion(): void
     {
         $category = Category::factory()->create([
@@ -132,7 +134,7 @@ class AuthorBlogControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function author_can_request_deletion_of_their_category(): void
     {
         $category = Category::factory()->create([
@@ -150,7 +152,7 @@ class AuthorBlogControllerTest extends TestCase
         $this->assertEquals($this->author->id, $category->fresh()->deletion_requested_by);
     }
 
-    /** @test */
+    #[Test]
     public function author_cannot_request_deletion_of_other_users_category(): void
     {
         $category = Category::factory()->create([
@@ -163,7 +165,7 @@ class AuthorBlogControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function author_cannot_request_deletion_twice(): void
     {
         $category = Category::factory()->create([
@@ -181,7 +183,7 @@ class AuthorBlogControllerTest extends TestCase
      * Tags Tests
      */
 
-    /** @test */
+    #[Test]
     public function author_can_list_their_own_tags(): void
     {
         Tag::factory()->count(4)->create(['created_by' => $this->author->id]);
@@ -191,10 +193,11 @@ class AuthorBlogControllerTest extends TestCase
             ->getJson('/api/user/blog/tags');
 
         $response->assertStatus(200);
-        $response->assertJsonCount(4);
+        // Authors see ALL tags (4 + 2 = 6) for selection when tagging posts
+        $response->assertJsonCount(6, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function author_can_create_tag(): void
     {
         $response = $this->actingAs($this->author)
@@ -211,7 +214,7 @@ class AuthorBlogControllerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function author_can_update_their_own_tag(): void
     {
         $tag = Tag::factory()->create([
@@ -228,7 +231,7 @@ class AuthorBlogControllerTest extends TestCase
         $response->assertJsonFragment(['name' => 'Updated Tag']);
     }
 
-    /** @test */
+    #[Test]
     public function author_cannot_update_other_users_tag(): void
     {
         $tag = Tag::factory()->create([
@@ -243,7 +246,7 @@ class AuthorBlogControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function author_can_request_deletion_of_their_tag(): void
     {
         $tag = Tag::factory()->create([
@@ -260,7 +263,7 @@ class AuthorBlogControllerTest extends TestCase
         $this->assertNotNull($tag->fresh()->requested_deletion_at);
     }
 
-    /** @test */
+    #[Test]
     public function unauthenticated_user_cannot_access_author_endpoints(): void
     {
         $response = $this->getJson('/api/user/blog/categories');

@@ -34,6 +34,23 @@ class StoreDonationCampaignRequest extends FormRequest
         ];
     }
 
+    public function bodyParameters(): array
+    {
+        return [
+            'title' => ['description' => 'Campaign title', 'example' => 'Emergency Relief Fund'],
+            'description' => ['description' => 'Full campaign description', 'example' => 'Help us support affected communities'],
+            'short_description' => ['description' => 'Short campaign description', 'example' => 'Relief campaign'],
+            'goal_amount' => ['description' => 'Campaign goal amount', 'example' => 1000000],
+            'minimum_amount' => ['description' => 'Minimum donation amount', 'example' => 100],
+            'currency' => ['description' => 'Currency (KES or USD)', 'example' => 'KES'],
+            'hero_image' => ['description' => 'Campaign hero image file (optional)', 'example' => null],
+            'county_id' => ['description' => 'Associated county ID', 'example' => 1],
+            'starts_at' => ['description' => 'Campaign start date', 'example' => '2025-01-01'],
+            'ends_at' => ['description' => 'Campaign end date', 'example' => '2025-01-31'],
+            'status' => ['description' => 'Campaign status', 'example' => 'draft'],
+        ];
+    }
+
     /**
      * Get custom messages for validator errors.
      */

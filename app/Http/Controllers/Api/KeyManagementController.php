@@ -3,31 +3,34 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\UserPublicKey;
+use App\Http\Requests\Api\StorePublicKeyRequest;
+use App\Services\Contracts\KeyManagementServiceContract;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class KeyManagementController extends Controller
 {
+    public function __construct(private KeyManagementServiceContract $keyManagementService)
+    {
+    }
     /**
      * Store or update the authenticated user's public key.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StorePublicKeyRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'public_key' => 'required|string',
-        ]);
+        try {
+            $validated = $request->validated();
+            $publicKey = $this->keyManagementService->storePublicKey($validated['public_key']);
 
-        $publicKey = UserPublicKey::updateOrCreate(
-            ['user_id' => Auth::id()],
-            ['public_key' => $validated['public_key']]
-        );
-
-        return response()->json([
-            'data' => $publicKey,
-            'message' => 'Public key stored successfully.',
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $publicKey,
+                'message' => 'Public key stored successfully.',
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to store public key', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to store public key'], 500);
+        }
     }
 
     /**
@@ -35,20 +38,24 @@ class KeyManagementController extends Controller
      */
     public function show(int $userId): JsonResponse
     {
-        $publicKey = UserPublicKey::where('user_id', $userId)->first();
+        try {
+            $publicKey = $this->keyManagementService->getUserPublicKey($userId);
 
-        if (!$publicKey) {
+            if (!$publicKey) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User has not set up encrypted messaging.',
+                ], 404);
+            }
+
             return response()->json([
-                'message' => 'User has not set up encrypted messaging.',
-            ], 404);
+                'success' => true,
+                'data' => $publicKey,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve public key', ['error' => $e->getMessage(), 'user_id' => $userId]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve public key'], 500);
         }
-
-        return response()->json([
-            'data' => [
-                'user_id' => $publicKey->user_id,
-                'public_key' => $publicKey->public_key,
-            ],
-        ]);
     }
 
     /**
@@ -56,12 +63,18 @@ class KeyManagementController extends Controller
      */
     public function me(): JsonResponse
     {
-        $publicKey = Auth::user()->publicKey;
+        try {
+            $publicKey = $this->keyManagementService->getMyPublicKey();
 
-        return response()->json([
-            'data' => $publicKey,
-            'has_key' => (bool) $publicKey,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $publicKey,
+                'has_key' => (bool) $publicKey,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve user public key', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve public key'], 500);
+        }
     }
 
     /**
@@ -69,10 +82,16 @@ class KeyManagementController extends Controller
      */
     public function destroy(): JsonResponse
     {
-        Auth::user()->publicKey?->delete();
+        try {
+            $this->keyManagementService->deleteMyPublicKey();
 
-        return response()->json([
-            'message' => 'Public key deleted. Encrypted messaging is now disabled.',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Public key deleted. Encrypted messaging is now disabled.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete public key', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete public key'], 500);
+        }
     }
 }

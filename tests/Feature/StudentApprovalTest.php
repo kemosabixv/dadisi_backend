@@ -14,6 +14,7 @@ class StudentApprovalTest extends TestCase
     private User $student;
     private User $approver;
     private StudentApprovalRequest $approval;
+    protected $shouldSeedRoles = true;
 
     protected function setUp(): void
     {

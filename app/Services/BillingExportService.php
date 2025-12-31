@@ -6,6 +6,7 @@ use App\Models\Donation;
 use App\Models\EventOrder;
 use App\Models\Event;
 use App\Models\County;
+use App\Services\Contracts\BillingExportServiceContract;
 use Illuminate\Support\Facades\DB;
 use League\Csv\Writer;
 use SplTempFileObject;
@@ -16,7 +17,7 @@ use SplTempFileObject;
  * Handles CSV exports for billing, donations, and event orders.
  * Supports filtering by date range, county, and event.
  */
-class BillingExportService
+class BillingExportService implements BillingExportServiceContract
 {
     /**
      * Export donations to CSV

@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Services\Contracts\ForumUserServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ForumUserController extends Controller
 {
+    public function __construct(private ForumUserServiceContract $forumUserService)
+    {
+    }
     /**
      * List active forum members.
      * 
@@ -39,62 +42,19 @@ class ForumUserController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = User::query()
-            ->select([
-                'users.id',
-                'users.username',
-                'users.profile_picture_path',
-                'users.created_at as joined_at',
-            ])
-            ->withCount(['forumThreads', 'forumPosts'])
-            ->leftJoin('member_profiles', 'users.id', '=', 'member_profiles.user_id')
-            ->where(function ($q) {
-                // Only show users with public profiles enabled or no profile (default public)
-                $q->whereNull('member_profiles.id')
-                  ->orWhere('member_profiles.public_profile_enabled', true);
-            })
-            ->whereNotNull('users.email_verified_at'); // Only verified users
-
-        // Search by username
-        if ($request->has('search') && !empty($request->search)) {
-            $query->where('users.username', 'like', '%' . $request->search . '%');
-        }
-
-        // Sorting
-        $sort = $request->get('sort', 'post_count');
-        switch ($sort) {
-            case 'joined_date':
-                $query->orderByDesc('users.created_at');
-                break;
-            case 'recent_activity':
-                $query->orderByDesc(
-                    DB::raw('GREATEST(COALESCE((SELECT MAX(created_at) FROM forum_threads WHERE user_id = users.id), "1970-01-01"), COALESCE((SELECT MAX(created_at) FROM forum_posts WHERE user_id = users.id), "1970-01-01"))')
-                );
-                break;
-            case 'post_count':
-            default:
-                $query->orderByDesc(DB::raw('forum_threads_count + forum_posts_count'));
-                break;
-        }
-
-        $perPage = min($request->get('per_page', 20), 50);
-        $users = $query->paginate($perPage);
-
-        // Transform data for response
-        $users->getCollection()->transform(function ($user) {
-            return [
-                'id' => $user->id,
-                'username' => $user->username,
-                'profile_picture_url' => $user->profile_picture_path 
-                    ? url('storage/' . $user->profile_picture_path) 
-                    : null,
-                'joined_at' => $user->joined_at,
-                'thread_count' => $user->forum_threads_count,
-                'post_count' => $user->forum_posts_count,
-                'total_contributions' => $user->forum_threads_count + $user->forum_posts_count,
+        try {
+            $filters = [
+                'search' => $request->input('search'),
+                'sort' => $request->input('sort', 'post_count'),
+                'per_page' => $request->input('per_page', 20),
             ];
-        });
 
-        return response()->json($users);
+            $users = $this->forumUserService->listForumMembers($filters);
+
+            return response()->json(['success' => true, 'data' => $users]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve forum users', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve forum users'], 500);
+        }
     }
 }

@@ -13,21 +13,34 @@ class Payment extends Model
     protected $fillable = [
         'payable_type',
         'payable_id',
+        'payer_id',
         'gateway',
         'method',
+        'payment_method',
         'status',
         'amount',
         'currency',
+        'description',
+        'reference',
+        'county',
         'external_reference',
         'order_reference',
+        'transaction_id',
+        'pesapal_order_id',
         'receipt_url',
         'paid_at',
+        'refunded_at',
+        'refunded_by',
+        'refund_reason',
         'meta',
+        'metadata',
     ];
 
     protected $casts = [
         'paid_at' => 'datetime',
+        'refunded_at' => 'datetime',
         'meta' => 'array',
+        'metadata' => 'array',
         'amount' => 'decimal:2',
     ];
 
@@ -37,6 +50,14 @@ class Payment extends Model
     public function payable(): \Illuminate\Database\Eloquent\Relations\MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Get the payer (user who made the payment)
+     */
+    public function payer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'payer_id');
     }
 
     /**

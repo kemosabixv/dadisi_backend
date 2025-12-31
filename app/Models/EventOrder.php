@@ -35,8 +35,9 @@ class EventOrder extends Model
         'subscriber_discount_amount',
         'original_amount',
         // Check-in
-        'qr_code_token',
         'checked_in_at',
+        'reminded_24h_at',
+        'reminded_1h_at',
     ];
 
     protected $casts = [
@@ -46,8 +47,9 @@ class EventOrder extends Model
         'promo_discount_amount' => 'decimal:2',
         'subscriber_discount_amount' => 'decimal:2',
         'quantity' => 'integer',
-        'purchased_at' => 'datetime',
         'checked_in_at' => 'datetime',
+        'reminded_24h_at' => 'datetime',
+        'reminded_1h_at' => 'datetime',
     ];
 
     /**

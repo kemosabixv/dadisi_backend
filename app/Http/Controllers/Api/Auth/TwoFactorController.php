@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SecureUserResource;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -25,8 +27,9 @@ class TwoFactorController extends Controller
      *   "qr_code_url": "otpauth://totp/Dadisi:jane_doe@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Dadisi"
      * }
      */
-    public function enable(Request $request)
+    public function enable(Request $request): JsonResponse
     {
+        try {
         $user = $request->user();
 
         // Check if already enabled
@@ -53,6 +56,10 @@ class TwoFactorController extends Controller
             'secret' => $secret,
             'qr_code_url' => $qrCodeUrl,
         ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to enable 2FA setup', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to setup 2FA'], 500);
+        }
     }
 
     /**
@@ -76,8 +83,9 @@ class TwoFactorController extends Controller
      *   "message": "The provided code is invalid."
      * }
      */
-    public function verify(Request $request)
+    public function verify(Request $request): JsonResponse
     {
+        try {
         $request->validate([
             'code' => 'required|string|size:6',
         ]);
@@ -117,6 +125,10 @@ class TwoFactorController extends Controller
             'message' => 'Two-factor authentication has been enabled.',
             'recovery_codes' => $recoveryCodes,
         ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to verify 2FA code', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to verify code'], 500);
+        }
     }
 
     /**

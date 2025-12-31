@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\LabBooking;
 use App\Models\LabSpace;
-use App\Services\LabBookingService;
+use App\Services\Contracts\LabBookingServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,9 +19,7 @@ use Illuminate\Validation\Rule;
  */
 class LabBookingController extends Controller
 {
-    public function __construct(
-        protected LabBookingService $bookingService
-    ) {}
+    public function __construct(private LabBookingServiceContract $bookingService) {}
 
     /**
      * Get user's quota status.
@@ -50,12 +48,17 @@ class LabBookingController extends Controller
      */
     public function quotaStatus(): JsonResponse
     {
-        $status = $this->bookingService->getQuotaStatus(Auth::user());
+        try {
+            $status = $this->bookingService->getQuotaStatus(Auth::user());
 
-        return response()->json([
-            'success' => true,
-            'data' => $status,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $status,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to retrieve quota status', ['error' => $e->getMessage(), 'user_id' => Auth::id()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve quota status'], 500);
+        }
     }
 
     /**
@@ -83,30 +86,35 @@ class LabBookingController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = Auth::user();
-        $query = LabBooking::forUser($user->id)->with('labSpace');
+        try {
+            $user = Auth::user();
+            $query = LabBooking::forUser($user->id)->with('labSpace');
 
-        // Filter by status
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+            // Filter by status
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            // Only upcoming
+            if ($request->boolean('upcoming')) {
+                $query->upcoming();
+            }
+
+            $bookings = $query->orderBy('starts_at', 'desc')->get();
+
+            // Add computed attributes
+            $bookings->each(function ($booking) {
+                $booking->append(['duration_hours', 'is_cancellable', 'status_color']);
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $bookings,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to retrieve bookings', ['error' => $e->getMessage(), 'user_id' => Auth::id()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve bookings'], 500);
         }
-
-        // Only upcoming
-        if ($request->boolean('upcoming')) {
-            $query->upcoming();
-        }
-
-        $bookings = $query->orderBy('starts_at', 'desc')->get();
-
-        // Add computed attributes
-        $bookings->each(function ($booking) {
-            $booking->append(['duration_hours', 'is_cancellable', 'status_color']);
-        });
-
-        return response()->json([
-            'success' => true,
-            'data' => $bookings,
-        ]);
     }
 
     /**
@@ -136,20 +144,12 @@ class LabBookingController extends Controller
      *   "message": "You have 2h remaining this month. Requested: 3h."
      * }
      */
-    public function store(Request $request): JsonResponse
+    public function store(\App\Http\Requests\Api\CreateLabBookingRequest $request): JsonResponse
     {
-        $this->authorize('create', LabBooking::class);
-
-        $validated = $request->validate([
-            'lab_space_id' => ['required', 'exists:lab_spaces,id'],
-            'starts_at' => ['required', 'date', 'after:now'],
-            'ends_at' => ['required', 'date', 'after:starts_at'],
-            'purpose' => ['required', 'string', 'min:10', 'max:1000'],
-            'title' => ['nullable', 'string', 'max:255'],
-            'slot_type' => ['nullable', Rule::in(['hourly', 'half_day', 'full_day'])],
-        ]);
-
         try {
+            $this->authorize('create', LabBooking::class);
+            $validated = $request->validated();
+
             $booking = $this->bookingService->createBooking(Auth::user(), $validated);
 
             $statusMessage = $booking->status === LabBooking::STATUS_APPROVED
@@ -161,11 +161,12 @@ class LabBookingController extends Controller
                 'message' => $statusMessage,
                 'data' => $booking,
             ], 201);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            \Illuminate\Support\Facades\Log::warning('Unauthorized booking creation', ['user_id' => Auth::id()]);
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
+            \Illuminate\Support\Facades\Log::error('Failed to create booking', ['error' => $e->getMessage(), 'user_id' => Auth::id()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
     }
 
@@ -190,16 +191,26 @@ class LabBookingController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $booking = LabBooking::with(['labSpace', 'user:id,username'])->findOrFail($id);
+        try {
+            $booking = LabBooking::with(['labSpace', 'user:id,username'])->findOrFail($id);
 
-        $this->authorize('view', $booking);
+            $this->authorize('view', $booking);
 
-        $booking->append(['duration_hours', 'is_cancellable', 'can_check_in', 'can_check_out', 'status_color']);
+            $booking->append(['duration_hours', 'is_cancellable', 'can_check_in', 'can_check_out', 'status_color']);
 
-        return response()->json([
-            'success' => true,
-            'data' => $booking,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $booking,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            \Illuminate\Support\Facades\Log::warning('Unauthorized booking access', ['user_id' => Auth::id(), 'booking_id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to retrieve booking', ['error' => $e->getMessage(), 'user_id' => Auth::id(), 'booking_id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve booking'], 500);
+        }
     }
 
     /**
@@ -219,16 +230,26 @@ class LabBookingController extends Controller
      */
     public function destroy(int $id): JsonResponse
     {
-        $booking = LabBooking::findOrFail($id);
+        try {
+            $booking = LabBooking::findOrFail($id);
 
-        $this->authorize('delete', $booking);
+            $this->authorize('delete', $booking);
 
-        $booking = $this->bookingService->cancelBooking($booking);
+            $booking = $this->bookingService->cancelBooking($booking);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Booking cancelled successfully. Quota refunded.',
-            'data' => $booking,
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Booking cancelled successfully. Quota refunded.',
+                'data' => $booking,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Booking not found'], 404);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            \Illuminate\Support\Facades\Log::warning('Unauthorized booking cancellation', ['user_id' => Auth::id(), 'booking_id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to cancel booking', ['error' => $e->getMessage(), 'user_id' => Auth::id(), 'booking_id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to cancel booking'], 500);
+        }
     }
 }

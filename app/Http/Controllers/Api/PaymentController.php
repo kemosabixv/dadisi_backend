@@ -3,13 +3,22 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\CreateTestMockPaymentRequest;
+use App\Http\Requests\Api\CheckPaymentStatusRequest;
+use App\Http\Requests\Api\VerifyPaymentRequest;
+use App\Http\Requests\Api\ProcessPaymentRequest;
+use App\Http\Requests\Api\HandleWebhookRequest;
+use App\Http\Requests\Api\RefundPaymentRequest;
+use App\Http\Resources\PaymentResource;
+use App\Services\Contracts\PaymentServiceContract;
+use App\Services\Payments\MockPaymentService;
+use App\Exceptions\PaymentException;
 use App\Models\PlanSubscription;
 use App\Models\SubscriptionEnhancement;
-use App\Services\MockPaymentService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Payment Controller
@@ -19,7 +28,7 @@ use Illuminate\Support\Facades\Log;
  */
 class PaymentController extends Controller
 {
-    public function __construct()
+    public function __construct(private PaymentServiceContract $paymentService)
     {
         $this->middleware('auth:sanctum')->except(['handleWebhook', 'checkPaymentStatus', 'showMockPaymentPage', 'completeMockPayment']);
     }
@@ -138,7 +147,7 @@ class PaymentController extends Controller
      * @param string $paymentId The payment tracking ID
      * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    public function completeMockPayment(Request $request, string $paymentId): \Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    public function completeMockPayment(Request $request, string $paymentId): \Illuminate\Http\Response|JsonResponse|\Illuminate\Http\RedirectResponse
     {
         $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
         
@@ -146,91 +155,102 @@ class PaymentController extends Controller
         $cacheKey = 'mock_payment_' . $paymentId;
         $cachedData = cache()->get($cacheKey);
 
-        if ($cachedData) {
-            // This is a subscription payment - activate the subscription directly
-            try {
-                DB::beginTransaction();
-
-                $subscriptionId = $cachedData['order_id'] ?? null;
-                $subscription = PlanSubscription::find($subscriptionId);
-
-                if (!$subscription) {
-                    // Subscription not found but cache exists - likely already processed
-                    cache()->forget($cacheKey);
-                    return redirect($frontendUrl . '/dashboard/subscription?payment=already_processed');
-                }
-
-                // DUPLICATE PREVENTION: Check if subscription is already active
-                $enhancement = SubscriptionEnhancement::where('subscription_id', $subscription->id)->first();
-                $isAlreadyActive = $enhancement && $enhancement->status === 'active';
-                
-                if ($isAlreadyActive) {
-                    // Already activated (duplicate request) - just clear cache and redirect
-                    cache()->forget($cacheKey);
-                    Log::info('Duplicate payment attempt blocked', [
-                        'payment_id' => $paymentId,
-                        'subscription_id' => $subscription->id,
-                    ]);
-                    return redirect($frontendUrl . '/dashboard/subscription?payment=success');
-                }
-
-                // Update subscription to active
-                if ($enhancement) {
-                    $enhancement->update([
-                        'status' => 'active',
-                        'payment_method' => $request->input('payment_method', 'mpesa')
-                    ]);
-                }
-
-                // Update user subscription status
-                $user = \App\Models\User::find($cachedData['user_id']);
-                if ($user) {
-                    $user->update([
-                        'subscription_status' => 'active',
-                        'active_subscription_id' => $subscription->id,
-                    ]);
-
-                    // Update member profile plan_id
-                    if ($user->memberProfile) {
-                        $user->memberProfile->update(['plan_id' => $subscription->plan_id]);
-                    }
-                }
-
-                // Mark pending payment as completed in database
-                $pendingPayment = \App\Models\PendingPayment::findByPaymentId($paymentId);
-                if ($pendingPayment) {
-                    $pendingPayment->markCompleted();
-                }
-
-                // Clear cache
-                cache()->forget($cacheKey);
-
-                DB::commit();
-
-                Log::info('Mock subscription payment completed', [
-                    'payment_id' => $paymentId,
-                    'subscription_id' => $subscription->id,
-                    'user_id' => $cachedData['user_id'],
-                ]);
-
-                // Redirect to subscription page
-                return redirect($frontendUrl . '/dashboard/subscription?payment=success');
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Log::error('Mock subscription payment completion failed', [
-                    'payment_id' => $paymentId,
-                    'error' => $e->getMessage(),
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Payment completion failed: ' . $e->getMessage(),
-                ], 500);
-            }
+        if ($cachedData && is_array($cachedData)) {
+            return $this->handleCachedSubscriptionPayment($request, $paymentId, $cachedData, $frontendUrl);
         }
 
-        // Fall back to Payment model lookup (for events, donations, etc.)
+        return $this->handleModelBasedPayment($request, $paymentId, $frontendUrl);
+    }
+
+    /**
+     * Handle cached subscription payment completion
+     */
+    private function handleCachedSubscriptionPayment(Request $request, string $paymentId, array $cachedData, string $frontendUrl): JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $subscriptionId = $cachedData['order_id'] ?? null;
+            $subscription = PlanSubscription::find($subscriptionId);
+
+            if (!$subscription) {
+                // Subscription not found but cache exists - likely already processed
+                cache()->forget('mock_payment_' . $paymentId);
+                return redirect($frontendUrl . '/dashboard/subscription?payment=already_processed');
+            }
+
+            // DUPLICATE PREVENTION: Check if subscription is already active
+            $enhancement = SubscriptionEnhancement::where('subscription_id', $subscription->id)->first();
+            if ($enhancement && $enhancement->status === 'active') {
+                cache()->forget('mock_payment_' . $paymentId);
+                return redirect($frontendUrl . '/dashboard/subscription?payment=success');
+            }
+
+            // Update subscription to active
+            if ($enhancement) {
+                $enhancement->update([
+                    'status' => 'active',
+                    'payment_method' => $request->input('payment_method', 'mpesa')
+                ]);
+            }
+
+            // Update user subscription status
+            $this->updateUserSubscription($cachedData['user_id'] ?? 0, $subscription);
+
+            // Mark pending payment as completed in database
+            $pendingPayment = \App\Models\PendingPayment::findByPaymentId($paymentId);
+            if ($pendingPayment) {
+                $pendingPayment->markCompleted();
+            }
+
+            // Clear cache
+            cache()->forget('mock_payment_' . $paymentId);
+
+            DB::commit();
+
+            Log::info('Mock subscription payment completed', [
+                'payment_id' => $paymentId,
+                'subscription_id' => $subscription->id,
+            ]);
+
+            return redirect($frontendUrl . '/dashboard/subscription?payment=success');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Mock subscription payment completion failed', [
+                'payment_id' => $paymentId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment completion failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update user and profile after subscription activation
+     */
+    private function updateUserSubscription(int $userId, PlanSubscription $subscription): void
+    {
+        $user = \App\Models\User::find($userId);
+        if ($user) {
+            $user->update([
+                'subscription_status' => 'active',
+                'active_subscription_id' => $subscription->id,
+            ]);
+
+            if ($user->memberProfile) {
+                $user->memberProfile->update(['plan_id' => $subscription->plan_id]);
+            }
+        }
+    }
+
+    /**
+     * Handle model-based payment completion (for events, donations, etc.)
+     */
+    private function handleModelBasedPayment(Request $request, string $paymentId, string $frontendUrl): \Illuminate\Http\Response|JsonResponse|\Illuminate\Http\RedirectResponse
+    {
         $payment = \App\Models\Payment::where('external_reference', $paymentId)
             ->orWhere('order_reference', $paymentId)
             ->orWhere('id', $paymentId)
@@ -246,10 +266,7 @@ class PaymentController extends Controller
         try {
             DB::beginTransaction();
 
-            // Get payment method from form (defaults to mpesa)
             $paymentMethod = $request->input('payment_method', 'mpesa');
-
-            // Update payment status with payment method
             $meta = $payment->meta ?? [];
             $meta['payment_method'] = $paymentMethod;
             
@@ -259,54 +276,9 @@ class PaymentController extends Controller
                 'meta' => $meta,
             ]);
 
-            // Only process payable if it's a real payment (not a test payment)
-            $isTestPayment = $payment->payable_type === null || 
-                             $payment->payable_type === 'TestPayment' ||
-                             str_contains($payment->payable_type ?? '', 'Test') ||
-                             ($payment->meta['test_payment'] ?? false);
-
-            if (!$isTestPayment && $payment->payable_type && $payment->payable_id) {
-                try {
-                    // Handle different payable types
-                    if ($payment->payable_type === 'event_order' || 
-                        $payment->payable_type === 'App\\Models\\EventOrder') {
-                        
-                        // Handle event order payment
-                        $this->handleEventOrderPayment($payment);
-                        
-                    } elseif ($payment->payable_type === 'donation' ||
-                              $payment->payable_type === 'App\\Models\\Donation') {
-                        
-                        // Handle donation payment
-                        $this->handleDonationPayment($payment);
-                        
-                    } else {
-                        // Handle subscription/other payments (legacy behavior)
-                        $payable = $payment->payable;
-                        
-                        if ($payable) {
-                            if (method_exists($payable, 'activate')) {
-                                $payable->activate();
-                            } else {
-                                $payable->update(['status' => 'active']);
-                            }
-
-                            if (method_exists($payable, 'user') && $payable->user) {
-                                $payable->user->update([
-                                    'subscription_status' => 'active',
-                                    'subscription_activated_at' => now(),
-                                    'last_payment_date' => now(),
-                                ]);
-                            }
-                        }
-                    }
-                } catch (\Exception $e) {
-                    Log::warning('Could not load payable for payment', [
-                        'payment_id' => $payment->id,
-                        'payable_type' => $payment->payable_type,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
+            // Only process payable if it's a real payment (not a test marker)
+            if (!$this->isTestPayment($payment)) {
+                $this->activatePayable($payment);
             }
 
             DB::commit();
@@ -314,38 +286,12 @@ class PaymentController extends Controller
             Log::info('Mock payment completed successfully', [
                 'payment_id' => $payment->id,
                 'external_reference' => $payment->external_reference,
-                'payable_type' => $payment->payable_type,
             ]);
 
-            // Determine redirect URL based on payable type
-            if ($payment->payable_type === 'event_order' || 
-                $payment->payable_type === 'App\\Models\\EventOrder') {
-                
-                $order = \App\Models\EventOrder::find($payment->payable_id);
-                $redirectUrl = $frontendUrl . '/checkout/events/success?reference=' . ($order?->reference ?? $payment->order_reference);
-                
-                return redirect($redirectUrl);
-            }
-
-            // Redirect donations to user's donation dashboard
-            if ($payment->payable_type === 'donation' || 
-                $payment->payable_type === 'App\\Models\\Donation') {
-                
-                $donation = \App\Models\Donation::find($payment->payable_id);
-                $redirectUrl = $frontendUrl . '/dashboard/donations?payment=success&reference=' . ($donation?->reference ?? $payment->order_reference);
-                
-                return redirect($redirectUrl);
-            }
-
-            // Return success page for other payment types
-            return response()->view('mock-payment-success', [
-                'payment' => $payment,
-                'message' => 'Payment completed successfully!',
-            ]);
+            return $this->getPaymentRedirectResponse($payment, $frontendUrl);
 
         } catch (\Exception $e) {
             DB::rollBack();
-
             Log::error('Mock payment completion failed', [
                 'payment_id' => $paymentId,
                 'error' => $e->getMessage(),
@@ -357,6 +303,86 @@ class PaymentController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Check if a payment record is a test marker
+     */
+    private function isTestPayment(\App\Models\Payment $payment): bool
+    {
+        return $payment->payable_type === null || 
+               $payment->payable_type === 'TestPayment' ||
+               str_contains($payment->payable_type ?? '', 'Test') ||
+               ($payment->meta['test_payment'] ?? false);
+    }
+
+    /**
+     * Activate the underlying payable for a model-based payment
+     */
+    private function activatePayable(\App\Models\Payment $payment): void
+    {
+        if (!$payment->payable_type || !$payment->payable_id) {
+            return;
+        }
+
+        $type = $payment->payable_type;
+        
+        if ($type === 'event_order' || $type === 'App\\Models\\EventOrder') {
+            $this->handleEventOrderPayment($payment);
+        } elseif ($type === 'donation' || $type === 'App\\Models\\Donation') {
+            $this->handleDonationPayment($payment);
+        } else {
+            $this->handleGenericPayableActivation($payment);
+        }
+    }
+
+    /**
+     * Handle default or legacy payable activation
+     */
+    private function handleGenericPayableActivation(\App\Models\Payment $payment): void
+    {
+        $payable = $payment->payable;
+        if (!$payable) return;
+
+        if (method_exists($payable, 'activate')) {
+            $payable->activate();
+        } else {
+            $payable->update(['status' => 'active']);
+        }
+
+        if (method_exists($payable, 'user') && $payable->user) {
+            $payable->user->update([
+                'subscription_status' => 'active',
+                'subscription_activated_at' => now(),
+                'last_payment_date' => now(),
+            ]);
+        }
+    }
+
+    /**
+     * Determine the correct redirect response after model payment
+     */
+    private function getPaymentRedirectResponse(\App\Models\Payment $payment, string $frontendUrl): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+    {
+        $type = $payment->payable_type;
+
+        if ($type === 'event_order' || $type === 'App\\Models\\EventOrder') {
+            $order = \App\Models\EventOrder::find($payment->payable_id);
+            $ref = $order?->reference ?? $payment->order_reference;
+            return redirect($frontendUrl . '/checkout/events/success?reference=' . $ref);
+        }
+
+        if ($type === 'donation' || $type === 'App\\Models\\Donation') {
+            $donation = \App\Models\Donation::find($payment->payable_id);
+            $ref = $donation?->reference ?? $payment->order_reference;
+            return redirect($frontendUrl . '/dashboard/donations?payment=success&reference=' . $ref);
+        }
+
+        return response()->view('mock-payment-success', [
+            'payment' => $payment,
+            'message' => 'Payment completed successfully!',
+        ]);
+    }
+
     /**
      * Cancel mock payment (simulate user clicking cancel at gateway)
      *
@@ -364,7 +390,7 @@ class PaymentController extends Controller
      * @param string $paymentId
      * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    public function cancelMockPayment(Request $request, string $paymentId): \Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    public function cancelMockPayment(Request $request, string $paymentId): \Illuminate\Http\Response|JsonResponse|\Illuminate\Http\RedirectResponse
     {
         $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
         Log::info('Mock payment cancellation requested', ['payment_id' => $paymentId]);
@@ -525,7 +551,7 @@ class PaymentController extends Controller
      *   }
      * }
      */
-    public function createTestMockPayment(Request $request): JsonResponse
+    public function createTestMockPayment(CreateTestMockPaymentRequest $request): JsonResponse
     {
         // Only allow in local/staging environments
         if (!in_array(app()->environment(), ['local', 'testing', 'staging'])) {
@@ -535,12 +561,7 @@ class PaymentController extends Controller
             ], 403);
         }
 
-        $validated = $request->validate([
-            'amount' => 'required|numeric|min:1',
-            'description' => 'nullable|string|max:500',
-            'user_email' => 'nullable|email',
-            'payment_type' => 'nullable|string|in:test,subscription,donation,event',
-        ]);
+        $validated = $request->validated();
 
         $paymentType = $validated['payment_type'] ?? 'test';
 
@@ -638,20 +659,19 @@ class PaymentController extends Controller
      */
     public function getPaymentFormMetadata(): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'phone_format' => '254XXXXXXXXX',
-                'phone_example' => '254712345678',
-                'min_amount' => 0.01,
-                'max_amount' => 999999.99,
-                'currency' => 'KES',
-                'supported_payment_methods' => ['mobile_money', 'card'],
-                'test_success_phones' => ['254701234567', '254702-254705 range'],
-                'test_failure_phones' => ['254709999999'],
-                'test_pending_phones' => ['254707777777'],
-            ],
-        ]);
+        try {
+            $metadata = $this->paymentService->getPaymentFormMetadata();
+            return response()->json([
+                'success' => true,
+                'data' => $metadata,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve payment form metadata', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve payment form metadata',
+            ], 500);
+        }
     }
 
     /**
@@ -678,165 +698,54 @@ class PaymentController extends Controller
      *   "message": "Transaction not found"
      * }
      */
-    public function checkPaymentStatus(Request $request): JsonResponse
+    public function checkPaymentStatus(CheckPaymentStatusRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'transaction_id' => 'required|string',
-        ]);
+        $validated = $request->validated();
 
         try {
-            $status = MockPaymentService::queryPaymentStatus($validated['transaction_id']);
-
+            $status = $this->paymentService->checkPaymentStatus($validated['transaction_id']);
             return response()->json([
                 'success' => true,
-                'data' => $status,
+                'data' => $status, // This returns an array from service, keeping for now or could wrap in resource if it was a model
             ]);
-
+        } catch (PaymentException $e) {
+            Log::error('Payment status check failed', ['transaction_id' => $validated['transaction_id'], 'error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         } catch (\Exception $e) {
-            Log::error('Payment status check failed', [
-                'transaction_id' => $validated['transaction_id'],
-                'error' => $e->getMessage(),
-            ]);
-
+            Log::error('Payment status check failed', ['transaction_id' => $validated['transaction_id'], 'error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to check payment status',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
-    /**
-     * Verify payment and update subscription
-     *
-     * Verifies a completed payment securely and updates the user's subscription status.
-     * This endpoint should be called after a successful payment flow to ensure the local database reflects the new state.
-     * It handles success, pending, and failure states, updating the subscription enhancement record accordingly.
-     *
-     * @group Payments
-     * @authenticated
-     *
-     * @bodyParam transaction_id string required The transaction ID to verify. Example: MOCK_abc123xyz
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Payment verified and subscription activated",
-     *   "data": {
-     *     "subscription_id": 1,
-     *     "status": "active",
-     *     "payment_status": "completed"
-     *   }
-     * }
-     * @response 500 {
-     *   "success": false,
-     *   "message": "Payment verification failed"
-     * }
-     */
-    public function verifyPayment(Request $request): JsonResponse
+    public function verifyPayment(VerifyPaymentRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'transaction_id' => 'required|string',
-        ]);
-
+        $validated = $request->validated();
         $user = auth()->user();
 
         try {
-            DB::beginTransaction();
-
-            // Query payment status from mock service
-            $paymentStatus = MockPaymentService::queryPaymentStatus($validated['transaction_id']);
-
-            // Find the subscription associated with this payment
-            $subscription = PlanSubscription::where('user_id', $user->id)
-                ->latest()
-                ->first();
-
-            if (!$subscription) {
-                throw new \Exception('No subscription found for this payment');
-            }
-
-            $enhancement = SubscriptionEnhancement::where('subscription_id', $subscription->id)->first();
-
-            if (!$enhancement) {
-                throw new \Exception('No subscription enhancement found');
-            }
-
-            // Update based on payment status
-            if ($paymentStatus['status'] === 'completed' || $paymentStatus['status'] === 'success') {
-                // Payment successful
-                $enhancement->update([
-                    'status' => 'active',
-                    'payment_failure_state' => null,
-                    'renewal_attempts' => 0,
-                ]);
-
-                $subscription->update(['status' => 'active']);
-
-                $user->update([
-                    'subscription_status' => 'active',
-                    'subscription_activated_at' => now(),
-                    'last_payment_date' => now(),
-                    'active_subscription_id' => $subscription->id,
-                ]);
-
-                $message = 'Payment verified and subscription activated';
-                $success = true;
-
-            } elseif ($paymentStatus['status'] === 'pending') {
-                // Payment still pending
-                $enhancement->update(['status' => 'payment_pending']);
-                $user->update(['subscription_status' => 'payment_pending']);
-
-                $message = 'Payment is still processing';
-                $success = true;
-
-            } else {
-                // Payment failed
-                $failureState = $paymentStatus['status'] === 'timeout'
-                    ? 'retry_delayed'
-                    : 'retry_immediate';
-
-                $enhancement->markPaymentFailed(
-                    $failureState,
-                    $paymentStatus['error_message'] ?? 'Payment verification failed'
-                );
-
-                $user->update(['subscription_status' => 'payment_failed']);
-
-                $message = 'Payment verification failed';
-                $success = false;
-            }
-
-            DB::commit();
-
-            Log::info('Payment verified', [
-                'user_id' => $user->id,
-                'transaction_id' => $validated['transaction_id'],
-                'status' => $paymentStatus['status'],
-            ]);
-
+            $result = $this->paymentService->verifyPayment($user, $validated['transaction_id']);
             return response()->json([
-                'success' => $success,
-                'message' => $message,
-                'data' => [
-                    'subscription_id' => $subscription->id,
-                    'status' => $enhancement->status,
-                    'payment_status' => $paymentStatus['status'],
-                ],
+                'success' => true,
+                'message' => 'Payment status retrieved',
+                'data' => $result,
             ]);
-
+        } catch (PaymentException $e) {
+            Log::error('Payment verification failed', ['user_id' => $user->id, 'transaction_id' => $validated['transaction_id'], 'error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Payment verification failed', [
-                'user_id' => $user->id,
-                'transaction_id' => $validated['transaction_id'],
-                'error' => $e->getMessage(),
-            ]);
-
+            Log::error('Payment verification failed', ['user_id' => $user->id, 'transaction_id' => $validated['transaction_id'], 'error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Payment verification failed',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -871,105 +780,29 @@ class PaymentController extends Controller
      *   }
      * }
      */
-    public function processPayment(Request $request): JsonResponse
+    public function processPayment(ProcessPaymentRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'transaction_id' => 'required|string',
-            'order_id' => 'required|integer|exists:plan_subscriptions,id',
-            'phone' => 'required|string|regex:/^254\d{9}$/',
-        ]);
-
+        $validated = $request->validated();
         $user = auth()->user();
 
         try {
-            DB::beginTransaction();
-
-            // Verify order belongs to user
-            $subscription = PlanSubscription::where('id', $validated['order_id'])
-                ->where('user_id', $user->id)
-                ->firstOrFail();
-
-            // Process payment
-            $paymentResult = MockPaymentService::processPayment(
-                $validated['phone'],
-                [
-                    'transaction_id' => $validated['transaction_id'],
-                    'order_id' => $validated['order_id'],
-                ]
-            );
-
-            $enhancement = SubscriptionEnhancement::where('subscription_id', $subscription->id)->first();
-
-            if (!$enhancement) {
-                throw new \Exception('Subscription enhancement not found');
-            }
-
-            // Update subscription based on payment result
-            if ($paymentResult['success']) {
-                $enhancement->update([
-                    'status' => 'active',
-                    'payment_failure_state' => null,
-                ]);
-
-                $subscription->update(['status' => 'active']);
-
-                $user->update([
-                    'subscription_status' => 'active',
-                    'subscription_activated_at' => now(),
-                    'last_payment_date' => now(),
-                    'active_subscription_id' => $subscription->id,
-                ]);
-
-                $responseMessage = 'Payment processed successfully';
-            } elseif ($paymentResult['status'] === 'pending') {
-                $enhancement->update(['status' => 'payment_pending']);
-                $user->update(['subscription_status' => 'payment_pending']);
-                $responseMessage = 'Payment is being processed';
-            } else {
-                $failureState = $paymentResult['status'] === 'timeout'
-                    ? 'retry_delayed'
-                    : 'retry_immediate';
-
-                $enhancement->markPaymentFailed(
-                    $failureState,
-                    $paymentResult['error_message'] ?? 'Payment processing failed'
-                );
-
-                $user->update(['subscription_status' => 'payment_failed']);
-                $responseMessage = 'Payment failed';
-            }
-
-            DB::commit();
-
-            Log::info('Payment processed', [
-                'user_id' => $user->id,
-                'transaction_id' => $validated['transaction_id'],
-                'order_id' => $validated['order_id'],
-                'success' => $paymentResult['success'],
-            ]);
-
+            $result = $this->paymentService->processPayment($user, $validated);
             return response()->json([
-                'success' => $paymentResult['success'],
-                'message' => $responseMessage,
-                'data' => [
-                    'status' => $paymentResult['status'],
-                    'subscription_status' => $enhancement->status,
-                    'transaction_id' => $validated['transaction_id'],
-                    'order_id' => $validated['order_id'],
-                ],
+                'success' => true,
+                'message' => 'Payment initiated',
+                'data' => $result,
             ]);
-
+        } catch (PaymentException $e) {
+            Log::error('Payment processing failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Payment processing failed', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
-
+            Log::error('Payment processing failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Payment processing failed',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -1011,96 +844,40 @@ class PaymentController extends Controller
         $user = auth()->user();
         $perPage = $request->input('per_page', 15);
 
-        $subscriptions = $user->subscriptions()
-            ->with('plan', 'enhancements')
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
-
-        $history = [];
-        foreach ($subscriptions as $subscription) {
-            foreach ($subscription->enhancements as $enhancement) {
-                $history[] = [
-                    'subscription_id' => $subscription->id,
-                    'plan_name' => $subscription->plan?->name,
-                    'amount' => $subscription->plan?->price,
-                    'currency' => 'KES',
-                    'status' => $enhancement->status,
-                    'failure_state' => $enhancement->payment_failure_state,
-                    'started_at' => $subscription->starts_at,
-                    'ended_at' => $subscription->ends_at,
-                ];
-            }
+        try {
+            $paginator = $this->paymentService->getPaymentHistory($user, $perPage);
+            return response()->json([
+                'success' => true,
+                'data' => PaymentResource::collection($paginator),
+                'pagination' => [
+                    'total' => $paginator->total(),
+                    'per_page' => $paginator->perPage(),
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve payment history', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve payment history',
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => $history,
-            'pagination' => [
-                'total' => $subscriptions->total(),
-                'per_page' => $subscriptions->perPage(),
-                'current_page' => $subscriptions->currentPage(),
-            ],
-        ]);
     }
 
-    /**
-     * Handle payment webhook
-     *
-     * Receives instant payment notifications (IPN) from the payment gateway (e.g., Pesapal).
-     * Updates local transaction status in real-time.
-     * Note: This endpoint is public but verifies the payload signature/validity internally (mocked in Phase 1).
-     *
-     * @group Payments
-     *
-     * @bodyParam event_type string required Type of event. Example: payment.completed
-     * @bodyParam transaction_id string required Gateway transaction ID. Example: MOCK_abc123xyz
-     * @bodyParam status string required Status of payment. Example: completed
-     * @bodyParam amount float Amount paid. Example: 100.00
-     * @bodyParam order_tracking_id string optional Tracking ID. Example: ORDER_def456
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Webhook processed successfully"
-     * }
-     */
-    public function handleWebhook(Request $request): JsonResponse
+    public function handleWebhook(HandleWebhookRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'event_type' => 'required|string',
-            'transaction_id' => 'required|string',
-            'status' => 'required|in:completed,pending,failed',
-            'amount' => 'nullable|numeric',
-            'order_tracking_id' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         try {
-            Log::info('Payment webhook received in PaymentController', $validated);
-
-            // Log to webhook_events for transparency/debugging
-            $webhookEvent = \App\Models\WebhookEvent::create([
-                'provider' => 'mock', // Categorize generic/mock webhooks
-                'event_type' => $validated['event_type'],
-                'external_id' => $validated['transaction_id'],
-                'order_reference' => $validated['order_tracking_id'] ?? $validated['transaction_id'],
-                'payload' => $validated,
-                'status' => 'received',
-            ]);
-
-            // Dispatch background job
-            \App\Jobs\ProcessWebhookJob::dispatch($webhookEvent->id);
-
+            $result = $this->paymentService->handleWebhook($validated);
             return response()->json([
                 'success' => true,
                 'message' => 'Webhook received and queued for processing',
-                'event_id' => $webhookEvent->id
+                'event_id' => $result['event_id'],
             ]);
-
         } catch (\Exception $e) {
-            Log::error('Webhook reception failed', [
-                'error' => $e->getMessage(),
-                'data' => $validated,
-            ]);
-
+            Log::error('Webhook reception failed', ['error' => $e->getMessage(), 'data' => $validated]);
             return response()->json([
                 'success' => false,
                 'message' => 'Webhook reception failed',
@@ -1108,80 +885,36 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Refund payment (admin only)
-     *
-     * Initiates a refund for a completed transaction.
-     * RESTRICTED: Only accessible by administrators.
-     * Useful for correcting billing errors or handling customer cancellations.
-     *
-     * @group Payments
-     * @authenticated
-     *
-     * @bodyParam transaction_id string required The transaction ID to refund. Example: MOCK_abc123xyz
-     * @bodyParam reason string required Justification for the refund. Example: Duplicate charge
-     * @bodyParam amount float optional Partial refund amount. If omitted, refunds full amount. Example: 50.00
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Refund processed successfully",
-     *   "data": {
-     *     "refund_id": "REF_123",
-     *     "status": "completed",
-     *     "amount": 100.00
-     *   }
-     * }
-     * @response 403 {
-     *   "success": false,
-     *   "message": "Unauthorized - admin only"
-     * }
-     */
-    public function refundPayment(Request $request): JsonResponse
+    public function refundPayment(RefundPaymentRequest $request): JsonResponse
     {
-        // Check admin authorization
-        if (!auth()->user()->hasRole('admin')) {
+        $user = auth()->user();
+        if (!$user->hasRole('admin')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized - admin only',
             ], 403);
         }
 
-        $validated = $request->validate([
-            'transaction_id' => 'required|string',
-            'reason' => 'required|string|max:500',
-            'amount' => 'nullable|numeric|min:0.01',
-        ]);
+        $validated = $request->validated();
 
         try {
-            $refundResult = MockPaymentService::refundPayment(
-                $validated['transaction_id'],
-                $validated['amount'] ?? null
-            );
-
-            Log::info('Refund processed', [
-                'admin_id' => auth()->user()->id,
-                'transaction_id' => $validated['transaction_id'],
-                'reason' => $validated['reason'],
-                'refund_result' => $refundResult,
-            ]);
-
+            $result = $this->paymentService->refundPayment($user, $validated);
             return response()->json([
                 'success' => true,
                 'message' => 'Refund processed successfully',
-                'data' => $refundResult,
+                'data' => $result,
             ]);
-
+        } catch (PaymentException $e) {
+            Log::error('Refund processing failed', ['admin_id' => $user->id, 'transaction_id' => $validated['transaction_id'], 'error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         } catch (\Exception $e) {
-            Log::error('Refund processing failed', [
-                'admin_id' => auth()->user()->id,
-                'transaction_id' => $validated['transaction_id'],
-                'error' => $e->getMessage(),
-            ]);
-
+            Log::error('Refund processing failed', ['admin_id' => $user->id, 'transaction_id' => $validated['transaction_id'], 'error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Refund processing failed',
-                'error' => $e->getMessage(),
             ], 500);
         }
     }

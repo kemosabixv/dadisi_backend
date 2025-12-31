@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Models\User;
 use App\Models\Category;
 use App\Models\Tag;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 /**
  * Tests for DeletionReviewController
@@ -20,8 +21,11 @@ class DeletionReviewControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $author;
+
     private User $staff;
+
     private User $regularUser;
+
     private Role $contentEditorRole;
 
     protected function setUp(): void
@@ -41,8 +45,7 @@ class DeletionReviewControllerTest extends TestCase
     /**
      * List Deletion Requests Tests
      */
-
-    /** @test */
+    #[Test]
     public function staff_can_list_pending_deletion_requests(): void
     {
         // Create categories with pending deletion
@@ -66,11 +69,10 @@ class DeletionReviewControllerTest extends TestCase
         $response = $this->actingAs($this->staff)
             ->getJson('/api/admin/blog/deletion-reviews');
 
-        $response->assertStatus(200);
-        $response->assertJsonCount(3); // 2 categories + 1 tag
+        $response->assertJsonCount(3, 'data'); // 2 categories + 1 tag
     }
 
-    /** @test */
+    #[Test]
     public function staff_can_filter_deletion_requests_by_type(): void
     {
         Category::factory()->create([
@@ -89,16 +91,14 @@ class DeletionReviewControllerTest extends TestCase
         $response = $this->actingAs($this->staff)
             ->getJson('/api/admin/blog/deletion-reviews?type=category');
 
-        $response->assertStatus(200);
-        $response->assertJsonCount(1);
+        $response->assertJsonCount(1, 'data');
         $response->assertJsonFragment(['type' => 'category']);
     }
 
     /**
      * Approve Deletion Tests
      */
-
-    /** @test */
+    #[Test]
     public function staff_can_approve_category_deletion(): void
     {
         $category = Category::factory()->create([
@@ -119,7 +119,7 @@ class DeletionReviewControllerTest extends TestCase
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
     }
 
-    /** @test */
+    #[Test]
     public function staff_can_approve_tag_deletion(): void
     {
         $tag = Tag::factory()->create([
@@ -137,7 +137,7 @@ class DeletionReviewControllerTest extends TestCase
         $this->assertDatabaseMissing('tags', ['id' => $tag->id]);
     }
 
-    /** @test */
+    #[Test]
     public function staff_cannot_approve_non_pending_category(): void
     {
         $category = Category::factory()->create([
@@ -154,8 +154,7 @@ class DeletionReviewControllerTest extends TestCase
     /**
      * Reject Deletion Tests
      */
-
-    /** @test */
+    #[Test]
     public function staff_can_reject_category_deletion(): void
     {
         $category = Category::factory()->create([
@@ -177,7 +176,7 @@ class DeletionReviewControllerTest extends TestCase
         $this->assertNull($category->fresh()->requested_deletion_at);
     }
 
-    /** @test */
+    #[Test]
     public function staff_can_reject_tag_deletion(): void
     {
         $tag = Tag::factory()->create([
@@ -197,8 +196,7 @@ class DeletionReviewControllerTest extends TestCase
     /**
      * Authorization Tests
      */
-
-    /** @test */
+    #[Test]
     public function regular_user_cannot_access_deletion_reviews(): void
     {
         $response = $this->actingAs($this->regularUser)
@@ -207,14 +205,14 @@ class DeletionReviewControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function unauthenticated_user_cannot_access_deletion_reviews(): void
     {
         $response = $this->getJson('/api/admin/blog/deletion-reviews');
         $response->assertStatus(401);
     }
 
-    /** @test */
+    #[Test]
     public function regular_user_cannot_approve_deletion(): void
     {
         $category = Category::factory()->create([
@@ -232,7 +230,7 @@ class DeletionReviewControllerTest extends TestCase
         $this->assertDatabaseHas('categories', ['id' => $category->id]);
     }
 
-    /** @test */
+    #[Test]
     public function approval_returns_404_for_nonexistent_item(): void
     {
         $response = $this->actingAs($this->staff)
@@ -241,7 +239,7 @@ class DeletionReviewControllerTest extends TestCase
         $response->assertStatus(404);
     }
 
-    /** @test */
+    #[Test]
     public function approval_returns_404_for_invalid_type(): void
     {
         $response = $this->actingAs($this->staff)

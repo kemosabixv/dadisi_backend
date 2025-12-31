@@ -4,9 +4,10 @@ namespace App\Services;
 
 use App\Models\PlanSubscription;
 use App\Models\RenewalReminder;
+use App\Services\Contracts\RenewalReminderServiceContract;
 use Illuminate\Support\Facades\Log;
 
-class RenewalReminderService
+class RenewalReminderService implements RenewalReminderServiceContract
 {
     /**
      * Schedule standard reminders (7d, 3d, 1d) for a subscription

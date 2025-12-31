@@ -2,33 +2,67 @@
 
 namespace App\Services\PaymentGateway;
 
+use App\DTOs\Payments\PaymentRequestDTO;
+use App\DTOs\Payments\TransactionResultDTO;
+use App\DTOs\Payments\PaymentStatusDTO;
+
+/**
+ * PaymentGatewayInterface
+ *
+ * Defines the contract for all payment gateway implementations.
+ * Each gateway (Pesapal, Mock, etc.) must implement these methods
+ * to ensure consistent payment processing across the application.
+ */
 interface PaymentGatewayInterface
 {
     /**
-     * Initiate a payment - creates a payment session and returns redirect URL.
-     * This is the first step before the user is redirected to pay.
+     * Initiate a payment session and return a redirect URL.
      *
-     * @param array $paymentData Payment details including order_id, amount, currency, user_id, etc.
-     * @return array Should contain: success, transaction_id, redirect_url, order_tracking_id
+     * Creates a new payment order with the gateway and returns
+     * the redirect URL where the user should complete payment.
+     *
+     * @param PaymentRequestDTO $request The payment request data
+     * @return TransactionResultDTO Contains success status, transaction ID, and redirect URL
+     *
+     * @throws \App\Exceptions\PaymentException When gateway initialization fails
      */
-    public function initiatePayment(array $paymentData): array;
+    public function initiatePayment(PaymentRequestDTO $request): TransactionResultDTO;
 
     /**
-     * Charge/process a payment - processes the actual payment.
-     * Used for immediate payment processing or status updates.
+     * Charge/process a payment directly.
      *
-     * @param string $identifier Payment identifier (phone number, transaction ID, etc.)
-     * @param int $amount Amount in smallest currency unit
-     * @param array $metadata Additional payment context
-     * @return array Should contain: success, status, error_message (if failed)
+     * Used for direct charges without user redirect (e.g., saved payment methods).
+     *
+     * @param string $identifier The payment method identifier (token, phone number, etc.)
+     * @param int $amount The amount to charge in smallest currency unit
+     * @param array $metadata Additional metadata for the transaction
+     * @return TransactionResultDTO Contains success status and transaction details
+     *
+     * @throws \App\Exceptions\PaymentException When charge fails
      */
-    public function charge(string $identifier, int $amount, array $metadata = []): array;
+    public function charge(string $identifier, int $amount, array $metadata = []): TransactionResultDTO;
 
     /**
      * Query the status of an existing payment.
      *
-     * @param string $transactionId The transaction ID to query
-     * @return array Payment status information
+     * Fetches the current status of a transaction from the gateway.
+     *
+     * @param string $transactionId The gateway transaction ID
+     * @return PaymentStatusDTO Contains current payment status and details
+     *
+     * @throws \App\Exceptions\PaymentException When status query fails
      */
-    public function queryStatus(string $transactionId): array;
+    public function queryStatus(string $transactionId): PaymentStatusDTO;
+
+    /**
+     * Refund a previously processed payment.
+     *
+     * @param string $transactionId The gateway transaction ID to refund
+     * @param float $amount The amount to refund
+     * @param string $reason The reason for the refund
+     * @return TransactionResultDTO Contains success status and refund transaction details
+     *
+     * @throws \App\Exceptions\PaymentException When refund fails
+     */
+    public function refund(string $transactionId, float $amount, string $reason = ''): TransactionResultDTO;
 }

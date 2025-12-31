@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventOrder;
-use App\Services\EventOrderService;
+use App\Services\Contracts\EventOrderServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,11 +17,8 @@ use Illuminate\Support\Facades\Auth;
  */
 class EventOrderController extends Controller
 {
-    protected EventOrderService $orderService;
-
-    public function __construct(EventOrderService $orderService)
+    public function __construct(private EventOrderServiceContract $orderService)
     {
-        $this->orderService = $orderService;
         // Only purchase endpoint allows guest access
         $this->middleware('auth:sanctum')->except(['purchase', 'checkPaymentStatus']);
     }
@@ -51,30 +48,15 @@ class EventOrderController extends Controller
      * }
      * @response 400 {"success": false, "message": "Only 5 spots available."}
      */
-    public function purchase(Request $request, Event $event): JsonResponse
+    public function purchase(\App\Http\Requests\Api\CreateEventOrderRequest $request, Event $event): JsonResponse
     {
         $user = Auth::guard('sanctum')->user();
-
-        // Validation rules differ for guest vs authenticated
-        $rules = [
-            'quantity' => 'required|integer|min:1|max:10',
-            'phone' => 'nullable|string|max:20',
-            'promo_code' => 'nullable|string|max:50',
-        ];
-
-        if (!$user) {
-            $rules['name'] = 'required|string|max:255';
-            $rules['email'] = 'required|email|max:255';
-        }
-
-        $validated = $request->validate($rules);
-
+        $validated = $request->validated();
         $purchaserData = [
             'name' => $validated['name'] ?? null,
             'email' => $validated['email'] ?? $user?->email,
             'phone' => $validated['phone'] ?? null,
         ];
-
         $result = $this->orderService->createOrder(
             $event,
             $validated['quantity'],
@@ -126,28 +108,18 @@ class EventOrderController extends Controller
      */
     public function checkPaymentStatus(string $reference): JsonResponse
     {
-        $order = EventOrder::where('reference', $reference)->first();
-
-        if (!$order) {
+        try {
+            $data = $this->orderService->checkPaymentStatus($reference);
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Order not found',
             ], 404);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'status' => $order->status,
-                'paid' => $order->isPaid(),
-                'qr_code_token' => $order->isPaid() ? $order->qr_code_token : null,
-                'event' => [
-                    'id' => $order->event->id,
-                    'title' => $order->event->title,
-                    'starts_at' => $order->event->starts_at,
-                ],
-            ],
-        ]);
     }
 
     /**
@@ -175,25 +147,20 @@ class EventOrderController extends Controller
      */
     public function myTickets(Request $request): JsonResponse
     {
-        $query = EventOrder::where('user_id', Auth::id())
-            ->with('event:id,title,slug,starts_at,venue')
-            ->orderBy('created_at', 'desc');
-
-        if ($request->has('status')) {
-            $query->where('status', $request->input('status'));
+        try {
+            $filters = ['status' => $request->input('status')];
+            $result = $this->orderService->getUserOrders(Auth::user(), $filters, 20);
+            return response()->json([
+                'success' => true,
+                'data' => $result['data'],
+                'meta' => $result['meta'],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve tickets',
+            ], 500);
         }
-
-        $orders = $query->paginate(20);
-
-        return response()->json([
-            'success' => true,
-            'data' => $orders->items(),
-            'meta' => [
-                'current_page' => $orders->currentPage(),
-                'last_page' => $orders->lastPage(),
-                'total' => $orders->total(),
-            ],
-        ]);
     }
 
     /**
@@ -217,44 +184,27 @@ class EventOrderController extends Controller
      *   }
      * }
      */
-    public function show(EventOrder $order): JsonResponse
+    public function show(Request $request): JsonResponse
     {
-        // Ensure user owns this order or is admin
-        if ($order->user_id !== Auth::id() && !Auth::user()?->hasRole('admin')) {
+        try {
+            $orderId = $request->route('order');
+            $result = $this->orderService->getOrderDetails(Auth::user(), $orderId);
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'not found')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found',
+                ], 404);
+            }
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized',
+                'message' => $e->getMessage(),
             ], 403);
         }
-
-        $order->load('event', 'promoCode');
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $order->id,
-                'reference' => $order->reference,
-                'qr_code_token' => $order->qr_code_token,
-                'quantity' => $order->quantity,
-                'unit_price' => $order->unit_price,
-                'original_amount' => $order->original_amount,
-                'promo_discount' => $order->promo_discount_amount,
-                'subscriber_discount' => $order->subscriber_discount_amount,
-                'total_amount' => $order->total_amount,
-                'currency' => $order->currency,
-                'status' => $order->status,
-                'purchased_at' => $order->purchased_at,
-                'checked_in_at' => $order->checked_in_at,
-                'event' => [
-                    'id' => $order->event->id,
-                    'title' => $order->event->title,
-                    'slug' => $order->event->slug,
-                    'starts_at' => $order->event->starts_at,
-                    'venue' => $order->event->venue,
-                ],
-                'promo_code' => $order->promoCode?->code,
-            ],
-        ]);
     }
 
     /**
@@ -269,16 +219,11 @@ class EventOrderController extends Controller
      * @response 200 {"success": true, "message": "Check-in successful!"}
      * @response 400 {"success": false, "message": "Already checked in"}
      */
-    public function scanTicket(Request $request, Event $event): JsonResponse
+    public function scanTicket(\App\Http\Requests\Api\ScanEventTicketRequest $request, Event $event): JsonResponse
     {
         $this->authorize('update', $event);
-
-        $validated = $request->validate([
-            'qr_token' => 'required|string',
-        ]);
-
+        $validated = $request->validated();
         $result = $this->orderService->checkIn($validated['qr_token'], $event);
-
         return response()->json($result, $result['success'] ? 200 : 400);
     }
 }

@@ -13,11 +13,14 @@ class ExchangeRatesTest extends TestCase
     private User $superAdmin;
     private User $regularUser;
 
+    protected $shouldSeedRoles = true;
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->superAdmin = User::factory()->create();
-        $this->superAdmin->assignRole('super_admin');
+        $role = \Spatie\Permission\Models\Role::where('name', 'super_admin')->where('guard_name', 'api')->first();
+        $this->superAdmin->assignRole($role);
 
         $this->regularUser = User::factory()->create();
         $this->regularUser->assignRole('member');

@@ -5,31 +5,40 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Laravelcm\Subscriptions\Models\Plan as BasePlan;
-use App\Services\CurrencyService;
+use App\Services\Contracts\ExchangeRateServiceContract;
 
 class Plan extends BasePlan
 {
     use HasFactory;
 
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-
-        // Add custom fillable fields
-        $this->fillable = array_merge(parent::getFillable(), [
-            'type',
-            'description',
-            'base_monthly_price',
-            'yearly_discount_percent',
-            'default_billing_period',
-            'monthly_promotion_discount_percent',
-            'monthly_promotion_expires_at',
-            'yearly_promotion_discount_percent',
-            'yearly_promotion_expires_at',
-        ]);
-    }
-
-
+    protected $fillable = [
+        'slug',
+        'name',
+        'description',
+        'is_active',
+        'price',
+        'signup_fee',
+        'currency',
+        'trial_period',
+        'trial_interval',
+        'invoice_period',
+        'invoice_interval',
+        'grace_period',
+        'grace_interval',
+        'prorate_day',
+        'prorate_period',
+        'prorate_extend_due',
+        'active_subscribers_limit',
+        'sort_order',
+        'type',
+        'base_monthly_price',
+        'yearly_discount_percent',
+        'default_billing_period',
+        'monthly_promotion_discount_percent',
+        'monthly_promotion_expires_at',
+        'yearly_promotion_discount_percent',
+        'yearly_promotion_expires_at',
+    ];
 
     /**
      * Override setAttribute to filter out invalid 'active' column
@@ -240,7 +249,7 @@ class Plan extends BasePlan
      */
     public function getPricingAttribute()
     {
-        $currencyService = app(CurrencyService::class);
+        $currencyService = app(ExchangeRateServiceContract::class);
 
         // Get effective prices (after promotions)
         $effectiveMonthlyKsh = $this->getEffectiveMonthlyPrice();
@@ -297,7 +306,7 @@ class Plan extends BasePlan
         $amount = $interval === 'yearly' ? $this->yearly_price : $this->base_monthly_price;
 
         if ($currency === 'USD') {
-            $currencyService = app(CurrencyService::class);
+            $currencyService = app(ExchangeRateServiceContract::class);
             return $currencyService->kesToUSD($amount ?? 0);
         }
 
@@ -310,7 +319,7 @@ class Plan extends BasePlan
     public function formatPrice($interval = 'monthly', $currency = 'KES')
     {
         $amount = $this->getPriceForInterval($interval, $currency);
-        $currencyService = app(CurrencyService::class);
+        $currencyService = app(ExchangeRateServiceContract::class);
         return $currencyService->formatAmount($amount, $currency);
     }
 }

@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\ListEventsFiltersDTO;
+use App\Exceptions\EventException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\EventResource;
-use App\Models\Event;
+use App\Services\Contracts\EventServiceContract;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Public Event API
@@ -15,6 +18,10 @@ use Illuminate\Http\Request;
  */
 class EventController extends Controller
 {
+    public function __construct(
+        private EventServiceContract $eventService
+    ) {}
+
     /**
      * List Events
      * 
@@ -29,59 +36,20 @@ class EventController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Event::with(['category', 'county', 'tags'])->active();
+        try {
+            $filters = ListEventsFiltersDTO::fromRequest($request->all());
+            $events = $this->eventService->listEvents($filters, $filters->per_page);
 
-        // Filter by category slug
-        if ($request->has('category')) {
-            $query->whereHas('category', function ($q) use ($request) {
-                $q->where('slug', $request->category);
-            });
+            return EventResource::collection($events);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to list events', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve events',
+            ], 500);
         }
-
-        // Filter by category ID
-        if ($request->has('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
-
-        if ($request->has('tag')) {
-            $query->whereHas('tags', function ($q) use ($request) {
-                $q->where('slug', $request->tag);
-            });
-        }
-
-        if ($request->has('county_id')) {
-            $query->byCounty($request->county_id);
-        }
-
-        // Filter by online/in_person (type param)
-        if ($request->has('type')) {
-            if ($request->type === 'online') {
-                $query->where('is_online', true);
-            } else {
-                $query->where('is_online', false);
-            }
-        }
-
-        // Filter by timeframe (upcoming/past)
-        if ($request->has('timeframe')) {
-            if ($request->timeframe === 'upcoming') {
-                $query->where('starts_at', '>', now());
-            } elseif ($request->timeframe === 'past') {
-                $query->where('starts_at', '<', now());
-            }
-            // 'all' means no date filter
-        }
-
-        if ($request->has('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('title', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
-            });
-        }
-
-        $events = $query->orderBy('starts_at', 'asc')->paginate($request->get('per_page', 12));
-
-        return EventResource::collection($events);
     }
 
     /**
@@ -92,10 +60,17 @@ class EventController extends Controller
      */
     public function show($slug)
     {
-        $event = Event::with(['category', 'county', 'tags', 'tickets', 'speakers', 'creator'])
-            ->where('slug', $slug)
-            ->firstOrFail();
-
-        return new EventResource($event);
+        try {
+            $event = $this->eventService->getBySlug($slug);
+            return new EventResource($event);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve event', ['error' => $e->getMessage(), 'slug' => $slug]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve event',
+            ], 500);
+        }
     }
 }

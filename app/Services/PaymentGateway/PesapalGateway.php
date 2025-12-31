@@ -2,6 +2,9 @@
 
 namespace App\Services\PaymentGateway;
 
+use App\DTOs\Payments\PaymentRequestDTO;
+use App\DTOs\Payments\PaymentStatusDTO;
+use App\DTOs\Payments\TransactionResultDTO;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\RequestException;
@@ -30,60 +33,40 @@ class PesapalGateway implements PaymentGatewayInterface
 
     /**
      * Initiate a payment - creates a payment session with Pesapal and returns redirect URL.
-     * This is the preferred entry point for starting a new payment.
-     * 
-     * @param array $paymentData Payment details including order_id, amount, currency, user details
-     * @return array Payment initiation response with redirect_url
      */
-    public function initiatePayment(array $paymentData): array
+    public function initiatePayment(PaymentRequestDTO $request): TransactionResultDTO
     {
-        // Generate a unique order identifier
-        $orderId = $paymentData['order_id'] ?? ('ORDER_' . time() . '_' . \Illuminate\Support\Str::random(8));
+        // Generate a unique order identifier if not provided
+        $orderId = $request->reference ?? ('ORDER_' . time() . '_' . \Illuminate\Support\Str::random(8));
         
-        // Call charge with the payment data
-        $result = $this->charge(
-            (string) $orderId,
-            (int) (($paymentData['amount'] ?? 0) * 100), // Convert to cents
-            [
-                'email' => $paymentData['email'] ?? '',
-                'phone' => $paymentData['phone'] ?? '',
-                'first_name' => $paymentData['first_name'] ?? '',
-                'last_name' => $paymentData['last_name'] ?? '',
-                'description' => $paymentData['description'] ?? 'Dadisi Payment',
-            ]
+        // Step 1: Get JWT Token
+        $token = $this->getJwtToken();
+        if (!$token) {
+            return $this->normalizeError('authentication_failed', 'Failed to obtain JWT token');
+        }
+
+        // Step 2: Register/Get IPN ID
+        $notificationId = $this->getNotificationId($token);
+        if (!$notificationId) {
+            return $this->normalizeError('ipn_failed', 'Failed to register IPN notification ID');
+        }
+
+        // Step 3: Submit Order
+        $res = $this->submitOrderRequest(
+            $token,
+            $orderId,
+            (int) ($request->amount * 100),
+            array_merge($request->getBillingAddress(), $request->metadata), // Merge metadata for recurring params
+            $notificationId
         );
 
-        // Transform to initiatePayment format
-        return [
-            'success' => $result['success'] ?? false,
-            'transaction_id' => $result['reference'] ?? $orderId,
-            'order_tracking_id' => $result['reference'] ?? null,
-            'redirect_url' => $result['redirect_url'] ?? null,
-            'message' => $result['success'] ? 'Payment initiated successfully' : ($result['error_message'] ?? 'Payment initiation failed'),
-            'gateway' => 'pesapal',
-        ];
+        return $this->normalizeResponse($res, $orderId);
     }
 
     /**
-     * Query the status of an existing payment.
-     * 
-     * @param string $transactionId The transaction/order tracking ID to query
-     * @return array Payment status information
+     * Charge via Pesapal using API 3.0.
      */
-    public function queryStatus(string $transactionId): array
-    {
-        return $this->getTransactionStatus($transactionId);
-    }
-
-    /**
-     * Charge via Pesapal using API 3.0 (JWT Bearer token authentication).
-     * 
-     * Pesapal API 3.0 requires:
-     * 1. JWT Bearer token from /Auth/RequestToken
-     * 2. IPN registration to get notification_id
-     * 3. Order submission with billing address object
-     */
-    public function charge(string $identifier, int $amount, array $metadata = []): array
+    public function charge(string $identifier, int $amount, array $metadata = []): TransactionResultDTO
     {
         // Ensure gateway is configured for API calls
         if (empty($this->consumerKey) || empty($this->consumerSecret) || empty($this->apiBase)) {
@@ -91,57 +74,48 @@ class PesapalGateway implements PaymentGatewayInterface
         }
 
         try {
-            // Step 1: Get JWT Bearer token (API 3.0)
             $token = $this->getJwtToken();
-            
             if (!$token) {
                 return $this->normalizeError('authentication_failed', 'Failed to obtain JWT token');
             }
 
-            // Step 2: Ensure IPN is registered (one-time setup, but checking each time for safety)
-            $notificationId = $this->ensureIpnRegistered($token);
-            
+            $notificationId = $this->getNotificationId($token);
             if (!$notificationId) {
-                return $this->normalizeError('ipn_failed', 'Failed to register or retrieve IPN URL');
+                return $this->normalizeError('ipn_failed', 'Failed to register IPN');
             }
 
-            // Step 3: Submit order request (API 3.0)
-            $transactionResponse = $this->submitOrderRequest(
-                $token,
-                $identifier,
-                $amount,
-                $metadata,
-                $notificationId
-            );
+            $res = $this->submitOrderRequest($token, $identifier, $amount, $metadata, $notificationId);
+            return $this->normalizeResponse($res, $identifier);
 
-            if (isset($transactionResponse['error'])) {
-                return $this->normalizeError(
-                    'transaction_failed',
-                    $transactionResponse['error']
-                );
-            }
-
-            // Step 4: Return normalized response with order tracking ID
-            \Log::info('Pesapal submitOrderResponse', ['response' => $transactionResponse]);
-            $normalized = $this->normalizeResponse($transactionResponse);
-            \Log::info('Pesapal normalized response', ['normalized' => $normalized]);
-            return $normalized;
-        } catch (RequestException $e) {
-            return $this->normalizeError('http_error', $e->getMessage());
         } catch (\Exception $e) {
+            \Log::error('Pesapal charge exception: ' . $e->getMessage());
             return $this->normalizeError('unknown_error', $e->getMessage());
         }
     }
 
     /**
-     * Get JWT Bearer token from Pesapal API 3.0.
-     * 
-     * POST to /Auth/RequestToken with consumer key and secret.
+     * Query the status of an existing payment.
+     */
+    public function queryStatus(string $transactionId): PaymentStatusDTO
+    {
+        $statusData = $this->getTransactionStatus($transactionId);
+        
+        return new PaymentStatusDTO(
+            transactionId: $statusData['order_tracking_id'] ?? $transactionId,
+            merchantReference: $statusData['merchant_reference'] ?? '',
+            status: $statusData['status'] ?? 'UNKNOWN',
+            amount: 0, // Not always returned in status query, though usually known from model
+            rawDetails: $statusData
+        );
+    }
+
+    /**
      * Token is valid for 5 minutes.
      */
     protected function getJwtToken(): ?string
     {
         try {
+            /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::asJson()->post(
                 $this->apiBase . '/Auth/RequestToken',
                 [
@@ -151,14 +125,12 @@ class PesapalGateway implements PaymentGatewayInterface
             );
 
             if ($response->successful()) {
-                // Tests may fake a plain-text token response; accept either JSON or plain body
-                $contentType = strtolower($response->header('Content-Type', ''));
+                $contentType = strtolower($response->header('Content-Type') ?? '');
                 if (str_contains($contentType, 'application/json')) {
                     $data = $response->json();
                     return $data['token'] ?? $data['access_token'] ?? $response->body();
                 }
 
-                // Fallback: return raw body if not JSON (useful for test fakes)
                 return trim($response->body()) ?: null;
             }
 
@@ -175,17 +147,12 @@ class PesapalGateway implements PaymentGatewayInterface
     }
 
     /**
-     * Ensure IPN URL is registered and get the notification_id.
-     * 
-     * API 3.0 requires IPN registration before submitting orders.
-     * The notification_id (GUID) is then used in SubmitOrderRequest.
-     * 
-     * In production, this could be cached or registered once.
+     * Get or register IPN ID.
      */
-    protected function ensureIpnRegistered(string $token): ?string
+    protected function getNotificationId(string $token): ?string
     {
         try {
-            // First, try to get existing IPN registrations
+            /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
             ])->get($this->apiBase . '/URLSetup/GetIpnList');
@@ -193,17 +160,15 @@ class PesapalGateway implements PaymentGatewayInterface
             if ($response->successful()) {
                 $ipnList = $response->json();
                 
-                // Check if our IPN URL is already registered
                 if (is_array($ipnList)) {
                     foreach ($ipnList as $ipn) {
                         if ($ipn['url'] === $this->ipnUrl && ($ipn['ipn_status'] ?? 0) == 1) {
-                            return $ipn['ipn_id'];  // Return existing IPN ID
+                            return $ipn['ipn_id'];
                         }
                     }
                 }
             }
 
-            // If not found, register new IPN URL
             return $this->registerIpnUrl($token);
         } catch (\Exception $e) {
             \Log::error('Pesapal IPN check error: ' . $e->getMessage());
@@ -211,47 +176,31 @@ class PesapalGateway implements PaymentGatewayInterface
         }
     }
 
-    /**
-     * Register IPN URL with Pesapal API 3.0.
-     * 
-     * Returns the notification_id (GUID) to be used in SubmitOrderRequest.
-     */
     protected function registerIpnUrl(string $token): ?string
     {
         try {
+            /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::asJson()->withHeaders([
                 'Authorization' => 'Bearer ' . $token,
             ])->post(
                 $this->apiBase . '/URLSetup/RegisterIPN',
                 [
                     'url' => $this->ipnUrl,
-                    'ipn_notification_type' => $this->ipnNotificationType,  // 'POST' or 'GET'
+                    'ipn_notification_type' => $this->ipnNotificationType,
                 ]
             );
 
             if ($response->successful()) {
-                $data = $response->json();
-                return $data['ipn_id'] ?? null;  // GUID for notification_id
+                return $response->json()['ipn_id'] ?? null;
             }
 
-            $error = $response->json()['error'] ?? [];
-            \Log::error('Pesapal IPN registration error', [
-                'status' => $response->status(),
-                'error' => $error['message'] ?? 'Unknown error',
-            ]);
             return null;
         } catch (\Exception $e) {
-            \Log::error('Pesapal IPN registration exception: ' . $e->getMessage());
+            \Log::error('Pesapal IPN registration error: ' . $e->getMessage());
             return null;
         }
     }
 
-    /**
-     * Submit order request to Pesapal API 3.0.
-     * 
-     * Creates a payment order with customer details and returns
-     * order tracking ID and redirect URL for payment.
-     */
     protected function submitOrderRequest(
         string $token,
         string $identifier,
@@ -260,7 +209,6 @@ class PesapalGateway implements PaymentGatewayInterface
         string $notificationId
     ): array {
         try {
-            // Determine primary contact method (email or phone required)
             $email = $metadata['email'] ?? '';
             $phone = $metadata['phone'] ?? '';
 
@@ -268,6 +216,7 @@ class PesapalGateway implements PaymentGatewayInterface
                 return ['error' => 'Email or phone number is required'];
             }
 
+            /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::asJson()->withHeaders([
                 'Authorization' => 'Bearer ' . $token,
             ])->post(
@@ -275,98 +224,53 @@ class PesapalGateway implements PaymentGatewayInterface
                 [
                     'id' => $identifier,
                     'currency' => 'KES',
-                    'amount' => $amount / 100,  // Convert cents to decimal KES
+                    'amount' => $amount / 100,
                     'description' => $metadata['description'] ?? 'Dadisi Community Labs Payment',
                     'callback_url' => $this->callbackUrl,
-                    'notification_id' => $notificationId,  // IPN registration ID (GUID)
+                    'notification_id' => $notificationId,
+                    'account_number' => $metadata['account_number'] ?? null,
+                    'subscription_details' => $metadata['subscription_details'] ?? null,
                     'billing_address' => [
                         'email_address' => $email,
                         'phone_number' => $phone,
                         'country_code' => 'KE',
                         'first_name' => $metadata['first_name'] ?? '',
                         'last_name' => $metadata['last_name'] ?? '',
-                        'line_1' => $metadata['address_line_1'] ?? '',
-                        'line_2' => $metadata['address_line_2'] ?? '',
-                        'city' => $metadata['city'] ?? '',
-                        'state' => $metadata['state'] ?? '',
-                        'postal_code' => $metadata['postal_code'] ?? '',
-                        'zip_code' => $metadata['zip_code'] ?? '',
                     ],
                 ]
             );
 
-            // Handle different response formats (JSON or XML returned by test fakes)
             if ($response->successful()) {
-                $contentType = strtolower($response->header('Content-Type', ''));
+                $contentType = strtolower($response->header('Content-Type') ?? '');
                 $body = $response->body();
 
-                // If XML, parse and extract reference/status
                 if (str_contains($contentType, 'xml') || str_starts_with(trim($body), '<?xml')) {
-                    try {
-                        $xml = simplexml_load_string($body);
-                        $ref = (string) ($xml->reference ?? $xml->order_tracking_id ?? '');
-                        $status = strtoupper((string) ($xml->status ?? 'PENDING'));
-                        return [
-                            'order_tracking_id' => $ref ?: null,
-                            'merchant_reference' => $identifier,
-                            'redirect_url' => null,
-                            'status' => $status,
-                        ];
-                    } catch (\Exception $e) {
-                        // fall through to JSON handling
-                    }
-                }
-
-                // Try JSON decode
-                $data = $response->json();
-                if (is_array($data) && !empty($data)) {
+                    $xml = simplexml_load_string($body);
                     return [
-                        'order_tracking_id' => $data['order_tracking_id'] ?? null,
-                        'merchant_reference' => $data['merchant_reference'] ?? $identifier,
-                        'redirect_url' => $data['redirect_url'] ?? null,
-                        'status' => $data['status'] ?? 'PENDING',
+                        'order_tracking_id' => (string) ($xml->reference ?? $xml->order_tracking_id ?? ''),
+                        'merchant_reference' => $identifier,
+                        'redirect_url' => (string) ($xml->redirect_url ?? ''),
+                        'status' => 'PENDING',
                     ];
                 }
 
-                // Unknown but successful response: treat as pending with raw body as reference
-                return [
-                    'order_tracking_id' => trim($body) ?: null,
-                    'merchant_reference' => $identifier,
-                    'redirect_url' => null,
-                    'status' => 'PENDING',
-                ];
+                return $response->json();
             }
 
-            // Attempt to extract error message from JSON body
-            $errorBody = null;
-            try {
-                $errorData = $response->json();
-                $errorBody = $errorData['error']['message'] ?? $errorData['message'] ?? null;
-            } catch (\Exception $e) {
-                // ignore
-            }
-
-            return ['error' => $errorBody ?? 'Failed to submit order'];
+            return ['error' => 'Failed to submit order'];
         } catch (\Exception $e) {
             \Log::error('Pesapal submit order error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
 
-    /**
-     * Query transaction status from Pesapal API 3.0.
-     * 
-     * Fetches the current payment status using order tracking ID.
-     */
     public function getTransactionStatus(string $orderTrackingId, string $merchantReference = ''): array
     {
         try {
             $token = $this->getJwtToken();
-            
-            if (!$token) {
-                return ['status' => 'UNKNOWN', 'error' => 'Failed to obtain authentication token'];
-            }
+            if (!$token) return ['status' => 'UNKNOWN', 'error' => 'Auth failed'];
 
+            /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
             ])->get(
@@ -379,71 +283,93 @@ class PesapalGateway implements PaymentGatewayInterface
                 return [
                     'order_tracking_id' => $data['order_tracking_id'] ?? $orderTrackingId,
                     'merchant_reference' => $data['merchant_reference'] ?? $merchantReference,
-                    'status' => $data['status'] ?? 'UNKNOWN',  // COMPLETED, PENDING, FAILED, INVALID
+                    'status' => $data['status'] ?? 'UNKNOWN',
                     'confirmation_code' => $data['confirmation_code'] ?? null,
                     'payment_method' => $data['payment_method'] ?? null,
                     'payment_status_description' => $data['payment_status_description'] ?? null,
                 ];
             }
 
-            $error = $response->json()['error'] ?? [];
-            return [
-                'status' => 'UNKNOWN',
-                'error' => $error['message'] ?? 'Failed to query status',
-            ];
+            return ['status' => 'UNKNOWN', 'error' => 'Failed to query status'];
         } catch (\Exception $e) {
-            \Log::error('Pesapal status query error: ' . $e->getMessage());
-            return [
-                'status' => 'UNKNOWN',
-                'error' => $e->getMessage(),
-            ];
+            return ['status' => 'UNKNOWN', 'error' => $e->getMessage()];
         }
-    }    /**
-     * Normalize Pesapal API 3.0 response to standard format.
-     */
-    protected function normalizeResponse(array $pesapalResponse): array
+    }
+
+    protected function normalizeResponse(array $res, string $identifier): TransactionResultDTO
     {
-        $status = strtoupper($pesapalResponse['status'] ?? ($pesapalResponse['order_tracking_status'] ?? 'PENDING'));
+        if (isset($res['error'])) {
+            return TransactionResultDTO::failure($res['error'], $res);
+        }
 
-        // Define normalized success statuses
-        $success = in_array($status, ['COMPLETED', 'PENDING']);
+        $success = in_array(strtoupper($res['status'] ?? 'PENDING'), ['COMPLETED', 'PENDING']);
 
-        return [
-            'success' => $success,
-            'status' => $status,
-            'reference' => $pesapalResponse['order_tracking_id'] ?? $pesapalResponse['reference'] ?? null,
-            'merchant_reference' => $pesapalResponse['merchant_reference'] ?? null,
-            'redirect_url' => $pesapalResponse['redirect_url'] ?? null,
-            'error_message' => $success ? null : ($pesapalResponse['error'] ?? ($pesapalResponse['payment_status_description'] ?? 'Payment processing failed')),
-            'raw' => $pesapalResponse,
-        ];
+        return TransactionResultDTO::success(
+            transactionId: $res['order_tracking_id'] ?? '',
+            merchantReference: $res['merchant_reference'] ?? $identifier,
+            redirectUrl: $res['redirect_url'] ?? null,
+            status: $res['status'] ?? 'PENDING',
+            message: $success ? 'Payment initiated' : 'Payment failed',
+            rawResponse: $res
+        );
+    }
+
+    protected function normalizeError(string $errorCode, string $message): TransactionResultDTO
+    {
+        return TransactionResultDTO::failure($message, ['error_code' => $errorCode]);
     }
 
     /**
-     * Normalize error response to standard format.
+     * Refund a previously processed payment.
      */
-    protected function normalizeError(string $errorCode, string $message): array
+    public function refund(string $transactionId, float $amount, string $reason = ''): TransactionResultDTO
     {
-        // Map internal error codes to expected status strings for tests and callers
-        $map = [
-            'authentication_failed' => 'authentication_failed',
-            'http_error' => 'authentication_failed',
-            'ipn_failed' => 'FAILED',
-            'transaction_failed' => 'FAILED',
-            'not_implemented' => 'not_implemented',
-            'unknown_error' => 'UNKNOWN',
-        ];
+        try {
+            $token = $this->getJwtToken();
+            if (!$token) {
+                return $this->normalizeError('authentication_failed', 'Failed to obtain JWT token');
+            }
 
-        $status = $map[$errorCode] ?? strtoupper($errorCode);
+            /** @var \Illuminate\Http\Client\Response $response */
+            $response = Http::asJson()->withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+            ])->post(
+                $this->apiBase . '/Transactions/RefundRequest',
+                [
+                    'order_tracking_id' => $transactionId,
+                    'amount' => (string) $amount,
+                    'username' => config('app.name', 'Dadisi Community Labs'),
+                    'remarks' => $reason ?: 'Refund requested per customer request',
+                ]
+            );
 
-        return [
-            'success' => false,
-            'status' => $status,
-            'reference' => null,
-            'merchant_reference' => null,
-            'redirect_url' => null,
-            'error_message' => $message,
-            'raw' => ['error_code' => $errorCode],
-        ];
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                // PesaPal API 3.0 returns success status in the message or success boolean
+                $isSuccess = ($data['status'] ?? '') === '200' || ($data['success'] ?? false) || str_contains(strtolower($data['message'] ?? ''), 'accepted');
+
+                if ($isSuccess) {
+                    return TransactionResultDTO::success(
+                        transactionId: $data['refund_id'] ?? $transactionId,
+                        merchantReference: $transactionId,
+                        status: 'REFUNDED',
+                        message: $data['message'] ?? 'Refund processed successfully',
+                        rawResponse: $data
+                    );
+                }
+                
+                return TransactionResultDTO::failure($data['message'] ?? 'Refund request failed', $data);
+            }
+
+            return TransactionResultDTO::failure(
+                'Failed to connect to Pesapal for refund',
+                $response->json() ?? ['body' => $response->body()]
+            );
+
+        } catch (\Exception $e) {
+            \Log::error('Pesapal refund exception: ' . $e->getMessage());
+            return $this->normalizeError('unknown_error', $e->getMessage());
+        }
     }
 }

@@ -22,33 +22,36 @@ class MemberProfileTest extends TestCase
     }
 
     /**
-     * Test user can create and view their own profile
+     * Test user can update and view their own profile
      */
     public function test_user_can_create_and_view_own_profile(): void
     {
         $user = User::factory()->create();
         $county = County::first();
 
-        $profileData = [
+        // Create initial profile (simulating profile created during registration)
+        $profile = MemberProfile::create([
+            'user_id' => $user->id,
+            'county_id' => $county->id,
+            'first_name' => 'Test',
+            'last_name' => 'User',
+            'terms_accepted' => true,
+        ]);
+
+        $updateData = [
             'county_id' => $county->id,
             'phone' => '+254712345678',
             'gender' => 'male',
             'date_of_birth' => '1990-01-01',
             'occupation' => 'Software Developer',
-            'membership_type' => 'free',
-            'emergency_contact_name' => 'John Doe',
-            'emergency_contact_phone' => '+254798765432',
-            'terms_accepted' => true,
-            'marketing_consent' => false,
-            'interests' => ['technology', 'community'],
             'bio' => 'Passionate about community development',
         ];
 
         // Authenticate user
         $this->actingAs($user, 'sanctum');
 
-        // Create/update profile
-        $response = $this->postJson('/api/member-profiles', $profileData);
+        // Update profile using PUT endpoint
+        $response = $this->putJson('/api/member-profiles/' . $profile->id, $updateData);
 
         $response->assertStatus(200)
                 ->assertJson([
@@ -56,13 +59,11 @@ class MemberProfileTest extends TestCase
                     'message' => 'Profile updated successfully'
                 ]);
 
-        // Verify profile was created with first/last name parsing
-        $profile = $user->fresh()->memberProfile;
-        $this->assertNotNull($profile);
+        // Verify profile was updated
+        $profile->refresh();
         $this->assertEquals($county->id, $profile->county_id);
         $this->assertEquals('male', $profile->gender);
         $this->assertEquals('Software Developer', $profile->occupation);
-        $this->assertTrue($profile->terms_accepted);
 
         // Get own profile using show method
         $response = $this->getJson('/api/member-profiles/' . $profile->id);
@@ -71,7 +72,6 @@ class MemberProfileTest extends TestCase
                 ->assertJson([
                     'success' => true,
                 ])
-                ->assertJsonPath('data.user.name', $user->name)
                 ->assertJsonPath('data.county.name', $county->name);
     }
 
@@ -83,8 +83,8 @@ class MemberProfileTest extends TestCase
         $admin = User::where('email', 'admin@dadisilab.com')->first();
 
         // Create some test profiles
-        $user1 = User::factory()->create(['name' => 'John Smith']);
-        $user2 = User::factory()->create(['name' => 'Jane Doe']);
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
 
         $county = County::first();
 
@@ -123,7 +123,7 @@ class MemberProfileTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
-                        'user' => ['name', 'email'],
+                        'user' => ['email'],
                         'county' => ['name'],
                         'first_name',
                         'last_name',
@@ -204,7 +204,7 @@ class MemberProfileTest extends TestCase
     public function test_admin_can_update_other_profiles(): void
     {
         $admin = User::where('email', 'admin@dadisilab.com')->first();
-        $user = User::factory()->create(['name' => 'Test User']);
+        $user = User::factory()->create();
         $county = County::first();
 
         // Create profile for user
@@ -240,7 +240,7 @@ class MemberProfileTest extends TestCase
     }
 
     /**
-     * Test admin can delete profiles
+     * Test admin can delete user (which cascades to profile deletion)
      */
     public function test_admin_can_delete_profiles(): void
     {
@@ -260,16 +260,12 @@ class MemberProfileTest extends TestCase
         // Authenticate as admin
         $this->actingAs($admin, 'sanctum');
 
-        // Delete the profile
-        $response = $this->deleteJson("/api/member-profiles/{$profile->id}");
+        // Delete the user (should cascade to profile)
+        $response = $this->deleteJson("/api/admin/users/{$user->id}");
 
-        $response->assertStatus(200)
-                ->assertJson([
-                    'success' => true,
-                    'message' => 'Profile deleted successfully'
-                ]);
+        $response->assertStatus(200);
 
-        // Verify deletion (hard delete, not soft delete)
-        $this->assertDatabaseMissing('member_profiles', ['id' => $profile->id]);
+        // Verify user is soft deleted
+        $this->assertSoftDeleted('users', ['id' => $user->id]);
     }
 }

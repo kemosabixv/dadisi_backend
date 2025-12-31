@@ -3,15 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\UserPaymentMethod;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Http\Requests\StoreUserPaymentMethodRequest;
 use App\Http\Requests\UpdateUserPaymentMethodRequest;
+use App\Services\Contracts\UserPaymentMethodServiceContract;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class UserPaymentMethodController extends Controller
 {
-    public function __construct()
+    public function __construct(private UserPaymentMethodServiceContract $paymentMethodService)
     {
         $this->middleware('auth:sanctum');
     }
@@ -41,10 +42,13 @@ class UserPaymentMethodController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $methods = UserPaymentMethod::where('user_id', $user->id)->get();
-
-        return response()->json(['success' => true, 'data' => $methods]);
+        try {
+            $methods = $this->paymentMethodService->list($request->user()->id);
+            return response()->json(['success' => true, 'data' => $methods]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve payment methods', ['error' => $e->getMessage(), 'user_id' => $request->user()->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve payment methods'], 500);
+        }
     }
 
     /**
@@ -70,24 +74,16 @@ class UserPaymentMethodController extends Controller
      *     "label": "Work phone",
      *     "is_primary": true
      *   }
-     * }
-     */
+     * }     */
     public function store(StoreUserPaymentMethodRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-
-        $user = $request->user();
-
-        $method = UserPaymentMethod::create(array_merge($validated, ['user_id' => $user->id]));
-
-        // if caller requested primary, unset other primaries
-        if (!empty($validated['is_primary'])) {
-            UserPaymentMethod::where('user_id', $user->id)->where('id', '!=', $method->id)->update(['is_primary' => false]);
-            $method->is_primary = true;
-            $method->save();
+        try {
+            $method = $this->paymentMethodService->create($request->user()->id, $request->validated());
+            return response()->json(['success' => true, 'data' => $method], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to create payment method', ['error' => $e->getMessage(), 'user_id' => $request->user()->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to create payment method'], 500);
         }
-
-        return response()->json(['success' => true, 'data' => $method], 201);
     }
 
     /**
@@ -110,21 +106,13 @@ class UserPaymentMethodController extends Controller
      */
     public function update(UpdateUserPaymentMethodRequest $request, $id): JsonResponse
     {
-        $user = $request->user();
-        $method = UserPaymentMethod::where('user_id', $user->id)->where('id', $id)->firstOrFail();
-
-        $validated = $request->validated();
-
-        $method->update($validated);
-
-        // if set primary, unset others
-        if (array_key_exists('is_primary', $validated) && $validated['is_primary']) {
-            UserPaymentMethod::where('user_id', $user->id)->where('id', '!=', $method->id)->update(['is_primary' => false]);
-            $method->is_primary = true;
-            $method->save();
+        try {
+            $method = $this->paymentMethodService->update($request->user()->id, $id, $request->validated());
+            return response()->json(['success' => true, 'data' => $method]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update payment method', ['error' => $e->getMessage(), 'user_id' => $request->user()->id, 'method_id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update payment method'], 500);
         }
-
-        return response()->json(['success' => true, 'data' => $method]);
     }
 
     /**
@@ -140,11 +128,13 @@ class UserPaymentMethodController extends Controller
      */
     public function destroy(Request $request, $id): JsonResponse
     {
-        $user = $request->user();
-        $method = UserPaymentMethod::where('user_id', $user->id)->where('id', $id)->firstOrFail();
-        $method->delete();
-
-        return response()->json(['success' => true]);
+        try {
+            $this->paymentMethodService->delete($request->user()->id, $id);
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete payment method', ['error' => $e->getMessage(), 'user_id' => $request->user()->id, 'method_id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete payment method'], 500);
+        }
     }
 
     /**
@@ -166,15 +156,12 @@ class UserPaymentMethodController extends Controller
      */
     public function setPrimary(Request $request, $id): JsonResponse
     {
-        $user = $request->user();
-        $method = UserPaymentMethod::where('user_id', $user->id)->where('id', $id)->firstOrFail();
-
-        // unset other primary methods
-        UserPaymentMethod::where('user_id', $user->id)->update(['is_primary' => false]);
-
-        $method->is_primary = true;
-        $method->save();
-
-        return response()->json(['success' => true, 'data' => $method]);
+        try {
+            $method = $this->paymentMethodService->setPrimary($request->user()->id, $id);
+            return response()->json(['success' => true, 'data' => $method]);
+        } catch (\Exception $e) {
+            Log::error('Failed to set primary payment method', ['error' => $e->getMessage(), 'user_id' => $request->user()->id, 'method_id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to set primary payment method'], 500);
+        }
     }
 }

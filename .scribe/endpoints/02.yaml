@@ -113,7 +113,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
         deprecated: false
       last_name:
         custom: []
@@ -124,7 +124,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
         deprecated: false
       phone:
         custom: []
@@ -135,7 +135,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
         deprecated: false
       gender:
         custom: []
@@ -146,7 +146,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
         deprecated: false
       date_of_birth:
         custom: []
@@ -157,7 +157,7 @@ endpoints:
         type: date
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
         deprecated: false
       occupation:
         custom: []
@@ -168,7 +168,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
         deprecated: false
       membership_type:
         custom: []
@@ -179,7 +179,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
         deprecated: false
       emergency_contact_name:
         custom: []
@@ -190,7 +190,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
         deprecated: false
       emergency_contact_phone:
         custom: []
@@ -201,7 +201,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
         deprecated: false
       terms_accepted:
         custom: []
@@ -236,7 +236,7 @@ endpoints:
         type: 'string[]'
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
         deprecated: false
       bio:
         custom: []
@@ -247,7 +247,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: true
+        nullable: false
         deprecated: false
     cleanBodyParameters:
       county_id: 47
@@ -562,149 +562,6 @@ endpoints:
         exampleWasSpecified: true
         nullable: false
         deprecated: false
-      phone_number:
-        custom: []
-        name: phone_number
-        description: 'Must not be greater than 15 characters.'
-        required: false
-        example: 'n'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      gender:
-        custom: []
-        name: gender
-        description: 'optional Gender.'
-        required: false
-        example: female
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: true
-        deprecated: false
-      date_of_birth:
-        custom: []
-        name: date_of_birth
-        description: 'Must be a valid date. Must be a date before <code>today</code>.'
-        required: false
-        example: '2022-01-15'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      sub_county:
-        custom: []
-        name: sub_county
-        description: 'Must not be greater than 50 characters.'
-        required: false
-        example: 'n'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      ward:
-        custom: []
-        name: ward
-        description: 'Must not be greater than 50 characters.'
-        required: false
-        example: g
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      occupation:
-        custom: []
-        name: occupation
-        description: 'optional New occupation.'
-        required: false
-        example: 'Project Manager'
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: true
-        deprecated: false
-      membership_type:
-        custom: []
-        name: membership_type
-        description: ''
-        required: false
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      emergency_contact_name:
-        custom: []
-        name: emergency_contact_name
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: 'n'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      emergency_contact_phone:
-        custom: []
-        name: emergency_contact_phone
-        description: 'Must not be greater than 15 characters.'
-        required: false
-        example: g
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      terms_accepted:
-        custom: []
-        name: terms_accepted
-        description: ''
-        required: false
-        example: false
-        type: boolean
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      marketing_consent:
-        custom: []
-        name: marketing_consent
-        description: ''
-        required: false
-        example: true
-        type: boolean
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      interests:
-        custom: []
-        name: interests
-        description: ''
-        required: false
-        example: null
-        type: object
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      bio:
-        custom: []
-        name: bio
-        description: 'optional Biography.'
-        required: false
-        example: 'Updated bio text.'
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: true
-        deprecated: false
       phone:
         custom: []
         name: phone
@@ -716,21 +573,45 @@ endpoints:
         exampleWasSpecified: true
         nullable: false
         deprecated: false
+      gender:
+        custom: []
+        name: gender
+        description: 'optional Gender.'
+        required: false
+        example: female
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      occupation:
+        custom: []
+        name: occupation
+        description: 'optional New occupation.'
+        required: false
+        example: 'Project Manager'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      bio:
+        custom: []
+        name: bio
+        description: 'optional Biography.'
+        required: false
+        example: 'Updated bio text.'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
     cleanBodyParameters:
       county_id: 1
-      phone_number: 'n'
-      gender: female
-      date_of_birth: '2022-01-15'
-      sub_county: 'n'
-      ward: g
-      occupation: 'Project Manager'
-      membership_type: 16
-      emergency_contact_name: 'n'
-      emergency_contact_phone: g
-      terms_accepted: false
-      marketing_consent: true
-      bio: 'Updated bio text.'
       phone: '+254712345678'
+      gender: female
+      occupation: 'Project Manager'
+      bio: 'Updated bio text.'
     fileParameters: []
     responses:
       -

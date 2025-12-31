@@ -3,13 +3,14 @@
 namespace App\Jobs;
 
 use App\Models\WebhookEvent;
-use App\Services\PesapalService;
+use App\Services\Contracts\PaymentServiceContract;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use App\Services\Payments\MockPaymentService;
 
 class ProcessWebhookJob implements ShouldQueue
 {
@@ -25,7 +26,7 @@ class ProcessWebhookJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(PesapalService $pesapalService): void
+    public function handle(PaymentServiceContract $paymentService): void
     {
         $webhookEvent = WebhookEvent::find($this->webhookEventId);
 
@@ -44,15 +45,15 @@ class ProcessWebhookJob implements ShouldQueue
             ]);
 
             if ($provider === 'pesapal') {
-                $result = $pesapalService->processWebhook($payload);
+                $result = $paymentService->handleWebhook($payload);
                 
                 $webhookEvent->update([
                     'status' => 'processed',
                     'processed_at' => now(),
-                    'error' => $result['status'] === 'payment_not_found' ? 'Payment not found' : null,
+                    'error' => ($result['status'] ?? '') === 'error' ? ($result['message'] ?? 'Processing failed') : null,
                 ]);
             } elseif ($provider === 'mock') {
-                $result = \App\Services\MockPaymentService::processGenericWebhook($payload);
+                $result = MockPaymentService::processGenericWebhook($payload);
                 
                 $webhookEvent->update([
                     'status' => 'processed',

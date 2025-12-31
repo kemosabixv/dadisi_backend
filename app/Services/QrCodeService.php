@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Registration;
+use App\Models\EventRegistration;
 use App\Models\Event;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -21,7 +21,7 @@ class QrCodeService
     /**
      * Generate the QR code image and return the storage path.
      */
-    public function generateQrCode(Registration $registration): string
+    public function generateQrCode(EventRegistration $registration): string
     {
         $token = $registration->qr_code_token ?? $this->generateQrToken();
         
@@ -29,12 +29,12 @@ class QrCodeService
             $registration->update(['qr_code_token' => $token]);
         }
 
-        $qrImage = QrCode::format('png')
+        $qrImage = QrCode::format('svg')
             ->size(300)
             ->errorCorrection('H')
             ->generate($token);
 
-        $path = 'events/tickets/qr-' . $registration->confirmation_code . '.png';
+        $path = 'events/tickets/qr-' . $registration->confirmation_code . '.svg';
         Storage::disk('public')->put($path, $qrImage);
 
         $registration->update(['qr_code_path' => $path]);
@@ -47,14 +47,30 @@ class QrCodeService
      */
     public function getAttendanceStats(Event $event): array
     {
-        $total = $event->registrations()->whereIn('status', ['confirmed', 'attended'])->count();
-        $attended = $event->registrations()->where('status', 'attended')->count();
+        $regTotal = $event->registrations()->whereIn('status', ['confirmed', 'attended'])->count();
+        $regAttended = $event->registrations()->where('status', 'attended')->count();
+
+        $orderTotal = $event->orders()->where('status', 'paid')->count();
+        $orderAttended = $event->orders()->whereNotNull('checked_in_at')->count();
         
+        $total = $regTotal + $orderTotal;
+        $attended = $regAttended + $orderAttended;
+
         return [
             'total_registered' => $total,
             'attended' => $attended,
             'remaining' => $total - $attended,
             'percentage' => $total > 0 ? round(($attended / $total) * 100, 2) : 0,
+            'breakdown' => [
+                'registrations' => [
+                    'total' => $regTotal,
+                    'attended' => $regAttended,
+                ],
+                'orders' => [
+                    'total' => $orderTotal,
+                    'attended' => $orderAttended,
+                ]
+            ]
         ];
     }
 }

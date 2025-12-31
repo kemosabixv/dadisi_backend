@@ -4,10 +4,11 @@ namespace Tests\Unit\Models;
 
 use App\Models\SystemSetting;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class SystemSettingTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_casts_boolean_values_correctly()
     {
         $setting = new SystemSetting(['type' => 'boolean']);
@@ -25,7 +26,7 @@ class SystemSettingTest extends TestCase
         $this->assertFalse($setting->value);
     }
 
-    /** @test */
+    #[Test]
     public function it_casts_integer_values_correctly()
     {
         $setting = new SystemSetting(['type' => 'integer']);
@@ -34,7 +35,7 @@ class SystemSettingTest extends TestCase
         $this->assertEquals(123, $setting->value);
     }
 
-    /** @test */
+    #[Test]
     public function it_casts_float_values_correctly()
     {
         $setting = new SystemSetting(['type' => 'float']);
@@ -43,7 +44,7 @@ class SystemSettingTest extends TestCase
         $this->assertEquals(123.45, $setting->value);
     }
 
-    /** @test */
+    #[Test]
     public function it_casts_json_values_correctly()
     {
         $setting = new SystemSetting(['type' => 'json']);

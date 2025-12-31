@@ -3,20 +3,22 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\Contracts\MenuServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Services\UIPermissionService;
 
 /**
  * @group Admin - Dashboard
  */
 class AdminMenuController extends Controller
 {
+    public function __construct(private MenuServiceContract $menuService) {}
+
     /**
      * Get Authorized Admin Menu
      *
      * Retrieves the list of navigation menu items accessible to the currently authenticated user.
-     * Delegates logic to UIPermissionService to ensure consistency with user profile capability data.
+     * Delegates logic to MenuService to ensure consistency with user profile capability data.
      *
      * @authenticated
      * @response 200 {
@@ -32,15 +34,16 @@ class AdminMenuController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
-        
-        // Delegate to the shared service to verify permissions and build the menu
-        $service = new UIPermissionService($user);
-        $menu = $service->getAuthorizedMenu();
+        try {
+            $menu = $this->menuService->getAdminMenu($request->user());
 
-        return response()->json([
-            'success' => true,
-            'data' => $menu,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $menu,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to retrieve admin menu', ['error' => $e->getMessage(), 'user_id' => $request->user()?->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve menu'], 500);
+        }
     }
 }

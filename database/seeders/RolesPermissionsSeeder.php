@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RolesPermissionsSeeder extends Seeder
 {
@@ -91,6 +90,7 @@ class RolesPermissionsSeeder extends Seeder
             'lock_threads',
             'pin_threads',
             'delete_any_thread',
+            'delete_any_forum_post',
             'ban_forum_users',
             'mute_forum_users',
             'view_forum_reports',
@@ -113,6 +113,14 @@ class RolesPermissionsSeeder extends Seeder
             // Group Management
             'manage_groups',
             'manage_group_members',
+
+            // Student Approvals
+            'view_student_approvals',
+            'approve_student_approvals',
+            'reject_student_approvals',
+
+            // Retention Settings
+            'manage_retention_settings',
         ];
 
         foreach ($permissions as $permission) {
@@ -133,16 +141,23 @@ class RolesPermissionsSeeder extends Seeder
                 'refresh_exchange_rates', 'configure_exchange_rates',
                 'view_plans', 'manage_plans',
                 'view_reconciliation', 'manage_reconciliation',
-                'manage_permissions', 'manage_roles',
                 'manage_counties', 'manage_forum_tags',
                 // Lab Space Booking
                 'manage_lab_spaces', 'view_all_lab_bookings', 'approve_lab_bookings',
                 'manage_lab_maintenance', 'view_lab_reports', 'mark_lab_attendance',
+                // Forum Admin
+                'view_forum', 'create_threads', 'reply_threads', 'moderate_forum', 'lock_threads', 'pin_threads', 'delete_any_thread', 'delete_any_forum_post', 'manage_forum_categories', 'manage_forum_tags',
+                // Student Approvals
+                'view_student_approvals', 'approve_student_approvals', 'reject_student_approvals',
+                // Retention Settings
+                'manage_retention_settings',
             ],
             'finance' => [
                 'view_donation_ledger', 'export_donations', 'reconcile_payments', 'view_reports',
                 'view_exchange_rates', 'refresh_exchange_rates', 'view_plans',
                 'view_reconciliation', 'manage_reconciliation',
+                // Admin Panel Access
+                'view_audit_logs', // Often needed for finance to check transaction logs
             ],
             'events_manager' => [
                 'create_events', 'edit_events', 'delete_events', 'view_all_events', 'manage_event_attendees', 'view_reports',
@@ -160,11 +175,13 @@ class RolesPermissionsSeeder extends Seeder
                 'view_forum', 'create_threads', 'reply_threads', 'send_messages', 'view_messages',
             ],
             'moderator' => [
-                // Forum moderation role
-                'view_forum', 'create_threads', 'reply_threads', 'send_messages', 'view_messages',
+                'view_forum', 'create_threads', 'reply_threads',
                 'moderate_forum', 'lock_threads', 'pin_threads', 'delete_any_thread',
-                'ban_forum_users', 'mute_forum_users', 'view_forum_reports',
-                'manage_groups', 'manage_group_members',
+            ],
+            'forum_moderator' => [
+                'view_forum', 'create_threads', 'reply_threads', 'send_messages', 'view_messages',
+                'moderate_forum', 'lock_threads', 'pin_threads', 'delete_any_thread', 'delete_any_forum_post',
+                'manage_forum_categories', 'manage_forum_tags', 'manage_groups', 'manage_group_members',
             ],
             'lab_manager' => [
                 // Lab space management role (not full admin)
@@ -173,20 +190,35 @@ class RolesPermissionsSeeder extends Seeder
             ],
         ];
 
-        // Create roles and assign permissions
-        foreach ($rolePermissions as $roleName => $rolePerms) {
-            $role = Role::firstOrCreate(['name' => $roleName]);
+        // Create roles and assign permissions for both guards
+        $guards = ['web', 'api'];
 
-            if ($roleName === 'super_admin') {
-                // Super admin gets all permissions
-                $role->givePermissionTo(Permission::all());
-            } else {
-                // Assign specific permissions to role
-                $role->givePermissionTo($rolePerms);
+        foreach ($guards as $guard) {
+            foreach ($rolePermissions as $roleName => $rolePerms) {
+                // Ensure permission exists for this guard
+                foreach ($rolePerms as $permName) {
+                    Permission::firstOrCreate(['name' => $permName, 'guard_name' => $guard]);
+                }
+
+                if ($roleName === 'super_admin') {
+                    // Super admin gets all permissions for this guard
+                    // Need to make sure they are created for this guard first
+                    foreach ($permissions as $permission) {
+                        Permission::firstOrCreate(['name' => $permission, 'guard_name' => $guard]);
+                    }
+                }
+
+                $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => $guard]);
+
+                if ($roleName === 'super_admin') {
+                    $role->givePermissionTo(Permission::where('guard_name', $guard)->get());
+                } else {
+                    $role->givePermissionTo($rolePerms);
+                }
             }
         }
 
         $this->command->info('Roles and permissions seeded successfully!');
-        $this->command->info('Available roles: ' . implode(', ', array_keys($rolePermissions)));
+        $this->command->info('Available roles: '.implode(', ', array_keys($rolePermissions)));
     }
 }

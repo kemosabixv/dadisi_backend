@@ -2,26 +2,24 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\EventException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\RegistrationResource;
 use App\Models\Event;
-use App\Models\Registration;
+use App\Models\EventRegistration;
 use App\Models\Ticket;
-use App\Services\EventService;
-use App\Services\QrCodeService;
+use App\Services\Contracts\EventRegistrationServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class RegistrationController extends Controller
 {
-    protected $eventService;
-    protected $qrCodeService;
-
-    public function __construct(EventService $eventService, QrCodeService $qrCodeService)
-    {
-        $this->eventService = $eventService;
-        $this->qrCodeService = $qrCodeService;
+    public function __construct(
+        private EventRegistrationServiceContract $registrationService
+    ) {
         $this->middleware('auth:sanctum');
     }
 
@@ -47,29 +45,48 @@ class RegistrationController extends Controller
      *   }
      * }
      */
-    public function store(Request $request, Event $event)
+    public function store(Request $request, Event $event): JsonResponse
     {
-        $user = Auth::user();
-
-        $validated = $request->validate([
-            'ticket_id' => 'required|exists:tickets,id',
-            'additional_data' => 'nullable|array',
-        ]);
-
-        $ticket = Ticket::findOrFail($validated['ticket_id']);
-
-        // Block RSVP for paid tickets - users must use the purchase flow for those
-        if ($ticket->price > 0) {
-            return response()->json([
-                'message' => 'This event requires a ticket purchase. Please complete the checkout process.'
-            ], Response::HTTP_PAYMENT_REQUIRED);
-        }
-
         try {
-            $registration = $this->eventService->registerUser($event, $user, $ticket, $validated['additional_data'] ?? []);
-            return new RegistrationResource($registration->load(['event', 'ticket', 'user']));
+            $user = Auth::user();
+
+            $validated = $request->validate([
+                'ticket_id' => 'required|exists:tickets,id',
+                'additional_data' => 'nullable|array',
+            ]);
+
+            $ticket = Ticket::findOrFail($validated['ticket_id']);
+
+            // Block RSVP for paid tickets - users must use the purchase flow for those
+            if ($ticket->price > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This event requires a ticket purchase. Please complete the checkout process.'
+                ], Response::HTTP_PAYMENT_REQUIRED);
+            }
+
+            $registration = $this->registrationService->registerUser(
+                $user, 
+                $event, 
+                $validated
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => new RegistrationResource($registration->load(['event', 'ticket', 'user']))
+            ], Response::HTTP_CREATED);
+        } catch (EventException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], Response::HTTP_FORBIDDEN);
+            Log::error('Failed to register for event', [
+                'error' => $e->getMessage(), 
+                'event_id' => $event->id, 
+                'user_id' => Auth::id()
+            ]);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Registration failed: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -91,108 +108,52 @@ class RegistrationController extends Controller
      *   ]
      * }
      */
-    public function myRegistrations()
+    public function myRegistrations(): JsonResponse
     {
-        $registrations = Auth::user()->registrations()
-            ->with(['event', 'ticket'])
-            ->latest()
-            ->paginate();
+        try {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            
+            $registrations = $user->registrations()
+                ->with(['event', 'ticket'])
+                ->latest()
+                ->paginate();
 
-        return RegistrationResource::collection($registrations);
+            return response()->json(['success' => true, 'data' => RegistrationResource::collection($registrations)]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to fetch registrations', ['error' => $e->getMessage(), 'user_id' => Auth::id()]);
+            return response()->json(['success' => false, 'message' => 'Failed to fetch registrations'], 500);
+        }
     }
 
-    /**
-     * Scan QR Code for Check-in
-     * 
-     * @group Registrations
-     * @groupDescription Organizer-only endpoint to check in attendees via QR scan
-     */
-    public function scan(Request $request, Event $event)
+    public function destroy(EventRegistration $registration): JsonResponse
     {
-        $this->authorize('update', $event);
+        try {
+            $user = Auth::user();
 
-        $validated = $request->validate([
-            'token' => 'required|string',
-        ]);
+            // Authorization check
+            if ($registration->user_id !== $user->getAuthIdentifier()) {
+                $this->authorize('delete', $registration->event);
+            }
 
-        $registration = Registration::where('event_id', $event->id)
-            ->where('qr_code_token', $validated['token'])
-            ->first();
+            $this->registrationService->cancelRegistration($user, $registration->event);
 
-        if (!$registration) {
-            return response()->json(['message' => 'Invalid ticket token.'], Response::HTTP_NOT_FOUND);
+            return response()->json([
+                'success' => true, 
+                'message' => 'Registration cancelled successfully.'
+            ]);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to cancel registration', [
+                'error' => $e->getMessage(), 
+                'registration_id' => $registration->id, 
+                'user_id' => Auth::id()
+            ]);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Cancellation failed.'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        if ($registration->status === 'attended') {
-            return response()->json(['message' => 'User already checked in.', 'registration' => new RegistrationResource($registration)], Response::HTTP_CONFLICT);
-        }
-
-        if ($registration->status !== 'confirmed') {
-            return response()->json(['message' => 'Ticket is not confirmed (Status: ' . $registration->status . ').'], Response::HTTP_FORBIDDEN);
-        }
-
-        $registration->update([
-            'status' => 'attended',
-            'check_in_at' => now(),
-        ]);
-
-        return response()->json([
-            'message' => 'Check-in successful!',
-            'registration' => new RegistrationResource($registration->load('user'))
-        ]);
-    }
-
-    /**
-     * Manual Check-in
-     * 
-     * @group Registrations
-     */
-    public function checkIn(Request $request, Event $event, Registration $registration)
-    {
-        $this->authorize('update', $event);
-
-        if ($registration->event_id !== $event->id) {
-            abort(404);
-        }
-
-        $registration->update([
-            'status' => 'attended',
-            'check_in_at' => now(),
-        ]);
-
-        return response()->json(['message' => 'User checked in manually.']);
-    }
-
-    /**
-     * Cancel Registration
-     * 
-     * @group Registrations
-     */
-    public function destroy(Registration $registration)
-    {
-        if ($registration->user_id !== Auth::id()) {
-            $this->authorize('delete', $registration->event);
-        }
-
-        if ($registration->status === 'attended') {
-            return response()->json(['message' => 'Cannot cancel an already attended event.'], Response::HTTP_FORBIDDEN);
-        }
-
-        $registration->update(['status' => 'cancelled']);
-        
-        // If event has waitlist, process it
-        $this->eventService->processWaitlist($registration->event);
-        return response()->json(['message' => 'Registration cancelled.']);
-    }
-
-    /**
-     * Get Attendance Stats
-     * 
-     * @group Registrations
-     */
-    public function getAttendanceStats(Event $event)
-    {
-        $this->authorize('update', $event);
-        return response()->json($this->qrCodeService->getAttendanceStats($event));
     }
 }

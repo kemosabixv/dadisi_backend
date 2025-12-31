@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Group;
-use App\Models\ForumThread;
+use App\Services\Contracts\GroupServiceContract;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * @group County Groups
@@ -16,6 +16,9 @@ use Illuminate\Http\Request;
  */
 class GroupController extends Controller
 {
+    public function __construct(private GroupServiceContract $groupService)
+    {
+    }
     /**
      * List all county groups.
      *
@@ -49,42 +52,39 @@ class GroupController extends Controller
      *   }
      * }
      */
-    public function index(Request $request)
+    public function index(Request $request): \Illuminate\Http\JsonResponse
     {
-        $query = Group::query()
-            ->active()
-            ->with('county')
-            ->withCount('members');
+        try {
+            $filters = [
+                'search' => $request->input('search'),
+                'county_id' => $request->input('county_id'),
+            ];
+            $perPage = $request->input('per_page', 15);
 
-        if ($request->filled('county_id')) {
-            $query->where('county_id', $request->county_id);
+            $groups = $this->groupService->listGroups($filters, $perPage);
+
+            // Add is_member flag if authenticated
+            $userId = $request->user()?->id;
+            $groups->getCollection()->transform(function ($group) use ($userId) {
+                $group->is_member = $userId 
+                    ? $group->members()->where('user_id', $userId)->exists() 
+                    : false;
+                return $group;
+            });
+
+            return response()->json([
+                'data' => $groups->items(),
+                'meta' => [
+                    'current_page' => $groups->currentPage(),
+                    'last_page' => $groups->lastPage(),
+                    'per_page' => $groups->perPage(),
+                    'total' => $groups->total(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve groups', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve groups'], 500);
         }
-
-        if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
-        }
-
-        $groups = $query->orderBy('member_count', 'desc')
-            ->paginate($request->input('per_page', 15));
-
-        // Add is_member flag if authenticated
-        $userId = $request->user()?->id;
-        $groups->getCollection()->transform(function ($group) use ($userId) {
-            $group->is_member = $userId 
-                ? $group->members()->where('user_id', $userId)->exists() 
-                : false;
-            return $group;
-        });
-
-        return response()->json([
-            'data' => $groups->items(),
-            'meta' => [
-                'current_page' => $groups->currentPage(),
-                'last_page' => $groups->lastPage(),
-                'per_page' => $groups->perPage(),
-                'total' => $groups->total(),
-            ],
-        ]);
     }
 
     /**
@@ -112,49 +112,54 @@ class GroupController extends Controller
      *   }
      * }
      */
-    public function show(Request $request, string $slug)
+    public function show(Request $request, string $slug): \Illuminate\Http\JsonResponse
     {
-        $group = Group::where('slug', $slug)
-            ->active()
-            ->with(['county', 'members' => function ($query) {
+        try {
+            $group = \App\Models\Group::where('slug', $slug)->active()->firstOrFail();
+            $group->load(['county', 'members' => function ($query) {
                 $query->limit(20)->with('memberProfile:user_id,first_name,last_name,profile_picture_path');
-            }])
-            ->firstOrFail();
+            }]);
 
-        $userId = $request->user()?->id;
-        $group->is_member = $userId 
-            ? $group->members()->where('user_id', $userId)->exists() 
-            : false;
+            $userId = $request->user()?->id;
+            $group->is_member = $userId 
+                ? $group->members()->where('user_id', $userId)->exists() 
+                : false;
 
-        // Get recent discussions tagged with this county
-        $recentDiscussions = [];
-        if ($group->county_id) {
-            $recentDiscussions = ForumThread::where('county_id', $group->county_id)
-                ->with(['user:id,username', 'category:id,name,slug'])
-                ->latest()
-                ->limit(10)
-                ->get();
+            // Get recent discussions tagged with this county
+            $recentDiscussions = [];
+            if ($group->county_id) {
+                $recentDiscussions = \App\Models\ForumThread::where('county_id', $group->county_id)
+                    ->with(['user:id,username', 'category:id,name,slug'])
+                    ->latest()
+                    ->limit(10)
+                    ->get();
+            }
+
+            return response()->json([
+                'data' => [
+                    'id' => $group->id,
+                    'name' => $group->name,
+                    'slug' => $group->slug,
+                    'description' => $group->description,
+                    'image_path' => $group->image_path,
+                    'county' => $group->county,
+                    'member_count' => $group->member_count,
+                    'is_member' => $group->is_member,
+                    'members' => $group->members->map(fn($m) => [
+                        'id' => $m->id,
+                        'username' => $m->username,
+                        'profile_picture' => $m->memberProfile?->profile_picture_path,
+                        'joined_at' => $m->pivot->joined_at,
+                    ]),
+                    'recent_discussions' => $recentDiscussions,
+                ],
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Group not found'], 404);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve group', ['error' => $e->getMessage(), 'slug' => $slug]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve group'], 500);
         }
-
-        return response()->json([
-            'data' => [
-                'id' => $group->id,
-                'name' => $group->name,
-                'slug' => $group->slug,
-                'description' => $group->description,
-                'image_path' => $group->image_path,
-                'county' => $group->county,
-                'member_count' => $group->member_count,
-                'is_member' => $group->is_member,
-                'members' => $group->members->map(fn($m) => [
-                    'id' => $m->id,
-                    'username' => $m->username,
-                    'profile_picture' => $m->memberProfile?->profile_picture_path,
-                    'joined_at' => $m->pivot->joined_at,
-                ]),
-                'recent_discussions' => $recentDiscussions,
-            ],
-        ]);
     }
 
     /**
@@ -168,24 +173,35 @@ class GroupController extends Controller
      * @response 200 { "message": "Successfully joined the group." }
      * @response 422 { "message": "You are already a member of this group." }
      */
-    public function join(Request $request, string $slug)
+    public function join(Request $request, string $slug): \Illuminate\Http\JsonResponse
     {
-        $group = Group::where('slug', $slug)->active()->firstOrFail();
-        $user = $request->user();
+        try {
+            $group = \App\Models\Group::where('slug', $slug)->active()->firstOrFail();
+            $user = $request->user();
 
-        if ($group->hasMember($user)) {
-            return response()->json(['message' => 'You are already a member of this group.'], 422);
+            if ($group->hasMember($user)) {
+                return response()->json(['message' => 'You are already a member of this group.'], 422);
+            }
+
+            // Private groups require invitation - users cannot self-join
+            if ($group->is_private) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This is a private group. You must be invited to join.',
+                ], 403);
+            }
+
+            $this->groupService->joinGroup($group, $user);
+
+            return response()->json(['message' => 'Successfully joined the group.']);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Group not found'], 404);
+        } catch (\Exception $e) {
+            Log::error('Failed to join group', ['error' => $e->getMessage(), 'slug' => $slug, 'user_id' => $request->user()->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to join group'], 500);
         }
-
-        $group->members()->attach($user->id, [
-            'role' => 'member',
-            'joined_at' => now(),
-        ]);
-
-        $group->updateMemberCount();
-
-        return response()->json(['message' => 'Successfully joined the group.']);
     }
+
 
     /**
      * Leave a group
@@ -198,19 +214,25 @@ class GroupController extends Controller
      * @response 200 { "message": "Successfully left the group." }
      * @response 422 { "message": "You are not a member of this group." }
      */
-    public function leave(Request $request, string $slug)
+    public function leave(Request $request, string $slug): \Illuminate\Http\JsonResponse
     {
-        $group = Group::where('slug', $slug)->active()->firstOrFail();
-        $user = $request->user();
+        try {
+            $group = \App\Models\Group::where('slug', $slug)->active()->firstOrFail();
+            $user = $request->user();
 
-        if (!$group->hasMember($user)) {
-            return response()->json(['message' => 'You are not a member of this group.'], 422);
+            if (!$group->hasMember($user)) {
+                return response()->json(['message' => 'You are not a member of this group.'], 422);
+            }
+
+            $this->groupService->leaveGroup($group, $user);
+
+            return response()->json(['message' => 'Successfully left the group.']);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Group not found'], 404);
+        } catch (\Exception $e) {
+            Log::error('Failed to leave group', ['error' => $e->getMessage(), 'slug' => $slug, 'user_id' => $request->user()->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to leave group'], 500);
         }
-
-        $group->members()->detach($user->id);
-        $group->updateMemberCount();
-
-        return response()->json(['message' => 'Successfully left the group.']);
     }
 
     /**
@@ -227,21 +249,27 @@ class GroupController extends Controller
      *   ]
      * }
      */
-    public function members(Request $request, string $slug)
+    public function members(Request $request, string $slug): \Illuminate\Http\JsonResponse
     {
-        $group = Group::where('slug', $slug)->active()->firstOrFail();
+        try {
+            $group = \App\Models\Group::where('slug', $slug)->active()->firstOrFail();
+            $perPage = $request->input('per_page', 20);
 
-        $members = $group->members()
-            ->with('memberProfile:user_id,first_name,last_name,profile_picture_path')
-            ->paginate($request->input('per_page', 20));
+            $members = $this->groupService->listMembers($group, $perPage);
 
-        return response()->json([
-            'data' => $members->items(),
-            'meta' => [
-                'current_page' => $members->currentPage(),
-                'last_page' => $members->lastPage(),
-                'total' => $members->total(),
-            ],
-        ]);
+            return response()->json([
+                'data' => $members->items(),
+                'meta' => [
+                    'current_page' => $members->currentPage(),
+                    'last_page' => $members->lastPage(),
+                    'total' => $members->total(),
+                ],
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Group not found'], 404);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve group members', ['error' => $e->getMessage(), 'slug' => $slug]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve group members'], 500);
+        }
     }
 }

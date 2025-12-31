@@ -32,24 +32,37 @@ class PostPolicy
 
     /**
      * Determine if user can create posts
+     * 
+     * Staff: Role-based (must have create_posts permission)
+     * Subscribed Users: Feature-gated (checked in request/service)
      */
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('create_posts');
+        // Staff users: role-based check
+        if ($user->isStaffMember()) {
+            return $user->hasPermissionTo('create_posts');
+        }
+
+        // Subscribed users: feature-gating is handled in StoreAuthorPostRequest
+        // This policy method returns true; actual quota check happens in the request
+        return true;
     }
 
     /**
      * Determine if user can update a post
+     * 
+     * Staff: Can edit any post
+     * Subscribed Users: Can only edit their own posts
      */
     public function update(User $user, Post $post): bool
     {
-        // Admin can edit any post
-        if ($user->hasPermissionTo('edit_any_post')) {
+        // Staff can edit any post
+        if ($user->isStaffMember() && $user->hasPermissionTo('edit_posts')) {
             return true;
         }
 
-        // User can edit their own if they have edit permission
-        if ($user->id === $post->user_id && $user->hasPermissionTo('edit_posts')) {
+        // Subscribed users can edit only their own posts
+        if ($user->id === $post->user_id) {
             return true;
         }
 
@@ -58,16 +71,19 @@ class PostPolicy
 
     /**
      * Determine if user can delete a post
+     * 
+     * Staff: Can delete any post
+     * Subscribed Users: Can only delete their own posts
      */
     public function delete(User $user, Post $post): bool
     {
-        // Admin can delete any post
-        if ($user->hasPermissionTo('delete_any_post')) {
+        // Staff can delete any post
+        if ($user->isStaffMember() && $user->hasPermissionTo('delete_posts')) {
             return true;
         }
 
-        // User can delete their own if they have delete permission
-        if ($user->id === $post->user_id && $user->hasPermissionTo('delete_posts')) {
+        // Subscribed users can delete only their own posts
+        if ($user->id === $post->user_id) {
             return true;
         }
 

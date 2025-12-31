@@ -2,15 +2,36 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\UserException;
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Http\Requests\Api\UpdatePrivacySettingsRequest;
+use App\Services\Contracts\PublicProfileServiceContract;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * @group Public Profiles
+ *
+ * APIs for viewing and managing public member profiles and privacy settings.
+ */
 class PublicProfileController extends Controller
 {
+    public function __construct(
+        private PublicProfileServiceContract $profileService
+    ) {
+        $this->middleware('auth:sanctum')->only([
+            'getPrivacySettings',
+            'updatePrivacySettings',
+            'preview'
+        ]);
+    }
+
     /**
+     * View Public Profile
+     *
+     * Retrieves the public profile for a member by username.
+     * Only shows information the user has opted to make public.
+     *
      * @urlParam username string required The username of the member to view. Example: jane_doe
      *
      * @response 200 {
@@ -28,168 +49,189 @@ class PublicProfileController extends Controller
      *     "occupation": "Research assistant"
      *   }
      * }
+     * @response 404 {"success": false, "message": "User not found."}
+     * @response 403 {"success": false, "message": "This profile is private."}
      */
     public function show(string $username): JsonResponse
     {
-        $user = User::where('username', $username)
-            ->whereNotNull('email_verified_at')
-            ->with(['memberProfile:id,user_id,first_name,last_name,county_id,bio,interests,occupation,public_bio,public_profile_enabled,show_email,show_location,show_join_date,show_post_count,show_interests,show_occupation', 'memberProfile.county:id,name'])
-            ->withCount(['forumThreads', 'forumPosts'])
-            ->first();
+        try {
+            $profileData = $this->profileService->getPublicProfile($username);
 
-        if (!$user) {
-            return response()->json(['message' => 'User not found.'], 404);
-        }
-
-        $profile = $user->memberProfile;
-        
-        // Check if public profile is disabled
-        if ($profile && !$profile->public_profile_enabled) {
-            return response()->json(['message' => 'This profile is private.'], 403);
-        }
-
-        // Build public profile data based on privacy settings
-        $publicData = [
-            'id' => $user->id,
-            'username' => $user->username,
-            'profile_picture_url' => $user->profile_picture_url,
-        ];
-
-        // Apply privacy settings
-        if (!$profile || $profile->show_join_date) {
-            $publicData['joined_at'] = $user->created_at->toISOString();
-        }
-
-        if (!$profile || $profile->show_post_count) {
-            $publicData['thread_count'] = $user->forum_threads_count;
-            $publicData['post_count'] = $user->forum_posts_count;
-        }
-
-        if ($profile) {
-            // Public bio takes precedence over private bio
-            $publicData['bio'] = $profile->public_bio ?: ($profile->bio ?? null);
-            
-            if ($profile->show_location && $profile->county) {
-                $publicData['location'] = $profile->county->name;
-            }
-
-            if ($profile->show_interests && $profile->interests) {
-                $publicData['interests'] = $profile->interests;
-            }
-
-            if ($profile->show_occupation && $profile->occupation) {
-                $publicData['occupation'] = $profile->occupation;
-            }
-
-            if ($profile->show_email) {
-                $publicData['email'] = $user->email;
-            }
-        }
-
-        return response()->json(['data' => $publicData]);
-    }
-
-    /**
-     * Get own privacy settings.
-     * 
-     * @group Public Profiles
-     * @authenticated
-     */
-    public function getPrivacySettings(): JsonResponse
-    {
-        $user = Auth::user();
-        $profile = $user->memberProfile;
-
-        if (!$profile) {
             return response()->json([
-                'data' => [
-                    'public_profile_enabled' => true,
-                    'public_bio' => null,
-                    'show_email' => false,
-                    'show_location' => true,
-                    'show_join_date' => true,
-                    'show_post_count' => true,
-                    'show_interests' => true,
-                    'show_occupation' => false,
-                ]
+                'success' => true,
+                'data' => $profileData,
             ]);
-        }
+        } catch (UserException $e) {
+            $statusCode = $e->getCode() ?: 404;
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $statusCode);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve public profile', [
+                'error' => $e->getMessage(),
+                'username' => $username,
+            ]);
 
-        return response()->json([
-            'data' => [
-                'public_profile_enabled' => $profile->public_profile_enabled ?? true,
-                'public_bio' => $profile->public_bio,
-                'show_email' => $profile->show_email ?? false,
-                'show_location' => $profile->show_location ?? true,
-                'show_join_date' => $profile->show_join_date ?? true,
-                'show_post_count' => $profile->show_post_count ?? true,
-                'show_interests' => $profile->show_interests ?? true,
-                'show_occupation' => $profile->show_occupation ?? false,
-            ]
-        ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve profile',
+            ], 500);
+        }
     }
 
     /**
-     * Update own privacy settings.
-     * 
-     * @group Public Profiles
+     * Get Privacy Settings
+     *
+     * Retrieves the authenticated user's current privacy settings.
+     *
      * @authenticated
-     * 
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": {
+     *     "public_profile_enabled": true,
+     *     "public_bio": null,
+     *     "show_email": false,
+     *     "show_location": true,
+     *     "show_join_date": true,
+     *     "show_post_count": true,
+     *     "show_interests": true,
+     *     "show_occupation": false
+     *   }
+     * }
+     */
+    public function getPrivacySettings(\Illuminate\Http\Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            $settings = $this->profileService->getPrivacySettings($user);
+
+            return response()->json([
+                'success' => true,
+                'data' => $settings,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get privacy settings', [
+                'error' => $e->getMessage(),
+                'user_id' => $request->user()?->id,
+            ]);
+            
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch privacy settings',
+            ], 500);
+        }
+    }
+
+    /**
+     * Update Privacy Settings
+     *
+     * Updates the authenticated user's privacy settings.
+     *
+     * @authenticated
+     *
      * @bodyParam public_profile_enabled boolean Enable/disable public profile.
-     * @bodyParam public_bio string Public bio text.
+     * @bodyParam public_bio string Public bio text (max 500 chars).
      * @bodyParam show_email boolean Show email on public profile.
      * @bodyParam show_location boolean Show location on public profile.
      * @bodyParam show_join_date boolean Show join date on public profile.
      * @bodyParam show_post_count boolean Show post count on public profile.
      * @bodyParam show_interests boolean Show interests on public profile.
      * @bodyParam show_occupation boolean Show occupation on public profile.
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": {
+     *     "public_profile_enabled": true,
+     *     "public_bio": "Researcher in genomics",
+     *     "show_email": false,
+     *     "show_location": true,
+     *     "show_join_date": true,
+     *     "show_post_count": true,
+     *     "show_interests": true,
+     *     "show_occupation": true
+     *   },
+     *   "message": "Privacy settings updated successfully."
+     * }
+     * @response 400 {"success": false, "message": "Please complete your profile first."}
      */
-    public function updatePrivacySettings(Request $request): JsonResponse
+    public function updatePrivacySettings(UpdatePrivacySettingsRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'public_profile_enabled' => 'sometimes|boolean',
-            'public_bio' => 'sometimes|nullable|string|max:500',
-            'show_email' => 'sometimes|boolean',
-            'show_location' => 'sometimes|boolean',
-            'show_join_date' => 'sometimes|boolean',
-            'show_post_count' => 'sometimes|boolean',
-            'show_interests' => 'sometimes|boolean',
-            'show_occupation' => 'sometimes|boolean',
-        ]);
+        try {
+            $user = $request->user();
+            $validated = $request->validated();
 
-        $user = Auth::user();
-        $profile = $user->memberProfile;
+            $settings = $this->profileService->updatePrivacySettings($user, $validated);
 
-        if (!$profile) {
-            return response()->json(['message' => 'Please complete your profile first.'], 400);
+            return response()->json([
+                'success' => true,
+                'data' => $settings,
+                'message' => 'Privacy settings updated successfully.',
+            ]);
+        } catch (UserException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getCode() ?: 400);
+        } catch (\Exception $e) {
+            Log::error('Failed to update privacy settings', [
+                'error' => $e->getMessage(),
+                'user_id' => $request->user()?->id,
+            ]);
+
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update privacy settings',
+            ], 500);
         }
-
-        $profile->update($validated);
-
-        return response()->json([
-            'data' => [
-                'public_profile_enabled' => $profile->public_profile_enabled,
-                'public_bio' => $profile->public_bio,
-                'show_email' => $profile->show_email,
-                'show_location' => $profile->show_location,
-                'show_join_date' => $profile->show_join_date,
-                'show_post_count' => $profile->show_post_count,
-                'show_interests' => $profile->show_interests,
-                'show_occupation' => $profile->show_occupation,
-            ],
-            'message' => 'Privacy settings updated successfully.',
-        ]);
     }
 
     /**
-     * Preview own public profile.
-     * 
-     * @group Public Profiles
+     * Preview Own Public Profile
+     *
+     * Shows how the authenticated user's profile appears to other users.
+     *
      * @authenticated
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": {
+     *     "id": 2,
+     *     "username": "jane_doe",
+     *     "profile_picture_url": "https://...",
+     *     "joined_at": "2025-01-15T10:30:00.000000Z",
+     *     "bio": "My public bio"
+     *   }
+     * }
      */
-    public function preview(): JsonResponse
+    public function preview(\Illuminate\Http\Request $request): JsonResponse
     {
-        $user = Auth::user();
-        return $this->show($user->username);
+        try {
+            $user = $request->user();
+            $profileData = $this->profileService->previewProfile($user);
+
+            return response()->json([
+                'success' => true,
+                'data' => $profileData,
+            ]);
+        } catch (UserException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getCode() ?: 404);
+        } catch (\Exception $e) {
+            Log::error('Failed to preview profile', [
+                'error' => $e->getMessage(),
+                'user_id' => $request->user()?->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to preview profile',
+            ], 500);
+        }
     }
 }

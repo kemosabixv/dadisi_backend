@@ -25,8 +25,19 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('forum_threads', function (Blueprint $table) {
-            $table->dropForeign(['county_id']);
-            $table->dropColumn('county_id');
+            if (Schema::hasColumn('forum_threads', 'county_id')) {
+                // Drop foreign key safely
+                if (Schema::hasIndex('forum_threads', 'forum_threads_county_id_foreign')) {
+                    $table->dropForeign('forum_threads_county_id_foreign');
+                }
+                
+                // Drop index safely
+                if (Schema::hasIndex('forum_threads', 'forum_threads_county_id_index')) {
+                    $table->dropIndex('forum_threads_county_id_index');
+                }
+                
+                $table->dropColumn('county_id');
+            }
         });
     }
 };

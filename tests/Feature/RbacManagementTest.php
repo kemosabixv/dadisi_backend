@@ -2,25 +2,27 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use Laravel\Sanctum\Sanctum;
-use Illuminate\Support\Facades\Auth;
 use Database\Seeders\RolesPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
-
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 class RbacManagementTest extends TestCase
 {
     use RefreshDatabase;
 
     private $superAdmin;
+
     private $regularAdmin;
+
     private $regularUser;
+
     private $testPermission;
+
     private $testRole;
 
     protected function setUp(): void
@@ -34,20 +36,20 @@ class RbacManagementTest extends TestCase
         $this->superAdmin = User::factory()->create([
             'email' => 'super-admin@example.com',
         ]);
-        $this->superAdmin->assignRole('super_admin');
-        $this->superAdmin = $this->superAdmin->fresh(); // Reload from database
+        $this->superAdmin->assignRole(Role::where('name', 'super_admin')->get());
+        $this->superAdmin = $this->superAdmin->fresh();
 
         $this->regularAdmin = User::factory()->create([
             'email' => 'admin@example.com',
         ]);
-        $this->regularAdmin->assignRole('admin');
-        $this->regularAdmin = $this->regularAdmin->fresh(); // Reload from database
+        $this->regularAdmin->assignRole(Role::where('name', 'admin')->get());
+        $this->regularAdmin = $this->regularAdmin->fresh();
 
         $this->regularUser = User::factory()->create([
             'email' => 'user@example.com',
         ]);
-        $this->regularUser->assignRole('member');
-        $this->regularUser = $this->regularUser->fresh(); // Reload from database
+        $this->regularUser->assignRole(Role::where('name', 'member')->get());
+        $this->regularUser = $this->regularUser->fresh();
 
         // Create test permission and role for testing
         $this->testPermission = Permission::create(['name' => 'test_permission']);
@@ -62,16 +64,16 @@ class RbacManagementTest extends TestCase
     public function super_admin_can_list_permissions()
     {
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->getJson('/api/permissions');
+            ->getJson('/api/admin/permissions');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
                 'data' => [
                     'data' => [
-                        '*' => ['id', 'name', 'guard_name', 'created_at', 'updated_at']
-                    ]
-                ]
+                        '*' => ['id', 'name', 'guard_name', 'created_at', 'updated_at'],
+                    ],
+                ],
             ])
             ->assertJson(['success' => true]);
     }
@@ -81,90 +83,20 @@ class RbacManagementTest extends TestCase
     {
         // Admin user
         $response = $this->actingAs($this->regularAdmin, 'sanctum')
-            ->getJson('/api/permissions');
+            ->getJson('/api/admin/permissions');
         $response->assertStatus(403);
 
         // Regular user
         $response = $this->actingAs($this->regularUser, 'sanctum')
-            ->getJson('/api/permissions');
+            ->getJson('/api/admin/permissions');
         $response->assertStatus(403);
 
         // Unauthenticated
-        $response = $this->getJson('/api/permissions');
+        $response = $this->getJson('/api/admin/permissions');
         $response->assertStatus(403);
     }
 
-    #[Test]
-    public function super_admin_can_create_permission()
-    {
-        $payload = [
-            'name' => 'new_test_permission'
-        ];
 
-        $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->postJson('/api/permissions', $payload);
-
-        $response->assertStatus(201)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Permission created successfully',
-            ])
-            ->assertJsonStructure([
-                'success',
-                'message',
-                'data' => ['id', 'name', 'guard_name', 'created_at', 'updated_at']
-            ]);
-
-        $this->assertDatabaseHas('permissions', ['name' => 'new_test_permission']);
-    }
-
-    #[Test]
-    public function permission_creation_validation_works()
-    {
-        // Missing name
-        $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->postJson('/api/permissions', []);
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name']);
-
-        // Duplicate name
-        $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->postJson('/api/permissions', ['name' => 'manage_users']);
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name']);
-    }
-
-    #[Test]
-    public function non_super_admin_cannot_create_permissions()
-    {
-        $payload = ['name' => 'unauthorized_permission'];
-
-        $response = $this->actingAs($this->regularAdmin, 'sanctum')
-            ->postJson('/api/permissions', $payload);
-        $response->assertStatus(403);
-
-        $this->assertDatabaseMissing('permissions', ['name' => 'unauthorized_permission']);
-    }
-
-    #[Test]
-    public function super_admin_can_update_permission()
-    {
-        $permission = Permission::where('name', 'test_permission')->first();
-
-        $payload = ['name' => 'updated_test_permission'];
-
-        $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->putJson("/api/permissions/{$permission->name}", $payload);
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Permission updated successfully',
-            ]);
-
-        $this->assertDatabaseHas('permissions', ['name' => 'updated_test_permission']);
-        $this->assertDatabaseMissing('permissions', ['name' => 'test_permission']);
-    }
 
     #[Test]
     public function super_admin_can_view_single_permission()
@@ -172,7 +104,7 @@ class RbacManagementTest extends TestCase
         $permission = Permission::where('name', 'test_permission')->first();
 
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->getJson("/api/permissions/{$permission->name}");
+            ->getJson("/api/admin/permissions/{$permission->name}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -181,43 +113,9 @@ class RbacManagementTest extends TestCase
             ->assertJsonStructure([
                 'success',
                 'data' => [
-                    'id', 'name', 'guard_name', 'created_at', 'updated_at', 'roles'
-                ]
+                    'id', 'name', 'guard_name', 'created_at', 'updated_at', 'roles',
+                ],
             ]);
-    }
-
-    #[Test]
-    public function super_admin_can_delete_unused_permission()
-    {
-        $permission = Permission::where('name', 'test_permission')->first();
-
-        $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->deleteJson("/api/permissions/{$permission->name}");
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Permission deleted successfully',
-            ]);
-
-        $this->assertDatabaseMissing('permissions', ['name' => 'test_permission']);
-    }
-
-    #[Test]
-    public function cannot_delete_permission_assigned_to_roles()
-    {
-        $permission = Permission::where('name', 'manage_users')->first(); // This is assigned to admin role
-
-        $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->deleteJson("/api/permissions/{$permission->name}");
-
-        $response->assertStatus(409)
-            ->assertJson([
-                'success' => false,
-                'message' => 'Cannot delete permission that is assigned to roles',
-            ]);
-
-        $this->assertDatabaseHas('permissions', ['name' => 'manage_users']);
     }
 
     // =====================================
@@ -228,16 +126,16 @@ class RbacManagementTest extends TestCase
     public function super_admin_can_list_roles()
     {
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->getJson('/api/roles?include_permissions=true');
+            ->getJson('/api/admin/roles?include_permissions=true');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
                 'data' => [
                     'data' => [
-                        '*' => ['id', 'name', 'guard_name', 'created_at', 'updated_at', 'permissions']
-                    ]
-                ]
+                        '*' => ['id', 'name', 'guard_name', 'created_at', 'updated_at', 'permissions'],
+                    ],
+                ],
             ]);
     }
 
@@ -245,7 +143,7 @@ class RbacManagementTest extends TestCase
     public function non_super_admin_cannot_list_roles()
     {
         Sanctum::actingAs($this->regularAdmin);
-        $response = $this->getJson('/api/roles');
+        $response = $this->getJson('/api/admin/roles');
         $response->assertStatus(403);
     }
 
@@ -255,7 +153,7 @@ class RbacManagementTest extends TestCase
         $payload = ['name' => 'new_test_role'];
 
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->postJson('/api/roles', $payload);
+            ->postJson('/api/admin/roles', $payload);
 
         $response->assertStatus(201)
             ->assertJson([
@@ -274,7 +172,7 @@ class RbacManagementTest extends TestCase
         $payload = ['name' => 'updated_test_role'];
 
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->putJson("/api/roles/{$role->name}", $payload);
+            ->putJson("/api/admin/roles/{$role->name}", $payload);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -291,7 +189,7 @@ class RbacManagementTest extends TestCase
         $role = Role::where('name', 'test_role')->first();
 
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->getJson("/api/roles/{$role->name}");
+            ->getJson("/api/admin/roles/{$role->name}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -300,18 +198,18 @@ class RbacManagementTest extends TestCase
             ->assertJsonStructure([
                 'success',
                 'data' => [
-                    'id', 'name', 'guard_name', 'created_at', 'updated_at', 'permissions', 'users_count'
-                ]
+                    'id', 'name', 'guard_name', 'created_at', 'updated_at', 'permissions', 'users_count',
+                ],
             ]);
     }
 
     #[Test]
     public function cannot_delete_role_with_assigned_users()
     {
-        $role = Role::where('name', 'member')->first(); // This has users
+        $role = Role::where('name', 'member')->where('guard_name', 'api')->first(); // This has users
 
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->deleteJson("/api/roles/{$role->name}");
+            ->deleteJson("/api/admin/roles/{$role->id}");
 
         $response->assertStatus(409)
             ->assertJson([
@@ -332,11 +230,11 @@ class RbacManagementTest extends TestCase
         $role = Role::where('name', 'test_role')->first();
 
         $payload = [
-            'permissions' => ['manage_users', 'view_all_users']
+            'permissions' => ['manage_users', 'view_all_users'],
         ];
 
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->postJson("/api/roles/{$role->name}/permissions", $payload);
+            ->postJson("/api/admin/roles/{$role->name}/permissions", $payload);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -349,8 +247,8 @@ class RbacManagementTest extends TestCase
                 'data' => [
                     'role',
                     'assigned_permissions',
-                    'current_permissions'
-                ]
+                    'current_permissions',
+                ],
             ]);
 
         // Verify permissions were assigned
@@ -368,11 +266,11 @@ class RbacManagementTest extends TestCase
 
         // Then remove them
         $payload = [
-            'permissions' => ['manage_users']
+            'permissions' => ['manage_users'],
         ];
 
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->deleteJson("/api/roles/{$role->name}/permissions", $payload);
+            ->deleteJson("/api/admin/roles/{$role->name}/permissions", $payload);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -392,12 +290,12 @@ class RbacManagementTest extends TestCase
         $role = Role::where('name', 'test_role')->first();
         // Empty permissions array
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->postJson("/api/roles/{$role->name}/permissions", ['permissions' => []]);
+            ->postJson("/api/admin/roles/{$role->name}/permissions", ['permissions' => []]);
         $response->assertStatus(422);
 
         // Invalid permission name
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->postJson("/api/roles/{$role->name}/permissions", ['permissions' => ['nonexistent_permission']]);
+            ->postJson("/api/admin/roles/{$role->name}/permissions", ['permissions' => ['nonexistent_permission']]);
         $response->assertStatus(422);
     }
 
@@ -407,19 +305,14 @@ class RbacManagementTest extends TestCase
         // Try to assign permissions to role
         $role = Role::where('name', 'test_role')->first();
         $response = $this->actingAs($this->regularAdmin, 'sanctum')
-            ->postJson("/api/roles/{$role->name}/permissions", [
-                'permissions' => ['manage_users']
+            ->postJson("/api/admin/roles/{$role->name}/permissions", [
+                'permissions' => ['manage_users'],
             ]);
-        $response->assertStatus(403);
-
-        // Try to create permission
-        $response = $this->actingAs($this->regularAdmin, 'sanctum')
-            ->postJson('/api/permissions', ['name' => 'test_perm']);
         $response->assertStatus(403);
 
         // Try to create role
         $response = $this->actingAs($this->regularAdmin, 'sanctum')
-            ->postJson('/api/roles', ['name' => 'test_role']);
+            ->postJson('/api/admin/roles', ['name' => 'test_role']);
         $response->assertStatus(403);
     }
 
@@ -428,7 +321,7 @@ class RbacManagementTest extends TestCase
     {
         // Test permission search
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->getJson('/api/permissions?search=manage');
+            ->getJson('/api/admin/permissions?search=manage');
 
         $response->assertStatus(200);
         $permissions = $response->json('data.data');
@@ -440,7 +333,7 @@ class RbacManagementTest extends TestCase
 
         // Test role search
         $response = $this->actingAs($this->superAdmin, 'sanctum')
-            ->getJson('/api/roles?search=admin');
+            ->getJson('/api/admin/roles?search=admin');
 
         $response->assertStatus(200);
         $roles = $response->json('data.data');

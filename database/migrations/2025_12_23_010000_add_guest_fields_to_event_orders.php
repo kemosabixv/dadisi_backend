@@ -43,10 +43,23 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('event_orders', function (Blueprint $table) {
-            $table->dropIndex(['qr_code_token']);
-            $table->dropForeign(['promo_code_id']);
+            // Drop index safely
+            if (Schema::hasIndex('event_orders', 'event_orders_qr_code_token_index')) {
+                $table->dropIndex('event_orders_qr_code_token_index');
+            }
+            
+            // Drop unique constraint safely
+            if (Schema::hasIndex('event_orders', 'event_orders_qr_code_token_unique')) {
+                $table->dropUnique('event_orders_qr_code_token_unique');
+            }
+            
+            // Drop foreign key safely
+            if (Schema::hasColumn('event_orders', 'promo_code_id')) {
+                $table->dropForeign(['promo_code_id']);
+            }
 
-            $table->dropColumn([
+            // Drop columns that exist
+            $columns = [
                 'guest_name',
                 'guest_email',
                 'guest_phone',
@@ -56,7 +69,13 @@ return new class extends Migration
                 'original_amount',
                 'qr_code_token',
                 'checked_in_at',
-            ]);
+            ];
+            
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('event_orders', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 };

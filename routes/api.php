@@ -7,9 +7,10 @@ use App\Http\Controllers\Api\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\Auth\RefreshTokenController;
 use App\Http\Controllers\Api\Auth\TwoFactorController;
 use App\Http\Controllers\Api\Auth\PasskeyController;
-use App\Http\Controllers\Api\AdminController;
-use App\Http\Controllers\Admin\ReconciliationController;
+use App\Http\Controllers\Api\ExchangeRateController;
+use App\Http\Controllers\Api\Admin\ReconciliationController;
 use App\Http\Controllers\Api\PublicDonationController;
+use App\Http\Controllers\Api\AuditLogController;
 
 Route::prefix('auth')->group(function () {
 	Route::post('signup', [AuthController::class, 'signup'])->middleware('throttle:5,1')->name('auth.signup');
@@ -187,10 +188,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     // Permission Management
     Route::get('permissions', [PermissionController::class, 'index']);
-    Route::post('permissions', [PermissionController::class, 'store']);
     Route::get('permissions/{permission}', [PermissionController::class, 'show']);
-    Route::put('permissions/{permission}', [PermissionController::class, 'update']);
-    Route::delete('permissions/{permission}', [PermissionController::class, 'destroy']);
 
     // Role Management
     Route::get('roles', [RoleController::class, 'index']);
@@ -213,7 +211,16 @@ use App\Http\Controllers\Api\PlanController;
 // Public: list and view active subscription plans (guest-facing)
 Route::get('plans', [PlanController::class, 'index'])->name('plans.index');
 Route::get('plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
-Route::get('exchange-rates/latest', [AdminController::class, 'getExchangeRate'])->name('exchange-rates.latest');
+
+// Exchange Rate routes (public read, admin-only write)
+Route::get('exchange-rates/latest', [ExchangeRateController::class, 'index'])->name('exchange-rates.latest');
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    Route::get('exchange-rates', [ExchangeRateController::class, 'index'])->name('admin.exchange-rates.index');
+    Route::get('exchange-rates/info', [ExchangeRateController::class, 'show'])->name('admin.exchange-rates.show');
+    Route::post('exchange-rates/refresh', [ExchangeRateController::class, 'refresh'])->name('admin.exchange-rates.refresh');
+    Route::put('exchange-rates/settings', [ExchangeRateController::class, 'updateCache'])->name('admin.exchange-rates.settings');
+    Route::put('exchange-rates/rate', [ExchangeRateController::class, 'updateManual'])->name('admin.exchange-rates.rate');
+});
 
 // Admin-only plan management (create/update/delete)
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
@@ -277,7 +284,7 @@ use App\Http\Controllers\Api\PublicPostController;
 
 Route::prefix('blog')->group(function () {
     Route::get('posts', [PublicPostController::class, 'index'])->name('blog.posts.index');
-    Route::get('posts/{post}', [PublicPostController::class, 'show'])->name('blog.posts.show');
+    Route::get('posts/{post:slug}', [PublicPostController::class, 'show'])->name('blog.posts.show');
     Route::get('categories', [PublicPostController::class, 'categories'])->name('blog.categories.index');
     Route::get('tags', [PublicPostController::class, 'tags'])->name('blog.tags.index');
 });
@@ -385,7 +392,6 @@ use App\Http\Controllers\Api\StudentApprovalController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\RenewalController;
 use App\Http\Controllers\Api\UserPaymentMethodController;
-use App\Http\Controllers\Api\Admin\AutoRenewalJobController;
 
 // Subscription routes
 Route::prefix('subscriptions')->middleware('auth:sanctum')->group(function () {
@@ -454,18 +460,8 @@ Route::prefix('payments')->group(function () {
 use App\Http\Controllers\Api\Admin\BillingController;
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {  // Policy handles super_admin checks
-    Route::get('exchange-rates', [AdminController::class, 'getExchangeRate']);
-    Route::get('exchange-rates/info', [AdminController::class, 'getExchangeRateInfo']);
-    Route::post('exchange-rates/refresh', [AdminController::class, 'refreshExchangeRate']);
-    Route::put('exchange-rates/settings', [AdminController::class, 'updateCacheSettings']);
-    Route::put('exchange-rates/rate', [AdminController::class, 'updateManualRate']);
-
-    // Auto-renewal job management (admin)
-    Route::get('auto-renewal-jobs', [AutoRenewalJobController::class, 'index'])->name('admin.auto_renewal_jobs.index');
-    Route::get('auto-renewal-jobs/{id}', [AutoRenewalJobController::class, 'show'])->name('admin.auto_renewal_jobs.show');
-    Route::post('auto-renewal-jobs/{id}/retry', [AutoRenewalJobController::class, 'retry'])->name('admin.auto_renewal_jobs.retry');
-    Route::post('auto-renewal-jobs/{id}/cancel', [AutoRenewalJobController::class, 'cancel'])->name('admin.auto_renewal_jobs.cancel');
-
+    // Exchange rate routes already defined earlier in file
+    
     // Phase 3: Reconciliation management (Finance/Admin)
     Route::prefix('reconciliation')->group(function () {
             Route::get('', [ReconciliationController::class, 'index'])->name('admin.reconciliation.index');
@@ -544,10 +540,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::put('speakers/{speaker}', [SpeakerController::class, 'update'])->name('admin.speakers.update');
     Route::delete('speakers/{speaker}', [SpeakerController::class, 'destroy'])->name('admin.speakers.destroy');
 
-    // Scanning/check-in (admin only now)
-    Route::post('events/{event}/scan', [RegistrationController::class, 'scan'])->name('admin.events.scan');
-    Route::post('events/{event}/registrations/{registration}/check-in', [RegistrationController::class, 'checkIn'])->name('admin.events.check-in');
-    Route::get('events/{event}/attendance-stats', [RegistrationController::class, 'getAttendanceStats'])->name('admin.events.attendance-stats');
+    // Attendance Tracking (Unified for RSVPs and Paid Tickets)
+    Route::get('events/{event}/attendance', [\App\Http\Controllers\Api\Admin\AdminEventAttendanceController::class, 'attendees'])->name('admin.events.attendance.list');
+    Route::get('events/{event}/attendance/stats', [\App\Http\Controllers\Api\Admin\AdminEventAttendanceController::class, 'stats'])->name('admin.events.attendance.stats');
+    Route::post('events/{event}/attendance/scan', [\App\Http\Controllers\Api\Admin\AdminEventAttendanceController::class, 'scan'])->name('admin.events.attendance.scan');
 });
 
 
@@ -636,6 +632,25 @@ Route::prefix('forum')->group(function () {
     Route::get('users', [\App\Http\Controllers\Api\ForumUserController::class, 'index'])->name('forum.users.index');
 });
 
+// Support Ticket Routes
+use App\Http\Controllers\Api\SupportTicketController;
+use App\Http\Controllers\Api\Admin\AdminSupportTicketController;
+
+Route::prefix('support')->middleware('auth:sanctum')->group(function () {
+    Route::get('tickets', [SupportTicketController::class, 'index'])->name('support.tickets.index');
+    Route::post('tickets', [SupportTicketController::class, 'store'])->name('support.tickets.store');
+    Route::get('tickets/{id}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
+    Route::post('tickets/{id}/responses', [SupportTicketController::class, 'addResponse'])->name('support.tickets.responses.store');
+});
+
+Route::prefix('admin/support')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('tickets', [AdminSupportTicketController::class, 'index'])->name('admin.support.tickets.index');
+    Route::get('tickets/{id}', [AdminSupportTicketController::class, 'show'])->name('admin.support.tickets.show');
+    Route::post('tickets/{id}/responses', [AdminSupportTicketController::class, 'addResponse'])->name('admin.support.tickets.responses.store');
+    Route::post('tickets/{id}/assign', [AdminSupportTicketController::class, 'assign'])->name('admin.support.tickets.assign');
+    Route::patch('tickets/{id}/status', [AdminSupportTicketController::class, 'updateStatus'])->name('admin.support.tickets.status');
+});
+
 // Public Profile Routes
 use App\Http\Controllers\Api\PublicProfileController;
 
@@ -652,8 +667,8 @@ Route::middleware('auth:sanctum')->group(function () {
 // Lab Space Booking Routes
 use App\Http\Controllers\Api\LabSpaceController;
 use App\Http\Controllers\Api\LabBookingController;
-use App\Http\Controllers\Admin\AdminLabSpaceController;
-use App\Http\Controllers\Admin\AdminLabBookingController;
+use App\Http\Controllers\Api\Admin\AdminLabSpaceController;
+use App\Http\Controllers\Api\Admin\AdminLabBookingController;
 
 // Public lab space routes (anyone can browse)
 Route::prefix('spaces')->group(function () {
@@ -691,11 +706,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::get('lab-bookings/stats', [AdminLabBookingController::class, 'stats'])->name('admin.lab-bookings.stats');
 
     // Lab Maintenance Blocks
-    Route::get('lab-maintenance', [\App\Http\Controllers\Admin\AdminLabMaintenanceController::class, 'index'])->name('admin.lab-maintenance.index');
-    Route::post('lab-maintenance', [\App\Http\Controllers\Admin\AdminLabMaintenanceController::class, 'store'])->name('admin.lab-maintenance.store');
-    Route::get('lab-maintenance/{id}', [\App\Http\Controllers\Admin\AdminLabMaintenanceController::class, 'show'])->name('admin.lab-maintenance.show');
-    Route::put('lab-maintenance/{id}', [\App\Http\Controllers\Admin\AdminLabMaintenanceController::class, 'update'])->name('admin.lab-maintenance.update');
-    Route::delete('lab-maintenance/{id}', [\App\Http\Controllers\Admin\AdminLabMaintenanceController::class, 'destroy'])->name('admin.lab-maintenance.destroy');
+    Route::get('lab-maintenance', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'index'])->name('admin.lab-maintenance.index');
+    Route::post('lab-maintenance', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'store'])->name('admin.lab-maintenance.store');
+    Route::get('lab-maintenance/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'show'])->name('admin.lab-maintenance.show');
+    Route::put('lab-maintenance/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'update'])->name('admin.lab-maintenance.update');
+    Route::delete('lab-maintenance/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'destroy'])->name('admin.lab-maintenance.destroy');
 
     // Forum Stats
     Route::get('forum/stats', [\App\Http\Controllers\Api\Admin\ForumStatsController::class, 'index'])->name('admin.forum.stats');
@@ -740,3 +755,129 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('events/{event}/scan-ticket', [EventOrderController::class, 'scanTicket'])->name('event-orders.scan');
 });
 
+Route::prefix('admin/audit-logs')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('/', [AuditLogController::class, 'index'])->name('admin.audit-logs.index');
+    Route::get('/{auditLog}', [AuditLogController::class, 'show'])->name('admin.audit-logs.show');
+    Route::get('/model-history', [AuditLogController::class, 'getModelAuditLog'])->name('admin.audit-logs.model-history');
+    Route::get('/user-actions', [AuditLogController::class, 'getUserAuditLog'])->name('admin.audit-logs.user-actions');
+});
+
+// ============================================================================
+// BLOG ROUTES
+// ============================================================================
+
+// Public Blog (unauthenticated)
+Route::prefix('blog')->group(function () {
+    Route::get('posts', [\App\Http\Controllers\Api\PublicPostController::class, 'index'])->name('blog.posts.index');
+    Route::get('posts/{identifier}', [\App\Http\Controllers\Api\PublicPostController::class, 'show'])->name('blog.posts.show');
+    Route::get('categories', [\App\Http\Controllers\Api\PublicPostController::class, 'categories'])->name('blog.categories.index');
+    Route::get('tags', [\App\Http\Controllers\Api\PublicPostController::class, 'tags'])->name('blog.tags.index');
+});
+
+// Author/Subscriber Blog Routes (authenticated)
+Route::prefix('author')->middleware('auth:sanctum')->group(function () {
+    Route::get('posts', [\App\Http\Controllers\Api\AuthorPostController::class, 'index'])->name('author.posts.index');
+    Route::get('posts/create', [\App\Http\Controllers\Api\AuthorPostController::class, 'create'])->name('author.posts.create');
+    Route::post('posts', [\App\Http\Controllers\Api\AuthorPostController::class, 'store'])->name('author.posts.store');
+    Route::get('posts/{slug}', [\App\Http\Controllers\Api\AuthorPostController::class, 'show'])->name('author.posts.show');
+    Route::get('posts/{slug}/edit', [\App\Http\Controllers\Api\AuthorPostController::class, 'edit'])->name('author.posts.edit');
+    Route::put('posts/{slug}', [\App\Http\Controllers\Api\AuthorPostController::class, 'update'])->name('author.posts.update');
+    Route::delete('posts/{slug}', [\App\Http\Controllers\Api\AuthorPostController::class, 'destroy'])->name('author.posts.destroy');
+    Route::post('posts/{slug}/restore', [\App\Http\Controllers\Api\AuthorPostController::class, 'restore'])->name('author.posts.restore');
+    Route::post('posts/{slug}/publish', [\App\Http\Controllers\Api\AuthorPostController::class, 'publish'])->name('author.posts.publish');
+    Route::post('posts/{slug}/unpublish', [\App\Http\Controllers\Api\AuthorPostController::class, 'unpublish'])->name('author.posts.unpublish');
+});
+
+// Subscriber Tag/Category Routes (authenticated, can create/update own)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('tags', [\App\Http\Controllers\Api\TagAdminController::class, 'store'])->name('tags.store');
+    Route::put('tags/{tag}', [\App\Http\Controllers\Api\TagAdminController::class, 'update'])->name('tags.update');
+    Route::delete('tags/{tag}', [\App\Http\Controllers\Api\TagAdminController::class, 'destroy'])->name('tags.destroy');
+
+    Route::post('categories', [\App\Http\Controllers\Api\CategoryAdminController::class, 'store'])->name('categories.store');
+    Route::put('categories/{category}', [\App\Http\Controllers\Api\CategoryAdminController::class, 'update'])->name('categories.update');
+    Route::delete('categories/{category}', [\App\Http\Controllers\Api\CategoryAdminController::class, 'destroy'])->name('categories.destroy');
+});
+
+// Admin Blog Routes (staff only)
+Route::prefix('admin/blog')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('posts', [\App\Http\Controllers\Api\PostAdminController::class, 'index'])->name('admin.posts.index');
+    Route::get('posts/{id}', [\App\Http\Controllers\Api\PostAdminController::class, 'show'])->name('admin.posts.show');
+    Route::put('posts/{id}', [\App\Http\Controllers\Api\PostAdminController::class, 'update'])->name('admin.posts.update');
+    Route::delete('posts/{id}', [\App\Http\Controllers\Api\PostAdminController::class, 'destroy'])->name('admin.posts.destroy');
+    Route::post('posts/{id}/publish', [\App\Http\Controllers\Api\PostAdminController::class, 'publish'])->name('admin.posts.publish');
+    Route::post('posts/{id}/unpublish', [\App\Http\Controllers\Api\PostAdminController::class, 'unpublish'])->name('admin.posts.unpublish');
+    Route::post('posts/{id}/restore', [\App\Http\Controllers\Api\PostAdminController::class, 'restore'])->name('admin.posts.restore');
+
+    // Tag/Category Admin with affected posts check (Note: these might need to be in admin/blog too)
+    Route::get('tags/{tag}/affected-posts', [\App\Http\Controllers\Api\TagAdminController::class, 'affectedPosts'])->name('admin.tags.affected-posts');
+    Route::get('categories/{category}/affected-posts', [\App\Http\Controllers\Api\CategoryAdminController::class, 'affectedPosts'])->name('admin.categories.affected-posts');
+});
+
+// Forum API Routes
+Route::prefix('forum')->group(function () {
+    // Categories
+    Route::get('categories', [\App\Http\Controllers\Api\ForumCategoryController::class, 'index'])->name('forum.categories.index');
+    Route::get('categories/{category}', [\App\Http\Controllers\Api\ForumCategoryController::class, 'show'])->name('forum.categories.show');
+    
+    // Threads - list all or filter by category
+    Route::get('threads', [\App\Http\Controllers\Api\ForumThreadController::class, 'index'])->name('forum.threads.index');
+    Route::get('categories/{category}/threads', [\App\Http\Controllers\Api\ForumThreadController::class, 'index'])->name('forum.categories.threads');
+    Route::get('threads/{thread}', [\App\Http\Controllers\Api\ForumThreadController::class, 'show'])->name('forum.threads.show');
+    
+    // Posts for a thread
+    Route::get('threads/{thread}/posts', [\App\Http\Controllers\Api\ForumPostController::class, 'index'])->name('forum.posts.index');
+    
+    // Authenticated forum actions (subscribers only)
+    Route::middleware('auth:sanctum')->group(function () {
+        // Thread CRUD
+        Route::post('categories/{category}/threads', [\App\Http\Controllers\Api\ForumThreadController::class, 'store'])->name('forum.threads.store');
+        Route::put('threads/{thread}', [\App\Http\Controllers\Api\ForumThreadController::class, 'update'])->name('forum.threads.update');
+        Route::delete('threads/{thread}', [\App\Http\Controllers\Api\ForumThreadController::class, 'destroy'])->name('forum.threads.destroy');
+        
+        // Thread moderation (staff only)
+        Route::post('threads/{thread}/pin', [\App\Http\Controllers\Api\ForumThreadController::class, 'pin'])->name('forum.threads.pin');
+        Route::post('threads/{thread}/unpin', [\App\Http\Controllers\Api\ForumThreadController::class, 'unpin'])->name('forum.threads.unpin');
+        Route::post('threads/{thread}/lock', [\App\Http\Controllers\Api\ForumThreadController::class, 'lock'])->name('forum.threads.lock');
+        Route::post('threads/{thread}/unlock', [\App\Http\Controllers\Api\ForumThreadController::class, 'unlock'])->name('forum.threads.unlock');
+        
+        // Post CRUD
+        Route::post('threads/{thread}/posts', [\App\Http\Controllers\Api\ForumPostController::class, 'store'])->name('forum.posts.store');
+        Route::put('posts/{post}', [\App\Http\Controllers\Api\ForumPostController::class, 'update'])->name('forum.posts.update');
+        Route::delete('posts/{post}', [\App\Http\Controllers\Api\ForumPostController::class, 'destroy'])->name('forum.posts.destroy');
+    });
+    
+    // Category management - auth for create/update, admin for delete (matches blog pattern)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('categories', [\App\Http\Controllers\Api\ForumCategoryController::class, 'store'])->name('forum.categories.store');
+        Route::put('categories/{category}', [\App\Http\Controllers\Api\ForumCategoryController::class, 'update'])->name('forum.categories.update');
+    });
+    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+        Route::delete('categories/{category}', [\App\Http\Controllers\Api\ForumCategoryController::class, 'destroy'])->name('forum.categories.destroy');
+    });
+
+    // Tags - public read, auth create/update, admin delete (matches blog pattern)
+    Route::get('tags', [\App\Http\Controllers\Api\ForumTagController::class, 'index'])->name('forum.tags.index');
+    Route::get('tags/{tag}', [\App\Http\Controllers\Api\ForumTagController::class, 'show'])->name('forum.tags.show');
+    
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('tags', [\App\Http\Controllers\Api\ForumTagController::class, 'store'])->name('forum.tags.store');
+        Route::put('tags/{tag}', [\App\Http\Controllers\Api\ForumTagController::class, 'update'])->name('forum.tags.update');
+    });
+    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+        Route::delete('tags/{tag}', [\App\Http\Controllers\Api\ForumTagController::class, 'destroy'])->name('forum.tags.destroy');
+    });
+
+    // Groups - county-based community groups
+    Route::get('groups', [\App\Http\Controllers\Api\GroupController::class, 'index'])->name('forum.groups.index');
+    Route::get('groups/{slug}', [\App\Http\Controllers\Api\GroupController::class, 'show'])->name('forum.groups.show');
+    Route::get('groups/{slug}/members', [\App\Http\Controllers\Api\GroupController::class, 'members'])->name('forum.groups.members');
+    
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('groups/{slug}/join', [\App\Http\Controllers\Api\GroupController::class, 'join'])->name('forum.groups.join');
+        Route::post('groups/{slug}/leave', [\App\Http\Controllers\Api\GroupController::class, 'leave'])->name('forum.groups.leave');
+    });
+
+    // Forum Users - member directory
+    Route::get('users', [\App\Http\Controllers\Api\ForumUserController::class, 'index'])->name('forum.users.index');
+});

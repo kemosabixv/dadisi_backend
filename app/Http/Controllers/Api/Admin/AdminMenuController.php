@@ -3,56 +3,49 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\Contracts\MenuServiceContract;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * Admin Menu Controller
+ *
+ * Dynamically generates the admin navigation menu based on user permissions.
+ *
+ * @group Admin - Navigation
+ * @authenticated
+ */
 class AdminMenuController extends Controller
 {
+    public function __construct(
+        private MenuServiceContract $menuService
+    ) {
+        $this->middleware(['auth:sanctum', 'admin']);
+    }
+
     /**
      * Get Authorized Admin Menu
      *
      * Returns a dynamic list of menu items based on the authenticated user's permissions.
      * This endpoint is used by the frontend to render the admin sidebar/navigation.
      *
-     * @group Admin
-     * @middleware auth:sanctum,admin
+     * @authenticated
      *
      * @response 200 [
-     *   { "key": "users", "label": "User Management" },
-     *   { "key": "finance", "label": "Finance" }
+     *   { "key": "users", "label": "User Management", "href": "/admin/users", "icon": "Users" },
+     *   { "key": "finance", "label": "Finance", "href": "/admin/finance", "icon": "DollarSign" }
      * ]
      */
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $menu = [];
+        try {
+            $menu = $this->menuService->getAdminMenu($request->user());
 
-        // Example menu items - adapt based on actual permissions system
-        // These checks should match the Spatie permissions defined in the system
-        
-        if ($user->can('manage_users') || $user->hasRole('super_admin')) {
-             $menu[] = ['key' => 'users', 'label' => 'Users', 'href' => '/admin/users'];
+            return response()->json($menu);
+        } catch (\Exception $e) {
+            Log::error('Failed to generate admin menu', ['error' => $e->getMessage(), 'user_id' => $request->user()?->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to generate menu'], 500);
         }
-
-        if ($user->can('view_finances') || $user->hasRole(['super_admin', 'finance'])) {
-            $menu[] = ['key' => 'finance', 'label' => 'Finance', 'href' => '/admin/finance'];
-        }
-
-        if ($user->can('manage_events') || $user->hasRole(['super_admin', 'events_manager'])) {
-            $menu[] = ['key' => 'events', 'label' => 'Events', 'href' => '/admin/events'];
-        }
-
-        if ($user->can('manage_content') || $user->hasRole(['super_admin', 'content_editor'])) {
-            $menu[] = ['key' => 'blog', 'label' => 'Blog', 'href' => '/admin/blog'];
-        }
-        
-        // Settings - typically super_admin only
-        if ($user->hasRole('super_admin')) {
-            $menu[] = ['key' => 'settings', 'label' => 'Settings', 'href' => '/admin/settings'];
-        }
-
-        // Just for fallback/testing if no specific roles, but is_staff is true, show dashboard
-        $menu[] = ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => '/admin'];
-
-        return response()->json($menu);
     }
 }

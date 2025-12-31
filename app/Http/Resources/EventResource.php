@@ -19,7 +19,12 @@ class EventResource extends JsonResource
             'title' => $this->title,
             'slug' => $this->slug,
             'description' => $this->description,
-            'category' => new EventCategoryResource($this->whenLoaded('category')),
+            'category' => $this->whenLoaded('category', function () {
+                return [
+                    'id' => $this->category->id,
+                    'name' => $this->category->name,
+                ];
+            }),
             'venue' => $this->venue,
             'is_online' => (bool) $this->is_online,
             'online_link' => $this->online_link,
@@ -27,13 +32,17 @@ class EventResource extends JsonResource
             'waitlist_enabled' => (bool) $this->waitlist_enabled,
             'waitlist_capacity' => $this->waitlist_capacity,
             'county_id' => $this->county_id,
-            'county' => $this->whenLoaded('county'),
+            'county' => $this->whenLoaded('county', function () {
+                return [
+                    'id' => $this->county->id,
+                    'name' => $this->county->name,
+                ];
+            }),
             'image_path' => $this->image_path,
             'image_url' => $this->image_path ? url('storage/' . $this->image_path) : null,
             'price' => (float) $this->price,
             'currency' => $this->currency,
             'status' => $this->status,
-            'event_type' => $this->event_type,
             'featured' => (bool) $this->featured,
             'featured_until' => $this->featured_until,
             'registration_deadline' => $this->registration_deadline,

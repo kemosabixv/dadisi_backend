@@ -15,6 +15,11 @@ class UserFactory extends Factory
      * The current password being used by the factory.
      */
     protected static ?string $password;
+    
+    /**
+     * The email sequence counter for test isolation.
+     */
+    protected static int $emailSequence = 0;
 
     /**
      * Define the model's default state.
@@ -23,9 +28,12 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        // Use a sequence for emails in tests to avoid unique constraint violations
+        $email = 'user_' . self::$emailSequence++ . '_' . time() . '@example.com';
+        
         return [
             'username' => fake()->userName(),
-            'email' => fake()->unique()->safeEmail(),
+            'email' => $email,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),

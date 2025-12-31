@@ -9,6 +9,18 @@ use Illuminate\Auth\Access\Response;
 class RolePolicy
 {
     /**
+     * Allow super_admin to do anything.
+     */
+    public function before(User $user, string $ability): ?bool
+    {
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+
+        return null; // Continue with other checks
+    }
+
+    /**
      * Determine whether the user can view any roles.
      * Only super admins can manage roles
      */

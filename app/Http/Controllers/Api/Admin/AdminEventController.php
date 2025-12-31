@@ -2,17 +2,32 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\DTOs\CreateEventDTO;
+use App\DTOs\ListEventsFiltersDTO;
+use App\DTOs\UpdateEventDTO;
+use App\Exceptions\EventException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\ListEventsRequest;
+use App\Http\Requests\Api\StoreEventRequest;
+use App\Http\Requests\Api\UpdateEventRequest;
+use App\Http\Requests\Api\FeatureEventRequest;
+use App\Http\Requests\Api\ListRegistrationsRequest;
 use App\Http\Resources\EventResource;
 use App\Models\Event;
-use Illuminate\Http\Request;
+use App\Services\Contracts\EventServiceContract;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Str;
 
+/**
+ * @group Admin Events
+ * @groupDescription Administrative endpoints for managing events, including moderation, publishing, and feature management.
+ */
 class AdminEventController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        private EventServiceContract $eventService
+    ) {
         $this->middleware(['auth:sanctum', 'admin']);
     }
 
@@ -20,428 +35,381 @@ class AdminEventController extends Controller
      * List All Events (Admin/Moderation)
      * 
      * @group Admin Events
-     * @queryParam status string Filter by status (draft, pending_approval, published, rejected, cancelled, suspended)
-     * @queryParam event_type string Filter by type (organization, user)
-     * @queryParam featured boolean Filter by featured status
-     * @queryParam organizer_id integer Filter by organizer
-     * @queryParam search string Search in title
-     * @queryParam upcoming boolean Show only upcoming events
+     * @authenticated
+     * 
+     * @queryParam status string Filter by status (published, cancelled, suspended). Example: published
+     * @queryParam event_type string Filter by type. Example: workshop
+     * @queryParam featured boolean Filter by featured status. Example: true
+     * @queryParam organizer_id integer Filter by organizer. Example: 1
+     * @queryParam search string Search in title. Example: Tech
+     * @queryParam upcoming boolean Show only upcoming events. Example: true
+     * @queryParam sort_by string Sort field (title, starts_at, status, created_at). Example: starts_at
+     * @queryParam sort_dir string Sort direction (asc, desc). Example: desc
+     * @queryParam per_page integer Results per page. Example: 15
+     * 
+     * @response 200 {
+     *   "data": [{"id": 1, "title": "Tech Conference", "status": "published"}],
+     *   "meta": {"current_page": 1, "total": 50}
+     * }
      */
-    public function index(Request $request)
+    public function index(ListEventsRequest $request)
     {
-        $query = Event::with(['category', 'county', 'organizer', 'creator'])
-            ->withCount('registrations');
+        try {
+            $filters = ListEventsFiltersDTO::fromRequest($request->validated());
+            $events = $this->eventService->listEvents($filters, $filters->per_page);
 
-        // Filter by status
-        if ($request->has('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
+            return EventResource::collection($events);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to list events', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve events'], 500);
         }
-
-        // Filter by event type
-        if ($request->has('event_type') && $request->event_type !== 'all') {
-            $query->where('event_type', $request->event_type);
-        }
-
-        // Filter by featured
-        if ($request->has('featured')) {
-            $query->where('featured', filter_var($request->featured, FILTER_VALIDATE_BOOLEAN));
-        }
-
-        // Filter by organizer
-        if ($request->has('organizer_id')) {
-            $query->where('organizer_id', $request->organizer_id);
-        }
-
-        // Search
-        if ($request->has('search') && !empty($request->search)) {
-            $query->where('title', 'like', '%' . $request->search . '%');
-        }
-
-        // Sorting
-        $sortBy = $request->get('sort_by', 'starts_at');
-        $sortDir = $request->get('sort_dir', 'asc');
-        
-        $allowedSorts = ['title', 'starts_at', 'status', 'created_at'];
-        if (in_array($sortBy, $allowedSorts)) {
-            $query->orderBy($sortBy, $sortDir === 'desc' ? 'desc' : 'asc');
-        } else if ($request->boolean('upcoming')) {
-            $query->where('starts_at', '>', now())->orderBy('starts_at', 'asc');
-        } else {
-            $query->latest();
-        }
-
-        $events = $query->paginate($request->get('per_page', 20));
-
-        return EventResource::collection($events);
     }
 
     /**
      * List Event Registrations
      * 
      * @group Admin Events
+     * @authenticated
+     * 
+     * @urlParam event required The event ID. Example: 1
+     * @queryParam status string Filter by status (confirmed, attended, cancelled, waitlisted). Example: confirmed
+     * @queryParam waitlist boolean Show waitlisted registrations only. Example: false
+     * @queryParam per_page integer Results per page. Example: 50
+     * 
+     * @response 200 {
+     *   "data": [{"id": 1, "user": {"username": "john"}, "status": "confirmed"}],
+     *   "meta": {"total": 100}
+     * }
      */
-    public function registrations(Request $request, Event $event)
+    public function registrations(ListRegistrationsRequest $request, Event $event): JsonResponse
     {
-        $query = $event->registrations()->with(['user', 'ticket', 'order']);
+        try {
+            $filters = $request->validated();
+            $registrations = $this->eventService->listRegistrations(
+                $event,
+                $filters,
+                (int)($filters['per_page'] ?? 50)
+            );
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+            return response()->json($registrations);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to list registrations', ['error' => $e->getMessage(), 'event_id' => $event->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve registrations'], 500);
         }
-
-        if ($request->boolean('waitlist')) {
-            $query->whereNotNull('waitlist_position')->orderBy('waitlist_position');
-        } else {
-            $query->whereNull('waitlist_position')->latest();
-        }
-
-        return response()->json($query->paginate($request->get('per_page', 50)));
     }
 
     /**
      * Get Event Statistics
      * 
+     * Returns aggregate statistics for all events.
+     * 
      * @group Admin Events
-     *
+     * @authenticated
+     * 
      * @response 200 {
-     *   "total": 150,
-     *   "pending_review": 3,
-     *   "published": 142,
-     *   "upcoming": 8,
-     *   "featured": 2,
-     *   "organization_events": 120,
-     *   "user_events": 30
+     *   "success": true,
+     *   "data": {
+     *     "total": 150,
+     *     "published": 100,
+     *     "upcoming": 25,
+     *     "featured": 10
+     *   }
      * }
      */
-    public function stats()
+    public function stats(): JsonResponse
     {
-        return response()->json([
-            'total' => Event::count(),
-            'pending_review' => Event::where('status', 'pending_approval')->count(),
-            'published' => Event::where('status', 'published')->count(),
-            'upcoming' => Event::where('status', 'published')->where('starts_at', '>', now())->count(),
-            'featured' => Event::where('featured', true)->where(function ($q) {
-                $q->whereNull('featured_until')->orWhere('featured_until', '>', now());
-            })->count(),
-            'organization_events' => Event::where('event_type', 'organization')->count(),
-            'user_events' => Event::where('event_type', 'user')->count(),
-        ]);
+        try {
+            $stats = $this->eventService->getGlobalStats();
+            return response()->json([
+                'success' => true,
+                'data' => $stats
+            ]);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to get event stats', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve statistics'], 500);
+        }
     }
 
     /**
      * View Any Event Details
      * 
      * @group Admin Events
+     * @authenticated
+     * 
+     * @urlParam event required The event ID. Example: 1
+     * 
+     * @response 200 {
+     *   "data": {"id": 1, "title": "Tech Conference", "organizer": {"username": "admin"}}
+     * }
      */
     public function show(Event $event)
     {
-        return new EventResource($event->load(['category', 'county', 'tags', 'tickets', 'speakers', 'organizer', 'creator', 'payouts']));
+        try {
+            $event = $this->eventService->getById($event->id);
+            return new EventResource($event);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to get event details', ['error' => $e->getMessage(), 'event_id' => $event->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve event'], 500);
+        }
     }
 
     /**
      * Create Organization Event
      * 
+     * Creates a new event as an admin/organizer.
+     * 
      * @group Admin Events
+     * @authenticated
+     * 
+     * @response 201 {
+     *   "data": {"id": 1, "title": "New Event", "status": "draft"}
+     * }
      */
-    public function store(Request $request)
+    public function store(StoreEventRequest $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'category_id' => 'required|exists:event_categories,id',
-            'county_id' => 'required|exists:counties,id',
-            'starts_at' => 'required|date|after:now',
-            'ends_at' => 'required|date|after:starts_at',
-            'venue' => 'nullable|string|max:255',
-            'capacity' => 'nullable|integer|min:1',
-            'is_online' => 'required|boolean',
-            'online_link' => 'nullable|url|required_if:is_online,true',
-            'image_path' => 'nullable|string|max:500',
-            'featured' => 'nullable|boolean',
-            'featured_until' => 'nullable|date|after:now',
-            'organizer_id' => 'nullable|exists:users,id',
-            'price' => 'nullable|numeric|min:0',
-            'currency' => 'nullable|string|in:KES,USD',
-            'waitlist_enabled' => 'nullable|boolean',
-            'waitlist_capacity' => 'nullable|integer|min:1',
-            // Tags
-            'tag_ids' => 'nullable|array',
-            'tag_ids.*' => 'integer|exists:event_tags,id',
-            // Tickets
-            'tickets' => 'nullable|array',
-            'tickets.*.name' => 'required_with:tickets|string|max:255',
-            'tickets.*.description' => 'nullable|string',
-            'tickets.*.price' => 'required_with:tickets|numeric|min:0',
-            'tickets.*.quantity' => 'required_with:tickets|integer|min:1',
-            'tickets.*.is_active' => 'nullable|boolean',
-            // Speakers
-            'speakers' => 'nullable|array',
-            'speakers.*.name' => 'required_with:speakers|string|max:255',
-            'speakers.*.designation' => 'nullable|string|max:255',
-            'speakers.*.company' => 'nullable|string|max:255',
-            'speakers.*.bio' => 'nullable|string',
-            'speakers.*.is_featured' => 'nullable|boolean',
-        ]);
+        try {
+            $validated = $request->validated();
+            $dto = CreateEventDTO::fromRequest($validated);
+            $event = $this->eventService->create(auth()->user(), $dto);
 
-        $validated['created_by'] = auth()->id();
-        $validated['organizer_id'] = $validated['organizer_id'] ?? auth()->id();
-        $validated['event_type'] = $request->input('organizer_id') ? 'user' : 'organization';
-        $validated['status'] = 'published';
-        $validated['slug'] = Str::slug($validated['title'] . '-' . uniqid());
-
-        $event = Event::create($validated);
-
-        // Sync tags
-        if ($request->has('tag_ids')) {
-            $event->tags()->sync($validated['tag_ids'] ?? []);
+            return (new EventResource($event))
+                ->response()
+                ->setStatusCode(Response::HTTP_CREATED);
+        } catch (EventException $e) {
+            Log::error('Failed to create event', ['error' => $e->getMessage()]);
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to create event', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create event'], 500);
         }
-
-        // Create tickets
-        $ticketsCreated = false;
-        if ($request->has('tickets') && !empty($validated['tickets'])) {
-            // Validate total ticket quantity vs capacity
-            $totalQuantity = array_sum(array_column($validated['tickets'], 'quantity'));
-            if ($event->capacity && $totalQuantity > $event->capacity) {
-                return response()->json([
-                    'message' => "Total ticket quantity ({$totalQuantity}) exceeds event capacity ({$event->capacity})."
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            foreach ($validated['tickets'] as $ticketData) {
-                $event->tickets()->create($ticketData);
-            }
-            $ticketsCreated = true;
-        }
-
-        // Auto-create default ticket for paid events without user-defined tiers
-        // Uses 999999 as a sentinel value for "unlimited" when capacity is not set
-        if (!$ticketsCreated && $event->price > 0) {
-            $event->tickets()->create([
-                'name' => 'General Admission',
-                'price' => $event->price,
-                'quantity' => $event->capacity ?? 999999,
-                'is_active' => true,
-            ]);
-        }
-
-        // Auto-create RSVP ticket for free events without user-defined tiers
-        // Uses 999999 as a sentinel value for "unlimited" when capacity is not set
-        if (!$ticketsCreated && (!$event->price || $event->price == 0)) {
-            $event->tickets()->create([
-                'name' => 'RSVP',
-                'price' => 0,
-                'quantity' => $event->capacity ?? 999999,
-                'is_active' => true,
-            ]);
-        }
-
-        // Create speakers
-        if ($request->has('speakers')) {
-            foreach ($validated['speakers'] ?? [] as $speakerData) {
-                $event->speakers()->create($speakerData);
-            }
-        }
-
-        return (new EventResource($event->load(['category', 'county', 'organizer', 'creator', 'tags', 'tickets', 'speakers'])))
-            ->response()
-            ->setStatusCode(Response::HTTP_CREATED);
     }
 
     /**
      * Update Event
      * 
      * @group Admin Events
-     */
-    public function update(Request $request, Event $event)
-    {
-        $validated = $request->validate([
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'category_id' => 'nullable|exists:event_categories,id',
-            'county_id' => 'nullable|exists:counties,id',
-            'venue' => 'nullable|string|max:255',
-            'is_online' => 'nullable|boolean',
-            'online_link' => 'nullable|url',
-            'capacity' => 'nullable|integer|min:1',
-            'waitlist_enabled' => 'nullable|boolean',
-            'waitlist_capacity' => 'nullable|integer|min:1',
-            'image_path' => 'nullable|string|max:500',
-            'starts_at' => 'nullable|date',
-            'ends_at' => 'nullable|date|after:starts_at',
-            'registration_deadline' => 'nullable|date|before:starts_at',
-            'status' => 'nullable|string|in:draft,published,pending_approval,cancelled,suspended',
-            'price' => 'nullable|numeric|min:0',
-            'currency' => 'nullable|string|in:KES,USD',
-            // Tags
-            'tag_ids' => 'nullable|array',
-            'tag_ids.*' => 'integer|exists:event_tags,id',
-            // Tickets
-            'tickets' => 'nullable|array',
-            'tickets.*.id' => 'nullable|integer',
-            'tickets.*.name' => 'required_with:tickets|string|max:255',
-            'tickets.*.description' => 'nullable|string',
-            'tickets.*.price' => 'required_with:tickets|numeric|min:0',
-            'tickets.*.quantity' => 'required_with:tickets|integer|min:1',
-            'tickets.*.is_active' => 'nullable|boolean',
-            // Speakers
-            'speakers' => 'nullable|array',
-            'speakers.*.id' => 'nullable|integer',
-            'speakers.*.name' => 'required_with:speakers|string|max:255',
-            'speakers.*.designation' => 'nullable|string|max:255',
-            'speakers.*.company' => 'nullable|string|max:255',
-            'speakers.*.bio' => 'nullable|string',
-            'speakers.*.is_featured' => 'nullable|boolean',
-        ]);
-
-        // Update base event fields
-        $event->update($validated);
-
-        // Sync tags
-        if ($request->has('tag_ids')) {
-            $event->tags()->sync($validated['tag_ids'] ?? []);
-        }
-
-        // Sync tickets (delete and recreate)
-        if ($request->has('tickets')) {
-            $event->tickets()->delete();
-            foreach ($validated['tickets'] ?? [] as $ticketData) {
-                unset($ticketData['id']); // Remove id for new creation
-                $event->tickets()->create($ticketData);
-            }
-        }
-
-        // Sync speakers (delete and recreate)
-        if ($request->has('speakers')) {
-            $event->speakers()->delete();
-            foreach ($validated['speakers'] ?? [] as $speakerData) {
-                unset($speakerData['id']); // Remove id for new creation
-                $event->speakers()->create($speakerData);
-            }
-        }
-
-        return new EventResource($event->load(['category', 'county', 'organizer', 'creator', 'tags', 'tickets', 'speakers']));
-    }
-
-    /**
-     * Approve Pending Event
+     * @authenticated
      * 
-     * @group Admin Events
-     */
-    public function approve(Event $event)
-    {
-        if ($event->status !== 'pending_approval') {
-            return response()->json(['message' => 'Event is not pending approval.'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $event->update([
-            'status' => 'published',
-            'published_at' => now(),
-        ]);
-
-        return response()->json(['message' => 'Event approved and published successfully.']);
-    }
-
-    /**
-     * Reject Pending Event
+     * @urlParam event required The event ID. Example: 1
      * 
-     * @group Admin Events
-     * @bodyParam reason string The reason for rejection
+     * @response 200 {
+     *   "data": {"id": 1, "title": "Updated Event"}
+     * }
      */
-    public function reject(Request $request, Event $event)
+    public function update(UpdateEventRequest $request, Event $event)
     {
-        $request->validate([
-            'reason' => 'nullable|string|max:1000',
-        ]);
+        try {
+            $validated = $request->validated();
+            $dto = UpdateEventDTO::fromRequest($validated);
+            $event = $this->eventService->update(auth()->user(), $event, $dto);
 
-        if ($event->status !== 'pending_approval') {
-            return response()->json(['message' => 'Event is not pending approval.'], Response::HTTP_BAD_REQUEST);
+            return (new EventResource($event))
+                ->additional(['success' => true, 'message' => 'Event updated successfully']);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to update event', ['error' => $e->getMessage(), 'event_id' => $event->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update event'], 500);
         }
-
-        $event->update(['status' => 'rejected']);
-
-        // TODO: Send notification to organizer with rejection reason
-
-        return response()->json(['message' => 'Event rejected.']);
     }
 
     /**
      * Publish Event
      * 
+     * Makes an event publicly visible.
+     * 
      * @group Admin Events
+     * @authenticated
+     * 
+     * @urlParam event required The event ID. Example: 1
+     * 
+     * @response 200 {
+     *   "success": true,
+     *   "data": {"id": 1, "status": "published"},
+     *   "message": "Event published successfully"
+     * }
      */
-    public function publish(Event $event)
+    public function publish(Event $event): JsonResponse
     {
-        $event->update([
-            'status' => 'published',
-            'published_at' => now(),
-        ]);
+        try {
+            $event = $this->eventService->publish(auth()->user(), $event);
 
-        return response()->json(['message' => 'Event published successfully.']);
+            return response()->json([
+                'success' => true,
+                'data' => new EventResource($event),
+                'message' => 'Event published successfully',
+            ]);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to publish event', ['error' => $e->getMessage(), 'event_id' => $event->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to publish event'], 500);
+        }
     }
 
     /**
      * Cancel Event
      * 
+     * Cancels an event and notifies registered attendees.
+     * 
      * @group Admin Events
+     * @authenticated
+     * 
+     * @urlParam event required The event ID. Example: 1
+     * 
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Event cancelled successfully"
+     * }
      */
-    public function cancel(Event $event)
+    public function cancel(Event $event): JsonResponse
     {
-        $event->update(['status' => 'cancelled']);
-        return response()->json(['message' => 'Event cancelled.']);
+        try {
+            $this->eventService->cancel(auth()->user(), $event);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Event cancelled successfully',
+            ]);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to cancel event', ['error' => $e->getMessage(), 'event_id' => $event->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to cancel event'], 500);
+        }
     }
 
     /**
      * Suspend/Hide Event (for violations)
      * 
+     * Suspends an event for policy violations. Event becomes hidden from public view.
+     * 
      * @group Admin Events
+     * @authenticated
+     * 
+     * @urlParam event required The event ID. Example: 1
+     * 
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Event suspended successfully"
+     * }
      */
-    public function suspend(Event $event)
+    public function suspend(Event $event): JsonResponse
     {
-        $event->update(['status' => 'suspended']);
-        return response()->json(['message' => 'Event suspended successfully.']);
+        try {
+            $this->eventService->suspend(auth()->user(), $event);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Event suspended successfully',
+            ]);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to suspend event', ['error' => $e->getMessage(), 'event_id' => $event->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to suspend event'], 500);
+        }
     }
 
     /**
      * Feature Event
      * 
+     * Marks an event as featured for promotional purposes.
+     * 
      * @group Admin Events
+     * @authenticated
+     * 
+     * @urlParam event required The event ID. Example: 1
+     * @bodyParam until string nullable Date until when to feature (must be after now). Example: 2025-12-31
+     * 
+     * @response 200 {
+     *   "success": true,
+     *   "data": {"id": 1, "is_featured": true},
+     *   "message": "Event featured successfully"
+     * }
      */
-    public function feature(Request $request, Event $event)
+    public function feature(FeatureEventRequest $request, Event $event): JsonResponse
     {
-        $validated = $request->validate([
-            'until' => 'nullable|date|after:now',
-        ]);
+        try {
+            $validated = $request->validated();
+            $event = $this->eventService->feature(auth()->user(), $event, $validated['until'] ?? null);
 
-        $event->update([
-            'featured' => true,
-            'featured_until' => $validated['until'] ?? null,
-        ]);
-
-        return response()->json(['message' => 'Event featured successfully.']);
+            return response()->json([
+                'success' => true,
+                'data' => new EventResource($event),
+                'message' => 'Event featured successfully',
+            ]);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to feature event', ['error' => $e->getMessage(), 'event_id' => $event->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to feature event'], 500);
+        }
     }
 
     /**
      * Unfeature Event
      * 
+     * Removes an event from featured status.
+     * 
      * @group Admin Events
+     * @authenticated
+     * 
+     * @urlParam event required The event ID. Example: 1
+     * 
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Event unfeatured successfully"
+     * }
      */
-    public function unfeature(Event $event)
+    public function unfeature(Event $event): JsonResponse
     {
-        $event->update([
-            'featured' => false,
-            'featured_until' => null,
-        ]);
+        try {
+            $this->eventService->unfeature(auth()->user(), $event);
 
-        return response()->json(['message' => 'Event unfeatured successfully.']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Event unfeatured successfully',
+            ]);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to unfeature event', ['error' => $e->getMessage(), 'event_id' => $event->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to unfeature event'], 500);
+        }
     }
 
     /**
      * Delete Event (Moderation)
      * 
+     * Soft deletes an event.
+     * 
      * @group Admin Events
+     * @authenticated
+     * 
+     * @urlParam event required The event ID. Example: 1
+     * 
+     * @response 204 {}
      */
-    public function destroy(Event $event)
+    public function destroy(Event $event): JsonResponse
     {
-        $event->delete();
-        return response()->json(null, Response::HTTP_NO_CONTENT);
+        try {
+            $this->eventService->delete(auth()->user(), $event);
+
+            return response()->json(null, Response::HTTP_NO_CONTENT);
+        } catch (EventException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('Failed to delete event', ['error' => $e->getMessage(), 'event_id' => $event->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete event'], 500);
+        }
     }
 }

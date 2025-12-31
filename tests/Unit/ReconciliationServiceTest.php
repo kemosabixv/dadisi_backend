@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use App\Services\Reconciliation\ReconciliationService;
 use App\Models\ReconciliationRun;
 use Illuminate\Support\Str;
@@ -11,6 +12,7 @@ class ReconciliationServiceTest extends TestCase
 {
     use \Illuminate\Foundation\Testing\RefreshDatabase;
 
+    #[Test]
     public function test_run_from_data_matches_exact_reference()
     {
         $service = new ReconciliationService();
@@ -29,6 +31,7 @@ class ReconciliationServiceTest extends TestCase
         $this->assertEquals(1, $run->total_matched);
     }
 
+    #[Test]
     public function test_run_from_data_flags_unmatched_gateway()
     {
         $service = new ReconciliationService();

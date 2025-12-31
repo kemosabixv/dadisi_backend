@@ -52,10 +52,6 @@ class Kernel extends ConsoleKernel
                 ->dailyAt('09:00')
                 ->timezone('Africa/Nairobi')
                 ->name('renewals.send_reminders');
-            $schedule->command('renewals:enqueue-due')
-                ->hourly()
-                ->timezone('Africa/Nairobi')
-                ->name('renewals.enqueue_due');
             $schedule->command('reconciliation:run')
                 ->dailyAt('02:00')
                 ->timezone('Africa/Nairobi')

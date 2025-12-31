@@ -6,8 +6,8 @@ use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
-use App\Services\DonationReconciliationService;
-use App\Services\EventOrderReconciliationService;
+use App\Services\Reconciliation\DonationReconciliationService;
+use App\Services\Reconciliation\EventOrderReconciliationService;
 
 class AdminBillingReconcileTest extends TestCase
 {

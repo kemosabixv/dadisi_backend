@@ -67,8 +67,18 @@
             </ul>
         </div>
 
-        @if(str_contains($payment->payable_type, 'EventOrder'))
-            <p>Your registration for the event is now confirmed. You can view your ticket in your dashboard.</p>
+        @if($payment->payable_type === 'App\Models\EventOrder' || str_contains($payment->payable_type, 'EventOrder'))
+            <p>Your registration for <strong>{{ $payment->payable->event->title ?? 'the event' }}</strong> is now confirmed.
+            </p>
+            <div style="margin-top: 10px; border-left: 4px solid #007bff; padding-left: 15px;">
+                <p><strong>Tickets:</strong> {{ $payment->payable->quantity ?? 1 }}x
+                    {{ $payment->payable->event->tickets->first()->name ?? 'General Admission' }}</p>
+                <p><strong>Venue:</strong>
+                    {{ $payment->payable->event->venue ?? ($payment->payable->event->is_online ? 'Online' : 'TBA') }}</p>
+            </div>
+            <p>Please present your QR code at the entrance for check-in.</p>
+            <a href="{{ config('app.frontend_url') }}/dashboard/tickets/{{ $payment->payable->id }}" class="button">View
+                Ticket & QR Code</a>
         @elseif(str_contains($payment->payable_type, 'Donation'))
             <p>Your generous contribution helps us continue our mission. A formal receipt will be available in your giving
                 history.</p>

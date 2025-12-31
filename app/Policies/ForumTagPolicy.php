@@ -4,22 +4,23 @@ namespace App\Policies;
 
 use App\Models\ForumTag;
 use App\Models\User;
-use Illuminate\Auth\Access\HandlesAuthorization;
 
 class ForumTagPolicy
 {
-    use HandlesAuthorization;
-
     /**
-     * Determine if admin has full access.
+     * Check if user is staff (via roles or member profile).
      */
-    public function before(User $user, string $ability): ?bool
+    private function isStaff(User $user): bool
     {
-        if ($user->hasRole(['super_admin', 'admin'])) {
+        if ($user->hasAnyRole(['admin', 'super_admin', 'moderator', 'forum_moderator'])) {
             return true;
         }
-
-        return null;
+        
+        if ($user->can('moderate_forum') || ($user->memberProfile && $user->memberProfile->is_staff)) {
+            return true;
+        }
+        
+        return false;
     }
 
     /**
@@ -39,26 +40,26 @@ class ForumTagPolicy
     }
 
     /**
-     * Only admins can create tags.
+     * Subscribers (authenticated users) can create tags.
      */
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('manage_forum_tags');
+        return $user->hasVerifiedEmail();
     }
 
     /**
-     * Only admins can update tags.
+     * Subscribers can update tags.
      */
     public function update(User $user, ForumTag $tag): bool
     {
-        return $user->hasPermissionTo('manage_forum_tags');
+        return $user->hasVerifiedEmail();
     }
 
     /**
-     * Only admins can delete tags.
+     * Only staff can delete tags.
      */
     public function delete(User $user, ForumTag $tag): bool
     {
-        return $user->hasPermissionTo('manage_forum_tags');
+        return $this->isStaff($user);
     }
 }

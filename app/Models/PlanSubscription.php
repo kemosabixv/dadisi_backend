@@ -17,6 +17,54 @@ class PlanSubscription extends BaseSubscription
     protected $attributes = [
         'name' => '{"default":"Subscription"}',
     ];
+
+    /**
+     * Mass-assignable attributes
+     */
+    protected $fillable = [
+        'subscriber_id',
+        'subscriber_type',
+        'plan_id',
+        'name',
+        'slug',
+        'description',
+        'timezone',
+        'trial_ends_at',
+        'starts_at',
+        'ends_at',
+        'cancels_at',
+        'canceled_at',
+        'status',
+        'user_id',
+        'expires_at',
+    ];
+
+    /**
+     * Columns that should be visible when serializing to JSON
+     */
+    protected $visible = [
+        'id',
+        'subscriber_type',
+        'subscriber_id',
+        'plan_id',
+        'name',
+        'slug',
+        'description',
+        'timezone',
+        'trial_ends_at',
+        'starts_at',
+        'ends_at',
+        'cancels_at',
+        'canceled_at',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+        'status',
+        'user_id',
+        'expires_at',
+        'plan',
+    ];
+
     /**
      * Get the subscription enhancements
      *
@@ -37,6 +85,15 @@ class PlanSubscription extends BaseSubscription
     public function enhancement(): HasMany
     {
         return $this->enhancements();
+    }
+
+    /**
+     * Get the plan associated with the subscription.
+     * Overridden to ensure we get the App\Models\Plan instance.
+     */
+    public function plan(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Plan::class, 'plan_id');
     }
 
     /* Compatibility wrappers for legacy method names used in tests */
@@ -113,6 +170,12 @@ class PlanSubscription extends BaseSubscription
         });
     }
 
+    /**
+     * Backwards-compatible alias for the package's morphTo relation `subscriber`.
+     * Some parts of the application/tests expect a `user` relationship on the
+     * subscription model; provide a convenience alias to avoid RelationNotFound
+     * exceptions.
+     */
     /**
      * Backwards-compatible alias for the package's morphTo relation `subscriber`.
      * Some parts of the application/tests expect a `user` relationship on the

@@ -9,6 +9,7 @@ use App\Models\Post;
 use App\Models\Category;
 use App\Models\Tag;
 use App\Models\County;
+use PHPUnit\Framework\Attributes\Test;
 
 class BlogModelsUnitTest extends TestCase
 {
@@ -33,10 +34,7 @@ class BlogModelsUnitTest extends TestCase
      * Post Model Tests
      */
 
-    /**
-     * @test
-     * Post belongs to author (user)
-     */
+    #[Test]
     public function test_post_belongs_to_author(): void
     {
         $post = Post::factory()->create([
@@ -46,10 +44,7 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals($this->author->id, $post->author->id);
     }
 
-    /**
-     * @test
-     * Post belongs to county
-     */
+    #[Test]
     public function test_post_belongs_to_county(): void
     {
         $post = Post::factory()->create([
@@ -59,8 +54,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals($this->county->id, $post->county->id);
     }
 
+    #[Test]
     /**
-     * @test
      * Post has many categories (belongsToMany)
      */
     public function test_post_has_many_categories(): void
@@ -77,8 +72,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertContains($category2->id, $post->categories->pluck('id')->toArray());
     }
 
+    #[Test]
     /**
-     * @test
      * Post has many tags (belongsToMany)
      */
     public function test_post_has_many_tags(): void
@@ -93,8 +88,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals(2, $post->tags()->count());
     }
 
+    #[Test]
     /**
-     * @test
      * Post published scope returns only published posts
      */
     public function test_post_published_scope(): void
@@ -108,8 +103,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertNotContains($draftPost->id, $published->pluck('id')->toArray());
     }
 
+    #[Test]
     /**
-     * @test
      * Post draft scope returns only draft posts
      */
     public function test_post_draft_scope(): void
@@ -123,8 +118,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertContains($draftPost->id, $drafts->pluck('id')->toArray());
     }
 
+    #[Test]
     /**
-     * @test
      * Post featured scope returns only featured posts
      */
     public function test_post_featured_scope(): void
@@ -138,8 +133,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertNotContains($regularPost->id, $featured->pluck('id')->toArray());
     }
 
+    #[Test]
     /**
-     * @test
      * Post generates slug automatically
      */
     public function test_post_generates_slug(): void
@@ -152,8 +147,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertStringContainsString('getting-started', strtolower($post->slug));
     }
 
+    #[Test]
     /**
-     * @test
      * Post slug is unique
      */
     public function test_post_slug_uniqueness(): void
@@ -169,8 +164,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertNotEquals($post1->slug, $post2->slug);
     }
 
+    #[Test]
     /**
-     * @test
      * Post has default status of draft
      */
     public function test_post_default_status_is_draft(): void
@@ -180,8 +175,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals('draft', $post->status);
     }
 
+    #[Test]
     /**
-     * @test
      * Post is_featured defaults to false
      */
     public function test_post_is_featured_defaults_to_false(): void
@@ -191,8 +186,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertFalse($post->is_featured);
     }
 
+    #[Test]
     /**
-     * @test
      * Post views_count can be incremented
      */
     public function test_post_views_count_increment(): void
@@ -204,8 +199,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals(11, $post->fresh()->views_count);
     }
 
+    #[Test]
     /**
-     * @test
      * Post excerpt is truncated version of body
      */
     public function test_post_excerpt_truncation(): void
@@ -220,8 +215,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertLessThanOrEqual(200, strlen($post->excerpt));
     }
 
+    #[Test]
     /**
-     * @test
      * Post published_at timestamp is set when publishing
      */
     public function test_post_published_at_timestamp(): void
@@ -236,8 +231,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals($now->format('Y-m-d'), $post->published_at->format('Y-m-d'));
     }
 
+    #[Test]
     /**
-     * @test
      * Post uses soft deletes
      */
     public function test_post_uses_soft_deletes(): void
@@ -250,8 +245,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertSoftDeleted($post);
     }
 
+    #[Test]
     /**
-     * @test
      * Deleted posts are not returned in queries
      */
     public function test_deleted_posts_not_in_queries(): void
@@ -268,8 +263,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertNotContains($post1->id, $posts->pluck('id')->toArray());
     }
 
+    #[Test]
     /**
-     * @test
      * Post can be restored from soft delete
      */
     public function test_post_can_be_restored(): void
@@ -287,8 +282,8 @@ class BlogModelsUnitTest extends TestCase
      * Category Model Tests
      */
 
+    #[Test]
     /**
-     * @test
      * Category has many posts
      */
     public function test_category_has_many_posts(): void
@@ -301,8 +296,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals(2, $this->category->posts()->count());
     }
 
+    #[Test]
     /**
-     * @test
      * Category slug is generated from name
      */
     public function test_category_slug_generation(): void
@@ -318,8 +313,8 @@ class BlogModelsUnitTest extends TestCase
      * Tag Model Tests
      */
 
+    #[Test]
     /**
-     * @test
      * Tag has many posts
      */
     public function test_tag_has_many_posts(): void
@@ -332,8 +327,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals(2, $this->tag->posts()->count());
     }
 
+    #[Test]
     /**
-     * @test
      * Tag slug is generated from name
      */
     public function test_tag_slug_generation(): void
@@ -349,8 +344,8 @@ class BlogModelsUnitTest extends TestCase
      * County Model Tests
      */
 
+    #[Test]
     /**
-     * @test
      * County has many posts
      */
     public function test_county_has_many_posts(): void
@@ -369,8 +364,8 @@ class BlogModelsUnitTest extends TestCase
      * User Model - Blog Posts Tests
      */
 
+    #[Test]
     /**
-     * @test
      * User has many posts as author
      */
     public function test_user_has_many_posts(): void
@@ -382,8 +377,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals(3, $this->author->posts()->count());
     }
 
+    #[Test]
     /**
-     * @test
      * User can have posts in different statuses
      */
     public function test_user_can_have_mixed_status_posts(): void
@@ -407,8 +402,8 @@ class BlogModelsUnitTest extends TestCase
      * Blog Query and Filter Tests
      */
 
+    #[Test]
     /**
-     * @test
      * Can filter posts by title
      */
     public function test_filter_posts_by_title(): void
@@ -422,8 +417,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertStringContainsString('Laravel', $posts->first()->title);
     }
 
+    #[Test]
     /**
-     * @test
      * Can filter posts by content
      */
     public function test_filter_posts_by_content(): void
@@ -436,8 +431,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals(1, $posts->count());
     }
 
+    #[Test]
     /**
-     * @test
      * Can order posts by published date
      */
     public function test_order_posts_by_published_date(): void
@@ -456,8 +451,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals($post1->id, $latestFirst->last()->id);
     }
 
+    #[Test]
     /**
-     * @test
      * Can order posts by views count
      */
     public function test_order_posts_by_views(): void
@@ -472,8 +467,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals(50, $ordered->last()->views_count);
     }
 
+    #[Test]
     /**
-     * @test
      * Can get posts by category with eager loading
      */
     public function test_get_posts_by_category_with_eager_loading(): void
@@ -489,8 +484,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertContains($this->category->id, $posts->first()->categories->pluck('id')->toArray());
     }
 
+    #[Test]
     /**
-     * @test
      * Can get posts by tag with eager loading
      */
     public function test_get_posts_by_tag_with_eager_loading(): void
@@ -506,8 +501,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertContains($this->tag->id, $posts->first()->tags->pluck('id')->toArray());
     }
 
+    #[Test]
     /**
-     * @test
      * Featured posts query works correctly
      */
     public function test_featured_posts_query(): void
@@ -520,8 +515,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals(3, $featured->count());
     }
 
+    #[Test]
     /**
-     * @test
      * Published posts with author relation
      */
     public function test_published_posts_with_author(): void
@@ -541,8 +536,8 @@ class BlogModelsUnitTest extends TestCase
      * Post Relationships Tests
      */
 
+    #[Test]
     /**
-     * @test
      * Post can be associated with multiple categories and tags
      */
     public function test_post_multiple_associations(): void
@@ -559,8 +554,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals(3, $post->tags()->count());
     }
 
+    #[Test]
     /**
-     * @test
      * Detaching category from post
      */
     public function test_detach_category_from_post(): void
@@ -575,8 +570,8 @@ class BlogModelsUnitTest extends TestCase
         $this->assertEquals(0, $post->categories()->count());
     }
 
+    #[Test]
     /**
-     * @test
      * Syncing categories replaces all existing associations
      */
     public function test_sync_categories_replaces_existing(): void

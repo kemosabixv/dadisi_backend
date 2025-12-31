@@ -92,6 +92,15 @@ class SystemFeaturesSeeder extends Seeder
                 'default_value' => '0',
                 'sort_order' => 31,
             ],
+            [
+                'slug' => 'forum_reply_limit',
+                'name' => 'Forum Reply Limit',
+                'description' => 'Maximum forum replies a user can post per month. Set to -1 for unlimited.',
+                'value_type' => 'number',
+                'default_value' => '0',
+                'sort_order' => 32,
+            ],
+
             
             // Premium features
             [

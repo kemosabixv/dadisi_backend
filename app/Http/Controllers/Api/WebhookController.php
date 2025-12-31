@@ -3,15 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\WebhookEvent;
-use App\Services\PesapalService;
+use App\Services\Contracts\WebhookServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class WebhookController extends Controller
 {
     public function __construct(
-        protected PesapalService $pesapalService
+        private WebhookServiceContract $webhookService
     ) {}
 
     /**
@@ -49,66 +48,11 @@ class WebhookController extends Controller
             $payload = $request->all();
             $signature = $request->header('X-Pesapal-Signature', '');
 
-            Log::info('Received Pesapal webhook', [
-                'headers' => $request->headers->all(),
-                'payload' => $payload,
-                'signature' => $signature,
-            ]);
+            $result = $this->webhookService->processPesapalWebhook($payload, $signature);
 
-            // Store the webhook event regardless of verification
-            // Populate external/order references from common keys; ensure non-null for DB constraints
-            $externalId = $payload['OrderTrackingId'] ?? $payload['reference'] ?? ('webhook_' . uniqid());
-            $orderRef = $payload['OrderMerchantReference'] ?? $payload['reference'] ?? $externalId;
-
-            $webhookEvent = WebhookEvent::create([
-                'provider' => 'pesapal',
-                'event_type' => $payload['OrderNotificationType'] ?? 'unknown',
-                'external_id' => $externalId,
-                'order_reference' => $orderRef,
-                'payload' => $payload,
-                'signature' => $signature,
-                'status' => 'received',
-            ]);
-
-            // Verify signature (skip in local/testing environments or when services.pesapal.environment is 'local')
-            $isSignatureValid = true; // default to true for non-production
-            if (!app()->environment('local', 'testing') && config('services.pesapal.environment') !== 'local') {
-                $isSignatureValid = $this->pesapalService->verifyWebhookSignature($payload, $signature);
-            }
-
-            if (!$isSignatureValid) {
-                $webhookEvent->update([
-                    'status' => 'failed',
-                    'error' => 'Invalid signature',
-                ]);
-
-                Log::warning('Invalid Pesapal webhook signature');
-
-                return response()->json(['error' => 'Invalid signature'], 400);
-            }
-
-            // Dispatch background job for processing
-            \App\Jobs\ProcessWebhookJob::dispatch($webhookEvent->id);
-
-            Log::info('Webhook queued for processing', ['id' => $webhookEvent->id]);
-
-            // Pesapal expects HTTP 200 OK on success
-            return response()->json(['status' => 'OK'], 200);
-
+            return response()->json($result, 200);
         } catch (\Exception $e) {
-            Log::error('Webhook processing failed', [
-                'exception' => $e->getMessage(),
-                'payload' => $payload,
-            ]);
-
-            // Store failed event if we have the ID
-            if (isset($webhookEvent)) {
-                $webhookEvent->update([
-                    'status' => 'failed',
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
+            Log::error('Webhook processing failed', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Processing failed'], 500);
         }
     }
@@ -144,15 +88,22 @@ class WebhookController extends Controller
      */
     public function index(Request $request)
     {
-        $events = WebhookEvent::query()
-            ->when($request->provider, fn($q) => $q->where('provider', $request->provider))
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->orderBy('created_at', 'desc')
-            ->paginate($request->get('per_page', 50));
+        try {
+            $filters = [
+                'provider' => $request->input('provider'),
+                'status' => $request->input('status'),
+                'per_page' => $request->input('per_page', 50),
+            ];
 
-        return response()->json([
-            'success' => true,
-            'data' => $events,
-        ]);
+            $events = $this->webhookService->listWebhookEvents($filters);
+
+            return response()->json([
+                'success' => true,
+                'data' => $events,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve webhook events', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve webhook events'], 500);
+        }
     }
 }

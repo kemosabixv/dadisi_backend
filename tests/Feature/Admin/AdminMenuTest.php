@@ -2,22 +2,26 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Models\User;
 
 class AdminMenuTest extends TestCase
 {
     use RefreshDatabase;
 
     private User $superAdmin;
+
     private User $regularUser;
+
+    protected $shouldSeedRoles = true;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->superAdmin = User::factory()->create();
-        $this->superAdmin->assignRole('super_admin');
+        $role = \Spatie\Permission\Models\Role::where('name', 'super_admin')->where('guard_name', 'api')->first();
+        $this->superAdmin->assignRole($role);
 
         $this->regularUser = User::factory()->create();
         $this->regularUser->assignRole('member');
@@ -46,8 +50,8 @@ class AdminMenuTest extends TestCase
                         'key',
                         'label',
                         'href',
-                    ]
-                ]
+                    ],
+                ],
             ]);
     }
 
@@ -70,11 +74,8 @@ class AdminMenuTest extends TestCase
         $response = $this->actingAs($this->regularUser)
             ->getJson('/api/admin/menu');
 
-        $response->assertStatus(200);
-        $menuItems = $response->json('data');
-
-        // Regular member should see no admin menu items
-        $this->assertEmpty($menuItems);
+        $response->assertStatus(403);
+        // Regular member is blocked by middleware, so we don't check for empty data.
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
@@ -100,9 +101,10 @@ class AdminMenuTest extends TestCase
     {
         // Create a user with content_editor role
         $editorUser = User::factory()->create();
-        $editorUser->assignRole('content_editor');
+        $role = \Spatie\Permission\Models\Role::where('name', 'content_editor')->where('guard_name', 'api')->first();
+        $editorUser->assignRole($role);
 
-        $response = $this->actingAs($editorUser)
+        $response = $this->actingAs($editorUser, 'sanctum')
             ->getJson('/api/admin/menu');
 
         $response->assertStatus(200);

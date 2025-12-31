@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\Contracts\RoleServiceContract;
 use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Validation\ValidationException;
 
 class RoleController extends Controller
 {
+    public function __construct(
+        private RoleServiceContract $roleService
+    ) {}
     /**
      * List all roles
      *
@@ -51,27 +56,27 @@ class RoleController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', Role::class);
+        try {
+            $this->authorize('viewAny', Role::class);
 
-        $query = Role::query();
+            $filters = [
+                'search' => $request->input('search'),
+                'include_permissions' => $request->boolean('include_permissions'),
+                'per_page' => $request->input('per_page', 50),
+            ];
 
-        // Search functionality
-        if ($request->has('search') && !empty($request->search)) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $roles = $this->roleService->listRoles($filters);
+
+            return response()->json([
+                'success' => true,
+                'data' => $roles,
+            ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch roles', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to fetch roles'], 500);
         }
-
-        $includePermissions = $request->boolean('include_permissions');
-
-        if ($includePermissions) {
-            $query->with('permissions');
-        }
-
-        $roles = $query->latest()->paginate(50);
-
-        return response()->json([
-            'success' => true,
-            'data' => $roles,
-        ]);
     }
 
     /**
@@ -107,22 +112,28 @@ class RoleController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('create', Role::class);
+        try {
+            $this->authorize('create', Role::class);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:roles,name',
-        ]);
+            $validated = $request->validate([
+                'name' => 'required|string|max:255|unique:roles,name',
+            ]);
 
-        $role = Role::create($validated);
+            $role = $this->roleService->createRole($validated);
 
-        // Audit log
-        $this->logAuditAction('create', Role::class, $role->id, null, $validated, 'Role created');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Role created successfully',
-            'data' => $role,
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Role created successfully',
+                'data' => $role,
+            ], 201);
+        } catch (AuthorizationException $e) {
+            throw $e;
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Failed to create role', ['error' => $e->getMessage(), 'data' => $request->all()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create role'], 500);
+        }
     }
 
     /**
@@ -152,14 +163,21 @@ class RoleController extends Controller
      */
     public function show(Role $role): JsonResponse
     {
-        $this->authorize('view', $role);
+        try {
+            $this->authorize('view', $role);
 
-        $usersCount = $role->users()->count();
+            $data = $this->roleService->getRoleDetails($role);
 
-        return response()->json([
-            'success' => true,
-            'data' => array_merge($role->load('permissions')->toArray(), ['users_count' => $usersCount]),
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch role', ['error' => $e->getMessage(), 'role_id' => $role->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to fetch role'], 500);
+        }
     }
 
     /**
@@ -187,24 +205,28 @@ class RoleController extends Controller
      */
     public function update(Request $request, Role $role): JsonResponse
     {
-        $this->authorize('update', $role);
+        try {
+            $this->authorize('update', $role);
 
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255|unique:roles,name,' . $role->id,
-        ]);
+            $validated = $request->validate([
+                'name' => 'sometimes|required|string|max:255|unique:roles,name,' . $role->id,
+            ]);
 
-        $oldValues = $role->only(array_keys($validated));
+            $role = $this->roleService->updateRole($role, $validated);
 
-        $role->update($validated);
-
-        // Audit log
-        $this->logAuditAction('update', Role::class, $role->id, $oldValues, $validated, 'Role updated');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Role updated successfully',
-            'data' => $role,
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Role updated successfully',
+                'data' => $role,
+            ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Failed to update role', ['error' => $e->getMessage(), 'role_id' => $role->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update role'], 500);
+        }
     }
 
     /**
@@ -230,27 +252,27 @@ class RoleController extends Controller
      */
     public function destroy(Role $role): JsonResponse
     {
-        $this->authorize('delete', $role);
+        try {
+            $this->authorize('delete', $role);
 
-        // Check if role has assigned users
-        if ($role->users()->exists()) {
+            $this->roleService->deleteRole($role);
+
             return response()->json([
-                'success' => false,
-                'message' => 'Cannot delete role that has assigned users',
-            ], 409);
+                'success' => true,
+                'message' => 'Role deleted successfully',
+            ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'Cannot delete role')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete role that has assigned users',
+                ], 409);
+            }
+            Log::error('Failed to delete role', ['error' => $e->getMessage(), 'role_id' => $role->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete role'], 500);
         }
-
-        $oldValues = $role->toArray();
-
-        $role->delete();
-
-        // Audit log
-        $this->logAuditAction('delete', Role::class, $role->id, $oldValues, null, 'Role deleted');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Role deleted successfully',
-        ]);
     }
 
     /**
@@ -278,35 +300,29 @@ class RoleController extends Controller
      */
     public function assignPermissions(Request $request, Role $role): JsonResponse
     {
-        $this->authorize('managePermissions', $role);
+        try {
+            $this->authorize('managePermissions', $role);
 
-        $validated = $request->validate([
-            'permissions' => 'required|array|min:1',
-            'permissions.*' => 'string|exists:permissions,name',
-        ]);
+            $validated = $request->validate([
+                'permissions' => 'required|array|min:1',
+                'permissions.*' => 'string|exists:permissions,name',
+            ]);
 
-        $oldPermissions = $role->permissions->pluck('name')->toArray();
+            $result = $this->roleService->assignPermissionsToRole($role, $validated['permissions']);
 
-        $role->givePermissionTo($validated['permissions']);
-
-        $newPermissions = $role->fresh()->permissions->pluck('name')->toArray();
-
-        // Audit log
-        $this->logAuditAction('assign_permissions', Role::class, $role->id,
-            ['permissions' => $oldPermissions],
-            ['permissions' => $newPermissions],
-            'Permissions assigned to role: ' . implode(', ', $validated['permissions'])
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Permissions assigned to role successfully',
-            'data' => [
-                'role' => $role->name,
-                'assigned_permissions' => $validated['permissions'],
-                'current_permissions' => $newPermissions,
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Permissions assigned to role successfully',
+                'data' => $result,
+            ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Failed to assign permissions to role', ['error' => $e->getMessage(), 'role_id' => $role->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to assign permissions'], 500);
+        }
     }
 
     /**
@@ -334,61 +350,28 @@ class RoleController extends Controller
      */
     public function removePermissions(Request $request, Role $role): JsonResponse
     {
-        $this->authorize('managePermissions', $role);
-
-        $validated = $request->validate([
-            'permissions' => 'required|array|min:1',
-            'permissions.*' => 'string|exists:permissions,name',
-        ]);
-
-        $oldPermissions = $role->permissions->pluck('name')->toArray();
-
-        $role->revokePermissionTo($validated['permissions']);
-
-        $newPermissions = $role->fresh()->permissions->pluck('name')->toArray();
-
-        // Audit log
-        $this->logAuditAction('remove_permissions', Role::class, $role->id,
-            ['permissions' => $oldPermissions],
-            ['permissions' => $newPermissions],
-            'Permissions removed from role: ' . implode(', ', $validated['permissions'])
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Permissions removed from role successfully',
-            'data' => [
-                'role' => $role->name,
-                'removed_permissions' => $validated['permissions'],
-                'current_permissions' => $newPermissions,
-            ],
-        ]);
-    }
-
-    /**
-     * Log audit actions
-     */
-    private function logAuditAction(string $action, string $modelType, int $modelId, ?array $oldValues, ?array $newValues, ?string $notes = null): void
-    {
         try {
-            \App\Models\AuditLog::create([
-                'action' => $action,
-                'model_type' => $modelType,
-                'model_id' => $modelId,
-                'user_id' => auth()->id(),
-                'old_values' => $oldValues ? json_encode($oldValues) : null,
-                'new_values' => $newValues ? json_encode($newValues) : null,
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-                'notes' => $notes,
+            $this->authorize('managePermissions', $role);
+
+            $validated = $request->validate([
+                'permissions' => 'required|array|min:1',
+                'permissions.*' => 'string|exists:permissions,name',
             ]);
+
+            $result = $this->roleService->removePermissionsFromRole($role, $validated['permissions']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Permissions removed from role successfully',
+                'data' => $result,
+            ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('Failed to create audit log for role', [
-                'action' => $action,
-                'model_type' => $modelType,
-                'model_id' => $modelId,
-                'error' => $e->getMessage(),
-            ]);
+            Log::error('Failed to remove permissions from role', ['error' => $e->getMessage(), 'role_id' => $role->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to remove permissions'], 500);
         }
     }
 }

@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class SystemSettingTest extends TestCase
@@ -23,7 +24,7 @@ class SystemSettingTest extends TestCase
         // Ensuring Sanctum auth is enough for the route protection we saw in api.php unless 'can' middleware was added.
     }
 
-    /** @test */
+    #[Test]
     public function it_can_list_system_settings()
     {
         SystemSetting::create(['key' => 'general.site_name', 'value' => 'Dadisi', 'type' => 'string']);
@@ -42,7 +43,7 @@ class SystemSettingTest extends TestCase
                  ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_filter_settings_by_group()
     {
         SystemSetting::create(['key' => 'general.site_name', 'value' => 'Dadisi', 'group' => 'general']);
@@ -56,7 +57,7 @@ class SystemSettingTest extends TestCase
                  ->assertJsonMissing(['general.site_name' => 'Dadisi']);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_bulk_update_settings()
     {
         $payload = [

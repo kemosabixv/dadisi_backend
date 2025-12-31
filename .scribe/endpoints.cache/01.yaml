@@ -74,7 +74,7 @@ endpoints:
         name: id
         description: 'The ID of the county.'
         required: true
-        example: 1
+        example: 16
         type: integer
         enumValues: []
         exampleWasSpecified: false
@@ -92,7 +92,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      id: 1
+      id: 16
       county: 1
     queryParameters: []
     cleanQueryParameters: []
@@ -198,7 +198,7 @@ endpoints:
         name: id
         description: 'The ID of the county.'
         required: true
-        example: 1
+        example: 16
         type: integer
         enumValues: []
         exampleWasSpecified: false
@@ -216,7 +216,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      id: 1
+      id: 16
       county: 1
     queryParameters: []
     cleanQueryParameters: []
@@ -280,7 +280,7 @@ endpoints:
         name: id
         description: 'The ID of the county.'
         required: true
-        example: 1
+        example: 16
         type: integer
         enumValues: []
         exampleWasSpecified: false
@@ -298,7 +298,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      id: 1
+      id: 16
       county: 1
     queryParameters: []
     cleanQueryParameters: []

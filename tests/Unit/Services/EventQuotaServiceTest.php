@@ -13,6 +13,8 @@ class EventQuotaServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected bool $shouldSeedRoles = true;
+
     private EventQuotaService $service;
 
     protected function setUp(): void

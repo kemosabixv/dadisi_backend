@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Refund;
-use App\Services\RefundService;
+use App\Services\Contracts\RefundServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -20,8 +20,10 @@ use Illuminate\Support\Facades\Log;
 class RefundController extends Controller
 {
     public function __construct(
-        protected RefundService $refundService
-    ) {}
+        private RefundServiceContract $refundService
+    ) {
+        $this->middleware(['auth:sanctum', 'admin']);
+    }
 
     /**
      * List all refunds
@@ -31,44 +33,49 @@ class RefundController extends Controller
      * @authenticated
      * @queryParam status string Filter by refund status. Example: pending
      * @queryParam reason string Filter by refund reason. Example: cancellation
+     * @queryParam search string Search by transaction reference.
      * @queryParam per_page integer Items per page. Default: 20. Example: 20
      *
      * @response 200 {
      *   "success": true,
-     *   "data": {
-     *     "data": [
-     *       {
-     *         "id": 1,
-     *         "refundable_type": "App\\Models\\EventOrder",
-     *         "refundable_id": 123,
-     *         "amount": 500.00,
-     *         "status": "pending",
-     *         "reason": "cancellation"
-     *       }
-     *     ],
-     *     "total": 50,
-     *     "per_page": 20
-     *   }
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "refundable_type": "App\\Models\\EventOrder",
+     *       "refundable_id": 123,
+     *       "amount": 500.00,
+     *       "status": "pending",
+     *       "reason": "cancellation"
+     *     }
+     *   ],
+     *   "meta": {"total": 50, "per_page": 20, "current_page": 1}
      * }
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Refund::with(['payment', 'processor'])
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->when($request->reason, fn($q) => $q->where('reason', $request->reason))
-            ->when($request->search, function ($q) use ($request) {
-                $q->whereHas('payment', function ($pq) use ($request) {
-                    $pq->where('external_reference', 'like', "%{$request->search}%");
-                });
-            })
-            ->orderBy('created_at', 'desc');
+        try {
+            $filters = [
+                'status' => $request->input('status'),
+                'reason' => $request->input('reason'),
+                'search' => $request->input('search'),
+            ];
 
-        $refunds = $query->paginate($request->get('per_page', 20));
+            $refunds = $this->refundService->listRefunds($filters, $request->get('per_page', 20));
 
-        return response()->json([
-            'success' => true,
-            'data' => $refunds,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $refunds->items(),
+                'meta' => [
+                    'current_page' => $refunds->currentPage(),
+                    'last_page' => $refunds->lastPage(),
+                    'total' => $refunds->total(),
+                    'per_page' => $refunds->perPage(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to list refunds', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve refunds'], 500);
+        }
     }
 
     /**
@@ -77,7 +84,7 @@ class RefundController extends Controller
      * Retrieves detailed information about a specific refund request.
      *
      * @authenticated
-     * @urlParam id integer required The refund ID. Example: 1
+     * @urlParam refund required The refund ID. Example: 1
      *
      * @response 200 {
      *   "success": true,
@@ -94,12 +101,17 @@ class RefundController extends Controller
      */
     public function show(Refund $refund): JsonResponse
     {
-        $refund->load(['payment', 'processor', 'refundable']);
+        try {
+            $refund->load(['payment', 'processor', 'refundable']);
 
-        return response()->json([
-            'success' => true,
-            'data' => $refund,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $refund,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get refund details', ['error' => $e->getMessage(), 'refund_id' => $refund->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve refund'], 500);
+        }
     }
 
     /**
@@ -108,7 +120,7 @@ class RefundController extends Controller
      * Approves a pending refund request.
      *
      * @authenticated
-     * @urlParam id integer required The refund ID. Example: 1
+     * @urlParam refund required The refund ID. Example: 1
      * @bodyParam admin_notes string optional Internal notes about the approval. Example: Verified cancellation
      *
      * @response 200 {
@@ -116,36 +128,28 @@ class RefundController extends Controller
      *   "message": "Refund approved successfully",
      *   "data": {...}
      * }
-     * @response 400 {
-     *   "success": false,
-     *   "message": "Refund cannot be approved in current status"
-     * }
      */
     public function approve(Request $request, Refund $refund): JsonResponse
     {
-        if (!$refund->isPending()) {
+        try {
+            $approvedRefund = $this->refundService->approveRefund(
+                $refund, 
+                auth()->user(), 
+                $request->input('admin_notes')
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Refund approved successfully.',
+                'data' => $approvedRefund,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Refund approval failed', ['error' => $e->getMessage(), 'refund_id' => $refund->id]);
             return response()->json([
                 'success' => false,
-                'message' => 'Only pending refunds can be approved.',
+                'message' => $e->getMessage(),
             ], 400);
         }
-
-        $refund->approve(auth()->user());
-
-        if ($request->admin_notes) {
-            $refund->update(['admin_notes' => $request->admin_notes]);
-        }
-
-        Log::info('Refund approved', [
-            'refund_id' => $refund->id,
-            'approved_by' => auth()->id(),
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Refund approved successfully.',
-            'data' => $refund->fresh(),
-        ]);
     }
 
     /**
@@ -154,7 +158,7 @@ class RefundController extends Controller
      * Rejects a pending refund request.
      *
      * @authenticated
-     * @urlParam id integer required The refund ID. Example: 1
+     * @urlParam refund required The refund ID. Example: 1
      * @bodyParam admin_notes string required Reason for rejection. Example: Refund period has expired
      *
      * @response 200 {
@@ -165,30 +169,29 @@ class RefundController extends Controller
      */
     public function reject(Request $request, Refund $refund): JsonResponse
     {
-        $validated = $request->validate([
-            'admin_notes' => 'required|string|max:1000',
-        ]);
+        try {
+            $validated = $request->validate([
+                'admin_notes' => 'required|string|max:1000',
+            ]);
 
-        if (!$refund->isPending()) {
+            $rejectedRefund = $this->refundService->rejectRefund(
+                $refund, 
+                auth()->user(), 
+                $validated['admin_notes']
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Refund rejected.',
+                'data' => $rejectedRefund,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Refund rejection failed', ['error' => $e->getMessage(), 'refund_id' => $refund->id]);
             return response()->json([
                 'success' => false,
-                'message' => 'Only pending refunds can be rejected.',
+                'message' => $e->getMessage(),
             ], 400);
         }
-
-        $refund->reject(auth()->user(), $validated['admin_notes']);
-
-        Log::info('Refund rejected', [
-            'refund_id' => $refund->id,
-            'rejected_by' => auth()->id(),
-            'reason' => $validated['admin_notes'],
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Refund rejected.',
-            'data' => $refund->fresh(),
-        ]);
     }
 
     /**
@@ -197,16 +200,12 @@ class RefundController extends Controller
      * Initiates the refund processing through the payment gateway.
      *
      * @authenticated
-     * @urlParam id integer required The refund ID. Example: 1
+     * @urlParam refund required The refund ID. Example: 1
      *
      * @response 200 {
      *   "success": true,
      *   "message": "Refund processed successfully",
      *   "data": {...}
-     * }
-     * @response 400 {
-     *   "success": false,
-     *   "message": "Refund cannot be processed"
      * }
      */
     public function process(Refund $refund): JsonResponse
@@ -219,13 +218,8 @@ class RefundController extends Controller
                 'message' => 'Refund processed successfully.',
                 'data' => $processedRefund,
             ]);
-
         } catch (\Exception $e) {
-            Log::error('Refund processing failed', [
-                'refund_id' => $refund->id,
-                'error' => $e->getMessage(),
-            ]);
-
+            Log::error('Refund processing failed', ['error' => $e->getMessage(), 'refund_id' => $refund->id]);
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
@@ -252,11 +246,16 @@ class RefundController extends Controller
      */
     public function stats(): JsonResponse
     {
-        $stats = $this->refundService->getStats();
+        try {
+            $stats = $this->refundService->getStats();
 
-        return response()->json([
-            'success' => true,
-            'data' => $stats,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $stats,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get refund stats', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve statistics'], 500);
+        }
     }
 }

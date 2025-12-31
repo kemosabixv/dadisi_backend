@@ -1,0 +1,7 @@
+{
+    "success": true,
+    "message": "Profile picture updated",
+    "data": {
+        "profile_picture_url": "https://api.dadisilab.com/storage/profile-pictures/user_123_avatar.jpg"
+    }
+}

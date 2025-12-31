@@ -5,223 +5,222 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Tag;
+use App\Services\Contracts\BlogTaxonomyServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 /**
- * @group Author Blog Management
- *
- * APIs for authenticated authors to manage their own blog categories and tags.
- * Authors can create, update, and request deletion (soft-delete requires staff approval).
+ * @group Blog - Author
  */
 class AuthorBlogController extends Controller
 {
+    protected BlogTaxonomyServiceContract $taxonomyService;
+
+    public function __construct(BlogTaxonomyServiceContract $taxonomyService)
+    {
+        $this->taxonomyService = $taxonomyService;
+        $this->middleware('auth:sanctum');
+    }
+
     /**
-     * List author's categories
-     *
-     * Returns all categories created by the authenticated user.
-     *
+     * List Categories
+     * 
+     * @group Blog - Author
      * @authenticated
-     * @response 200 {"data": [{"id": 1, "name": "Agriculture", "slug": "agriculture", "description": "Urban farming tips", "post_count": 5, "requested_deletion_at": null}]}
      */
     public function listCategories(Request $request): JsonResponse
     {
-        // Return all categories so authors can select from system categories
-        $categories = Category::orderBy('name')->get();
-
-        return response()->json($categories);
+        try {
+            // Authors see all categories to select from
+            $categories = Category::orderBy('name')->get();
+            return response()->json(['success' => true, 'data' => $categories]);
+        } catch (\Exception $e) {
+            Log::error('AuthorBlogController listCategories failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to list categories'], 500);
+        }
     }
 
     /**
-     * Create a category
-     *
-     * Creates a new category owned by the authenticated user.
-     *
+     * Store Category
+     * 
+     * @group Blog - Author
      * @authenticated
-     * @bodyParam name string required The category name. Example: Technology
-     * @bodyParam description string optional The category description. Example: Posts about technology
-     * @response 201 {"id": 1, "name": "Technology", "slug": "technology", "description": null, "post_count": 0}
      */
     public function storeCategory(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:categories,name',
-            'description' => 'nullable|string|max:255',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:100|unique:categories,name',
+                'description' => 'nullable|string|max:255',
+            ]);
 
-        $category = Category::create([
-            'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
-            'description' => $validated['description'] ?? null,
-            'created_by' => $request->user()->id,
-        ]);
+            $category = $this->taxonomyService->createCategory($request->user(), $validated);
 
-        return response()->json($category, 201);
+            return response()->json(['success' => true, 'data' => $category], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('AuthorBlogController storeCategory failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create category'], 500);
+        }
     }
 
     /**
-     * Update a category
-     *
-     * Updates a category owned by the authenticated user.
-     *
+     * Update Category
+     * 
+     * @group Blog - Author
      * @authenticated
-     * @urlParam id integer required The category ID. Example: 1
-     * @bodyParam name string required The category name. Example: Updated Technology
-     * @bodyParam description string optional The category description.
-     * @response 200 {"id": 1, "name": "Updated Technology", "slug": "updated-technology", "description": null, "post_count": 5}
      */
     public function updateCategory(Request $request, Category $category): JsonResponse
     {
-        // Verify ownership
-        if ($category->created_by !== $request->user()->id) {
-            return response()->json(['message' => 'You can only update your own categories.'], 403);
+        try {
+            if ($category->created_by !== $request->user()->id) {
+                return response()->json(['success' => false, 'message' => 'You can only update your own categories.'], 403);
+            }
+
+            if ($category->requested_deletion_at) {
+                return response()->json(['success' => false, 'message' => 'Cannot update a category pending deletion.'], 403);
+            }
+
+            $validated = $request->validate([
+                'name' => 'required|string|max:100|unique:categories,name,' . $category->id,
+                'description' => 'nullable|string|max:255',
+            ]);
+
+            $updatedCategory = $this->taxonomyService->updateCategory($request->user(), $category, $validated);
+
+            return response()->json(['success' => true, 'data' => $updatedCategory]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('AuthorBlogController updateCategory failed', ['error' => $e->getMessage(), 'id' => $category->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update category'], 500);
         }
-
-        // Cannot update if pending deletion
-        if ($category->requested_deletion_at) {
-            return response()->json(['message' => 'Cannot update a category pending deletion.'], 403);
-        }
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:categories,name,' . $category->id,
-            'description' => 'nullable|string|max:255',
-        ]);
-
-        $category->update([
-            'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
-            'description' => $validated['description'] ?? null,
-        ]);
-
-        return response()->json($category->fresh());
     }
 
     /**
-     * Request category deletion
-     *
-     * Submits a deletion request for a category owned by the authenticated user.
-     * Actual deletion requires staff approval.
-     *
+     * Request Category Deletion
+     * 
+     * @group Blog - Author
      * @authenticated
-     * @urlParam id integer required The category ID. Example: 1
-     * @response 200 {"message": "Deletion request submitted for staff review."}
      */
     public function requestCategoryDeletion(Request $request, Category $category): JsonResponse
     {
-        // Verify ownership
-        if ($category->created_by !== $request->user()->id) {
-            return response()->json(['message' => 'You can only delete your own categories.'], 403);
+        try {
+            if ($category->created_by !== $request->user()->id) {
+                return response()->json(['success' => false, 'message' => 'You can only delete your own categories.'], 403);
+            }
+
+            if ($category->requested_deletion_at) {
+                return response()->json(['success' => false, 'message' => 'Deletion already requested.'], 400);
+            }
+
+            $this->taxonomyService->requestCategoryDeletion($request->user(), $category);
+
+            return response()->json(['success' => true, 'message' => 'Deletion request submitted for staff review.']);
+        } catch (\Exception $e) {
+            Log::error('AuthorBlogController requestCategoryDeletion failed', ['error' => $e->getMessage(), 'id' => $category->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to request deletion'], 500);
         }
-
-        // Already pending
-        if ($category->requested_deletion_at) {
-            return response()->json(['message' => 'Deletion already requested.'], 400);
-        }
-
-        $category->requestDeletion($request->user()->id);
-
-        return response()->json(['message' => 'Deletion request submitted for staff review.']);
     }
 
     /**
-     * List author's tags
-     *
-     * Returns all tags created by the authenticated user.
-     *
+     * List Tags
+     * 
+     * @group Blog - Author
      * @authenticated
-     * @response 200 {"data": [{"id": 1, "name": "Laravel", "slug": "laravel", "post_count": 3, "requested_deletion_at": null}]}
      */
     public function listTags(Request $request): JsonResponse
     {
-        // Return all tags so authors can select from system tags
-        $tags = Tag::orderBy('name')->get();
-
-        return response()->json($tags);
+        try {
+            $tags = Tag::orderBy('name')->get();
+            return response()->json(['success' => true, 'data' => $tags]);
+        } catch (\Exception $e) {
+            Log::error('AuthorBlogController listTags failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to list tags'], 500);
+        }
     }
 
     /**
-     * Create a tag
-     *
-     * Creates a new tag owned by the authenticated user.
-     *
+     * Store Tag
+     * 
+     * @group Blog - Author
      * @authenticated
-     * @bodyParam name string required The tag name. Example: Laravel
-     * @response 201 {"id": 1, "name": "Laravel", "slug": "laravel", "post_count": 0}
      */
     public function storeTag(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:tags,name',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:100|unique:tags,name',
+            ]);
 
-        $tag = Tag::create([
-            'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
-            'created_by' => $request->user()->id,
-        ]);
+            $tag = $this->taxonomyService->createTag($request->user(), $validated);
 
-        return response()->json($tag, 201);
+            return response()->json(['success' => true, 'data' => $tag], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('AuthorBlogController storeTag failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create tag'], 500);
+        }
     }
 
     /**
-     * Update a tag
-     *
-     * Updates a tag owned by the authenticated user.
-     *
+     * Update Tag
+     * 
+     * @group Blog - Author
      * @authenticated
-     * @urlParam id integer required The tag ID. Example: 1
-     * @bodyParam name string required The tag name. Example: Updated Laravel
-     * @response 200 {"id": 1, "name": "Updated Laravel", "slug": "updated-laravel", "post_count": 3}
      */
     public function updateTag(Request $request, Tag $tag): JsonResponse
     {
-        // Verify ownership
-        if ($tag->created_by !== $request->user()->id) {
-            return response()->json(['message' => 'You can only update your own tags.'], 403);
+        try {
+            if ($tag->created_by !== $request->user()->id) {
+                return response()->json(['success' => false, 'message' => 'You can only update your own tags.'], 403);
+            }
+
+            if ($tag->requested_deletion_at) {
+                return response()->json(['success' => false, 'message' => 'Cannot update a tag pending deletion.'], 403);
+            }
+
+            $validated = $request->validate([
+                'name' => 'required|string|max:100|unique:tags,name,' . $tag->id,
+            ]);
+
+            $updatedTag = $this->taxonomyService->updateTag($request->user(), $tag, $validated);
+
+            return response()->json(['success' => true, 'data' => $updatedTag]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('AuthorBlogController updateTag failed', ['error' => $e->getMessage(), 'id' => $tag->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to update tag'], 500);
         }
-
-        // Cannot update if pending deletion
-        if ($tag->requested_deletion_at) {
-            return response()->json(['message' => 'Cannot update a tag pending deletion.'], 403);
-        }
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:tags,name,' . $tag->id,
-        ]);
-
-        $tag->update([
-            'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
-        ]);
-
-        return response()->json($tag->fresh());
     }
 
     /**
-     * Request tag deletion
-     *
-     * Submits a deletion request for a tag owned by the authenticated user.
-     * Actual deletion requires staff approval.
-     *
+     * Request Tag Deletion
+     * 
+     * @group Blog - Author
      * @authenticated
-     * @urlParam id integer required The tag ID. Example: 1
-     * @response 200 {"message": "Deletion request submitted for staff review."}
      */
     public function requestTagDeletion(Request $request, Tag $tag): JsonResponse
     {
-        // Verify ownership
-        if ($tag->created_by !== $request->user()->id) {
-            return response()->json(['message' => 'You can only delete your own tags.'], 403);
+        try {
+            if ($tag->created_by !== $request->user()->id) {
+                return response()->json(['success' => false, 'message' => 'You can only delete your own tags.'], 403);
+            }
+
+            if ($tag->requested_deletion_at) {
+                return response()->json(['success' => false, 'message' => 'Deletion already requested.'], 400);
+            }
+
+            $this->taxonomyService->requestTagDeletion($request->user(), $tag);
+
+            return response()->json(['success' => true, 'message' => 'Deletion request submitted for staff review.']);
+        } catch (\Exception $e) {
+            Log::error('AuthorBlogController requestTagDeletion failed', ['error' => $e->getMessage(), 'id' => $tag->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to request deletion'], 500);
         }
-
-        // Already pending
-        if ($tag->requested_deletion_at) {
-            return response()->json(['message' => 'Deletion already requested.'], 400);
-        }
-
-        $tag->requestDeletion($request->user()->id);
-
-        return response()->json(['message' => 'Deletion request submitted for staff review.']);
     }
 }

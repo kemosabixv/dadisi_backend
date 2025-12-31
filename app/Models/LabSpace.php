@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class LabSpace extends Model
 {
@@ -15,45 +14,37 @@ class LabSpace extends Model
     protected $fillable = [
         'name',
         'slug',
-        'type',
         'description',
         'capacity',
+        'county',
+        'type',
         'image_path',
-        'amenities',
         'safety_requirements',
-        'hourly_rate',
-        'is_active',
+        'is_available',
+        'available_from',
+        'available_until',
+        'equipment_list',
+        'rules',
     ];
 
     protected $casts = [
-        'amenities' => 'array',
+        'is_available' => 'boolean',
+        'equipment_list' => 'array',
         'safety_requirements' => 'array',
-        'is_active' => 'boolean',
-        'hourly_rate' => 'decimal:2',
-        'capacity' => 'integer',
+        'available_from' => 'datetime:H:i',
+        'available_until' => 'datetime:H:i',
     ];
 
-    /**
-     * Boot the model.
-     */
-    protected static function boot(): void
-    {
-        parent::boot();
+    // ==================== Constants ====================
 
-        static::creating(function ($model) {
-            if (empty($model->slug)) {
-                $model->slug = Str::slug($model->name);
-            }
-        });
-    }
-
-    /**
-     * Get the route key for the model.
-     */
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
+    public const TYPE_DRY_LAB = 'dry_lab';
+    public const TYPE_WET_LAB = 'wet_lab';
+    public const TYPE_GREENHOUSE = 'greenhouse';
+    public const TYPE_MOBILE_LAB = 'mobile_lab';
+    public const TYPE_MAKERSPACE = 'makerspace';
+    public const TYPE_WORKSHOP = 'workshop';
+    public const TYPE_STUDIO = 'studio';
+    public const TYPE_OTHER = 'other';
 
     // ==================== Relationships ====================
 
@@ -65,36 +56,52 @@ class LabSpace extends Model
         return $this->hasMany(LabBooking::class);
     }
 
-    /**
-     * Get all maintenance blocks for this lab space.
-     */
-    public function maintenanceBlocks(): HasMany
-    {
-        return $this->hasMany(LabMaintenanceBlock::class);
-    }
-
     // ==================== Scopes ====================
 
     /**
-     * Scope to only active lab spaces.
+     * Scope to active lab spaces.
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('is_available', true);
     }
 
     /**
-     * Scope to filter by type.
+     * Scope to available lab spaces (alias for active).
+     */
+    public function scopeAvailable($query)
+    {
+        return $query->where('is_available', true);
+    }
+
+    /**
+     * Scope to filter by lab space type.
      */
     public function scopeByType($query, string $type)
     {
         return $query->where('type', $type);
     }
 
-    // ==================== Accessors ====================
+    /**
+     * Scope to lab spaces in a specific county.
+     */
+    public function scopeForCounty($query, string $county)
+    {
+        return $query->where('county', $county);
+    }
 
     /**
-     * Get the image URL.
+     * Scope to lab spaces with minimum capacity.
+     */
+    public function scopeWithCapacity($query, int $minCapacity)
+    {
+        return $query->where('capacity', '>=', $minCapacity);
+    }
+
+    // ==================== Accessors & Mutators ====================
+
+    /**
+     * Get the image URL for the lab space.
      */
     public function getImageUrlAttribute(): ?string
     {
@@ -102,11 +109,12 @@ class LabSpace extends Model
             return null;
         }
 
-        // Check if it's already a full URL
-        if (Str::startsWith($this->image_path, ['http://', 'https://'])) {
+        // If it's already a full URL, return as-is
+        if (filter_var($this->image_path, FILTER_VALIDATE_URL)) {
             return $this->image_path;
         }
 
+        // Otherwise, generate storage URL
         return asset('storage/' . $this->image_path);
     }
 
@@ -115,12 +123,38 @@ class LabSpace extends Model
      */
     public function getTypeNameAttribute(): string
     {
-        return match ($this->type) {
-            'wet_lab' => 'Wet Lab',
-            'dry_lab' => 'Dry Lab',
-            'greenhouse' => 'Greenhouse',
-            'mobile_lab' => 'Mobile Lab',
+        return match($this->type) {
+            self::TYPE_DRY_LAB => 'Dry Lab',
+            self::TYPE_WET_LAB => 'Wet Lab',
+            self::TYPE_GREENHOUSE => 'Greenhouse',
+            self::TYPE_MOBILE_LAB => 'Mobile Lab',
+            self::TYPE_MAKERSPACE => 'Makerspace',
+            self::TYPE_WORKSHOP => 'Workshop',
+            self::TYPE_STUDIO => 'Studio',
+            self::TYPE_OTHER => 'Other',
             default => ucfirst(str_replace('_', ' ', $this->type)),
         };
+    }
+
+    /**
+     * Legacy compatibility: Map is_available to status attribute.
+     * Returns 'active' or 'inactive' based on is_available.
+     */
+    public function getStatusAttribute(): string
+    {
+        return $this->is_available ? 'active' : 'inactive';
+    }
+
+    /**
+     * Legacy compatibility: Allow setting is_available via status attribute.
+     * Accepts 'active', 'inactive', or boolean values.
+     */
+    public function setStatusAttribute($value): void
+    {
+        if (is_bool($value)) {
+            $this->attributes['is_available'] = $value;
+        } elseif (is_string($value)) {
+            $this->attributes['is_available'] = strtolower($value) === 'active';
+        }
     }
 }
