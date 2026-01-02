@@ -30,7 +30,17 @@ class GroupService implements GroupServiceContract
             $query->where('is_active', (bool)$filters['active']);
         }
 
-        return $query->orderBy('name')->paginate($perPage);
+        // Handle sorting
+        $sortBy = $filters['sort'] ?? 'name';
+        $sortDir = $filters['order'] ?? 'asc';
+        
+        if ($sortBy === 'member_count') {
+            $query->orderBy('member_count', $sortDir);
+        } else {
+            $query->orderBy('name', $sortDir);
+        }
+
+        return $query->paginate($perPage);
     }
 
     /**

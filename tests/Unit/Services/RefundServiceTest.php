@@ -16,11 +16,17 @@ class RefundServiceTest extends TestCase
     use RefreshDatabase;
 
     private RefundService $service;
+    private User $admin;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RefundService();
+        \Spatie\Permission\Models\Role::create(['name' => 'admin']);
+        $this->admin = User::factory()->create();
+        $this->admin->assignRole('admin');
+        $this->service = new RefundService(
+            $this->createMock(\App\Services\PaymentGateway\GatewayManager::class)
+        );
     }
 
     public function test_cannot_request_refund_for_unpaid_order(): void
@@ -52,7 +58,7 @@ class RefundServiceTest extends TestCase
         ]);
 
         $payment = Payment::factory()->create([
-            'payable_type' => EventOrder::class,
+            'payable_type' => 'event_order',
             'payable_id' => $order->id,
             'status' => 'paid',
         ]);
@@ -89,7 +95,7 @@ class RefundServiceTest extends TestCase
         ]);
 
         Payment::factory()->create([
-            'payable_type' => EventOrder::class,
+            'payable_type' => 'event_order',
             'payable_id' => $order->id,
             'status' => 'paid',
         ]);

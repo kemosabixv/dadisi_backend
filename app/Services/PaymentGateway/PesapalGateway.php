@@ -223,7 +223,7 @@ class PesapalGateway implements PaymentGatewayInterface
                 $this->apiBase . '/Transactions/SubmitOrderRequest',
                 [
                     'id' => $identifier,
-                    'currency' => 'KES',
+                    'currency' => $metadata['currency'] ?? 'KES',
                     'amount' => $amount / 100,
                     'description' => $metadata['description'] ?? 'Dadisi Community Labs Payment',
                     'callback_url' => $this->callbackUrl,

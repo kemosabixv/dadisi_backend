@@ -29,6 +29,8 @@ class CreateLabSpaceRequest extends FormRequest
             'type' => ['required', Rule::in(['wet_lab', 'dry_lab', 'greenhouse', 'mobile_lab'])],
             'description' => ['nullable', 'string'],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'county' => ['nullable', 'string', 'max:100'],
+            'location' => ['nullable', 'string', 'max:255'],
             'image_path' => ['nullable', 'string'],
             'equipment_list' => ['nullable', 'array'],
             'equipment_list.*' => ['string'],

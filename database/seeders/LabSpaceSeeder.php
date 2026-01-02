@@ -39,6 +39,8 @@ class LabSpaceSeeder extends Seeder
                     'Lab coat and safety goggles required',
                     'No food or drinks in lab',
                 ],
+                'county' => 'Nairobi',
+                'location' => 'Main Campus, Block B',
                 'is_available' => true,
             ],
             [
@@ -64,6 +66,8 @@ class LabSpaceSeeder extends Seeder
                     'Computer Lab Usage Agreement',
                     'No food or drinks near equipment',
                 ],
+                'county' => 'Nairobi',
+                'location' => 'Innovation Hub, Floor 4',
                 'is_available' => true,
             ],
             [
@@ -91,6 +95,8 @@ class LabSpaceSeeder extends Seeder
                     'Sun protection recommended',
                     'Allergen awareness',
                 ],
+                'county' => 'Kiambu',
+                'location' => 'Agricultural Research Plot C',
                 'is_available' => true,
             ],
             [
@@ -118,12 +124,14 @@ class LabSpaceSeeder extends Seeder
                     'Personal Protective Equipment (PPE) usage',
                     'Emergency communication protocol knowledge',
                 ],
+                'county' => 'Mobile',
+                'location' => 'Various Locations',
                 'is_available' => true,
             ],
         ];
 
         foreach ($labSpaces as $spaceData) {
-            LabSpace::firstOrCreate(
+            LabSpace::updateOrCreate(
                 ['slug' => $spaceData['slug']],
                 $spaceData
             );

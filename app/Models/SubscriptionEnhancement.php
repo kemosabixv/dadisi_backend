@@ -82,4 +82,35 @@ class SubscriptionEnhancement extends Model
         $this->attributes['status'] = $value;
     }
 
+    /**
+     * Mark payment as failed with state and reason.
+     */
+    public function markPaymentFailed(string $failureState, ?string $reason = null): void
+    {
+        $this->update([
+            'status' => 'payment_failed',
+            'metadata' => array_merge($this->metadata ?? [], [
+                'failure_state' => $failureState,
+                'failure_reason' => $reason,
+                'last_failure_at' => now()->toDateTimeString(),
+            ]),
+        ]);
+    }
+
+    /**
+     * Cancel the enhancement record.
+     */
+    public function cancel(): void
+    {
+        $this->update(['status' => 'cancelled']);
+    }
+
+    /**
+     * Get payment failure state from metadata for tests.
+     */
+    public function getPaymentFailureStateAttribute(): ?string
+    {
+        return $this->metadata['failure_state'] ?? null;
+    }
+
 }

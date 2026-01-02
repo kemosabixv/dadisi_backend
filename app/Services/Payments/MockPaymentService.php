@@ -374,7 +374,7 @@ class MockPaymentService
             'transaction_id' => $transactionData['transaction_id'] ?? 'MOCK_' . Str::random(12),
             'order_id' => $transactionData['order_id'] ?? null,
             'amount' => $transactionData['amount'] ?? 0,
-            'currency' => 'KES',
+            'currency' => $transactionData['currency'] ?? 'KES',
             'message' => 'Payment completed successfully',
             'timestamp' => now()->toIso8601String(),
         ];

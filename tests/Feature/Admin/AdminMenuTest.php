@@ -47,9 +47,8 @@ class AdminMenuTest extends TestCase
                 'success',
                 'data' => [
                     '*' => [
-                        'key',
-                        'label',
-                        'href',
+                        'title',
+                        'path',
                     ],
                 ],
             ]);
@@ -90,9 +89,8 @@ class AdminMenuTest extends TestCase
         $this->assertNotEmpty($menuItems);
         foreach ($menuItems as $item) {
             $this->assertIsArray($item);
-            $this->assertArrayHasKey('key', $item);
-            $this->assertArrayHasKey('label', $item);
-            $this->assertArrayHasKey('href', $item);
+            $this->assertArrayHasKey('title', $item);
+            $this->assertArrayHasKey('path', $item);
         }
     }
 
@@ -110,12 +108,12 @@ class AdminMenuTest extends TestCase
         $response->assertStatus(200);
         $menuItems = $response->json('data');
 
-        // Content editor should only see overview and blog items
-        $keys = array_column($menuItems, 'key');
-        $this->assertContains('overview', $keys);
-        $this->assertContains('blog', $keys);
-        $this->assertNotContains('user_management', $keys);
-        $this->assertNotContains('roles_permissions', $keys);
+        // Content editor should only see dashboard and blog items
+        $titles = array_column($menuItems, 'title');
+        $this->assertContains('Dashboard', $titles);
+        $this->assertContains('Blog', $titles);
+        $this->assertNotContains('Users', $titles);
+        $this->assertNotContains('Roles & Permissions', $titles);
     }
 
     #[\PHPUnit\Framework\Attributes\Test]

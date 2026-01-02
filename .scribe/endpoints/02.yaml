@@ -113,7 +113,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       last_name:
         custom: []
@@ -124,7 +124,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       phone:
         custom: []
@@ -135,7 +135,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       gender:
         custom: []
@@ -146,7 +146,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       date_of_birth:
         custom: []
@@ -157,7 +157,7 @@ endpoints:
         type: date
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       occupation:
         custom: []
@@ -168,7 +168,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       membership_type:
         custom: []
@@ -179,7 +179,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       emergency_contact_name:
         custom: []
@@ -190,7 +190,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       emergency_contact_phone:
         custom: []
@@ -201,7 +201,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       terms_accepted:
         custom: []
@@ -236,7 +236,7 @@ endpoints:
         type: 'string[]'
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       bio:
         custom: []
@@ -247,7 +247,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
     cleanBodyParameters:
       county_id: 47

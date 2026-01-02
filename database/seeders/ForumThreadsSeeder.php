@@ -23,7 +23,7 @@ class ForumThreadsSeeder extends Seeder
         }
 
         $categories = ForumCategory::all();
-        $counties = County::limit(5)->get(); // Get a few counties for local threads
+        $counties = County::all(); // Get all counties for local threads
 
         // Topics to seed
         $topics = [
@@ -65,6 +65,84 @@ class ForumThreadsSeeder extends Seeder
                 'category_slug' => 'projects-collaboration',
                 'county_name' => 'Mombasa',
             ],
+            [
+                'title' => 'Kisumu Lakeside Innovation Hub',
+                'content' => "Excited to announce a new co-working space opening near the lake! Perfect for remote workers and startups. Grand opening next month.",
+                'category_slug' => 'announcements',
+                'county_name' => 'Kisumu',
+            ],
+            [
+                'title' => 'Nakuru Agricultural Tech Workshop',
+                'content' => "We're organizing a workshop on drone technology for farming. Free entry for all Nakuru residents. Register now!",
+                'category_slug' => 'events-meetups',
+                'county_name' => 'Nakuru',
+            ],
+            [
+                'title' => 'Uasin Gishu Youth Coding Bootcamp',
+                'content' => "Free 3-month coding bootcamp for youth aged 18-25 in Eldoret. Learn web development and get job placement support.",
+                'category_slug' => 'resources-learning',
+                'county_name' => 'Uasin Gishu',
+            ],
+            [
+                'title' => 'Kiambu Community Garden Project',
+                'content' => "Looking for volunteers to help establish a community vegetable garden in Thika. All produce will be shared with local families.",
+                'category_slug' => 'projects-collaboration',
+                'county_name' => 'Kiambu',
+            ],
+            [
+                'title' => 'Machakos Tech Ladies Meetup',
+                'content' => "Monthly meetup for women in tech in Machakos County. Share experiences, network, and learn from each other!",
+                'category_slug' => 'events-meetups',
+                'county_name' => 'Machakos',
+            ],
+            [
+                'title' => 'Nyeri Coffee Farmers Digital Literacy',
+                'content' => "Training program to help coffee farmers use mobile apps for market prices and weather updates. Register your interest!",
+                'category_slug' => 'resources-learning',
+                'county_name' => 'Nyeri',
+            ],
+            [
+                'title' => 'Garissa Solar Energy Initiative',
+                'content' => "Community solar panel installation project for schools in Garissa. Looking for technical volunteers and sponsors.",
+                'category_slug' => 'projects-collaboration',
+                'county_name' => 'Garissa',
+            ],
+            [
+                'title' => 'Kakamega Forest Conservation Tech',
+                'content' => "Using IoT sensors to monitor wildlife in Kakamega Forest. Any developers interested in contributing to the project?",
+                'category_slug' => 'technical-support',
+                'county_name' => 'Kakamega',
+            ],
+            [
+                'title' => 'Kilifi Beach Tourism App Development',
+                'content' => "Building a mobile app to promote local tourism in Kilifi. Need designers and developers to join the team!",
+                'category_slug' => 'projects-collaboration',
+                'county_name' => 'Kilifi',
+            ],
+            [
+                'title' => 'Baringo Water Management System',
+                'content' => "Implementing smart water meters in Baringo to help with conservation. Looking for community feedback on the pilot program.",
+                'category_slug' => 'announcements',
+                'county_name' => 'Baringo',
+            ],
+            [
+                'title' => 'Bomet Tea Farmers Cooperative Forum',
+                'content' => "Discussion thread for tea farmers in Bomet. Share tips, market updates, and connect with fellow farmers.",
+                'category_slug' => 'general-discussion',
+                'county_name' => 'Bomet',
+            ],
+            [
+                'title' => 'Kajiado Maasai Cultural Tech Initiative',
+                'content' => "Preserving Maasai heritage through digital storytelling. Looking for content creators and translators.",
+                'category_slug' => 'projects-collaboration',
+                'county_name' => 'Kajiado',
+            ],
+            [
+                'title' => 'Turkana Renewable Energy Discussion',
+                'content' => "Let's discuss the wind power projects in Turkana and their impact on local communities.",
+                'category_slug' => 'general-discussion',
+                'county_name' => 'Turkana',
+            ],
         ];
 
         foreach ($topics as $topicData) {
@@ -80,32 +158,36 @@ class ForumThreadsSeeder extends Seeder
             }
 
             // Create Thread
-            $thread = ForumThread::create([
-                'category_id' => $category->id,
-                'county_id' => $countyId,
-                'user_id' => $user->id,
-                'title' => $topicData['title'],
-                'slug' => Str::slug($topicData['title']) . '-' . Str::random(6),
-                'is_pinned' => $topicData['pinned'] ?? false,
-                'is_locked' => $topicData['locked'] ?? false,
-                'views_count' => rand(10, 500),
-            ]);
+            $thread = ForumThread::updateOrCreate(
+                ['slug' => Str::slug($topicData['title'])],
+                [
+                    'category_id' => $category->id,
+                    'county_id' => $countyId,
+                    'user_id' => $user->id,
+                    'title' => $topicData['title'],
+                    'is_pinned' => $topicData['pinned'] ?? false,
+                    'is_locked' => $topicData['locked'] ?? false,
+                    'views_count' => rand(10, 500),
+                ]
+            );
 
-            // Create Initial Post (OP)
-            $thread->posts()->create([
-                'user_id' => $user->id,
-                'content' => $topicData['content'],
-            ]);
+            // Create Initial Post (OP) if not exists
+            if ($thread->posts()->count() === 0) {
+                $thread->posts()->create([
+                    'user_id' => $user->id,
+                    'content' => $topicData['content'],
+                ]);
 
-            // Create Random Replies
-            if (!($topicData['locked'] ?? false)) {
-                $replyCount = rand(2, 8);
-                for ($i = 0; $i < $replyCount; $i++) {
-                    $replier = $users->random();
-                    $thread->posts()->create([
-                        'user_id' => $replier->id,
-                        'content' => $this->getRandomReply(),
-                    ]);
+                // Create Random Replies
+                if (!($topicData['locked'] ?? false)) {
+                    $replyCount = rand(2, 8);
+                    for ($i = 0; $i < $replyCount; $i++) {
+                        $replier = $users->random();
+                        $thread->posts()->create([
+                            'user_id' => $replier->id,
+                            'content' => $this->getRandomReply(),
+                        ]);
+                    }
                 }
             }
         }

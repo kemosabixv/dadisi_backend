@@ -77,6 +77,51 @@ class AdminGroupController extends Controller
     }
 
     /**
+     * Create a new community group.
+     * 
+     * @group Admin Community Groups
+     * @authenticated
+     * 
+     * @bodyParam name string required The name of the group. Example: Biotech Hub
+     * @bodyParam description string The description of the group.
+     * @bodyParam county_id integer required The county ID this group belongs to. Example: 1
+     * @bodyParam is_active boolean Enable/disable the group. Default: true.
+     * @bodyParam is_private boolean Set group as private. Default: false.
+     * 
+     * @response 201 {
+     *   "success": true,
+     *   "data": {"id": 1, "name": "Biotech Hub"},
+     *   "message": "Group created successfully."
+     * }
+     */
+    public function store(Request $request): JsonResponse
+    {
+        try {
+            $this->authorize('create', Group::class);
+
+            $validated = $request->validate([
+                'name' => 'required|string|max:100|unique:groups,name',
+                'description' => 'nullable|string',
+                'county_id' => 'required|integer|exists:counties,id',
+                'is_active' => 'boolean',
+                'is_private' => 'boolean',
+                'image_path' => 'nullable|string',
+            ]);
+
+            $group = $this->groupService->createGroup($validated);
+
+            return response()->json([
+                'success' => true,
+                'data' => $group,
+                'message' => 'Group created successfully.',
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to create community group', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create group: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Update a group.
      * 
      * @group Admin Community Groups

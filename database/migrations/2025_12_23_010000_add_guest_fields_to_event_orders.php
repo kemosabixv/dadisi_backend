@@ -8,7 +8,7 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * 
+     *
      * Adds guest checkout fields, promo code, and discount tracking to event orders.
      */
     public function up(): void
@@ -47,12 +47,12 @@ return new class extends Migration
             if (Schema::hasIndex('event_orders', 'event_orders_qr_code_token_index')) {
                 $table->dropIndex('event_orders_qr_code_token_index');
             }
-            
+
             // Drop unique constraint safely
             if (Schema::hasIndex('event_orders', 'event_orders_qr_code_token_unique')) {
                 $table->dropUnique('event_orders_qr_code_token_unique');
             }
-            
+
             // Drop foreign key safely
             if (Schema::hasColumn('event_orders', 'promo_code_id')) {
                 $table->dropForeign(['promo_code_id']);
@@ -70,7 +70,7 @@ return new class extends Migration
                 'qr_code_token',
                 'checked_in_at',
             ];
-            
+
             foreach ($columns as $column) {
                 if (Schema::hasColumn('event_orders', $column)) {
                     $table->dropColumn($column);

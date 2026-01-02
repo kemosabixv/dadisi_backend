@@ -45,7 +45,7 @@ class PaymentService implements PaymentServiceContract
     {
         return [
             'methods' => ['pesapal', 'mock'],
-            'currencies' => ['KES'],
+            'currencies' => ['KES', 'USD'],
             'billing_periods' => ['month', 'year'],
             'active_gateway' => GatewayManager::getActiveGateway(),
         ];

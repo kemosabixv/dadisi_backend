@@ -153,6 +153,14 @@ class BlogTaxonomyService implements BlogTaxonomyServiceContract
             ]);
     }
 
+    public function getAffectedPostsByCategory(Category $category, int $perPage = 15): LengthAwarePaginator
+    {
+        return $category->posts()
+            ->with(['author:id,username,email', 'county:id,name'])
+            ->latest()
+            ->paginate($perPage);
+    }
+
     /**
      * Tags
      */
@@ -286,6 +294,14 @@ class BlogTaxonomyService implements BlogTaxonomyServiceContract
                 'slug' => $tag->slug,
                 'post_count' => $tag->posts_count,
             ]);
+    }
+
+    public function getAffectedPostsByTag(Tag $tag, int $perPage = 15): LengthAwarePaginator
+    {
+        return $tag->posts()
+            ->with(['author:id,username,email', 'county:id,name'])
+            ->latest()
+            ->paginate($perPage);
     }
 
     /**

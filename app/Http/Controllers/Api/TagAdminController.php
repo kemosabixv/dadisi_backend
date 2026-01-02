@@ -205,4 +205,35 @@ class TagAdminController extends Controller
             return response()->json(['success' => false, 'message' => 'Failed to delete tag'], 500);
         }
     }
+
+    /**
+     * Affected Posts
+     * 
+     * List posts that will be affected if this tag is deleted.
+     * 
+     * @group Admin - Blog Tags
+     * @authenticated
+     */
+    public function affectedPosts(Tag $tag): JsonResponse
+    {
+        try {
+            $this->authorize('view', $tag);
+            $perPage = (int) request('per_page', 15);
+            $posts = $this->taxonomyService->getAffectedPostsByTag($tag, $perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $posts->items(),
+                'pagination' => [
+                    'total' => $posts->total(),
+                    'per_page' => $posts->perPage(),
+                    'current_page' => $posts->currentPage(),
+                    'last_page' => $posts->lastPage(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('TagAdminController affectedPosts failed', ['error' => $e->getMessage(), 'id' => $tag->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve affected posts'], 500);
+        }
+    }
 }

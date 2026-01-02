@@ -17,11 +17,10 @@ class SystemSettingTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Create an admin user - assuming 'admin' role existence isn't strictly enforced for this specific controller logic,
-        // but typically we'd attach a role. For now, we simulate an authenticated user.
-        $this->admin = User::factory()->create(); 
-        // Note: Real RBAC might deny this if middleware checks permissions. 
-        // Ensuring Sanctum auth is enough for the route protection we saw in api.php unless 'can' middleware was added.
+        // Create an admin user and assign the admin role
+        \Spatie\Permission\Models\Role::create(['name' => 'admin']);
+        $this->admin = User::factory()->create();
+        $this->admin->assignRole('admin');
     }
 
     #[Test]
@@ -69,8 +68,12 @@ class SystemSettingTest extends TestCase
                          ->putJson('/api/admin/system-settings', $payload);
 
         $response->assertStatus(200)
-                 ->assertJsonPath('data.pesapal.consumer_key', 'new_secret_key')
-                 ->assertJsonPath('data.pesapal.live_mode', true);
+                 ->assertJson([
+                     'data' => [
+                         'pesapal.consumer_key' => 'new_secret_key',
+                         'pesapal.live_mode' => true,
+                     ]
+                 ]);
 
         $this->assertDatabaseHas('system_settings', [
             'key' => 'pesapal.consumer_key',

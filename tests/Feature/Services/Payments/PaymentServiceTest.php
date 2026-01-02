@@ -59,6 +59,7 @@ class PaymentServiceTest extends TestCase
         $this->assertArrayHasKey('billing_periods', $metadata);
         $this->assertArrayHasKey('active_gateway', $metadata);
         $this->assertContains('KES', $metadata['currencies']);
+        $this->assertContains('USD', $metadata['currencies']);
     }
 
     // ============ Payment Processing Tests ============
@@ -125,6 +126,33 @@ class PaymentServiceTest extends TestCase
 
         $payment = Payment::find($result['payment_id']);
         $this->assertEquals('KES', $payment->currency);
+    }
+
+    #[Test]
+    /**
+     * Can initiate a payment with USD
+     */
+    public function it_can_initiate_payment_with_usd(): void
+    {
+        $data = [
+            'amount' => 50,
+            'currency' => 'USD',
+            'payment_method' => 'card',
+            'description' => 'USD Test payment',
+            'email' => 'usd@example.com',
+            'phone' => '254712345678',
+            'first_name' => 'Jane',
+            'last_name' => 'Doe',
+        ];
+
+        $result = $this->service->processPayment($this->payer, $data);
+
+        $this->assertArrayHasKey('payment_id', $result);
+        $this->assertEquals('pending', $result['status']);
+        
+        $payment = Payment::find($result['payment_id']);
+        $this->assertEquals('USD', $payment->currency);
+        $this->assertEquals(50, $payment->amount);
     }
 
     // ============ Payment Verification Tests ============

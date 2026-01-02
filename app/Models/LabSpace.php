@@ -17,6 +17,7 @@ class LabSpace extends Model
         'description',
         'capacity',
         'county',
+        'location',
         'type',
         'image_path',
         'safety_requirements',
@@ -33,6 +34,13 @@ class LabSpace extends Model
         'safety_requirements' => 'array',
         'available_from' => 'datetime:H:i',
         'available_until' => 'datetime:H:i',
+    ];
+
+    protected $appends = [
+        'image_url',
+        'type_name',
+        'is_active',
+        'amenities',
     ];
 
     // ==================== Constants ====================
@@ -156,5 +164,21 @@ class LabSpace extends Model
         } elseif (is_string($value)) {
             $this->attributes['is_available'] = strtolower($value) === 'active';
         }
+    }
+
+    /**
+     * Frontend compatibility: Map is_available to is_active.
+     */
+    public function getIsActiveAttribute(): bool
+    {
+        return $this->is_available;
+    }
+
+    /**
+     * Frontend compatibility: Map equipment_list to amenities.
+     */
+    public function getAmenitiesAttribute(): array
+    {
+        return $this->equipment_list ?? [];
     }
 }

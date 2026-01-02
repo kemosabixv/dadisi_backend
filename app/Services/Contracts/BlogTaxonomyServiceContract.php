@@ -18,6 +18,7 @@ interface BlogTaxonomyServiceContract
     public function deleteCategory(Authenticatable $actor, Category $category): bool;
     public function requestCategoryDeletion(Authenticatable $actor, Category $category): bool;
     public function getPublicCategories(): \Illuminate\Support\Collection;
+    public function getAffectedPostsByCategory(Category $category, int $perPage = 15): LengthAwarePaginator;
 
     /**
      * Tags
@@ -28,6 +29,7 @@ interface BlogTaxonomyServiceContract
     public function deleteTag(Authenticatable $actor, Tag $tag): bool;
     public function requestTagDeletion(Authenticatable $actor, Tag $tag): bool;
     public function getPublicTags(): \Illuminate\Support\Collection;
+    public function getAffectedPostsByTag(Tag $tag, int $perPage = 15): LengthAwarePaginator;
 
     /**
      * Deletion Reviews

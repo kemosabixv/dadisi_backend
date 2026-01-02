@@ -189,4 +189,35 @@ class CategoryAdminController extends Controller
             return response()->json(['success' => false, 'message' => 'Failed to delete category'], 500);
         }
     }
+
+    /**
+     * Affected Posts
+     * 
+     * List posts that will be affected if this category is deleted.
+     * 
+     * @group Admin - Blog Categories
+     * @authenticated
+     */
+    public function affectedPosts(Category $category): JsonResponse
+    {
+        try {
+            $this->authorize('view', $category);
+            $perPage = (int) request('per_page', 15);
+            $posts = $this->taxonomyService->getAffectedPostsByCategory($category, $perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $posts->items(),
+                'pagination' => [
+                    'total' => $posts->total(),
+                    'per_page' => $posts->perPage(),
+                    'current_page' => $posts->currentPage(),
+                    'last_page' => $posts->lastPage(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('CategoryAdminController affectedPosts failed', ['error' => $e->getMessage(), 'id' => $category->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve affected posts'], 500);
+        }
+    }
 }

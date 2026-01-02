@@ -23,6 +23,7 @@ class EventResource extends JsonResource
                 return [
                     'id' => $this->category->id,
                     'name' => $this->category->name,
+                    'slug' => $this->category->slug,
                 ];
             }),
             'venue' => $this->venue,

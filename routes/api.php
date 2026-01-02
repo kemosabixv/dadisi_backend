@@ -705,6 +705,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // Forum Groups Management
     Route::get('groups', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'index'])->name('admin.groups.index');
+    Route::post('groups', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'store'])->name('admin.groups.store');
     Route::put('groups/{group}', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'update'])->name('admin.groups.update');
     Route::delete('groups/{group}', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'destroy'])->name('admin.groups.destroy');
     Route::get('groups/{group}/members', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'members'])->name('admin.groups.members');

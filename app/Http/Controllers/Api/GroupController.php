@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * @group County Groups
+ *
  * @groupDescription API endpoints for managing county-based community groups and memberships.
  *
  * Groups are automatically generated from counties and serve as local hubs for discussions.
@@ -16,9 +17,8 @@ use Illuminate\Support\Facades\Log;
  */
 class GroupController extends Controller
 {
-    public function __construct(private GroupServiceContract $groupService)
-    {
-    }
+    public function __construct(private GroupServiceContract $groupService) {}
+
     /**
      * List all county groups.
      *
@@ -26,6 +26,7 @@ class GroupController extends Controller
      * Supports filtering by county ID and searching by name.
      *
      * @group County Groups
+     *
      * @unauthenticated
      *
      * @queryParam county_id integer Filter groups by specific county ID. Example: 1
@@ -58,19 +59,40 @@ class GroupController extends Controller
             $filters = [
                 'search' => $request->input('search'),
                 'county_id' => $request->input('county_id'),
+                'sort' => $request->input('sort', 'name'),
+                'order' => $request->input('order', 'asc'),
             ];
             $perPage = $request->input('per_page', 15);
 
             $groups = $this->groupService->listGroups($filters, $perPage);
 
-            // Add is_member flag if authenticated
+            // Add is_member flag and thread_count if authenticated
             $userId = $request->user()?->id;
+            $sortBy = $filters['sort'];
+            $sortOrder = $filters['order'];
+
             $groups->getCollection()->transform(function ($group) use ($userId) {
-                $group->is_member = $userId 
-                    ? $group->members()->where('user_id', $userId)->exists() 
+                $group->is_member = $userId
+                    ? $group->members()->where('user_id', $userId)->exists()
                     : false;
+
+                // Add thread count for this county's discussions
+                $group->thread_count = $group->county_id
+                    ? \App\Models\ForumThread::where('county_id', $group->county_id)->count()
+                    : 0;
+
                 return $group;
             });
+
+            // Handle thread_count sorting (computed field, must sort in PHP)
+            if ($sortBy === 'thread_count') {
+                $sorted = $groups->getCollection()->sortBy(
+                    fn ($g) => $g->thread_count,
+                    SORT_REGULAR,
+                    $sortOrder === 'desc'
+                )->values();
+                $groups->setCollection($sorted);
+            }
 
             return response()->json([
                 'data' => $groups->items(),
@@ -83,6 +105,7 @@ class GroupController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve groups', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to retrieve groups'], 500);
         }
     }
@@ -117,12 +140,12 @@ class GroupController extends Controller
         try {
             $group = \App\Models\Group::where('slug', $slug)->active()->firstOrFail();
             $group->load(['county', 'members' => function ($query) {
-                $query->limit(20)->with('memberProfile:user_id,first_name,last_name,profile_picture_path');
+                $query->limit(20)->with('memberProfile:user_id,first_name,last_name');
             }]);
 
             $userId = $request->user()?->id;
-            $group->is_member = $userId 
-                ? $group->members()->where('user_id', $userId)->exists() 
+            $group->is_member = $userId
+                ? $group->members()->where('user_id', $userId)->exists()
                 : false;
 
             // Get recent discussions tagged with this county
@@ -135,6 +158,11 @@ class GroupController extends Controller
                     ->get();
             }
 
+            // Count threads for this county
+            $threadCount = $group->county_id
+                ? \App\Models\ForumThread::where('county_id', $group->county_id)->count()
+                : 0;
+
             return response()->json([
                 'data' => [
                     'id' => $group->id,
@@ -143,12 +171,14 @@ class GroupController extends Controller
                     'description' => $group->description,
                     'image_path' => $group->image_path,
                     'county' => $group->county,
+                    'county_id' => $group->county_id,
                     'member_count' => $group->member_count,
+                    'thread_count' => $threadCount,
                     'is_member' => $group->is_member,
-                    'members' => $group->members->map(fn($m) => [
+                    'members' => $group->members->map(fn ($m) => [
                         'id' => $m->id,
                         'username' => $m->username,
-                        'profile_picture' => $m->memberProfile?->profile_picture_path,
+                        'profile_picture' => $m->profile_picture_path,
                         'joined_at' => $m->pivot->joined_at,
                     ]),
                     'recent_discussions' => $recentDiscussions,
@@ -158,6 +188,7 @@ class GroupController extends Controller
             return response()->json(['success' => false, 'message' => 'Group not found'], 404);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve group', ['error' => $e->getMessage(), 'slug' => $slug]);
+
             return response()->json(['success' => false, 'message' => 'Failed to retrieve group'], 500);
         }
     }
@@ -168,6 +199,7 @@ class GroupController extends Controller
      * Join a community group as a member.
      *
      * @authenticated
+     *
      * @urlParam slug string required The group slug. Example: nairobi-community
      *
      * @response 200 { "message": "Successfully joined the group." }
@@ -198,10 +230,10 @@ class GroupController extends Controller
             return response()->json(['success' => false, 'message' => 'Group not found'], 404);
         } catch (\Exception $e) {
             Log::error('Failed to join group', ['error' => $e->getMessage(), 'slug' => $slug, 'user_id' => $request->user()->id]);
+
             return response()->json(['success' => false, 'message' => 'Failed to join group'], 500);
         }
     }
-
 
     /**
      * Leave a group
@@ -209,6 +241,7 @@ class GroupController extends Controller
      * Leave a community group.
      *
      * @authenticated
+     *
      * @urlParam slug string required The group slug. Example: nairobi-community
      *
      * @response 200 { "message": "Successfully left the group." }
@@ -220,7 +253,7 @@ class GroupController extends Controller
             $group = \App\Models\Group::where('slug', $slug)->active()->firstOrFail();
             $user = $request->user();
 
-            if (!$group->hasMember($user)) {
+            if (! $group->hasMember($user)) {
                 return response()->json(['message' => 'You are not a member of this group.'], 422);
             }
 
@@ -231,6 +264,7 @@ class GroupController extends Controller
             return response()->json(['success' => false, 'message' => 'Group not found'], 404);
         } catch (\Exception $e) {
             Log::error('Failed to leave group', ['error' => $e->getMessage(), 'slug' => $slug, 'user_id' => $request->user()->id]);
+
             return response()->json(['success' => false, 'message' => 'Failed to leave group'], 500);
         }
     }
@@ -241,6 +275,7 @@ class GroupController extends Controller
      * Get paginated members of a group.
      *
      * @urlParam slug string required The group slug. Example: nairobi-community
+     *
      * @queryParam per_page integer Items per page. Example: 20
      *
      * @response 200 {
@@ -269,6 +304,7 @@ class GroupController extends Controller
             return response()->json(['success' => false, 'message' => 'Group not found'], 404);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve group members', ['error' => $e->getMessage(), 'slug' => $slug]);
+
             return response()->json(['success' => false, 'message' => 'Failed to retrieve group members'], 500);
         }
     }

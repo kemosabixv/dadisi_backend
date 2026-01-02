@@ -86,14 +86,13 @@ class UIPermissionService
         }
 
         // Dashboard - always for admin users
-        $menu[] = ['key' => 'overview', 'label' => 'Dashboard', 'href' => '/admin', 'icon' => 'dashboard'];
+        $menu[] = ['title' => 'Dashboard', 'path' => '/admin', 'icon' => 'dashboard'];
 
         // Users
         if ($this->user->can('view_all_users') || $this->user->can('manage_users')) {
             $menu[] = [
-                'key' => 'user_management',
-                'label' => 'Users',
-                'href' => '/admin/users',
+                'title' => 'Users',
+                'path' => '/admin/users',
                 'icon' => 'users',
                 'badge' => $this->user->can('manage_users') ? 'manage' : null,
             ];
@@ -102,9 +101,8 @@ class UIPermissionService
         // Events
         if ($this->user->can('view_all_events')) {
             $menu[] = [
-                'key' => 'events',
-                'label' => 'Events',
-                'href' => '/admin/events',
+                'title' => 'Events',
+                'path' => '/admin/events',
                 'icon' => 'calendar',
                 'badge' => $this->user->can('create_events') ? 'create' : null,
             ];
@@ -113,9 +111,8 @@ class UIPermissionService
         // Content
         if ($this->user->can('view_all_posts') || $this->user->can('create_posts')) {
             $menu[] = [
-                'key' => 'blog',
-                'label' => 'Content',
-                'href' => '/admin/blog', // Updated path to actual blog admin
+                'title' => 'Blog',
+                'path' => '/admin/blog', // Updated path to actual blog admin
                 'icon' => 'file-text',
             ];
         }
@@ -123,9 +120,8 @@ class UIPermissionService
         // Roles (only if can manage roles)
         if ($this->user->can('manage_roles')) {
             $menu[] = [
-                'key' => 'roles_permissions',
-                'label' => 'Roles & Permissions',
-                'href' => '/admin/roles',
+                'title' => 'Roles & Permissions',
+                'path' => '/admin/roles',
                 'icon' => 'shield',
             ];
         }
@@ -133,9 +129,8 @@ class UIPermissionService
         // Donations
         if ($this->user->can('view_donation_ledger')) {
             $menu[] = [
-                'key' => 'donations',
-                'label' => 'Donations',
-                'href' => '/admin/donations',
+                'title' => 'Donations',
+                'path' => '/admin/donations',
                 'icon' => 'dollar-sign',
             ];
         }
@@ -143,9 +138,8 @@ class UIPermissionService
         // Plans & Subscriptions
         if ($this->user->can('manage_plans') || $this->user->can('view_plans')) {
             $menu[] = [
-                'key' => 'plans',
-                'label' => 'Plans',
-                'href' => '/admin/plans',
+                'title' => 'Plans',
+                'path' => '/admin/plans',
                 'icon' => 'credit-card',
             ];
         }
@@ -153,18 +147,17 @@ class UIPermissionService
         // Reports
         if ($this->user->can('view_reports')) {
             $menu[] = [
-                'key' => 'reports',
-                'label' => 'Reports',
-                'href' => '/admin/reports',
+                'title' => 'Reports',
+                'path' => '/admin/reports',
+                'icon' => 'bar-chart',
             ];
         }
 
         // Student Approvals
         if ($this->user->can('view_student_approvals')) {
             $menu[] = [
-                'key' => 'student_approvals',
-                'label' => 'Student Approvals',
-                'href' => '/admin/student-approvals',
+                'title' => 'Student Approvals',
+                'path' => '/admin/student-approvals',
                 'icon' => 'graduation-cap',
                 'badge' => $this->user->can('approve_student_approvals') ? 'action' : null,
             ];
@@ -173,9 +166,8 @@ class UIPermissionService
         // Lab Spaces
         if ($this->user->can('view_all_lab_bookings') || $this->user->can('manage_lab_spaces')) {
             $menu[] = [
-                'key' => 'lab_spaces',
-                'label' => 'Lab Spaces',
-                'href' => '/admin/spaces',
+                'title' => 'Lab Spaces',
+                'path' => '/admin/spaces',
                 'icon' => 'flask',
                 'badge' => $this->user->can('manage_lab_spaces') ? 'manage' : null,
             ];
@@ -184,9 +176,8 @@ class UIPermissionService
         // Forums
         if ($this->user->can('moderate_forum') || $this->user->can('manage_forum_categories') || $this->user->can('manage_forum_tags')) {
             $menu[] = [
-                'key' => 'forums',
-                'label' => 'Forums',
-                'href' => '/admin/forums',
+                'title' => 'Forums',
+                'path' => '/admin/forums',
                 'icon' => 'message-square',
                 'badge' => $this->user->can('moderate_forum') ? 'moderate' : null,
             ];
@@ -195,9 +186,8 @@ class UIPermissionService
         // Settings
         if ($this->user->can('configure_exchange_rates') || $this->user->can('manage_retention_settings')) {
             $menu[] = [
-                'key' => 'settings',
-                'label' => 'Settings',
-                'href' => '/admin/settings',
+                'title' => 'Settings',
+                'path' => '/admin/settings',
                 'icon' => 'settings',
             ];
         }

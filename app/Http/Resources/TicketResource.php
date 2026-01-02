@@ -16,9 +16,9 @@ class TicketResource extends JsonResource
             'description' => $this->description,
             'price' => (float) $this->price,
             'currency' => $this->currency,
-            'quantity' => $this->quantity,
-            'available' => $this->available,
-            'order_limit' => $this->order_limit,
+            'capacity' => $this->quantity,
+            'is_sold_out' => $this->quantity !== null && $this->available <= 0,
+            'available_until' => $this->available_until?->toIso8601String(),
             'is_active' => (bool) $this->is_active,
         ];
     }

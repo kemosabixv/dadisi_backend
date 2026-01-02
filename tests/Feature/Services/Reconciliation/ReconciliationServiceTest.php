@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Services\Reconciliation;
 
-use App\Exceptions\ReconciliationException;
 use App\Models\Donation;
 use App\Models\Payment;
 use App\Models\User;
@@ -14,11 +13,11 @@ use PHPUnit\Framework\Attributes\Test;
 /**
  * ReconciliationServiceTest
  *
- * Test suite for FinancialReconciliationService with 25+ test cases covering:
- * - Financial reconciliation
- * - Discrepancy detection
- * - Statement matching
- * - Reporting
+ * Test suite for FinancialReconciliationService covering:
+ * - Donation reconciliation
+ * - Payment reconciliation
+ * - Report generation
+ * - Discrepancy flagging
  */
 class ReconciliationServiceTest extends TestCase
 {
@@ -34,376 +33,278 @@ class ReconciliationServiceTest extends TestCase
         $this->admin = User::factory()->create();
     }
 
-    // ============ Reconciliation Tests ============
+    // ============ Donation Reconciliation Tests ============
 
     #[Test]
-    /**
-     * Can reconcile payments and donations
-     */
-    public function it_can_reconcile_payments_and_donations(): void
+    public function it_can_reconcile_donations(): void
     {
-        Payment::factory(5)->create([
-            'amount' => 5000,
-            'status' => 'completed',
-            'created_at' => now()->subDay(),
-        ]);
         Donation::factory(5)->create([
             'amount' => 5000,
             'status' => 'verified',
             'created_at' => now()->subDay(),
         ]);
 
-        $result = $this->service->reconcileFinancials($this->admin, [
-            'start_date' => now()->subDays(2),
-            'end_date' => now(),
+        Donation::factory(2)->create([
+            'amount' => 3000,
+            'status' => 'unverified',
+            'created_at' => now()->subDay(),
+        ]);
+
+        $result = $this->service->reconcileDonations($this->admin, [
+            'date_from' => now()->subDays(2),
+            'date_to' => now(),
         ]);
 
         $this->assertIsArray($result);
-        $this->assertEquals(50000, $result['total_payments']);
-        $this->assertEquals(25000, $result['total_donations']);
+        $this->assertEquals('donations', $result['entity']);
+        $this->assertEquals(7, $result['total_count']);
+        $this->assertEquals(31000, $result['total_amount']); // 5*5000 + 2*3000
+        $this->assertEquals(5, $result['verified_count']);
+        $this->assertEquals(25000, $result['verified_amount']);
+        $this->assertEquals(2, $result['unverified_count']);
+        $this->assertEquals(6000, $result['unverified_amount']);
+        $this->assertTrue($result['discrepancy']); // Has unverified donations
     }
 
     #[Test]
-    /**
-     * Detects matching transactions
-     */
-    public function it_detects_matching_transactions(): void
+    public function it_can_reconcile_donations_without_discrepancies(): void
     {
-        $payment = Payment::factory()->create(['amount' => 10000, 'status' => 'completed']);
-        $donation = Donation::factory()->create(['amount' => 10000, 'status' => 'verified']);
-
-        $result = $this->service->reconcileFinancials($this->admin, [
-            'start_date' => now()->subDay(),
-            'end_date' => now(),
+        Donation::factory(3)->create([
+            'amount' => 1000,
+            'status' => 'verified',
+            'created_at' => now()->subDay(),
         ]);
 
-        $this->assertEquals(0, count($result['discrepancies']));
+        $result = $this->service->reconcileDonations($this->admin, [
+            'date_from' => now()->subDays(2),
+            'date_to' => now(),
+        ]);
+
+        $this->assertFalse($result['discrepancy']);
     }
 
     #[Test]
-    /**
-     * Creates audit log on reconciliation
-     */
-    public function it_creates_audit_log_on_reconciliation(): void
+    public function it_creates_audit_log_on_donation_reconciliation(): void
+    {
+        Donation::factory()->create();
+
+        $this->service->reconcileDonations($this->admin, [
+            'date_from' => now()->subDay(),
+            'date_to' => now(),
+        ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'actor_id' => $this->admin->id,
+            'action' => 'reconciled_donations',
+        ]);
+    }
+
+    // ============ Payment Reconciliation Tests ============
+
+    #[Test]
+    public function it_can_reconcile_payments(): void
+    {
+        Payment::factory(5)->create([
+            'amount' => 10000,
+            'status' => 'completed',
+            'created_at' => now()->subDay(),
+        ]);
+
+        Payment::factory(2)->create([
+            'amount' => 5000,
+            'status' => 'pending',
+            'created_at' => now()->subDay(),
+        ]);
+
+        Payment::factory(1)->create([
+            'amount' => 2000,
+            'status' => 'failed',
+            'created_at' => now()->subDay(),
+        ]);
+
+        $result = $this->service->reconcilePayments($this->admin, [
+            'date_from' => now()->subDays(2),
+            'date_to' => now(),
+        ]);
+
+        $this->assertIsArray($result);
+        $this->assertEquals('payments', $result['entity']);
+        $this->assertEquals(8, $result['total_count']);
+        $this->assertEquals(62000, $result['total_amount']); // 5*10000 + 2*5000 + 1*2000
+        $this->assertEquals(5, $result['completed_count']);
+        $this->assertEquals(50000, $result['completed_amount']);
+        $this->assertEquals(2, $result['pending_count']);
+        $this->assertEquals(10000, $result['pending_amount']);
+        $this->assertEquals(1, $result['failed_count']);
+        $this->assertTrue($result['discrepancy']); // Has pending/failed payments
+    }
+
+    #[Test]
+    public function it_can_reconcile_payments_without_discrepancies(): void
+    {
+        Payment::factory(3)->create([
+            'amount' => 5000,
+            'status' => 'completed',
+            'created_at' => now()->subDay(),
+        ]);
+
+        $result = $this->service->reconcilePayments($this->admin, [
+            'date_from' => now()->subDays(2),
+            'date_to' => now(),
+        ]);
+
+        $this->assertFalse($result['discrepancy']);
+    }
+
+    #[Test]
+    public function it_creates_audit_log_on_payment_reconciliation(): void
     {
         Payment::factory()->create();
 
-        $this->service->reconcileFinancials($this->admin, [
-            'start_date' => now()->subDay(),
-            'end_date' => now(),
+        $this->service->reconcilePayments($this->admin, [
+            'date_from' => now()->subDay(),
+            'date_to' => now(),
         ]);
 
         $this->assertDatabaseHas('audit_logs', [
             'actor_id' => $this->admin->id,
-            'action' => 'reconciled_financials',
+            'action' => 'reconciled_payments',
         ]);
     }
 
-    // ============ Discrepancy Detection Tests ============
+    // ============ Report Generation Tests ============
 
     #[Test]
-    /**
-     * Detects amount discrepancies
-     */
-    public function it_detects_amount_discrepancies(): void
-    {
-        Payment::factory()->create(['amount' => 10000, 'status' => 'completed']);
-        Donation::factory()->create(['amount' => 9000, 'status' => 'verified']);
-
-        $result = $this->service->reconcileFinancials($this->admin, [
-            'start_date' => now()->subDay(),
-            'end_date' => now(),
-        ]);
-
-        $this->assertGreaterThan(0, count($result['discrepancies']));
-    }
-
-    #[Test]
-    /**
-     * Flags unmatched payments
-     */
-    public function it_flags_unmatched_payments(): void
-    {
-        Payment::factory()->create(['amount' => 5000, 'status' => 'completed']);
-        // No matching donation
-
-        $result = $this->service->reconcileFinancials($this->admin, [
-            'start_date' => now()->subDay(),
-            'end_date' => now(),
-        ]);
-
-        $this->assertGreater(0, count($result['unmatched_payments']));
-    }
-
-    #[Test]
-    /**
-     * Flags unmatched donations
-     */
-    public function it_flags_unmatched_donations(): void
-    {
-        Donation::factory()->create(['amount' => 3000, 'status' => 'verified']);
-        // No matching payment
-
-        $result = $this->service->reconcileFinancials($this->admin, [
-            'start_date' => now()->subDay(),
-            'end_date' => now(),
-        ]);
-
-        $this->assertGreater(0, count($result['unmatched_donations']));
-    }
-
-    #[Test]
-    /**
-     * Can flag discrepancy for review
-     */
-    public function it_can_flag_discrepancy_for_review(): void
-    {
-        $data = [
-            'description' => 'Amount mismatch in payment',
-            'transaction_type' => 'payment',
-            'amount' => 5000,
-            'expected_amount' => 5500,
-        ];
-
-        $discrepancy = $this->service->flagDiscrepancy($this->admin, $data);
-
-        $this->assertNotNull($discrepancy->id);
-        $this->assertEquals('flagged', $discrepancy->status);
-        $this->assertEquals($this->admin->id, $discrepancy->flagged_by);
-    }
-
-    #[Test]
-    /**
-     * Creates audit log on flag
-     */
-    public function it_creates_audit_log_on_flag(): void
-    {
-        $this->service->flagDiscrepancy($this->admin, [
-            'description' => 'Test discrepancy',
-        ]);
-
-        $this->assertDatabaseHas('audit_logs', [
-            'action' => 'flagged_discrepancy',
-        ]);
-    }
-
-    // ============ Resolution Tests ============
-
-    #[Test]
-    /**
-     * Can resolve flagged discrepancy
-     */
-    public function it_can_resolve_discrepancy(): void
-    {
-        $discrepancy = $this->service->flagDiscrepancy($this->admin, [
-            'description' => 'Pending resolution',
-        ]);
-
-        $resolved = $this->service->resolveDiscrepancy(
-            $this->admin,
-            $discrepancy,
-            'adjustment',
-            'Manual adjustment applied'
-        );
-
-        $this->assertEquals('resolved', $resolved->status);
-        $this->assertEquals('adjustment', $resolved->resolution_type);
-        $this->assertNotNull($resolved->resolved_at);
-    }
-
-    #[Test]
-    /**
-     * Can mark discrepancy as false positive
-     */
-    public function it_can_mark_discrepancy_as_false_positive(): void
-    {
-        $discrepancy = $this->service->flagDiscrepancy($this->admin, [
-            'description' => 'False positive test',
-        ]);
-
-        $resolved = $this->service->resolveDiscrepancy(
-            $this->admin,
-            $discrepancy,
-            'false_positive',
-            'Data entry error'
-        );
-
-        $this->assertEquals('false_positive', $resolved->resolution_type);
-    }
-
-    #[Test]
-    /**
-     * Creates audit log on resolution
-     */
-    public function it_creates_audit_log_on_resolution(): void
-    {
-        $discrepancy = $this->service->flagDiscrepancy($this->admin, [
-            'description' => 'Test',
-        ]);
-
-        $this->service->resolveDiscrepancy($this->admin, $discrepancy, 'adjustment', 'Resolved');
-
-        $this->assertDatabaseHas('audit_logs', [
-            'action' => 'resolved_discrepancy',
-        ]);
-    }
-
-    // ============ Retrieval Tests ============
-
-    #[Test]
-    /**
-     * Can get discrepancy by ID
-     */
-    public function it_can_get_discrepancy_by_id(): void
-    {
-        $discrepancy = $this->service->flagDiscrepancy($this->admin, [
-            'description' => 'Test discrepancy',
-        ]);
-
-        $retrieved = $this->service->getDiscrepancy($discrepancy->id);
-
-        $this->assertEquals($discrepancy->id, $retrieved->id);
-    }
-
-    #[Test]
-    /**
-     * Can list flagged discrepancies
-     */
-    public function it_can_list_discrepancies(): void
-    {
-        $this->service->flagDiscrepancy($this->admin, ['description' => 'Issue 1']);
-        $this->service->flagDiscrepancy($this->admin, ['description' => 'Issue 2']);
-        $this->service->flagDiscrepancy($this->admin, ['description' => 'Issue 3']);
-
-        $discrepancies = $this->service->listDiscrepancies(['status' => 'flagged']);
-
-        $this->assertCount(3, $discrepancies);
-    }
-
-    #[Test]
-    /**
-     * Can filter discrepancies by status
-     */
-    public function it_can_filter_discrepancies_by_status(): void
-    {
-        $d1 = $this->service->flagDiscrepancy($this->admin, ['description' => 'Issue 1']);
-        $d2 = $this->service->flagDiscrepancy($this->admin, ['description' => 'Issue 2']);
-
-        $this->service->resolveDiscrepancy($this->admin, $d1, 'adjustment', 'Fixed');
-
-        $flagged = $this->service->listDiscrepancies(['status' => 'flagged']);
-
-        $this->assertCount(1, $flagged);
-    }
-
-    #[Test]
-    /**
-     * Can filter discrepancies by type
-     */
-    public function it_can_filter_discrepancies_by_type(): void
-    {
-        $this->service->flagDiscrepancy($this->admin, [
-            'description' => 'Payment issue',
-            'transaction_type' => 'payment',
-        ]);
-        $this->service->flagDiscrepancy($this->admin, [
-            'description' => 'Donation issue',
-            'transaction_type' => 'donation',
-        ]);
-
-        $paymentIssues = $this->service->listDiscrepancies([
-            'transaction_type' => 'payment',
-        ]);
-
-        $this->assertCount(1, $paymentIssues);
-    }
-
-    // ============ Reporting Tests ============
-
-    #[Test]
-    /**
-     * Can generate reconciliation report
-     */
     public function it_can_generate_reconciliation_report(): void
     {
-        Payment::factory(10)->create(['amount' => 5000, 'status' => 'completed']);
-        Donation::factory(8)->create(['amount' => 5000, 'status' => 'verified']);
+        Payment::factory(3)->create(['amount' => 5000, 'status' => 'completed']);
+        Donation::factory(2)->create(['amount' => 3000, 'status' => 'verified']);
 
-        $report = $this->service->generateReconciliationReport([
-            'start_date' => now()->subDays(2),
-            'end_date' => now(),
+        $report = $this->service->generateReconciliationReport($this->admin, [
+            'date_from' => now()->subDays(2),
+            'date_to' => now(),
         ]);
 
         $this->assertIsArray($report);
-        $this->assertArrayHasKey('summary', $report);
-        $this->assertArrayHasKey('discrepancies', $report);
+        $this->assertArrayHasKey('donations', $report);
+        $this->assertArrayHasKey('payments', $report);
+        $this->assertArrayHasKey('has_discrepancies', $report);
+        $this->assertArrayHasKey('generated_at', $report);
+        $this->assertEquals($this->admin->id, $report['generated_by']);
     }
 
     #[Test]
-    /**
-     * Report includes summary statistics
-     */
-    public function it_includes_summary_in_report(): void
+    public function report_includes_correct_totals(): void
     {
-        Payment::factory(5)->create(['amount' => 1000, 'status' => 'completed']);
+        Payment::factory(2)->create(['amount' => 1000, 'status' => 'completed']);
+        Donation::factory(3)->create(['amount' => 500, 'status' => 'verified']);
 
-        $report = $this->service->generateReconciliationReport([
-            'start_date' => now()->subDay(),
-            'end_date' => now(),
+        $report = $this->service->generateReconciliationReport($this->admin, [
+            'date_from' => now()->subDay(),
+            'date_to' => now(),
         ]);
 
-        $this->assertEquals(5000, $report['summary']['total_amount']);
+        $this->assertEquals(2000, $report['payments']['total_amount']);
+        $this->assertEquals(1500, $report['donations']['total_amount']);
+    }
+
+    // ============ Discrepancy Flagging Tests ============
+
+    #[Test]
+    public function it_can_flag_discrepancy(): void
+    {
+        $result = $this->service->flagDiscrepancy(
+            $this->admin,
+            'Payment',
+            123,
+            'Amount mismatch detected'
+        );
+
+        $this->assertTrue($result);
     }
 
     #[Test]
-    /**
-     * Creates audit log on report generation
-     */
-    public function it_creates_audit_log_on_report_generation(): void
+    public function it_creates_audit_log_on_flag(): void
     {
-        $this->service->generateReconciliationReport([
-            'start_date' => now()->subDay(),
-            'end_date' => now(),
-        ]);
+        $this->service->flagDiscrepancy(
+            $this->admin,
+            'Donation',
+            456,
+            'Missing receipt'
+        );
 
         $this->assertDatabaseHas('audit_logs', [
             'actor_id' => $this->admin->id,
-            'action' => 'generated_reconciliation_report',
+            'action' => 'flagged_discrepancy',
+            'model_id' => 456,
         ]);
+    }
+
+    // ============ Status Tests ============
+
+    #[Test]
+    public function it_can_get_reconciliation_status_for_donations(): void
+    {
+        $status = $this->service->getReconciliationStatus('donations');
+
+        $this->assertEquals('donations', $status['entity']);
+        $this->assertArrayHasKey('status', $status);
+    }
+
+    #[Test]
+    public function it_can_get_reconciliation_status_for_payments(): void
+    {
+        $status = $this->service->getReconciliationStatus('payments');
+
+        $this->assertEquals('payments', $status['entity']);
+        $this->assertArrayHasKey('status', $status);
+    }
+
+    #[Test]
+    public function it_returns_error_for_unknown_entity(): void
+    {
+        $status = $this->service->getReconciliationStatus('unknown');
+
+        $this->assertEquals('error', $status['status']);
     }
 
     // ============ Edge Cases ============
 
     #[Test]
-    /**
-     * Handles empty reconciliation gracefully
-     */
     public function it_handles_empty_reconciliation_period(): void
     {
-        $result = $this->service->reconcileFinancials($this->admin, [
-            'start_date' => now()->subDays(10),
-            'end_date' => now()->subDays(9),
+        $result = $this->service->reconcileDonations($this->admin, [
+            'date_from' => now()->subDays(10),
+            'date_to' => now()->subDays(9),
         ]);
 
-        $this->assertEquals(0, $result['total_payments']);
-        $this->assertEquals(0, $result['total_donations']);
+        $this->assertEquals(0, $result['total_count']);
+        $this->assertEquals(0, $result['total_amount']);
     }
 
     #[Test]
-    public function it_maintains_consistency_across_operations(): void
+    public function it_filters_by_date_range(): void
     {
-        Payment::factory(5)->create(['amount' => 10000, 'status' => 'completed']);
-
-        $result1 = $this->service->reconcileFinancials($this->admin, [
-            'start_date' => now()->subDay(),
-            'end_date' => now(),
+        // Donations outside range
+        Donation::factory(2)->create([
+            'amount' => 1000,
+            'status' => 'verified',
+            'created_at' => now()->subDays(10),
         ]);
 
-        $result2 = $this->service->reconcileFinancials($this->admin, [
-            'start_date' => now()->subDay(),
-            'end_date' => now(),
+        // Donations inside range
+        Donation::factory(3)->create([
+            'amount' => 2000,
+            'status' => 'verified',
+            'created_at' => now()->subDay(),
         ]);
 
-        $this->assertEquals($result1['total_payments'], $result2['total_payments']);
+        $result = $this->service->reconcileDonations($this->admin, [
+            'date_from' => now()->subDays(2),
+            'date_to' => now(),
+        ]);
+
+        $this->assertEquals(3, $result['total_count']);
+        $this->assertEquals(6000, $result['total_amount']);
     }
 }

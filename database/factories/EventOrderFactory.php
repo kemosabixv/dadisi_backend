@@ -24,16 +24,14 @@ class EventOrderFactory extends Factory
             'quantity' => $quantity,
             'unit_price' => $unitPrice,
             'original_amount' => $originalAmount,
-            'promo_discount' => 0,
-            'subscriber_discount' => 0,
+            'promo_discount_amount' => 0,
+            'subscriber_discount_amount' => 0,
             'total_amount' => $originalAmount,
             'currency' => 'KES',
             'status' => 'pending',
-            'attendee_name' => $this->faker->name(),
-            'attendee_email' => $this->faker->safeEmail(),
-            'attendee_phone' => $this->faker->phoneNumber(),
-            'qr_code_token' => Str::random(32),
-            'order_reference' => 'ORD-' . strtoupper(Str::random(10)),
+            'guest_name' => null,
+            'guest_email' => null,
+            'guest_phone' => null,
         ];
     }
 
@@ -58,8 +56,8 @@ class EventOrderFactory extends Factory
         return $this->state(function (array $attrs) use ($percent) {
             $discount = $attrs['original_amount'] * ($percent / 100);
             return [
-                'promo_discount' => $discount,
-                'total_amount' => $attrs['original_amount'] - $discount - ($attrs['subscriber_discount'] ?? 0),
+                'promo_discount_amount' => $discount,
+                'total_amount' => $attrs['original_amount'] - $discount - ($attrs['subscriber_discount_amount'] ?? 0),
             ];
         });
     }
