@@ -83,7 +83,7 @@ class GroupService implements GroupServiceContract
     public function listMembers(Group $group, int $perPage = 20): LengthAwarePaginator
     {
         return $group->members()
-            ->with('memberProfile:user_id,first_name,last_name,profile_picture_path')
+            ->with('memberProfile:user_id,first_name,last_name')
             ->paginate($perPage);
     }
 

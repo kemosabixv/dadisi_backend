@@ -8,6 +8,7 @@ use App\Services\Contracts\GroupServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Auth\Access\AuthorizationException;
 
 /**
  * @group Admin Community Groups
@@ -70,8 +71,13 @@ class AdminGroupController extends Controller
                     'total' => $groups->total(),
                 ],
             ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('Failed to list community groups', ['error' => $e->getMessage()]);
+            Log::error('Failed to list community groups', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['success' => false, 'message' => 'Failed to retrieve groups'], 500);
         }
     }
@@ -115,8 +121,13 @@ class AdminGroupController extends Controller
                 'data' => $group,
                 'message' => 'Group created successfully.',
             ], 201);
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('Failed to create community group', ['error' => $e->getMessage()]);
+            Log::error('Failed to create community group', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['success' => false, 'message' => 'Failed to create group: ' . $e->getMessage()], 500);
         }
     }
@@ -158,8 +169,14 @@ class AdminGroupController extends Controller
                 'data' => $updatedGroup,
                 'message' => 'Group updated successfully.',
             ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('Failed to update community group', ['error' => $e->getMessage(), 'group_id' => $group->id]);
+            Log::error('Failed to update community group', [
+                'error' => $e->getMessage(),
+                'group_id' => $group->id,
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['success' => false, 'message' => 'Failed to update group'], 500);
         }
     }
@@ -188,8 +205,14 @@ class AdminGroupController extends Controller
                 'success' => true,
                 'message' => 'Group deleted successfully.',
             ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('Failed to delete community group', ['error' => $e->getMessage(), 'group_id' => $group->id]);
+            Log::error('Failed to delete community group', [
+                'error' => $e->getMessage(),
+                'group_id' => $group->id,
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['success' => false, 'message' => 'Failed to delete group'], 500);
         }
     }
@@ -225,8 +248,14 @@ class AdminGroupController extends Controller
                     'total' => $members->total(),
                 ],
             ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('Failed to list group members', ['error' => $e->getMessage(), 'group_id' => $group->id]);
+            Log::error('Failed to list group members', [
+                'error' => $e->getMessage(),
+                'group_id' => $group->id,
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['success' => false, 'message' => 'Failed to retrieve members'], 500);
         }
     }
@@ -256,11 +285,14 @@ class AdminGroupController extends Controller
                 'success' => true,
                 'message' => 'Member removed successfully.',
             ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Failed to remove group member', [
                 'error' => $e->getMessage(), 
                 'group_id' => $group->id,
-                'user_id' => $userId
+                'user_id' => $userId,
+                'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['success' => false, 'message' => 'Failed to remove member'], 500);
         }

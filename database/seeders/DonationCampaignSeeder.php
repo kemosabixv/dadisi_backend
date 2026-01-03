@@ -173,7 +173,14 @@ class DonationCampaignSeeder extends Seeder
             
             // Assign seed image
             if (app()->environment('local', 'testing', 'staging')) {
-                $campaignData['hero_image_path'] = $campaignImages[$campaignData['title']] ?? null;
+                $imagePath = $campaignImages[$campaignData['title']] ?? null;
+                
+                // Prepend staging domain for staging environment
+                if ($imagePath && app()->environment('staging')) {
+                    $imagePath = 'https://api.dadisilab.com/storage/' . $imagePath;
+                }
+                
+                $campaignData['hero_image_path'] = $imagePath;
             }
             
             DonationCampaign::create($campaignData);

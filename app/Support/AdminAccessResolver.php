@@ -43,15 +43,24 @@ class AdminAccessResolver
                 'finance', 'finance_admin',
                 'events_manager',
                 'content_editor', 'editor',
+                'moderator', 'forum_moderator',
             ];
 
             // Spatie's hasAnyRole will handle arrays and return false if roles are absent.
             if (method_exists($user, 'hasAnyRole')) {
-                 $hasRole = $user->hasAnyRole($roles);
-                 Log::info('AdminAccessResolver check', ['user_id' => $user->id, 'roles_checked' => $roles, 'has_role' => $hasRole, 'user_roles' => $user->getRoleNames()]);
-                 if ($hasRole) {
+                // Check if user has any of the admin roles
+                $hasRole = $user->hasAnyRole($roles) ||
+                           $user->hasAnyRole($roles, 'api');
+
+                Log::info('AdminAccessResolver check', [
+                    'user_id' => $user->id,
+                    'roles_checked' => $roles,
+                    'has_role' => $hasRole,
+                    'user_roles' => $user->getRoleNames()
+                ]);
+                if ($hasRole) {
                     return true;
-                 }
+                }
             }
 
             // Fallback: member profile flag

@@ -2,12 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\AdminAccessResolver;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Symfony\Component\HttpFoundation\Response;
-use App\Support\AdminAccessResolver;
 
 class AdminMiddleware
 {
@@ -20,11 +20,11 @@ class AdminMiddleware
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             abort(401);
         }
 
-        $key = 'admin_access:' . $user->id;
+        $key = 'admin_access:'.$user->id;
 
         // Rate limit (10 attempts per minute)
         if (RateLimiter::tooManyAttempts($key, 60)) {
@@ -40,7 +40,7 @@ class AdminMiddleware
         RateLimiter::hit($key, 60);
 
         // Authorization check
-        if (!AdminAccessResolver::canAccessAdmin($user)) {
+        if (! AdminAccessResolver::canAccessAdmin($user)) {
             Log::warning('Unauthorized admin access attempt', [
                 'user_id' => $user->id,
                 'username' => $user->username ?? 'unknown',

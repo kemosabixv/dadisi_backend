@@ -92,9 +92,9 @@ class PublicPostController extends Controller
 
             // Get related posts (same category, exclude current)
             $relatedPosts = Post::published()
-                ->whereHas('categories', fn($q) => $q->whereIn('category_id', $post->categories->pluck('id')))
+                ->whereHas('categories', fn($q) => $q->whereIn('categories.id', $post->categories->pluck('id')))
                 ->where('id', '!=', $post->id)
-                ->with('author:id,username')
+                ->with(['author:id,username', 'categories', 'tags', 'media', 'county:id,name'])
                 ->limit(3)
                 ->get();
 

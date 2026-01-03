@@ -282,7 +282,14 @@ class SampleEventsSeeder extends Seeder
                     'Innovation Summit 2025' => 'seed-images/tech-hub.png',
                 ];
                 
-                $event->update(['image_path' => $eventImages[$eventData['title']] ?? null]);
+                $imagePath = $eventImages[$eventData['title']] ?? null;
+                
+                // Prepend staging domain for staging environment
+                if ($imagePath && app()->environment('staging')) {
+                    $imagePath = 'https://api.dadisilab.com/storage/' . $imagePath;
+                }
+                
+                $event->update(['image_path' => $imagePath]);
             }
 
             // Attach tags

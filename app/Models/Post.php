@@ -32,6 +32,8 @@ class Post extends Model
     ];
 
     protected $casts = [
+        'user_id' => 'integer',
+        'county_id' => 'integer',
         'published_at' => 'datetime',
         'is_featured' => 'boolean',
         'views_count' => 'integer', // Cast views_count as integer for proper handling

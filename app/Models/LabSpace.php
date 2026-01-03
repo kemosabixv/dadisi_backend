@@ -29,6 +29,7 @@ class LabSpace extends Model
     ];
 
     protected $casts = [
+        'capacity' => 'integer',
         'is_available' => 'boolean',
         'equipment_list' => 'array',
         'safety_requirements' => 'array',

@@ -177,6 +177,7 @@ class RolesPermissionsSeeder extends Seeder
             'moderator' => [
                 'view_forum', 'create_threads', 'reply_threads',
                 'moderate_forum', 'lock_threads', 'pin_threads', 'delete_any_thread',
+                'manage_groups', 'manage_group_members',
             ],
             'forum_moderator' => [
                 'view_forum', 'create_threads', 'reply_threads', 'send_messages', 'view_messages',

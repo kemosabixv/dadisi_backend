@@ -22,6 +22,7 @@ class Tag extends Model
     ];
 
     protected $casts = [
+        'post_count' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'requested_deletion_at' => 'datetime',

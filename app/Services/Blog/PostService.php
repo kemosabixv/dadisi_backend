@@ -25,7 +25,7 @@ class PostService implements PostServiceContract
 {
     public function listPosts(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = Post::with(['author:id,username', 'categories', 'tags', 'county:id,name']);
+        $query = Post::with(['author:id,username', 'categories', 'tags', 'media', 'county:id,name']);
 
         if (($filters['status'] ?? null) === 'trashed') {
             $query->onlyTrashed();
@@ -445,7 +445,7 @@ class PostService implements PostServiceContract
     public function listPublishedPosts(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = Post::published()
-            ->with(['author:id,username', 'categories', 'tags', 'county:id,name']);
+            ->with(['author:id,username', 'categories', 'tags', 'media', 'county:id,name']);
 
         $categoryFilter = $filters['category_id'] ?? $filters['category'] ?? null;
         if ($categoryFilter) {
