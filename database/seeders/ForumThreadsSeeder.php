@@ -24,6 +24,7 @@ class ForumThreadsSeeder extends Seeder
 
         $categories = ForumCategory::all();
         $counties = County::all(); // Get all counties for local threads
+        $groups = \App\Models\Group::all(); // Get all groups to link threads
 
         // Topics to seed
         $topics = [
@@ -152,9 +153,15 @@ class ForumThreadsSeeder extends Seeder
             if (!$category) continue;
 
             $countyId = null;
+            $groupId = null;
             if (isset($topicData['county_name'])) {
                 $county = $counties->where('name', $topicData['county_name'])->first();
                 $countyId = $county?->id;
+                
+                if ($countyId) {
+                    $group = $groups->where('county_id', $countyId)->first();
+                    $groupId = $group?->id;
+                }
             }
 
             // Create Thread
@@ -163,6 +170,7 @@ class ForumThreadsSeeder extends Seeder
                 [
                     'category_id' => $category->id,
                     'county_id' => $countyId,
+                    'group_id' => $groupId,
                     'user_id' => $user->id,
                     'title' => $topicData['title'],
                     'is_pinned' => $topicData['pinned'] ?? false,

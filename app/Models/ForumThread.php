@@ -14,9 +14,10 @@ class ForumThread extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'category_id',
         'user_id',
         'county_id',
+        'group_id',
+        'category_id',
         'title',
         'slug',
         'is_pinned',
@@ -63,6 +64,14 @@ class ForumThread extends Model
     public function posts(): HasMany
     {
         return $this->hasMany(ForumPost::class, 'thread_id');
+    }
+
+    /**
+     * Get the group that owns the thread.
+     */
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class);
     }
 
     /**

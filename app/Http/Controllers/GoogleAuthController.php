@@ -33,7 +33,7 @@ class GoogleAuthController extends Controller
     public function redirectToGoogle()
     {
         /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
-        $driver = Socialite::driver('google');
+        $driver = Socialite::driver('google')->stateless();
 
         // Always show account picker to prevent popup suppression after first login
         return $driver
@@ -51,7 +51,7 @@ class GoogleAuthController extends Controller
      */
     public function handleGoogleCallbackApi(Request $request)
     {
-        $googleUser = Socialite::driver('google')->user();
+        $googleUser = Socialite::driver('google')->stateless()->user();
 
         $email = $googleUser->getEmail();
 

@@ -27,6 +27,8 @@ class ForumThreadFactory extends Factory
         return [
             'category_id' => ForumCategory::factory(),
             'user_id' => User::factory(),
+            'county_id' => null,
+            'group_id' => null,
             'title' => $title,
             'slug' => Str::slug($title) . '-' . Str::random(6),
             'is_pinned' => false,

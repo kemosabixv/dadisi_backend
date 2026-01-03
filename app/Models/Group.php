@@ -48,6 +48,14 @@ class Group extends Model
     }
 
     /**
+     * Get the forum threads associated with this group.
+     */
+    public function forumThreads(): HasMany
+    {
+        return $this->hasMany(ForumThread::class);
+    }
+
+    /**
      * Get the group memberships.
      */
     public function memberships(): HasMany

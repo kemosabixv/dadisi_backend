@@ -18,9 +18,10 @@ interface GroupServiceContract
      *
      * @param array $filters Filters (search, active)
      * @param int $perPage Results per page
+     * @param int|null $userId Optional user ID for membership check
      * @return LengthAwarePaginator
      */
-    public function listGroups(array $filters = [], int $perPage = 20): LengthAwarePaginator;
+    public function listGroups(array $filters = [], int $perPage = 20, ?int $userId = null): LengthAwarePaginator;
 
     /**
      * Create a new group

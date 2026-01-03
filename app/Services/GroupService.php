@@ -18,9 +18,17 @@ class GroupService implements GroupServiceContract
     /**
      * @inheritDoc
      */
-    public function listGroups(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    public function listGroups(array $filters = [], int $perPage = 20, ?int $userId = null): LengthAwarePaginator
     {
-        $query = Group::with('county')->withCount('members');
+        $query = Group::with('county')
+            ->withCount('members')
+            ->withCount('forumThreads as thread_count');
+
+        if ($userId) {
+            $query->withExists(['members as is_member' => function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            }]);
+        }
 
         if (!empty($filters['search'])) {
             $query->where('name', 'like', '%' . $filters['search'] . '%');
@@ -35,7 +43,9 @@ class GroupService implements GroupServiceContract
         $sortDir = $filters['order'] ?? 'asc';
         
         if ($sortBy === 'member_count') {
-            $query->orderBy('member_count', $sortDir);
+            $query->orderBy('members_count', $sortDir);
+        } elseif ($sortBy === 'thread_count') {
+            $query->orderBy('thread_count', $sortDir);
         } else {
             $query->orderBy('name', $sortDir);
         }

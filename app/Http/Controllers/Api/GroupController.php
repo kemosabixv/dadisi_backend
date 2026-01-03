@@ -56,43 +56,11 @@ class GroupController extends Controller
     public function index(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
-            $filters = [
-                'search' => $request->input('search'),
-                'county_id' => $request->input('county_id'),
-                'sort' => $request->input('sort', 'name'),
-                'order' => $request->input('order', 'asc'),
-            ];
+            $userId = $request->user()?->id;
+            $filters = $request->only(['search', 'county_id', 'sort', 'order']);
             $perPage = $request->input('per_page', 15);
 
-            $groups = $this->groupService->listGroups($filters, $perPage);
-
-            // Add is_member flag and thread_count if authenticated
-            $userId = $request->user()?->id;
-            $sortBy = $filters['sort'];
-            $sortOrder = $filters['order'];
-
-            $groups->getCollection()->transform(function ($group) use ($userId) {
-                $group->is_member = $userId
-                    ? $group->members()->where('user_id', $userId)->exists()
-                    : false;
-
-                // Add thread count for this county's discussions
-                $group->thread_count = $group->county_id
-                    ? \App\Models\ForumThread::where('county_id', $group->county_id)->count()
-                    : 0;
-
-                return $group;
-            });
-
-            // Handle thread_count sorting (computed field, must sort in PHP)
-            if ($sortBy === 'thread_count') {
-                $sorted = $groups->getCollection()->sortBy(
-                    fn ($g) => $g->thread_count,
-                    SORT_REGULAR,
-                    $sortOrder === 'desc'
-                )->values();
-                $groups->setCollection($sorted);
-            }
+            $groups = $this->groupService->listGroups($filters, (int)$perPage, $userId);
 
             return response()->json([
                 'data' => $groups->items(),
@@ -148,20 +116,15 @@ class GroupController extends Controller
                 ? $group->members()->where('user_id', $userId)->exists()
                 : false;
 
-            // Get recent discussions tagged with this county
-            $recentDiscussions = [];
-            if ($group->county_id) {
-                $recentDiscussions = \App\Models\ForumThread::where('county_id', $group->county_id)
-                    ->with(['user:id,username', 'category:id,name,slug'])
-                    ->latest()
-                    ->limit(10)
-                    ->get();
-            }
+            // Get recent discussions associated with this group
+            $recentDiscussions = $group->forumThreads()
+                ->with(['user:id,username', 'category:id,name,slug'])
+                ->latest()
+                ->limit(10)
+                ->get();
 
-            // Count threads for this county
-            $threadCount = $group->county_id
-                ? \App\Models\ForumThread::where('county_id', $group->county_id)->count()
-                : 0;
+            // Count threads for this group
+            $threadCount = $group->forumThreads()->count();
 
             return response()->json([
                 'data' => [
