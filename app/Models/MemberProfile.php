@@ -57,6 +57,10 @@ class MemberProfile extends Model
         'show_post_count' => 'boolean',
         'show_interests' => 'boolean',
         'show_occupation' => 'boolean',
+        'id' => 'integer',
+        'user_id' => 'integer',
+        'county_id' => 'integer',
+        'plan_id' => 'integer',
     ];
 
     /**

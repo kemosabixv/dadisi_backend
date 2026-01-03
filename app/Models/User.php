@@ -246,6 +246,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'id' => 'integer',
+            'active_subscription_id' => 'integer',
         ];
     }
     /**
