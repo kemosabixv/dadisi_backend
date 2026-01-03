@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Plan;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use App\Models\Plan;
 
 class PlanSeeder extends Seeder
 {
@@ -21,8 +21,8 @@ class PlanSeeder extends Seeder
             $plan = Plan::updateOrCreate(
                 ['slug' => $slug],
                 [
-                    'name' => json_encode(['en' => $planData['name']]),
-                    'description' => json_encode(['en' => $planData['description']]),
+                    'name' => ['en' => $planData['name']],
+                    'description' => ['en' => $planData['description']],
                     'base_monthly_price' => $planData['monthly_price'],
                     'price' => $planData['monthly_price'],
                     'signup_fee' => 0,
@@ -31,38 +31,40 @@ class PlanSeeder extends Seeder
                     'trial_interval' => 'day',
                     'grace_period' => 0,
                     'grace_interval' => 'day',
+                    'invoice_period' => 1,
+                    'invoice_interval' => 'month',
                     'is_active' => true,
                     'sort_order' => $planData['sort_order'],
                 ]
             );
 
             // Clear existing features and recreate
-            $plan->features()->delete();
+            $plan->features()->forceDelete();
 
             // Add display features (descriptive)
             foreach ($planData['features'] as $featureName) {
                 $plan->features()->create([
-                    'name' => json_encode(['en' => $featureName]),
-                    'slug' => Str::slug($featureName . '-' . $plan->id . '-' . Str::random(6)),
+                    'name' => ['en' => $featureName],
+                    'slug' => Str::slug($featureName.'-'.$plan->id.'-'.Str::random(6)),
                     'value' => 'true',
-                    'description' => json_encode(['en' => '']),
+                    'description' => ['en' => ''],
                 ]);
             }
 
             // Add quota features (machine-readable for enforcement)
             foreach ($planData['quotas'] as $quota) {
                 $plan->features()->create([
-                    'name' => json_encode(['en' => $quota['name']]),
-                    'slug' => $quota['slug'] . '-' . $plan->id,
+                    'name' => ['en' => $quota['name']],
+                    'slug' => $quota['slug'].'-'.$plan->id,
                     'value' => (string) $quota['limit'], // 0 = unlimited
-                    'description' => json_encode(['en' => $quota['description']]),
+                    'description' => ['en' => $quota['description']],
                     'resettable_period' => $quota['resettable_period'] ?? 1,
                     'resettable_interval' => $quota['resettable_interval'] ?? 'month',
                 ]);
             }
         }
 
-        $this->command->info('PlanSeeder completed: ' . count($plans) . ' plans seeded with quotas.');
+        $this->command->info('PlanSeeder completed: '.count($plans).' plans seeded with quotas.');
     }
 
     private function getPlansData(): array

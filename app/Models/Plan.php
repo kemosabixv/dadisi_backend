@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Services\Contracts\ExchangeRateServiceContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Laravelcm\Subscriptions\Models\Plan as BasePlan;
-use App\Services\Contracts\ExchangeRateServiceContract;
 
 class Plan extends BasePlan
 {
@@ -47,9 +47,10 @@ class Plan extends BasePlan
     public function setAttribute($key, $value)
     {
         // Skip the vendor package's 'active' attribute; use 'is_active' instead
-        if ($key === 'active' && !isset($this->attributes['active'])) {
+        if ($key === 'active' && ! isset($this->attributes['active'])) {
             $key = 'is_active';
         }
+
         return parent::setAttribute($key, $value);
     }
 
@@ -76,15 +77,13 @@ class Plan extends BasePlan
     /**
      * Get the default free plan for new registrations.
      * Returns the first active plan with price = 0 (free tier).
-     *
-     * @return Plan|null
      */
     public static function getDefaultFreePlan(): ?self
     {
         return static::where('is_active', true)
             ->where(function ($query) {
                 $query->where('base_monthly_price', '<=', 0)
-                      ->orWhere('price', '<=', 0);
+                    ->orWhere('price', '<=', 0);
             })
             ->orderBy('sort_order')
             ->first();
@@ -98,6 +97,13 @@ class Plan extends BasePlan
         'yearly_promotion_discount_percent' => 'decimal:2',
         'yearly_promotion_expires_at' => 'datetime',
         'is_active' => 'boolean',
+        'trial_period' => 'integer',
+        'invoice_period' => 'integer',
+        'grace_period' => 'integer',
+        'sort_order' => 'integer',
+        'prorate_day' => 'integer',
+        'prorate_period' => 'integer',
+        'prorate_extend_due' => 'integer',
     ];
 
     /**
@@ -114,8 +120,8 @@ class Plan extends BasePlan
      * Get the value of a system feature for this plan.
      * Returns the feature's default value if not associated with this plan.
      *
-     * @param string $slug The feature slug
-     * @param mixed $default Default value if feature not found
+     * @param  string  $slug  The feature slug
+     * @param  mixed  $default  Default value if feature not found
      * @return mixed The feature value (typed appropriately)
      */
     public function getFeatureValue(string $slug, $default = null)
@@ -124,7 +130,7 @@ class Plan extends BasePlan
 
         if ($feature) {
             $value = $feature->pivot->value;
-            
+
             // Type cast based on feature type
             if ($feature->value_type === 'boolean') {
                 return filter_var($value, FILTER_VALIDATE_BOOLEAN);
@@ -132,6 +138,7 @@ class Plan extends BasePlan
             if ($feature->value_type === 'number') {
                 return (int) $value;
             }
+
             return $value;
         }
 
@@ -147,8 +154,7 @@ class Plan extends BasePlan
     /**
      * Check if this plan has a specific feature enabled.
      *
-     * @param string $slug The feature slug
-     * @return bool
+     * @param  string  $slug  The feature slug
      */
     public function hasFeature(string $slug): bool
     {
@@ -159,8 +165,7 @@ class Plan extends BasePlan
      * Get the display name for a feature on this plan.
      * Falls back to the feature's default name if not customized.
      *
-     * @param string $slug The feature slug
-     * @return string|null
+     * @param  string  $slug  The feature slug
      */
     public function getFeatureDisplayName(string $slug): ?string
     {
@@ -178,7 +183,7 @@ class Plan extends BasePlan
      */
     public function getYearlyPriceAttribute()
     {
-        if (!$this->base_monthly_price) {
+        if (! $this->base_monthly_price) {
             return null;
         }
 
@@ -191,7 +196,7 @@ class Plan extends BasePlan
      */
     public function getSavingsPercentAttribute()
     {
-        if (!$this->isYearlyPromotionActive()) {
+        if (! $this->isYearlyPromotionActive()) {
             return 0;
         }
 
@@ -230,6 +235,7 @@ class Plan extends BasePlan
         if ($this->isMonthlyPromotionActive()) {
             return (float) ($this->base_monthly_price * (1 - $this->monthly_promotion_discount_percent / 100));
         }
+
         return (float) $this->base_monthly_price;
     }
 
@@ -241,6 +247,7 @@ class Plan extends BasePlan
         if ($this->isYearlyPromotionActive()) {
             return (float) (($this->base_monthly_price * 12) * (1 - $this->yearly_promotion_discount_percent / 100));
         }
+
         return $this->yearly_price ?? ($this->base_monthly_price * 12);
     }
 
@@ -284,7 +291,7 @@ class Plan extends BasePlan
                 'expires_at' => $this->monthly_promotion_expires_at?->toISOString(),
                 'active' => $this->isMonthlyPromotionActive(),
                 'time_remaining' => $this->monthly_promotion_expires_at ?
-                    max(0, now()->diffInDays($this->monthly_promotion_expires_at)) . ' days' :
+                    max(0, now()->diffInDays($this->monthly_promotion_expires_at)).' days' :
                     null,
             ] : null,
             'yearly' => $this->yearly_promotion_discount_percent > 0 ? [
@@ -292,7 +299,7 @@ class Plan extends BasePlan
                 'expires_at' => $this->yearly_promotion_expires_at?->toISOString(),
                 'active' => $this->isYearlyPromotionActive(),
                 'time_remaining' => $this->yearly_promotion_expires_at ?
-                    max(0, now()->diffInDays($this->yearly_promotion_expires_at)) . ' days' :
+                    max(0, now()->diffInDays($this->yearly_promotion_expires_at)).' days' :
                     null,
             ] : null,
         ];
@@ -307,6 +314,7 @@ class Plan extends BasePlan
 
         if ($currency === 'USD') {
             $currencyService = app(ExchangeRateServiceContract::class);
+
             return $currencyService->kesToUSD($amount ?? 0);
         }
 
@@ -320,6 +328,7 @@ class Plan extends BasePlan
     {
         $amount = $this->getPriceForInterval($interval, $currency);
         $currencyService = app(ExchangeRateServiceContract::class);
+
         return $currencyService->formatAmount($amount, $currency);
     }
 }
