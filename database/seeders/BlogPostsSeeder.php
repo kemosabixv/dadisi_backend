@@ -273,11 +273,6 @@ class BlogPostsSeeder extends Seeder
                 // Assign a random seed image
                 $randomImage = $seedImages[array_rand($seedImages)];
                 
-                // Prepend staging domain for staging environment
-                if (app()->environment('staging')) {
-                    $randomImage = 'https://api.dadisilab.com/storage/' . $randomImage;
-                }
-                
                 $post->update(['hero_image_path' => $randomImage]);
 
                 // Create a Media record to exercise the media system

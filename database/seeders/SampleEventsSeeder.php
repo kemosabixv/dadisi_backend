@@ -284,11 +284,6 @@ class SampleEventsSeeder extends Seeder
                 
                 $imagePath = $eventImages[$eventData['title']] ?? null;
                 
-                // Prepend staging domain for staging environment
-                if ($imagePath && app()->environment('staging')) {
-                    $imagePath = 'https://api.dadisilab.com/storage/' . $imagePath;
-                }
-                
                 $event->update(['image_path' => $imagePath]);
             }
 
