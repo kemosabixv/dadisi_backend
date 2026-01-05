@@ -199,26 +199,51 @@ class PesapalGateway implements PaymentGatewayInterface
     }
 
     /**
+     * Get list of registered IPNs.
+     */
+    protected function getIpnList(string $token): array
+    {
+        try {
+            $url = $this->apiBase . '/URLSetup/GetIpnList';
+            /** @var \Illuminate\Http\Client\Response $response */
+            $response = Http::asJson()->withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+            ])->get($url);
+
+            if ($response->successful()) {
+                return $response->json() ?? [];
+            }
+
+            \Log::error('Pesapal GetIpnList failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'url' => $url,
+                'token_prefix' => substr($token, 0, 10),
+            ]);
+
+            return [];
+        } catch (\Exception $e) {
+            \Log::error('Pesapal GetIpnList exception', [
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
+    }
+
+    /**
      * Get or register IPN ID.
      */
     protected function getNotificationId(string $token): ?string
     {
         try {
-            /** @var \Illuminate\Http\Client\Response $response */
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer '.$token,
-            ])->get($this->apiBase.'/URLSetup/GetIpnList');
+            $ipnList = $this->getIpnList($token);
 
-            if ($response->successful()) {
-                $ipnList = $response->json();
-
-                if (is_array($ipnList)) {
-                    foreach ($ipnList as $ipn) {
-                        $remoteUrl = $ipn['url'];
-                        // Match if it is our base URL or the one with our secret token
-                        if (($remoteUrl === $this->ipnUrl || str_starts_with($remoteUrl, $this->ipnUrl)) && ($ipn['ipn_status'] ?? 0) == 1) {
-                            return $ipn['ipn_id'];
-                        }
+            if (is_array($ipnList)) {
+                foreach ($ipnList as $ipn) {
+                    $remoteUrl = $ipn['url'];
+                    // Match if it is our base URL or the one with our secret token
+                    if (($remoteUrl === $this->ipnUrl || str_starts_with($remoteUrl, $this->ipnUrl)) && ($ipn['ipn_status'] ?? 0) == 1) {
+                        return $ipn['ipn_id'];
                     }
                 }
             }
@@ -259,6 +284,11 @@ class PesapalGateway implements PaymentGatewayInterface
                 'status' => $response->status(),
                 'body' => $response->body(),
                 'url' => $url,
+                'token_prefix' => substr($token, 0, 10),
+                'register_payload' => [
+                    'url' => $url,
+                    'ipn_notification_type' => $this->ipnNotificationType,
+                ],
             ]);
 
             return null;

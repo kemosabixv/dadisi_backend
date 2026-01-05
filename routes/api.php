@@ -401,7 +401,7 @@ Route::prefix('media')->group(function () {
 // Webhook routes (no auth - called by external payment gateway)
 use App\Http\Controllers\Api\WebhookController;
 
-Route::post('webhooks/pesapal', [WebhookController::class, 'pesapal'])->name('webhooks.pesapal');
+Route::match(['get', 'post'], 'webhooks/pesapal', [WebhookController::class, 'pesapal'])->name('webhooks.pesapal');
 Route::get('webhooks', [WebhookController::class, 'index'])->middleware('auth:sanctum');
 
 // Phase 1: Subscription & Payment Routes (Authenticated)
