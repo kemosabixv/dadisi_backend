@@ -439,8 +439,12 @@ class MemberProfileController extends Controller
     {
         try {
             $request->validate(['profile_picture' => ['required', 'image', 'max:5120']]);
-            $result = $this->userService->uploadProfilePicture($request->user(), $request->file('profile_picture'));
-            return response()->json(['success' => true, 'message' => 'Profile picture updated successfully', 'data' => $result]);
+            $url = $this->userService->uploadProfilePicture($request->user(), $request->file('profile_picture'));
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile picture updated successfully',
+                'data' => ['profile_picture_url' => $url]
+            ]);
         } catch (\Exception $e) {
             Log::error('Failed to upload profile picture', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Failed to upload profile picture'], 500);

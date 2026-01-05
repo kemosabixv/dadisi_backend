@@ -37,7 +37,7 @@ class StudentApprovalController extends Controller
      * @bodyParam student_institution string required The student's educational institution. Example: University of Nairobi
      * @bodyParam student_email string required University email address for verification. Example: student@uon.ac.ke
      * @bodyParam documentation_url string required URL to student ID/verification document. Example: https://example.com/doc.pdf
-     * @bodyParam birth_date date required Date of birth for age verification (must be at least 16 years old). Example: 2005-01-15
+     * @bodyParam birth_date date optional Date of birth (manual verification by staff). Example: 2005-01-15
      * @bodyParam county string required County of residence. Example: Nairobi
      * @bodyParam additional_notes string optional Any extra details to support the application. Example: I am a first year student.
      *
@@ -62,7 +62,7 @@ class StudentApprovalController extends Controller
             'student_institution' => 'required|string|max:255',
             'student_email' => 'required|email|max:255',
             'documentation_url' => 'required|url|max:500',
-            'birth_date' => 'required|date|before:' . now()->subYears(16)->toDateString(),
+            'birth_date' => 'nullable|date',
             'county' => 'required|string|max:50',
             'additional_notes' => 'nullable|string|max:500',
         ]);
@@ -190,7 +190,7 @@ class StudentApprovalController extends Controller
 
             // Check authorization - user can see their own, admins can see all
             if ($request->user()->id !== $approvalRequest->user_id &&
-                !$request->user()->hasRole('admin')) {
+                !$request->user()->can('view_student_approvals')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized',
@@ -202,8 +202,8 @@ class StudentApprovalController extends Controller
                 'data' => [
                     'id' => $approvalRequest->id,
                     'user_id' => $approvalRequest->user_id,
-                    'user_name' => $approvalRequest->user->name,
-                    'user_email' => $approvalRequest->user->email,
+                    'user_name' => $approvalRequest->user ? $approvalRequest->user->display_name : 'Unknown User',
+                    'user_email' => $approvalRequest->user ? $approvalRequest->user->email : 'N/A',
                     'status' => $approvalRequest->status,
                     'student_institution' => $approvalRequest->student_institution,
                     'student_email' => $approvalRequest->student_email,
@@ -267,24 +267,47 @@ class StudentApprovalController extends Controller
     {
         try {
             // Check admin authorization
-            if (!$request->user()->hasRole('admin')) {
+            if (!$request->user()->can('view_student_approvals')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized - admin only',
+                    'message' => 'Unauthorized - inadequate permissions',
                 ], 403);
             }
 
             $filters = [
-                'status' => $request->input('status'),
                 'county' => $request->input('county'),
                 'per_page' => $request->input('per_page', 15),
             ];
+
+            if ($request->has('status')) {
+                $filters['status'] = $request->input('status');
+            }
 
             $paginated = $this->studentApprovalService->listApprovalRequests($filters);
 
             return response()->json([
                 'success' => true,
-                'data' => $paginated->items(),
+                'data' => collect($paginated->items())->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'user_id' => $item->user_id,
+                        'user_name' => $item->user ? $item->user->display_name : 'Unknown User',
+                        'user_email' => $item->user ? $item->user->email : 'N/A',
+                        'status' => $item->status,
+                        'student_institution' => $item->student_institution,
+                        'student_email' => $item->student_email,
+                        'student_birth_date' => $item->student_birth_date,
+                        'county' => $item->county,
+                        'documentation_url' => $item->documentation_url,
+                        'additional_notes' => $item->additional_notes,
+                        'submitted_at' => $item->submitted_at,
+                        'reviewed_at' => $item->reviewed_at,
+                        'reviewed_by' => $item->reviewed_by,
+                        'rejection_reason' => $item->rejection_reason,
+                        'admin_notes' => $item->admin_notes,
+                        'expires_at' => $item->expires_at,
+                    ];
+                }),
                 'pagination' => [
                     'total' => $paginated->total(),
                     'per_page' => $paginated->perPage(),
@@ -331,10 +354,10 @@ class StudentApprovalController extends Controller
     public function approveRequest(Request $request, $requestId): JsonResponse
     {
         // Check admin authorization
-        if (!$request->user()->hasRole('admin')) {
+        if (!$request->user()->can('approve_student_approvals')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized - admin only',
+                'message' => 'Unauthorized - inadequate permissions',
             ], 403);
         }
 
@@ -404,10 +427,10 @@ class StudentApprovalController extends Controller
     public function rejectRequest(Request $request, $requestId): JsonResponse
     {
         // Check admin authorization
-        if (!$request->user()->hasRole('admin')) {
+        if (!$request->user()->can('reject_student_approvals')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized - admin only',
+                'message' => 'Unauthorized - inadequate permissions',
             ], 403);
         }
 

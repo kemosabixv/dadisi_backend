@@ -2,9 +2,9 @@
 
 namespace Tests;
 
+use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
-use Database\Seeders\RolesPermissionsSeeder;
 
 abstract class TestCase extends BaseTestCase
 {

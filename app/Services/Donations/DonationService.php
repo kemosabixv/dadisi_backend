@@ -5,8 +5,10 @@ namespace App\Services\Donations;
 use App\Exceptions\DonationException;
 use App\Models\AuditLog;
 use App\Models\Donation;
+use App\Models\User;
 use App\Models\County;
 use App\Services\Contracts\DonationServiceContract;
+use App\Services\Contracts\PaymentServiceContract;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +22,11 @@ use Illuminate\Support\Facades\Log;
  */
 class DonationService implements DonationServiceContract
 {
+    /**
+     * @param PaymentServiceContract $paymentService
+     */
+    public function __construct(protected PaymentServiceContract $paymentService) {}
+
     /**
      * Create a new donation
      */
@@ -307,6 +314,80 @@ class DonationService implements DonationServiceContract
         } catch (\Exception $e) {
             Log::error('Report generation failed', ['error' => $e->getMessage()]);
             throw DonationException::reportGenerationFailed($e->getMessage());
+        }
+    }
+
+    /**
+     * Resume a pending donation payment
+     */
+    public function resumeDonationPayment(Donation $donation): array
+    {
+        if ($donation->status === 'paid') {
+            throw DonationException::alreadyPaid($donation->id);
+        }
+
+        try {
+            // Initiate a new payment session
+            $paymentData = [
+                'amount' => $donation->amount,
+                'currency' => $donation->currency,
+                'payment_method' => 'pesapal', // Default
+                'description' => "Donation Reference: {$donation->reference}",
+                'reference' => $donation->reference . '_' . time(), // Unique reference for this attempt
+                'county' => $donation->county?->name,
+                'payable_type' => 'App\\Models\\Donation',
+                'payable_id' => $donation->id,
+                'first_name' => explode(' ', $donation->donor_name)[0] ?? 'Donor',
+                'last_name' => explode(' ', $donation->donor_name)[1] ?? 'Labs',
+                'email' => $donation->donor_email,
+                'phone' => $donation->donor_phone,
+            ];
+
+            // For guests, we can pass a dummy user or just have PaymentService modified to handle it
+            // However, $paymentService->processPayment expects Authenticatable.
+            // We'll use the donation's user if it exists, otherwise a "Guest" placeholder user
+            $actor = $donation->user ?? User::where('email', 'admin@dadisilab.com')->first();
+
+            return $this->paymentService->processPayment($actor, $paymentData);
+        } catch (\Exception $e) {
+            Log::error('Failed to resume donation payment', [
+                'donation_id' => $donation->id,
+                'error' => $e->getMessage()
+            ]);
+            throw DonationException::creationFailed('Could not resume payment: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Cancel a donation by reference (for guests)
+     */
+    public function cancelDonation(string $reference): bool
+    {
+        $donation = $this->getDonationByReference($reference);
+
+        if ($donation->status !== 'pending') {
+            throw DonationException::onlyPendingCanBeCancelled();
+        }
+
+        try {
+            return DB::transaction(function () use ($donation) {
+                AuditLog::create([
+                    'action' => 'guest_cancelled_donation',
+                    'model_type' => Donation::class,
+                    'model_id' => $donation->id,
+                    'old_values' => ['status' => $donation->status],
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                ]);
+
+                return $donation->update(['status' => 'cancelled']);
+            });
+        } catch (\Exception $e) {
+            Log::error('Guest donation cancellation failed', [
+                'reference' => $reference,
+                'error' => $e->getMessage()
+            ]);
+            return false;
         }
     }
 

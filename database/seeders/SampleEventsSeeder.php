@@ -32,9 +32,29 @@ class SampleEventsSeeder extends Seeder
         
         
         // Get or create an organizer user
-        $organizer = User::where('email', 'admin@dadisilab.com')->first() 
-            ?? User::first() 
-            ?? User::factory()->create(['name' => 'Event Organizer', 'email' => 'organizer@dadisilab.com']);
+        $organizer = User::where('email', 'admin@dadisilab.com')->first();
+        if (!$organizer) {
+            $organizer = User::first();
+        }
+        
+        if (!$organizer) {
+            $organizer = User::create([
+                'username' => 'eventorganizer',
+                'email' => 'organizer@dadisilab.com',
+                'password' => bcrypt('password'),
+                'email_verified_at' => now(),
+            ]);
+
+            \App\Models\MemberProfile::create([
+                'user_id' => $organizer->id,
+                'first_name' => 'Event',
+                'last_name' => 'Organizer',
+                'phone_number' => '+254711000000',
+                'county_id' => $nairobiCounty->id,
+                'terms_accepted' => true,
+                'is_staff' => true,
+            ]);
+        }
 
         $now = Carbon::now();
 

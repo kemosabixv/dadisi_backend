@@ -29,18 +29,30 @@ use Illuminate\Support\Str;
 class UserService implements UserServiceContract
 {
     /**
-     * Create a new user
+     * Create a new user with optional member profile
      *
      * @param Authenticatable $actor The user performing the action
      * @param CreateUserDTO $dto User creation data
+     * @param array $profileData Optional member profile data
      * @return User The created user
      *
      * @throws UserException
      */
-    public function create(Authenticatable $actor, CreateUserDTO $dto): User
+    public function create(Authenticatable $actor, CreateUserDTO $dto, array $profileData = []): User
     {
         try {
             $user = User::create($dto->toArray());
+
+            // Create member profile automatically
+            MemberProfile::create([
+                'user_id' => $user->id,
+                'first_name' => $profileData['first_name'] ?? null,
+                'last_name' => $profileData['last_name'] ?? null,
+                'is_staff' => $profileData['is_staff'] ?? false,
+            ]);
+
+            // Load relationships
+            $user->load(['memberProfile', 'roles']);
 
             // Log audit trail
             $this->logAudit($actor, 'create_user', $user);
@@ -95,7 +107,21 @@ class UserService implements UserServiceContract
      */
     public function getById(string $id): User
     {
-        return User::findOrFail($id);
+        $user = User::with(['roles', 'memberProfile.county'])->findOrFail($id);
+
+        // For non-staff members, load the full activity history
+        if (!$user->isStaffMember()) {
+            $user->load([
+                'subscriptions',
+                'donations',
+                'eventOrders.event',
+                'labBookings',
+                'forumThreads',
+                'forumPosts.thread'
+            ]);
+        }
+
+        return $user;
     }
 
     /**
@@ -194,7 +220,7 @@ class UserService implements UserServiceContract
      */
     public function listUsers(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $query = User::query()->with(['memberProfile', 'roles']);
+        $query = User::query()->with(['memberProfile.county', 'roles']);
 
         // Include trashed if requested
         if (!empty($filters['include_deleted'])) {
@@ -343,8 +369,8 @@ class UserService implements UserServiceContract
             }
 
             // Delete old profile picture if exists
-            if ($user->profile_picture) {
-                Storage::disk('public')->delete($user->profile_picture);
+            if ($user->profile_picture_path) {
+                Storage::disk('public')->delete($user->profile_picture_path);
             }
 
             // Store new profile picture
@@ -352,8 +378,8 @@ class UserService implements UserServiceContract
             $filename = Str::slug($user->username) . '-' . Str::random(8) . '.' . $file->getClientOriginalExtension();
             $path = Storage::disk('public')->putFileAs($directory, $file, $filename);
 
-            // Update user
-            $user->update(['profile_picture' => $path]);
+            // Update user with correct column name
+            $user->update(['profile_picture_path' => $path]);
 
             Log::info("Profile picture uploaded for user {$user->id}");
 

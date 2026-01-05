@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
         // Seed reference data
         $this->call([
             CountiesTableSeeder::class,
+            SystemFeatureSeeder::class,
             PlanSeeder::class,
             UserDataRetentionSettingsSeeder::class,
             SchedulerSettingsSeeder::class,

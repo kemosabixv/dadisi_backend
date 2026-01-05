@@ -8,10 +8,12 @@ use App\Models\Plan;
 use App\Models\PlanSubscription;
 use App\Models\RenewalPreference;
 use App\Models\SubscriptionEnhancement;
+use App\Models\SystemFeature;
 use App\Models\SystemSetting;
 use App\Services\PaymentGateway\GatewayManager;
 use App\Services\Payments\MockPaymentService;
 use App\DTOs\Payments\PaymentRequestDTO;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -47,13 +49,18 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                 'active_subscription_id' => $user->active_subscription_id ?? null,
             ]);
 
-            // First try the activeSubscription relationship
-            $subscription = $user->activeSubscription()->with('plan:id,name,description,price')->first();
-
-            // Fallback: direct query using active_subscription_id
-            if (!$subscription && $user->active_subscription_id) {
+            // FIRST: Use active_subscription_id if set (most reliable source of truth after payment)
+            $subscription = null;
+            if ($user->active_subscription_id) {
                 $subscription = PlanSubscription::with('plan:id,name,description,price')
-                    ->find($user->active_subscription_id);
+                    ->where('id', $user->active_subscription_id)
+                    ->whereNull('canceled_at')
+                    ->first();
+            }
+
+            // FALLBACK: Query for any active subscription if active_subscription_id didn't work
+            if (!$subscription) {
+                $subscription = $user->activeSubscription()->with('plan:id,name,description,price')->first();
             }
 
             Log::info('getCurrentSubscription result', [
@@ -199,7 +206,69 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                 // Calculate amount based on plan price and billing period
                 $amount = $billingPeriod === 'year' ? $plan->price * 12 : $plan->price;
 
-                // Create pending subscription
+                // Check if plan requires student approval and status of existing requests
+                $needsVerification = false;
+                $hasPendingVerification = false;
+
+                if ($plan->requires_student_approval) {
+                    $approvedRequest = \App\Models\StudentApprovalRequest::where('user_id', $user->id)
+                        ->where('status', 'approved')
+                        ->first();
+
+                    if (!$approvedRequest) {
+                        $needsVerification = true;
+                        
+                        // Check if they at least have a pending one
+                        $pendingRequest = \App\Models\StudentApprovalRequest::where('user_id', $user->id)
+                            ->where('status', 'pending')
+                            ->first();
+                        
+                        $hasPendingVerification = (bool) $pendingRequest;
+                    }
+                }
+
+                // If user needs verification but hasn't submitted one, or is still pending
+                if ($needsVerification) {
+                    if (!$hasPendingVerification) {
+                        Log::info('Plan requires approval, redirecting to submission', [
+                            'user_id' => $userId,
+                            'plan_id' => $plan->id,
+                        ]);
+                        
+                        return [
+                            'success' => true,
+                            'requires_approval' => true,
+                            'plan_id' => $plan->id,
+                            'message' => 'This plan requires student status verification.'
+                        ];
+                    }
+
+                    // For pending verification, we allow creating the record but it stays pending
+                    $subscription = PlanSubscription::create([
+                        'subscriber_id' => $user->id,
+                        'subscriber_type' => 'App\\Models\\User',
+                        'plan_id' => $plan->id,
+                        'starts_at' => now(),
+                        'ends_at' => $billingPeriod === 'year' ? now()->addYear() : now()->addMonth(),
+                        'name' => $plan->name,
+                        'slug' => $plan->slug . '-' . $user->id . '-' . time(),
+                        'status' => 'pending_approval',
+                    ]);
+
+                    SubscriptionEnhancement::create([
+                        'subscription_id' => $subscription->id,
+                        'status' => 'pending_approval',
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'requires_approval' => true,
+                        'subscription_id' => $subscription->id,
+                        'message' => 'Subscription created and awaiting student status verification.',
+                    ];
+                }
+
+                // If we reach here, either the plan doesn't require approval or the user is already approved
                 $subscription = PlanSubscription::create([
                     'subscriber_id' => $user->id,
                     'subscriber_type' => 'App\\Models\\User',
@@ -208,6 +277,7 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                     'ends_at' => $billingPeriod === 'year' ? now()->addYear() : now()->addMonth(),
                     'name' => $plan->name,
                     'slug' => $plan->slug . '-' . $user->id . '-' . time(),
+                    'status' => 'pending', // Standard pending status for payment
                 ]);
 
                 // Create subscription enhancement with payment pending
@@ -246,6 +316,7 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                         'plan_id' => $plan->id,
                         'account_number' => $accountNumber,
                         'subscription_details' => $subscriptionDetails,
+                        'billing_period' => $billingPeriod,
                         'enable_auto_renewal' => !empty($data['enable_auto_renewal']),
                     ],
                 ]);
@@ -259,11 +330,12 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                     phone: $data['phone'] ?? null,
                     email: $data['email'] ?? $user->email,
                     reference: $payment->reference,
+                    payable_type: 'App\\Models\\PlanSubscription',
+                    payable_id: $subscription->id,
                     metadata: $payment->metadata
                 );
 
-                $gateway = $this->gatewayManager->getGateway();
-                $result = $gateway->initiatePayment($paymentRequest);
+                $result = $this->gatewayManager->initiatePayment($paymentRequest, $subscription);
 
                 if ($result->success) {
                     $payment->update([
@@ -442,5 +514,32 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
             'description' => is_string($rawDescription) ? json_decode($rawDescription, true) ?? $plan->description : $rawDescription,
             'price' => $plan->price,
         ];
+    }
+
+    /**
+     * Get feature value for a user's subscription or system defaults
+     */
+    public function getFeatureValue(Authenticatable $user, string $featureSlug): mixed
+    {
+        $currentSub = $this->getCurrentSubscription($user->getAuthIdentifier());
+        
+        // 1. Check if user has active subscription with this feature
+        if ($currentSub && isset($currentSub['subscription']->plan)) {
+            $feature = $currentSub['subscription']->plan->systemFeatures()
+                ->where('slug', $featureSlug)
+                ->first();
+                
+            if ($feature && isset($feature->pivot->value)) {
+                return $feature->pivot->value;
+            }
+        }
+
+        // 2. Fallback to SystemFeature default value
+        $feature = SystemFeature::where('slug', $featureSlug)->first();
+        if ($feature) {
+            return $feature->getTypedDefaultValue();
+        }
+
+        return null;
     }
 }

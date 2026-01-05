@@ -20,11 +20,18 @@ class MockGatewayAdapter implements PaymentGatewayInterface
      */
     public function initiatePayment(PaymentRequestDTO $request): TransactionResultDTO
     {
+        $metadata = $request->metadata;
+        
         $data = [
             'amount' => $request->amount,
             'currency' => $request->currency,
-            'order_id' => $request->reference,
-            'user_id' => null, // Would need to be passed in if required
+            // If it's a subscription, use the numerical ID as order_id for controller lookup compat
+            'order_id' => ($request->payable_type === 'App\\Models\\PlanSubscription') 
+                ? $request->payable_id 
+                : ($request->reference ?? $request->metadata['payment_id'] ?? null),
+            'user_id' => $request->metadata['user_id'] ?? null,
+            'plan_id' => $request->metadata['plan_id'] ?? null,
+            'billing_period' => $request->metadata['billing_period'] ?? 'month',
             'description' => $request->description,
         ];
 

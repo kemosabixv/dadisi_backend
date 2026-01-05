@@ -42,14 +42,35 @@ class User extends Authenticatable
         'deletion_scheduled_reason',
     ];
 
-    /**
-     * Get the profile picture URL.
-     */
     public function getProfilePictureUrlAttribute(): ?string
     {
         return $this->profile_picture_path
             ? url('storage/' . $this->profile_picture_path)
             : null;
+    }
+
+    /**
+     * Get the user's name, falling back to profile or username
+     */
+    public function getNameAttribute(): string
+    {
+        if ($this->attributes['name'] ?? null) {
+            return $this->attributes['name'];
+        }
+
+        if ($this->memberProfile) {
+            return $this->memberProfile->full_name;
+        }
+
+        return '';
+    }
+
+    /**
+     * Get a display name for the user
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->name ?: $this->username;
     }
 
     /**
@@ -59,6 +80,7 @@ class User extends Authenticatable
      */
     protected $appends = [
         'profile_picture_url',
+        'display_name',
     ];
 
     /**
@@ -197,7 +219,7 @@ class User extends Authenticatable
     {
         return $this->hasOne(StudentApprovalRequest::class)
             ->where('status', 'pending')
-            ->latest('requested_at');
+            ->latest('submitted_at');
     }
 
     /**
@@ -355,5 +377,21 @@ class User extends Authenticatable
     public function organizedEvents(): HasMany
     {
         return $this->hasMany(Event::class, 'organizer_id');
+    }
+
+    /**
+     * Donations made by this user
+     */
+    public function donations(): HasMany
+    {
+        return $this->hasMany(Donation::class);
+    }
+
+    /**
+     * Event orders (ticket purchases) by this user
+     */
+    public function eventOrders(): HasMany
+    {
+        return $this->hasMany(EventOrder::class);
     }
 }

@@ -20,6 +20,7 @@ class PlanResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'is_active' => (bool)$this->is_active,
+            'requires_student_approval' => (bool)$this->requires_student_approval,
             'price' => (float)$this->price,
             'currency' => $this->currency,
             'base_monthly_price' => (float)$this->base_monthly_price,

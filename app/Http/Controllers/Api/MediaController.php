@@ -21,7 +21,7 @@ class MediaController extends Controller
     public function __construct(
         private MediaServiceContract $mediaService
     ) {
-        $this->middleware('auth:sanctum');
+        $this->middleware('auth:sanctum')->except(['showShared']);
     }
 
     /**
@@ -68,22 +68,16 @@ class MediaController extends Controller
             ];
 
             $media = $this->mediaService->listMedia($user, $filters, $perPage);
-
-            // Add URLs to each media item
-            $data = $media->getCollection()->map(fn($item) => array_merge($item->toArray(), [
-                'url' => $this->mediaService->getMediaUrl($item),
-            ]));
-
-            return response()->json([
+            
+            return MediaResource::collection($media)->additional([
                 'success' => true,
-                'data' => $data,
                 'pagination' => [
                     'total' => $media->total(),
                     'per_page' => $media->perPage(),
                     'current_page' => $media->currentPage(),
                     'last_page' => $media->lastPage(),
                 ],
-            ]);
+            ])->response();
         } catch (\Exception $e) {
             Log::error('Failed to retrieve media list', [
                 'error' => $e->getMessage(),
@@ -147,14 +141,11 @@ class MediaController extends Controller
             ];
 
             $media = $this->mediaService->uploadMedia($user, $request->file('file'), $metadata);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Media uploaded successfully',
-                'data' => array_merge($media->toArray(), [
-                    'url' => $this->mediaService->getMediaUrl($media),
-                ]),
-            ], 201);
+ 
+             return (new MediaResource($media))->additional([
+                 'success' => true,
+                 'message' => 'Media uploaded successfully',
+             ])->response()->setStatusCode(201);
         } catch (MediaException $e) {
             return response()->json([
                 'success' => false,
@@ -210,12 +201,9 @@ class MediaController extends Controller
                 throw MediaException::unauthorized('view');
             }
 
-            return response()->json([
+            return (new MediaResource($media))->additional([
                 'success' => true,
-                'data' => array_merge($media->toArray(), [
-                    'url' => $this->mediaService->getMediaUrl($media),
-                ]),
-            ]);
+            ])->response();
         } catch (MediaException $e) {
             return response()->json([
                 'success' => false,
@@ -278,6 +266,153 @@ class MediaController extends Controller
                 'success' => false,
                 'message' => 'Media deletion failed: ' . $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Rename Media
+     *
+     * Changes the display name of a media file. This does not change the physical file path.
+     *
+     * @authenticated
+     * @bodyParam name string required The new display name for the file. Example: final_report.pdf
+     */
+    public function rename(Request $request, Media $media): JsonResponse
+    {
+        $request->validate(['name' => 'required|string|max:255']);
+        
+        try {
+            $media = $this->mediaService->renameMedia($request->user(), $media, $request->input('name'));
+            return response()->json(['success' => true, 'data' => $media]);
+        } catch (MediaException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 403);
+        }
+    }
+
+    /**
+     * Update Visibility
+     *
+     * Changes the visibility of a media file (public, private, shared) and toggle download permissions.
+     *
+     * @authenticated
+     * @bodyParam visibility string required The visibility level (public, private, shared). Example: shared
+     * @bodyParam allow_download boolean optional Whether common users can download the file. Default: true. Example: false
+     */
+    public function updateVisibility(Request $request, Media $media): JsonResponse
+    {
+        $request->validate([
+            'visibility' => 'required|in:public,private,shared',
+            'allow_download' => 'nullable|boolean'
+        ]);
+
+        try {
+            $media = $this->mediaService->updateVisibility(
+                $request->user(), 
+                $media, 
+                $request->input('visibility'),
+                $request->boolean('allow_download', true)
+            );
+            return response()->json(['success' => true, 'data' => $media]);
+        } catch (MediaException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 403);
+        }
+    }
+
+    /**
+     * View Shared Media (Public)
+     *
+     * Access a media file via a secure share token without requiring authentication.
+     *
+     * @urlParam token string required The unique share token (UUID). Example: 550e8400-e29b-41d4-a716-446655440000
+     */
+    public function showShared(string $token): mixed
+    {
+        $media = Media::where('share_token', $token)->where('visibility', 'shared')->firstOrFail();
+        
+        $path = ltrim($media->file_path, '/');
+        if (!Storage::disk('public')->exists($path)) {
+            abort(404);
+        }
+
+        if (!$media->allow_download) {
+            // Serve inline (browser view only)
+            return response()->file(Storage::disk('public')->path($path), [
+                'Content-Type' => $media->mime_type,
+                'Content-Disposition' => 'inline; filename="' . $media->file_name . '"'
+            ]);
+        }
+
+        return Storage::disk('public')->download($path, $media->file_name);
+    }
+
+    /**
+     * Initialize Multipart Upload
+     *
+     * @authenticated
+     */
+    public function initMultipart(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file_name' => 'required|string',
+            'total_size' => 'required|integer',
+            'mime_type' => 'required|string',
+        ]);
+
+        try {
+            $result = $this->mediaService->initMultipartUpload(
+                $request->user(),
+                $request->input('file_name'),
+                $request->input('total_size'),
+                $request->input('mime_type')
+            );
+            return response()->json(['success' => true, 'data' => $result]);
+        } catch (MediaException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Upload Chunk
+     *
+     * @authenticated
+     */
+    public function uploadChunk(Request $request, string $uploadId): JsonResponse
+    {
+        $request->validate([
+            'chunk_index' => 'required|integer',
+            'chunk' => 'required|file',
+        ]);
+
+        try {
+            $this->mediaService->uploadChunk($uploadId, $request->input('chunk_index'), $request->file('chunk'));
+            return response()->json(['success' => true]);
+        } catch (MediaException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Complete Multipart Upload
+     *
+     * @authenticated
+     */
+    public function completeMultipart(Request $request, string $uploadId): JsonResponse
+    {
+        $request->validate([
+            'file_name' => 'required|string',
+            'mime_type' => 'required|string',
+        ]);
+
+        try {
+            $media = $this->mediaService->completeMultipartUpload(
+                $request->user(),
+                $uploadId,
+                $request->input('file_name'),
+                $request->input('mime_type')
+            );
+            return response()->json(['success' => true, 'data' => $media]);
+        } catch (MediaException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
     }
 }

@@ -259,6 +259,18 @@ class RefundService implements RefundServiceContract
         if ($payment && $refund->amount >= $refund->original_amount) {
             // Full refund
             $payment->update(['status' => 'refunded']);
+
+            // Notify user
+            if ($payment->payer) {
+                try {
+                    $payment->payer->notify(new \App\Notifications\RefundProcessed($refund));
+                } catch (\Exception $e) {
+                    Log::error('Failed to send refund notification', [
+                        'refund_id' => $refund->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
         } elseif ($payment) {
             // Partial refund
             $payment->update([

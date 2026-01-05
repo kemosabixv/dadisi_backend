@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\CreateTestMockPaymentRequest;
+use App\Http\Requests\Api\CreateTestPesapalPaymentRequest;
 use App\Http\Requests\Api\CheckPaymentStatusRequest;
 use App\Http\Requests\Api\VerifyPaymentRequest;
 use App\Http\Requests\Api\ProcessPaymentRequest;
 use App\Http\Requests\Api\HandleWebhookRequest;
 use App\Http\Requests\Api\RefundPaymentRequest;
+use App\DTOs\Payments\PaymentRequestDTO;
+use App\Services\PaymentGateway\PesapalGateway;
 use App\Http\Resources\PaymentResource;
 use App\Services\Contracts\PaymentServiceContract;
 use App\Services\Payments\MockPaymentService;
@@ -187,6 +190,8 @@ class PaymentController extends Controller
             }
 
             // Update subscription to active
+            $subscription->update(['status' => 'active']);
+            
             if ($enhancement) {
                 $enhancement->update([
                     'status' => 'active',
@@ -235,6 +240,17 @@ class PaymentController extends Controller
     {
         $user = \App\Models\User::find($userId);
         if ($user) {
+            // Cancel any other active subscriptions for this user (prevents multiple active subscriptions)
+            PlanSubscription::where('subscriber_id', $userId)
+                ->where('subscriber_type', 'App\\Models\\User')
+                ->where('id', '!=', $subscription->id)
+                ->whereNull('canceled_at')
+                ->where('status', 'active')
+                ->update([
+                    'status' => 'cancelled',
+                    'canceled_at' => now(),
+                ]);
+
             $user->update([
                 'subscription_status' => 'active',
                 'active_subscription_id' => $subscription->id,
@@ -635,6 +651,121 @@ class PaymentController extends Controller
     }
 
     /**
+     * Create a real Pesapal test payment session for admin testing
+     * 
+     * @group Payments
+     * @authenticated
+     */
+    public function createTestPesapalPayment(CreateTestPesapalPaymentRequest $request): JsonResponse
+    {
+        // Only allow in local/staging environments
+        if (!in_array(app()->environment(), ['local', 'testing', 'staging'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Test payments are only available in development environments',
+            ], 403);
+        }
+
+        $validated = $request->validated();
+
+        try {
+            $trackingId = 'TEST-PESAPAL-' . strtoupper(bin2hex(random_bytes(4)));
+            $merchantReference = 'TEST-' . time();
+
+            // Create a temporary payment record to track this test
+            $payment = \App\Models\Payment::create([
+                'user_id' => auth()->id(),
+                'transaction_id' => $trackingId,
+                'external_reference' => null, // Will be filled after initiation
+                'order_reference' => $merchantReference,
+                'amount' => $validated['amount'],
+                'currency' => 'KES',
+                'gateway' => 'pesapal',
+                'status' => 'pending',
+                'payable_type' => 'test',
+                'payable_id' => 0,
+                'meta' => [
+                    'is_test' => true,
+                    'description' => $validated['description'] ?? 'Real Pesapal Sandbox Test',
+                    'initiated_from' => 'admin_settings',
+                ],
+            ]);
+
+            // Explicitly use PesapalGateway even if system default is different
+            $gateway = new PesapalGateway();
+            
+            $paymentRequest = new PaymentRequestDTO(
+                amount: (float) $validated['amount'],
+                payment_method: 'pesapal',
+                currency: 'KES',
+                description: $validated['description'] ?? 'Pesapal Sandbox Test',
+                reference: $merchantReference,
+                email: $validated['user_email'],
+                first_name: $validated['first_name'] ?? 'Admin',
+                last_name: $validated['last_name'] ?? 'Tester',
+                phone: $validated['phone'] ?? '254700000000',
+                metadata: [
+                    'payment_id' => $payment->id,
+                    'is_test' => true,
+                ]
+            );
+
+            /** @var \App\DTOs\Payments\TransactionResultDTO $result */
+            $result = $gateway->initiatePayment($paymentRequest);
+
+            if ($result->success) {
+                $payment->update([
+                    'external_reference' => $result->transactionId,
+                ]);
+
+                Log::info('Real Pesapal test payment initiated', [
+                    'payment_id' => $payment->id,
+                    'tracking_id' => $trackingId,
+                    'order_tracking_id' => $result->transactionId,
+                    'amount' => $payment->amount,
+                ]);
+
+                \App\Models\AuditLog::log('payment.initiated', $payment, null, [
+                    'amount' => $payment->amount,
+                    'payment_type' => 'real_pesapal_test',
+                    'tracking_id' => $trackingId,
+                    'order_tracking_id' => $result->transactionId,
+                ], 'Real Pesapal test payment initiated from admin');
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pesapal test payment initiated',
+                    'data' => [
+                        'payment_id' => $payment->id,
+                        'tracking_id' => $trackingId,
+                        'merchant_reference' => $merchantReference,
+                        'order_tracking_id' => $result->transactionId,
+                        'redirect_url' => $result->redirectUrl,
+                        'amount' => $payment->amount,
+                        'currency' => $payment->currency,
+                    ],
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to initiate Pesapal payment: ' . ($result->message ?? 'Unknown error'),
+            ], 400);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create test Pesapal payment', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to initiate Pesapal payment: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Get payment form metadata
      *
      * Retrieves configuration data required to render the payment form on the frontend.
@@ -883,6 +1014,41 @@ class PaymentController extends Controller
                 'message' => 'Webhook reception failed',
             ], 500);
         }
+    }
+
+    /**
+     * Handle Pesapal Callback (Browser Redirect)
+     */
+    public function handlePesapalCallback(Request $request)
+    {
+        $trackingId = $request->query('OrderTrackingId');
+        $merchantRef = $request->query('OrderMerchantReference');
+        
+        Log::info('Pesapal callback received', [
+            'tracking_id' => $trackingId,
+            'merchant_ref' => $merchantRef
+        ]);
+
+        $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
+        
+        // Find the payment
+        $payment = \App\Models\Payment::where('external_reference', $trackingId)
+            ->orWhere('order_reference', $merchantRef)
+            ->first();
+
+        if (!$payment) {
+            return redirect($frontendUrl . '/dashboard/subscription?payment=not_found');
+        }
+
+        // Determine redirect based on payable type
+        $type = $payment->payable_type;
+        if ($type === 'event_order' || $type === 'App\\Models\\EventOrder') {
+            return redirect($frontendUrl . '/checkout/events/success?reference=' . $merchantRef);
+        } elseif ($type === 'donation' || $type === 'App\\Models\\Donation') {
+            return redirect($frontendUrl . '/dashboard/donations?payment=success&reference=' . $merchantRef);
+        }
+
+        return redirect($frontendUrl . '/dashboard/subscription?payment=processing');
     }
 
     public function refundPayment(RefundPaymentRequest $request): JsonResponse

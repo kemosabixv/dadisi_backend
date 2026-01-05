@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="Tests\Feature\Donations\GuestDonationTest" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" tests="4" assertions="7" errors="0" failures="3" skipped="0" time="27.496730">
+    <testcase name="test_guest_can_initiate_donation" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="28" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="1" time="19.553941">
+      <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\Feature\Donations\GuestDonationTest::test_guest_can_initiate_donation&#13;
+Expected response status code [201] but received 422.
+Failed asserting that 422 is identical to 201.&#13;
+&#13;
+The following errors occurred during the last request:
+
+{
+    "message": "The first name field is required. (and 2 more errors)",
+    "errors": {
+        "first_name": [
+            "The first name field is required."
+        ],
+        "last_name": [
+            "The last name field is required."
+        ],
+        "email": [
+            "The email field is required."
+        ]
+    }
+}
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Testing\TestResponseAssert.php:45
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Testing\TestResponse.php:174
+D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php:40</failure>
+    </testcase>
+    <testcase name="test_guest_receives_email_on_payment_completion" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="56" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="1" time="3.261673">
+      <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\Feature\Donations\GuestDonationTest::test_guest_receives_email_on_payment_completion&#13;
+Expected response status code [200] but received 500.
+Failed asserting that 500 is identical to 200.&#13;
+&#13;
+The following exception occurred during the last request:
+
+TypeError: Mockery_2_App_Services_PaymentGateway_GatewayManager::queryStatus(): Return value must be of type App\DTOs\Payments\PaymentStatusDTO, App\DTOs\Payments\TransactionResultDTO returned in D:\Documents\Dadisi\dadisi_app\backend\vendor\mockery\mockery\library\Mockery\Loader\EvalLoader.php(30) : eval()'d code:1053
+Stack trace:
+#0 D:\Documents\Dadisi\dadisi_app\backend\app\Services\Payments\PaymentService.php(194): Mockery_2_App_Services_PaymentGateway_GatewayManager-&gt;queryStatus('GUEST_TX_123')
+#1 D:\Documents\Dadisi\dadisi_app\backend\app\Http\Controllers\Api\PaymentController.php(863): App\Services\Payments\PaymentService-&gt;verifyPayment(Object(App\Models\User), 'GUEST_TX_123')
+#2 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Controller.php(54): App\Http\Controllers\Api\PaymentController-&gt;verifyPayment(Object(App\Http\Requests\Api\VerifyPaymentRequest))
+#3 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\ControllerDispatcher.php(43): Illuminate\Routing\Controller-&gt;callAction('verifyPayment', Array)
+#4 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Tracing\Routing\TracingControllerDispatcherTracing.php(21): Illuminate\Routing\ControllerDispatcher-&gt;dispatch(Object(Illuminate\Routing\Route), Object(App\Http\Controllers\Api\PaymentController), 'verifyPayment')
+#5 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Tracing\Routing\TracingRoutingDispatcher.php(35): Sentry\Laravel\Tracing\Routing\TracingControllerDispatcherTracing-&gt;Sentry\Laravel\Tracing\Routing\{closure}()
+#6 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Tracing\Routing\TracingControllerDispatcherTracing.php(20): Sentry\Laravel\Tracing\Routing\TracingRoutingDispatcher-&gt;wrapRouteDispatch(Object(Closure), Object(Illuminate\Routing\Route))
+#7 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Route.php(265): Sentry\Laravel\Tracing\Routing\TracingControllerDispatcherTracing-&gt;dispatch(Object(Illuminate\Routing\Route), Object(App\Http\Controllers\Api\PaymentController), 'verifyPayment')
+#8 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Route.php(211): Illuminate\Routing\Route-&gt;runController()
+#9 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Router.php(822): Illuminate\Routing\Route-&gt;run()
+#10 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(180): Illuminate\Routing\Router-&gt;Illuminate\Routing\{closure}(Object(Illuminate\Http\Request))
+#11 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Middleware\SubstituteBindings.php(50): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#12 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Routing\Middleware\SubstituteBindings-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#13 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Auth\Middleware\Authenticate.php(63): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#14 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Auth\Middleware\Authenticate-&gt;handle(Object(Illuminate\Http\Request), Object(Closure), 'sanctum')
+#15 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(137): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#16 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Router.php(821): Illuminate\Pipeline\Pipeline-&gt;then(Object(Closure))
+#17 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Router.php(800): Illuminate\Routing\Router-&gt;runRouteWithinStack(Object(Illuminate\Routing\Route), Object(Illuminate\Http\Request))
+#18 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Router.php(764): Illuminate\Routing\Router-&gt;runRoute(Object(Illuminate\Http\Request), Object(Illuminate\Routing\Route))
+#19 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Router.php(753): Illuminate\Routing\Router-&gt;dispatchToRoute(Object(Illuminate\Http\Request))
+#20 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Kernel.php(200): Illuminate\Routing\Router-&gt;dispatch(Object(Illuminate\Http\Request))
+#21 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(180): Illuminate\Foundation\Http\Kernel-&gt;Illuminate\Foundation\Http\{closure}(Object(Illuminate\Http\Request))
+#22 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Http\FlushEventsMiddleware.php(13): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#23 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Sentry\Laravel\Http\FlushEventsMiddleware-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#24 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Http\SetRequestIpMiddleware.php(45): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#25 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Sentry\Laravel\Http\SetRequestIpMiddleware-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#26 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Http\SetRequestMiddleware.php(31): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#27 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Sentry\Laravel\Http\SetRequestMiddleware-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#28 D:\Documents\Dadisi\dadisi_app\backend\app\Http\Middleware\SecurityHeadersMiddleware.php(28): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#29 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): App\Http\Middleware\SecurityHeadersMiddleware-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#30 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\TransformsRequest.php(21): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#31 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull.php(31): Illuminate\Foundation\Http\Middleware\TransformsRequest-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#32 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#33 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\TransformsRequest.php(21): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#34 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\TrimStrings.php(51): Illuminate\Foundation\Http\Middleware\TransformsRequest-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#35 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Foundation\Http\Middleware\TrimStrings-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#36 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Http\Middleware\ValidatePostSize.php(27): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#37 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Http\Middleware\ValidatePostSize-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#38 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance.php(109): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#39 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#40 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Http\Middleware\HandleCors.php(61): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#41 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Http\Middleware\HandleCors-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#42 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Http\Middleware\TrustProxies.php(58): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#43 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Http\Middleware\TrustProxies-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#44 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\InvokeDeferredCallbacks.php(22): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#45 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Foundation\Http\Middleware\InvokeDeferredCallbacks-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#46 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Http\Middleware\ValidatePathEncoding.php(26): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#47 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Http\Middleware\ValidatePathEncoding-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#48 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Tracing\Middleware.php(79): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#49 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Sentry\Laravel\Tracing\Middleware-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#50 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(137): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#51 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Kernel.php(175): Illuminate\Pipeline\Pipeline-&gt;then(Object(Closure))
+#52 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Kernel.php(144): Illuminate\Foundation\Http\Kernel-&gt;sendRequestThroughRouter(Object(Illuminate\Http\Request))
+#53 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Testing\Concerns\MakesHttpRequests.php(607): Illuminate\Foundation\Http\Kernel-&gt;handle(Object(Illuminate\Http\Request))
+#54 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Testing\Concerns\MakesHttpRequests.php(573): Illuminate\Foundation\Testing\TestCase-&gt;call('POST', '/api/payments/v...', Array, Array, Array, Array, '{"transaction_i...')
+#55 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Testing\Concerns\MakesHttpRequests.php(411): Illuminate\Foundation\Testing\TestCase-&gt;json('POST', '/api/payments/v...', Array, Array, 0)
+#56 D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php(88): Illuminate\Foundation\Testing\TestCase-&gt;postJson('/api/payments/v...', Array)
+#57 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\Framework\TestCase.php(1657): Tests\Feature\Donations\GuestDonationTest-&gt;test_guest_receives_email_on_payment_completion()
+#58 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\Framework\TestCase.php(515): PHPUnit\Framework\TestCase-&gt;runTest()
+#59 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\Framework\TestRunner\TestRunner.php(87): PHPUnit\Framework\TestCase-&gt;runBare()
+#60 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\Framework\TestCase.php(361): PHPUnit\Framework\TestRunner-&gt;run(Object(Tests\Feature\Donations\GuestDonationTest))
+#61 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\Framework\TestSuite.php(369): PHPUnit\Framework\TestCase-&gt;run()
+#62 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\TextUI\TestRunner.php(64): PHPUnit\Framework\TestSuite-&gt;run()
+#63 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\TextUI\Application.php(211): PHPUnit\TextUI\TestRunner-&gt;run(Object(PHPUnit\TextUI\Configuration\Configuration), Object(PHPUnit\Runner\ResultCache\DefaultResultCache), Object(PHPUnit\Framework\TestSuite))
+#64 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\phpunit(104): PHPUnit\TextUI\Application-&gt;run(Array)
+#65 {main}
+
+----------------------------------------------------------------------------------
+
+Mockery_2_App_Services_PaymentGateway_GatewayManager::queryStatus(): Return value must be of type App\DTOs\Payments\PaymentStatusDTO, App\DTOs\Payments\TransactionResultDTO returned
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Testing\TestResponseAssert.php:45
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Testing\TestResponse.php:174
+D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php:92</failure>
+    </testcase>
+    <testcase name="test_guest_can_resume_pending_donation_payment" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="108" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="1" time="3.354049">
+      <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\Feature\Donations\GuestDonationTest::test_guest_can_resume_pending_donation_payment&#13;
+Expected response status code [200] but received 500.
+Failed asserting that 500 is identical to 200.&#13;
+&#13;
+The following exception occurred during the last request:
+
+TypeError: App\Services\Payments\PaymentService::processPayment(): Argument #1 ($user) must be of type Illuminate\Contracts\Auth\Authenticatable, null given, called in D:\Documents\Dadisi\dadisi_app\backend\app\Services\Donations\DonationService.php on line 351 and defined in D:\Documents\Dadisi\dadisi_app\backend\app\Services\Payments\PaymentService.php:109
+Stack trace:
+#0 D:\Documents\Dadisi\dadisi_app\backend\app\Services\Donations\DonationService.php(351): App\Services\Payments\PaymentService-&gt;processPayment(NULL, Array)
+#1 D:\Documents\Dadisi\dadisi_app\backend\app\Http\Controllers\Api\PublicDonationController.php(187): App\Services\Donations\DonationService-&gt;resumeDonationPayment(Object(App\Models\Donation))
+#2 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Controller.php(54): App\Http\Controllers\Api\PublicDonationController-&gt;resume('DON-RESUME-123')
+#3 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\ControllerDispatcher.php(43): Illuminate\Routing\Controller-&gt;callAction('resume', Array)
+#4 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Tracing\Routing\TracingControllerDispatcherTracing.php(21): Illuminate\Routing\ControllerDispatcher-&gt;dispatch(Object(Illuminate\Routing\Route), Object(App\Http\Controllers\Api\PublicDonationController), 'resume')
+#5 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Tracing\Routing\TracingRoutingDispatcher.php(35): Sentry\Laravel\Tracing\Routing\TracingControllerDispatcherTracing-&gt;Sentry\Laravel\Tracing\Routing\{closure}()
+#6 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Tracing\Routing\TracingControllerDispatcherTracing.php(20): Sentry\Laravel\Tracing\Routing\TracingRoutingDispatcher-&gt;wrapRouteDispatch(Object(Closure), Object(Illuminate\Routing\Route))
+#7 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Route.php(265): Sentry\Laravel\Tracing\Routing\TracingControllerDispatcherTracing-&gt;dispatch(Object(Illuminate\Routing\Route), Object(App\Http\Controllers\Api\PublicDonationController), 'resume')
+#8 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Route.php(211): Illuminate\Routing\Route-&gt;runController()
+#9 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Router.php(822): Illuminate\Routing\Route-&gt;run()
+#10 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(180): Illuminate\Routing\Router-&gt;Illuminate\Routing\{closure}(Object(Illuminate\Http\Request))
+#11 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Middleware\SubstituteBindings.php(50): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#12 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Routing\Middleware\SubstituteBindings-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#13 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(137): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#14 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Router.php(821): Illuminate\Pipeline\Pipeline-&gt;then(Object(Closure))
+#15 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Router.php(800): Illuminate\Routing\Router-&gt;runRouteWithinStack(Object(Illuminate\Routing\Route), Object(Illuminate\Http\Request))
+#16 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Router.php(764): Illuminate\Routing\Router-&gt;runRoute(Object(Illuminate\Http\Request), Object(Illuminate\Routing\Route))
+#17 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Routing\Router.php(753): Illuminate\Routing\Router-&gt;dispatchToRoute(Object(Illuminate\Http\Request))
+#18 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Kernel.php(200): Illuminate\Routing\Router-&gt;dispatch(Object(Illuminate\Http\Request))
+#19 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(180): Illuminate\Foundation\Http\Kernel-&gt;Illuminate\Foundation\Http\{closure}(Object(Illuminate\Http\Request))
+#20 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Http\FlushEventsMiddleware.php(13): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#21 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Sentry\Laravel\Http\FlushEventsMiddleware-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#22 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Http\SetRequestIpMiddleware.php(45): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#23 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Sentry\Laravel\Http\SetRequestIpMiddleware-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#24 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Http\SetRequestMiddleware.php(31): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#25 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Sentry\Laravel\Http\SetRequestMiddleware-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#26 D:\Documents\Dadisi\dadisi_app\backend\app\Http\Middleware\SecurityHeadersMiddleware.php(28): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#27 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): App\Http\Middleware\SecurityHeadersMiddleware-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#28 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\TransformsRequest.php(21): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#29 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull.php(31): Illuminate\Foundation\Http\Middleware\TransformsRequest-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#30 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#31 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\TransformsRequest.php(21): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#32 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\TrimStrings.php(51): Illuminate\Foundation\Http\Middleware\TransformsRequest-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#33 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Foundation\Http\Middleware\TrimStrings-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#34 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Http\Middleware\ValidatePostSize.php(27): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#35 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Http\Middleware\ValidatePostSize-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#36 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance.php(109): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#37 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#38 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Http\Middleware\HandleCors.php(61): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#39 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Http\Middleware\HandleCors-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#40 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Http\Middleware\TrustProxies.php(58): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#41 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Http\Middleware\TrustProxies-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#42 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Middleware\InvokeDeferredCallbacks.php(22): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#43 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Foundation\Http\Middleware\InvokeDeferredCallbacks-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#44 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Http\Middleware\ValidatePathEncoding.php(26): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#45 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Illuminate\Http\Middleware\ValidatePathEncoding-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#46 D:\Documents\Dadisi\dadisi_app\backend\vendor\sentry\sentry-laravel\src\Sentry\Laravel\Tracing\Middleware.php(79): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#47 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(219): Sentry\Laravel\Tracing\Middleware-&gt;handle(Object(Illuminate\Http\Request), Object(Closure))
+#48 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Pipeline\Pipeline.php(137): Illuminate\Pipeline\Pipeline-&gt;Illuminate\Pipeline\{closure}(Object(Illuminate\Http\Request))
+#49 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Kernel.php(175): Illuminate\Pipeline\Pipeline-&gt;then(Object(Closure))
+#50 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Http\Kernel.php(144): Illuminate\Foundation\Http\Kernel-&gt;sendRequestThroughRouter(Object(Illuminate\Http\Request))
+#51 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Testing\Concerns\MakesHttpRequests.php(607): Illuminate\Foundation\Http\Kernel-&gt;handle(Object(Illuminate\Http\Request))
+#52 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Testing\Concerns\MakesHttpRequests.php(573): Illuminate\Foundation\Testing\TestCase-&gt;call('POST', '/api/donations/...', Array, Array, Array, Array, '[]')
+#53 D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Foundation\Testing\Concerns\MakesHttpRequests.php(411): Illuminate\Foundation\Testing\TestCase-&gt;json('POST', '/api/donations/...', Array, Array, 0)
+#54 D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php(126): Illuminate\Foundation\Testing\TestCase-&gt;postJson('/api/donations/...')
+#55 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\Framework\TestCase.php(1657): Tests\Feature\Donations\GuestDonationTest-&gt;test_guest_can_resume_pending_donation_payment()
+#56 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\Framework\TestCase.php(515): PHPUnit\Framework\TestCase-&gt;runTest()
+#57 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\Framework\TestRunner\TestRunner.php(87): PHPUnit\Framework\TestCase-&gt;runBare()
+#58 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\Framework\TestCase.php(361): PHPUnit\Framework\TestRunner-&gt;run(Object(Tests\Feature\Donations\GuestDonationTest))
+#59 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\Framework\TestSuite.php(369): PHPUnit\Framework\TestCase-&gt;run()
+#60 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\TextUI\TestRunner.php(64): PHPUnit\Framework\TestSuite-&gt;run()
+#61 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\src\TextUI\Application.php(211): PHPUnit\TextUI\TestRunner-&gt;run(Object(PHPUnit\TextUI\Configuration\Configuration), Object(PHPUnit\Runner\ResultCache\DefaultResultCache), Object(PHPUnit\Framework\TestSuite))
+#62 D:\Documents\Dadisi\dadisi_app\backend\vendor\phpunit\phpunit\phpunit(104): PHPUnit\TextUI\Application-&gt;run(Array)
+#63 {main}
+
+----------------------------------------------------------------------------------
+
+App\Services\Payments\PaymentService::processPayment(): Argument #1 ($user) must be of type Illuminate\Contracts\Auth\Authenticatable, null given, called in D:\Documents\Dadisi\dadisi_app\backend\app\Services\Donations\DonationService.php on line 351
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Testing\TestResponseAssert.php:45
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Testing\TestResponse.php:174
+D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php:128</failure>
+    </testcase>
+    <testcase name="test_guest_can_cancel_pending_donation" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="141" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="4" time="1.327067"/>
+  </testsuite>
+</testsuites>

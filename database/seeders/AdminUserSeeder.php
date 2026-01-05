@@ -81,14 +81,33 @@ class AdminUserSeeder extends Seeder
                 $planName = $userData['subscription_plan'] ?? 'Free';
                 $plan = Plan::where('slug', Str::slug($planName))->first();
 
+                // Generate realistic demo data
+                $genders = ['male', 'female'];
+                $occupations = [
+                    'Software Developer',
+                    'Research Scientist',
+                    'Community Organizer',
+                    'Student',
+                    'Lab Technician',
+                    'Environmental Scientist',
+                ];
+
                 MemberProfile::create([
                     'user_id' => $user->id,
                     'first_name' => $nameParts[0] ?? '',
                     'last_name' => $nameParts[1] ?? '',
-                    'county_id' => 1, // Default to first county (Nairobi)
+                    'phone_number' => '+2547' . rand(10000000, 99999999),
+                    'county_id' => rand(1, 47), // Random county from Kenya's 47 counties
+                    'sub_county' => 'Demo Sub-County',
+                    'ward' => 'Demo Ward',
+                    'gender' => $genders[array_rand($genders)],
+                    'date_of_birth' => now()->subYears(rand(20, 45))->format('Y-m-d'),
+                    'occupation' => $occupations[array_rand($occupations)],
+                    'bio' => 'A passionate member of the Dadisi Community Labs community.',
+                    'interests' => ['technology', 'community', 'biotech'],
                     'plan_id' => $plan?->id,
                     'terms_accepted' => true,
-                    'marketing_consent' => false,
+                    'marketing_consent' => (bool) rand(0, 1),
                     'is_staff' => $userData['role'] !== 'member',
                 ]);
             }

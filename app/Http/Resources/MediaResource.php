@@ -15,11 +15,15 @@ class MediaResource extends JsonResource
             'file_path' => $this->file_path,
             'type' => $this->type,
             'mime_type' => $this->mime_type,
-            'file_size' => $this->file_size,
-            'is_public' => (bool) $this->is_public,
+            'size' => $this->file_size, // Rename to size for frontend
+            'visibility' => $this->visibility,
+            'share_token' => $this->share_token,
+            'allow_download' => (bool) $this->allow_download,
+            'is_public' => $this->visibility === 'public',
             'attached_to' => $this->attached_to,
             'attached_to_id' => $this->attached_to_id,
             'url' => url('/storage' . $this->file_path),
+            'original_url' => url('/storage' . $this->file_path), // Add original_url for frontend
             'owner' => [
                 'id' => $this->user_id,
                 'name' => $this->owner?->name,

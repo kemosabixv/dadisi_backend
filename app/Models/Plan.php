@@ -16,6 +16,7 @@ class Plan extends BasePlan
         'name',
         'description',
         'is_active',
+        'requires_student_approval',
         'price',
         'signup_fee',
         'currency',

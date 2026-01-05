@@ -8,6 +8,7 @@ use App\Services\Contracts\PlanServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class PlanController extends Controller
 {
@@ -192,6 +193,12 @@ class PlanController extends Controller
                     'name' => $validated['name'],
                 ],
             ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Failed to create plan', ['error' => $e->getMessage(), 'data' => $request->all()]);
             return response()->json(['success' => false, 'message' => 'Failed to create plan'], 500);
@@ -250,6 +257,9 @@ class PlanController extends Controller
                 'yearly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
                 'yearly_promotion.expires_at' => 'nullable|date|after:now',
                 'is_active' => 'nullable|boolean',
+                'requires_student_approval' => 'nullable|boolean',
+                'display_features' => 'nullable|array',
+                'display_features.*' => 'string|max:255',
                 'features' => 'nullable|array',
                 'features.*.name' => 'required_with:features|string|max:255',
                 'features.*.limit' => 'nullable|integer|min:-1',
@@ -271,6 +281,12 @@ class PlanController extends Controller
                     'name' => $this->extractPlanName($plan->name),
                 ],
             ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Failed to update plan', ['error' => $e->getMessage(), 'plan_id' => $plan->id]);
             return response()->json(['success' => false, 'message' => 'Failed to update plan'], 500);
@@ -303,11 +319,12 @@ class PlanController extends Controller
 
             return response()->json(['message' => 'Plan deleted']);
         } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), 'Cannot delete plan')) {
-                return response()->json(['error' => 'Cannot delete plan with active subscriptions'], 409);
+            $message = $e->getMessage();
+            if (str_contains($message, 'Cannot delete plan')) {
+                return response()->json(['error' => $message], 409);
             }
-            Log::error('Failed to delete plan', ['error' => $e->getMessage(), 'plan_id' => $plan->id]);
-            return response()->json(['success' => false, 'message' => 'Failed to delete plan'], 500);
+            Log::error('Failed to delete plan', ['error' => $message, 'plan_id' => $plan->id]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete plan: ' . $message], 500);
         }
     }
 

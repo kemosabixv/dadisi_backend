@@ -75,6 +75,73 @@ class UserController extends Controller
     }
 
     /**
+     * Create User
+     *
+     * Create a new user account with member profile.
+     *
+     * @authenticated
+     * @bodyParam username string required Unique username. Example: johndoe
+     * @bodyParam email string required User email. Example: john@example.com
+     * @bodyParam password string required Password (min 8 chars). Example: SecurePass123
+     * @bodyParam first_name string optional First name. Example: John
+     * @bodyParam last_name string optional Last name. Example: Doe
+     * @bodyParam roles array optional Role names to assign. Example: ["member"]
+     * @response 201 {"success": true, "message": "User created successfully", "data": {...}}
+     */
+    public function store(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'username' => 'required|string|unique:users,username|min:3|max:50',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|string|min:8',
+                'first_name' => 'nullable|string|max:100',
+                'last_name' => 'nullable|string|max:100',
+                'is_staff' => 'nullable|boolean',
+                'roles' => 'nullable|array',
+                'roles.*' => 'string|exists:roles,name',
+            ]);
+
+            $dto = CreateUserDTO::fromArray([
+                'username' => $validated['username'],
+                'email' => $validated['email'],
+                'password' => $validated['password'],
+            ]);
+
+            $profileData = [
+                'first_name' => $validated['first_name'] ?? null,
+                'last_name' => $validated['last_name'] ?? null,
+                'is_staff' => $validated['is_staff'] ?? false,
+            ];
+
+            $user = $this->userService->create($request->user(), $dto, $profileData);
+
+            // Assign roles if provided
+            if (!empty($validated['roles'])) {
+                $user->syncRoles($validated['roles']);
+                $user->load('roles');
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User created successfully',
+                'data' => new UserResource($user),
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
+        } catch (\Exception $e) {
+            Log::error('Failed to create user', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create user'], 500);
+        }
+    }
+
+    /**
      * Get User Details
      */
     public function show(string $id): JsonResponse

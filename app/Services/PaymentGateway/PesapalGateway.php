@@ -18,6 +18,7 @@ class PesapalGateway implements PaymentGatewayInterface
     protected $callbackUrl;
     protected $ipnUrl;
     protected $ipnNotificationType;
+    protected $webhookSecret;
 
     public function __construct(array $config = [])
     {
@@ -29,6 +30,7 @@ class PesapalGateway implements PaymentGatewayInterface
         $this->callbackUrl = $config['callback_url'] ?? config('payment.pesapal.callback_url', config('app.url') . '/payment/callback');
         $this->ipnUrl = $config['ipn_url'] ?? config('payment.pesapal.ipn_url', config('app.url') . '/webhooks/pesapal/ipn');
         $this->ipnNotificationType = $config['ipn_notification_type'] ?? config('payment.pesapal.ipn_notification_type', 'POST');
+        $this->webhookSecret = $config['webhook_secret'] ?? config('payment.pesapal.webhook_secret');
     }
 
     /**
@@ -89,6 +91,19 @@ class PesapalGateway implements PaymentGatewayInterface
 
         } catch (\Exception $e) {
             \Log::error('Pesapal charge exception: ' . $e->getMessage());
+            
+            // Log to Sentry with context
+            if (app()->bound('sentry')) {
+                \Sentry\configureScope(function (\Sentry\State\Scope $scope) use ($identifier, $amount, $metadata) {
+                    $scope->setContext('pesapal_charge', [
+                        'identifier' => $identifier,
+                        'amount' => $amount,
+                        'metadata' => $metadata,
+                    ]);
+                });
+                \Sentry\captureException($e);
+            }
+            
             return $this->normalizeError('unknown_error', $e->getMessage());
         }
     }
@@ -104,7 +119,9 @@ class PesapalGateway implements PaymentGatewayInterface
             transactionId: $statusData['order_tracking_id'] ?? $transactionId,
             merchantReference: $statusData['merchant_reference'] ?? '',
             status: $statusData['status'] ?? 'UNKNOWN',
-            amount: 0, // Not always returned in status query, though usually known from model
+            amount: (float) ($statusData['amount'] ?? 0),
+            currency: $statusData['currency'] ?? 'KES',
+            paymentMethod: $statusData['payment_method'] ?? null,
             rawDetails: $statusData
         );
     }
@@ -134,14 +151,27 @@ class PesapalGateway implements PaymentGatewayInterface
                 return trim($response->body()) ?: null;
             }
 
-            $error = $response->json()['error'] ?? [];
+            $error = $response->json() ?? [];
             \Log::error('Pesapal JWT token error', [
                 'status' => $response->status(),
-                'error' => $error['message'] ?? 'Unknown error',
+                'error' => $error,
             ]);
+
+            if (app()->bound('sentry')) {
+                \Sentry\captureMessage('Pesapal JWT Token Failed: ' . $response->status(), [
+                    'extra' => [
+                        'status' => $response->status(),
+                        'body' => $error,
+                    ],
+                    'tags' => ['pesapal_api' => 'RequestToken']
+                ]);
+            }
             return null;
         } catch (\Exception $e) {
             \Log::error('Pesapal JWT token exception: ' . $e->getMessage());
+            if (app()->bound('sentry')) {
+                \Sentry\captureException($e);
+            }
             return null;
         }
     }
@@ -162,7 +192,9 @@ class PesapalGateway implements PaymentGatewayInterface
                 
                 if (is_array($ipnList)) {
                     foreach ($ipnList as $ipn) {
-                        if ($ipn['url'] === $this->ipnUrl && ($ipn['ipn_status'] ?? 0) == 1) {
+                        $remoteUrl = $ipn['url'];
+                        // Match if it is our base URL or the one with our secret token
+                        if (($remoteUrl === $this->ipnUrl || str_starts_with($remoteUrl, $this->ipnUrl)) && ($ipn['ipn_status'] ?? 0) == 1) {
                             return $ipn['ipn_id'];
                         }
                     }
@@ -179,13 +211,19 @@ class PesapalGateway implements PaymentGatewayInterface
     protected function registerIpnUrl(string $token): ?string
     {
         try {
+            $url = $this->ipnUrl;
+            if ($this->webhookSecret) {
+                $separator = str_contains($url, '?') ? '&' : '?';
+                $url .= $separator . 'token=' . $this->webhookSecret;
+            }
+
             /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::asJson()->withHeaders([
                 'Authorization' => 'Bearer ' . $token,
             ])->post(
                 $this->apiBase . '/URLSetup/RegisterIPN',
                 [
-                    'url' => $this->ipnUrl,
+                    'url' => $url,
                     'ipn_notification_type' => $this->ipnNotificationType,
                 ]
             );
@@ -260,6 +298,18 @@ class PesapalGateway implements PaymentGatewayInterface
             return ['error' => 'Failed to submit order'];
         } catch (\Exception $e) {
             \Log::error('Pesapal submit order error: ' . $e->getMessage());
+            
+            if (app()->bound('sentry')) {
+                \Sentry\configureScope(function (\Sentry\State\Scope $scope) use ($identifier, $amount, $metadata) {
+                    $scope->setContext('pesapal_order', [
+                        'identifier' => $identifier,
+                        'amount' => $amount,
+                        'metadata' => $metadata,
+                    ]);
+                });
+                \Sentry\captureException($e);
+            }
+            
             return ['error' => $e->getMessage()];
         }
     }
@@ -275,23 +325,51 @@ class PesapalGateway implements PaymentGatewayInterface
                 'Authorization' => 'Bearer ' . $token,
             ])->get(
                 $this->apiBase . '/Transactions/GetTransactionStatus',
-                ['order_tracking_id' => $orderTrackingId]
+                ['orderTrackingId' => $orderTrackingId]
             );
 
             if ($response->successful()) {
                 $data = $response->json();
+                
+                // Map status_code to common status strings for DTO compatibility
+                // 1: COMPLETED, 2: FAILED, 3: INVALID / CANCELLED, 0: INCOMING
+                $statusCode = $data['status_code'] ?? null;
+                $status = 'UNKNOWN';
+                
+                if ($statusCode === 1) $status = 'COMPLETED';
+                elseif ($statusCode === 2) $status = 'FAILED';
+                elseif ($statusCode === 3) $status = 'CANCELLED';
+                elseif ($statusCode === 0) $status = 'PENDING';
+                
                 return [
                     'order_tracking_id' => $data['order_tracking_id'] ?? $orderTrackingId,
                     'merchant_reference' => $data['merchant_reference'] ?? $merchantReference,
-                    'status' => $data['status'] ?? 'UNKNOWN',
+                    'status' => $status,
+                    'gateway_status' => $data['payment_status_description'] ?? $status,
                     'confirmation_code' => $data['confirmation_code'] ?? null,
                     'payment_method' => $data['payment_method'] ?? null,
                     'payment_status_description' => $data['payment_status_description'] ?? null,
+                    'amount' => $data['amount'] ?? 0,
+                    'currency' => $data['currency'] ?? 'KES',
                 ];
             }
 
-            return ['status' => 'UNKNOWN', 'error' => 'Failed to query status'];
+            if (app()->bound('sentry')) {
+                \Sentry\captureMessage('Pesapal Status Query Failed: ' . $response->status(), [
+                    'extra' => [
+                        'orderTrackingId' => $orderTrackingId,
+                        'status' => $response->status(),
+                        'body' => $response->json(),
+                    ],
+                    'tags' => ['pesapal_api' => 'getTransactionStatus']
+                ]);
+            }
+
+            return ['status' => 'UNKNOWN', 'error' => 'Failed to query status: ' . $response->status()];
         } catch (\Exception $e) {
+            if (app()->bound('sentry')) {
+                \Sentry\captureException($e);
+            }
             return ['status' => 'UNKNOWN', 'error' => $e->getMessage()];
         }
     }

@@ -125,6 +125,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 
     // Standard CRUD operations (admin-managed)
     Route::get('users', [UserController::class, 'index']);
+    Route::post('users', [UserController::class, 'store']);
     Route::get('users/{id}', [UserController::class, 'show']);
     Route::put('users/{id}', [UserController::class, 'update']);
     Route::delete('users/{id}', [UserController::class, 'destroy']);
@@ -260,11 +261,13 @@ Route::prefix('admin/donation-campaigns')->middleware(['auth:sanctum', 'admin'])
 Route::prefix('donations')->group(function () {
     // Public: Get donation by reference (for checkout page)
     Route::get('/ref/{reference}', [PublicDonationController::class, 'show'])->name('donations.show');
+    Route::post('/ref/{reference}/resume', [PublicDonationController::class, 'resume'])->name('donations.resume');
+    Route::post('/ref/{reference}/cancel', [PublicDonationController::class, 'cancel'])->name('donations.cancel');
+    Route::post('/', [PublicDonationController::class, 'store'])->name('donations.store');
 
     // Authenticated: List user's donations and create new donation
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [PublicDonationController::class, 'index'])->name('donations.index');
-        Route::post('/', [PublicDonationController::class, 'store'])->name('donations.store');
         Route::delete('/{donation}', [PublicDonationController::class, 'destroy'])->name('donations.destroy');
     });
 });
@@ -373,11 +376,26 @@ Route::prefix('blog')->middleware('auth:sanctum')->group(function () {
 // Media Management - User routes
 use App\Http\Controllers\Api\MediaController;
 
-Route::prefix('media')->middleware('auth:sanctum')->group(function () {
-    Route::get('', [MediaController::class, 'index'])->name('media.index');
-    Route::post('', [MediaController::class, 'store'])->name('media.store');
-    Route::get('{media}', [MediaController::class, 'show'])->name('media.show');
-    Route::delete('{media}', [MediaController::class, 'destroy'])->name('media.destroy');
+Route::prefix('media')->group(function () {
+    // Public share route
+    Route::get('shared/{token}', [MediaController::class, 'showShared'])->name('media.shared');
+
+    // Authenticated routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('', [MediaController::class, 'index'])->name('media.index');
+        Route::post('', [MediaController::class, 'store'])->name('media.store');
+        Route::get('{media}', [MediaController::class, 'show'])->name('media.show');
+        Route::delete('{media}', [MediaController::class, 'destroy'])->name('media.destroy');
+        Route::patch('{media}/visibility', [MediaController::class, 'updateVisibility'])->name('media.visibility');
+        Route::patch('{media}/rename', [MediaController::class, 'rename'])->name('media.rename');
+
+        // Multipart uploads
+        Route::prefix('multipart')->group(function () {
+            Route::post('init', [MediaController::class, 'initMultipart'])->name('media.multipart.init');
+            Route::post('{uploadId}/chunk', [MediaController::class, 'uploadChunk'])->name('media.multipart.chunk');
+            Route::post('{uploadId}/complete', [MediaController::class, 'completeMultipart'])->name('media.multipart.complete');
+        });
+    });
 });
 
 // Webhook routes (no auth - called by external payment gateway)
@@ -441,6 +459,7 @@ Route::prefix('payments')->group(function () {
         Route::get('history', [PaymentController::class, 'getPaymentHistory'])->name('payments.history');
         Route::post('refund', [PaymentController::class, 'refundPayment'])->name('payments.refund');
         Route::post('test-mock-payment', [PaymentController::class, 'createTestMockPayment'])->name('payments.test-mock-payment');
+        Route::post('test-pesapal-payment', [PaymentController::class, 'createTestPesapalPayment'])->name('payments.test-pesapal-payment');
     });
 });
 
@@ -685,13 +704,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // Lab Bookings Management
     Route::get('lab-bookings', [AdminLabBookingController::class, 'index'])->name('admin.lab-bookings.index');
+    Route::get('lab-bookings/stats', [AdminLabBookingController::class, 'stats'])->name('admin.lab-bookings.stats');
     Route::get('lab-bookings/{id}', [AdminLabBookingController::class, 'show'])->name('admin.lab-bookings.show');
     Route::put('lab-bookings/{id}/approve', [AdminLabBookingController::class, 'approve'])->name('admin.lab-bookings.approve');
     Route::put('lab-bookings/{id}/reject', [AdminLabBookingController::class, 'reject'])->name('admin.lab-bookings.reject');
     Route::put('lab-bookings/{id}/check-in', [AdminLabBookingController::class, 'checkIn'])->name('admin.lab-bookings.check-in');
     Route::put('lab-bookings/{id}/check-out', [AdminLabBookingController::class, 'checkOut'])->name('admin.lab-bookings.check-out');
     Route::put('lab-bookings/{id}/no-show', [AdminLabBookingController::class, 'markNoShow'])->name('admin.lab-bookings.no-show');
-    Route::get('lab-bookings/stats', [AdminLabBookingController::class, 'stats'])->name('admin.lab-bookings.stats');
 
     // Lab Maintenance Blocks
     Route::get('lab-maintenance', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'index'])->name('admin.lab-maintenance.index');

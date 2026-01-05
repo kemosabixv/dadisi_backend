@@ -18,7 +18,7 @@ class StorePostRequest extends FormRequest
             'slug' => 'nullable|string|max:255|unique:posts,slug',
             'excerpt' => 'required|string|max:500',
             'content' => 'required|string',
-            'county_id' => 'required|exists:counties,id',
+            'county_id' => 'nullable|exists:counties,id',
             'status' => 'required|in:draft,published',
             'hero_image_path' => 'nullable|string|max:500',
             'is_featured' => 'boolean',
@@ -28,6 +28,15 @@ class StorePostRequest extends FormRequest
             'tag_ids' => 'nullable|array|exists:tags,id',
             'media_ids' => 'nullable|array|exists:media,id',
         ];
+    }
+
+    protected function prepareForValidation()
+    {
+        if ($this->has('body') && ! $this->has('content')) {
+            $this->merge([
+                'content' => $this->input('body'),
+            ]);
+        }
     }
 
     public function messages(): array

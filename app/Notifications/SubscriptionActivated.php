@@ -2,14 +2,11 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class SubscriptionActivated extends Notification implements ShouldQueue
+class SubscriptionActivated extends Notification
 {
-    use Queueable;
 
     public function __construct(
         protected $subscription

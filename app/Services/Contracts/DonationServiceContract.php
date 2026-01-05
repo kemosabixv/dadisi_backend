@@ -46,6 +46,16 @@ interface DonationServiceContract
     public function deleteDonation(Authenticatable $actor, Donation $donation): bool;
 
     /**
+     * Resume a pending donation payment
+     */
+    public function resumeDonationPayment(Donation $donation): array;
+
+    /**
+     * Cancel a donation by reference (for guests)
+     */
+    public function cancelDonation(string $reference): bool;
+
+    /**
      * Get donor donations history
      */
     public function getDonorHistory(Authenticatable $donor, int $limit = 50): \Illuminate\Database\Eloquent\Collection;

@@ -35,6 +35,20 @@ class SampleAuthorsSeeder extends Seeder
             ]
         );
 
+        // Ensure demo user has a member profile
+        if (!$demo->memberProfile) {
+            \App\Models\MemberProfile::create([
+                'user_id' => $demo->id,
+                'first_name' => 'Demo',
+                'last_name' => 'Author',
+                'phone_number' => '+254700000000',
+                'county_id' => 1,
+                'is_staff' => true,
+                'terms_accepted' => true,
+                'interests' => ['writing', 'community'],
+            ]);
+        }
+
         $this->command->info('Sample authors seeder completed. Demo user: author@example.com (password: password)');
         $this->command->info('Note: Author role was removed. Authoring access is controlled via subscriptions.');
     }

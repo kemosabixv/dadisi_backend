@@ -9,6 +9,9 @@ use App\Models\SubscriptionEnhancement;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
+use App\Models\User;
+use App\Notifications\StudentApprovalSubmitted;
 
 /**
  * Student Approval Service
@@ -23,7 +26,7 @@ class StudentApprovalService implements StudentApprovalServiceContract
     public function submitApprovalRequest(int $userId, array $data): StudentApprovalRequest
     {
         try {
-            return DB::transaction(function () use ($userId, $data) {
+            $approvalRequest = DB::transaction(function () use ($userId, $data) {
                 // Check for existing active request
                 $existingRequest = StudentApprovalRequest::where('user_id', $userId)
                     ->whereIn('status', ['pending', 'approved'])
@@ -54,6 +57,26 @@ class StudentApprovalService implements StudentApprovalServiceContract
 
                 return $approvalRequest;
             });
+
+            // Notify staff members with approval permission (outside transaction)
+            try {
+                $staffToNotify = User::permission('approve_student_approvals')->get();
+                if ($staffToNotify->isNotEmpty()) {
+                    Notification::send($staffToNotify, new StudentApprovalSubmitted($approvalRequest));
+                    Log::info('Student approval notifications sent', [
+                        'request_id' => $approvalRequest->id,
+                        'staff_count' => $staffToNotify->count(),
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to send student approval notifications', [
+                    'error' => $e->getMessage(),
+                    'request_id' => $approvalRequest->id,
+                ]);
+                // Don't fail the request if notification fails
+            }
+
+            return $approvalRequest;
         } catch (\Exception $e) {
             Log::error('Student approval request submission failed', [
                 'user_id' => $userId,
@@ -87,7 +110,7 @@ class StudentApprovalService implements StudentApprovalServiceContract
     public function getApprovalDetails($requestId): StudentApprovalRequest
     {
         try {
-            return StudentApprovalRequest::with('user')->findOrFail($requestId);
+            return StudentApprovalRequest::with('user.memberProfile')->findOrFail($requestId);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve approval details', [
                 'request_id' => $requestId,
@@ -103,16 +126,19 @@ class StudentApprovalService implements StudentApprovalServiceContract
     public function listApprovalRequests(array $filters = []): LengthAwarePaginator
     {
         try {
-            $query = StudentApprovalRequest::with('user');
+            $query = StudentApprovalRequest::with('user.memberProfile');
 
-            if (!empty($filters['status'])) {
+            if (isset($filters['status']) && $filters['status'] !== '') {
                 $query->where('status', $filters['status']);
-            } else {
+            } elseif (!array_key_exists('status', $filters)) {
+                // Default to pending ONLY if status is not provided at all in the array
                 $query->where('status', 'pending');
             }
+            // If status is in the array but is '', we skip filtering (All Statuses)
+            // If status is empty string, we don't apply where('status') filter, showing all
 
             if (!empty($filters['county'])) {
-                $query->where('county', $filters['county']);
+                $query->where('county', 'LIKE', '%' . $filters['county'] . '%');
             }
 
             return $query->orderBy('submitted_at', 'asc')
@@ -124,7 +150,7 @@ class StudentApprovalService implements StudentApprovalServiceContract
     }
 
     /**
-     * Approve student request and create subscription
+     * Approve student request and create/activate subscription
      */
     public function approveRequest($requestId, int $adminId, ?string $adminNotes = null): StudentApprovalRequest
     {
@@ -139,23 +165,46 @@ class StudentApprovalService implements StudentApprovalServiceContract
                 // Approve the request
                 $approvalRequest->approve($adminId, $adminNotes);
 
-                // Create student subscription
-                $studentPlan = Plan::where('type', 'student')->first();
-                if ($studentPlan) {
-                    $subscription = $approvalRequest->user->activeSubscription()->create([
-                        'plan_id' => $studentPlan->id,
-                        'starts_at' => now(),
-                        'ends_at' => now()->addYear(),
-                        'status' => 'active',
+                // Find the pending subscription for this user that requires approval
+                $subscription = \App\Models\PlanSubscription::where('subscriber_id', $approvalRequest->user_id)
+                    ->where('status', 'pending_approval')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($subscription) {
+                    $plan = $subscription->plan;
+                    $amount = $plan->price; // This might need adjustment for billing cycle, but plan->price is a good base check
+
+                    Log::info('Approving pending subscription', [
+                        'subscription_id' => $subscription->id,
+                        'plan_id' => $plan->id,
+                        'is_free' => $amount == 0,
                     ]);
 
-                    // Create subscription enhancement
-                    SubscriptionEnhancement::create([
-                        'subscription_id' => $subscription->id,
-                        'status' => 'active',
-                        'max_renewal_attempts' => 3,
-                        'metadata' => json_encode(['student_plan' => true]),
+                    if ($amount == 0) {
+                        // Free plan - activate immediately
+                        $subscription->update(['status' => 'active']);
+                        
+                        // Update enhancement
+                        SubscriptionEnhancement::where('subscription_id', $subscription->id)
+                            ->update(['status' => 'active']);
+                    } else {
+                        // Paid plan - move to pending so user can pay
+                        $subscription->update(['status' => 'pending']);
+                        
+                        // Update enhancement
+                        SubscriptionEnhancement::where('subscription_id', $subscription->id)
+                            ->update(['status' => 'payment_pending']);
+                    }
+                } else {
+                    // Fallback for case where no pending subscription exists yet (legacy or manual approval)
+                    Log::warning('No pending_approval subscription found for approved request', [
+                        'user_id' => $approvalRequest->user_id,
+                        'request_id' => $requestId,
                     ]);
+                    
+                    // Optional: Create a subscription if one doesn't exist? 
+                    // For now, we expect the subscription to have been created via initiatePayment.
                 }
 
                 Log::info('Student approval request approved', [
@@ -191,6 +240,11 @@ class StudentApprovalService implements StudentApprovalServiceContract
 
                 // Reject the request
                 $approvalRequest->reject($adminId, $rejectionReason, $adminNotes);
+
+                // Find and cancel any pending_approval subscription
+                \App\Models\PlanSubscription::where('subscriber_id', $approvalRequest->user_id)
+                    ->where('status', 'pending_approval')
+                    ->update(['status' => 'cancelled', 'canceled_at' => now()]);
 
                 Log::info('Student approval request rejected', [
                     'admin_id' => $adminId,

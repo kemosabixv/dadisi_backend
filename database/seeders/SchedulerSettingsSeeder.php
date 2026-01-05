@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\SchedulerSetting;
+use Illuminate\Database\Seeder;
 
 class SchedulerSettingsSeeder extends Seeder
 {
@@ -15,14 +15,7 @@ class SchedulerSettingsSeeder extends Seeder
                 'run_time' => '03:00',
                 'frequency' => 'hourly',
                 'enabled' => true,
-                'description' => 'Cleanup temporary media uploads that expired (not attached to saved posts)',
-            ],
-            [
-                'command_name' => 'media:cleanup',
-                'run_time' => '03:00',
-                'frequency' => 'daily',
-                'enabled' => true,
-                'description' => 'Clean up orphaned media files',
+                'description' => 'Cleanup temporary media uploads and stale chunks',
             ],
             [
                 'command_name' => 'users:cleanup-expired',
@@ -62,6 +55,6 @@ class SchedulerSettingsSeeder extends Seeder
         }
 
         $this->command->info('Scheduler settings seeded successfully!');
-        $this->command->info('Available commands: ' . implode(', ', array_column($schedulers, 'command_name')));
+        $this->command->info('Available commands: '.implode(', ', array_column($schedulers, 'command_name')));
     }
 }

@@ -84,6 +84,16 @@ class EventRegistrationService implements EventRegistrationServiceContract
                 'registration_id' => $registration->id,
             ]);
 
+            // Dispatch confirmation notification
+            try {
+                $user->notify(new \App\Notifications\EventRegistrationConfirmation($registration));
+            } catch (\Exception $e) {
+                Log::error('Failed to send event registration notification', [
+                    'registration_id' => $registration->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             DB::commit();
 
             // Generate QR code image immediately for the user

@@ -17,6 +17,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * PaymentService
@@ -158,6 +159,15 @@ class PaymentService implements PaymentServiceContract
             });
         } catch (\Exception $e) {
             Log::error('Payment initiation failed', ['error' => $e->getMessage()]);
+            
+            if (app()->bound('sentry')) {
+                \Sentry\configureScope(function (\Sentry\State\Scope $scope) use ($user, $data) {
+                    $scope->setUser(['id' => $user->getAuthIdentifier()]);
+                    $scope->setContext('payment_initiation', $data);
+                });
+                \Sentry\captureException($e);
+            }
+            
             throw PaymentException::processingFailed($e->getMessage());
         }
     }
@@ -188,6 +198,41 @@ class PaymentService implements PaymentServiceContract
                     'status' => 'paid',
                     'paid_at' => now(),
                 ]);
+
+                // Sync status with payable
+                $payable = $payment->payable;
+                if ($payable instanceof \App\Models\Donation) {
+                    $payable->update([
+                        'status' => 'paid',
+                        'payment_id' => $payment->id,
+                        'receipt_number' => \App\Models\Donation::generateReceiptNumber(),
+                    ]);
+                }
+
+                // Dispatch polymorphic notifications
+                $payer = $payment->payer;
+                $payable = $payment->payable;
+
+                try {
+                    if ($payer) {
+                        if ($payable instanceof \App\Models\Donation) {
+                            $payer->notify(new \App\Notifications\DonationReceived($payable));
+                        } elseif ($payment->payable_type === 'event_order') {
+                            // Handled by EventOrderService, but good as fallback
+                        } elseif ($payable instanceof \App\Models\PlanSubscription) {
+                            $payer->notify(new \App\Notifications\SubscriptionActivated($payable));
+                        }
+                    } elseif ($payable instanceof \App\Models\Donation && !empty($payable->donor_email)) {
+                        // Guest Donation Notification
+                        Notification::route('mail', $payable->donor_email)
+                            ->notify(new \App\Notifications\DonationReceived($payable));
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to dispatch payment notification', [
+                        'payment_id' => $payment->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
                 
                 AuditLog::log('payment.verified', $payment, null, ['status' => 'paid'], 'Payment verified via gateway');
             }
@@ -201,6 +246,14 @@ class PaymentService implements PaymentServiceContract
 
         } catch (\Exception $e) {
             Log::error('Payment verification failed', ['error' => $e->getMessage(), 'id' => $transactionId]);
+            
+            if (app()->bound('sentry')) {
+                \Sentry\configureScope(function (\Sentry\State\Scope $scope) use ($transactionId) {
+                    $scope->setContext('payment_verification', ['transaction_id' => $transactionId]);
+                });
+                \Sentry\captureException($e);
+            }
+            
             throw PaymentException::verificationFailed($transactionId, $e->getMessage());
         }
     }
@@ -262,6 +315,14 @@ class PaymentService implements PaymentServiceContract
             return $this->verifyPayment($actor, $transactionId);
         } catch (\Exception $e) {
             Log::error('Webhook processing failed', ['error' => $e->getMessage()]);
+            
+            if (app()->bound('sentry')) {
+                \Sentry\configureScope(function (\Sentry\State\Scope $scope) use ($data) {
+                    $scope->setContext('webhook_payload', $data);
+                });
+                \Sentry\captureException($e);
+            }
+            
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
@@ -343,10 +404,20 @@ class PaymentService implements PaymentServiceContract
 
                 // 5. Extend Subscription
                 $interval = $subscription->plan->invoice_period ?? 'month';
-                $count = $subscription->plan->invoice_interval ?? 1;
+                $count = (int) ($subscription->plan->invoice_interval ?? 1);
+                
+                // Carbon::add() with string interval needs proper syntax
+                $newEndsAt = $subscription->ends_at->copy();
+                match($interval) {
+                    'month' => $newEndsAt->addMonths($count),
+                    'year' => $newEndsAt->addYears($count),
+                    'week' => $newEndsAt->addWeeks($count),
+                    'day' => $newEndsAt->addDays($count),
+                    default => $newEndsAt->addMonths($count),
+                };
                 
                 $subscription->update([
-                    'ends_at' => $subscription->ends_at->add($interval, (int)$count),
+                    'ends_at' => $newEndsAt,
                     'status' => 'active',
                 ]);
 
@@ -365,6 +436,16 @@ class PaymentService implements PaymentServiceContract
                     'payment_id' => $newPayment->id,
                     'method' => $paymentMethod,
                 ]);
+
+                // Notify user about subscription renewal
+                try {
+                    $subscription->subscriber->notify(new \App\Notifications\SubscriptionActivated($subscription));
+                } catch (\Exception $e) {
+                    Log::error('Failed to send recurring subscription notification', [
+                        'subscription_id' => $subscription->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
 
                 return [
                     'transaction_id' => $transactionId,

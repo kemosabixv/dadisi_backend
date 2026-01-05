@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="Tests\Feature\Donations\GuestDonationTest" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" tests="4" assertions="13" errors="0" failures="2" skipped="0" time="23.572218">
+    <testcase name="test_guest_can_initiate_donation" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="36" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="4" time="20.048323">
+      <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\Feature\Donations\GuestDonationTest::test_guest_can_initiate_donation&#13;
+Failed asserting that an array has the key 'id'.
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Testing\AssertableJsonString.php:303
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Testing\AssertableJsonString.php:278
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Testing\AssertableJsonString.php:301
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Testing\TestResponse.php:978
+D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php:50</failure>
+    </testcase>
+    <testcase name="test_guest_receives_email_on_payment_completion" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="65" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="3" time="1.472433">
+      <failure type="PHPUnit\Framework\ExpectationFailedException">Tests\Feature\Donations\GuestDonationTest::test_guest_receives_email_on_payment_completion&#13;
+Failed asserting that two strings are equal.
+--- Expected
++++ Actual
+@@ @@
+-'paid'
++'pending'
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php:118</failure>
+    </testcase>
+    <testcase name="test_guest_can_resume_pending_donation_payment" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="124" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="2" time="1.018297"/>
+    <testcase name="test_guest_can_cancel_pending_donation" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="157" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="4" time="1.033165"/>
+  </testsuite>
+</testsuites>

@@ -3,14 +3,11 @@
 namespace App\Notifications;
 
 use App\Models\Donation;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class DonationReceived extends Notification implements ShouldQueue
+class DonationReceived extends Notification
 {
-    use Queueable;
 
     public function __construct(
         protected Donation $donation
@@ -18,7 +15,7 @@ class DonationReceived extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return $notifiable instanceof \App\Models\User ? ['mail', 'database'] : ['mail'];
     }
 
     public function toMail(object $notifiable): MailMessage

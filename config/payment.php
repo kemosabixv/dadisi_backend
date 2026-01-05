@@ -25,5 +25,6 @@ return [
         // IPN webhook configuration
         'ipn_url' => env('PESAPAL_IPN_URL', config('app.url') . '/api/webhooks/pesapal'),
         'ipn_notification_type' => env('PESAPAL_IPN_TYPE', 'POST'), // POST or GET
+        'webhook_secret' => env('PESAPAL_WEBHOOK_SECRET', null),
     ],
 ];

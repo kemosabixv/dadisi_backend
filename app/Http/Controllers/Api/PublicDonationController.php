@@ -174,4 +174,60 @@ class PublicDonationController extends Controller
             return response()->json(['success' => false, 'message' => 'Failed to cancel donation'], 500);
         }
     }
+
+    /**
+     * Resume Donation Payment
+     * 
+     * @group Donations - Public
+     */
+    public function resume(string $reference): JsonResponse
+    {
+        try {
+            $donation = $this->donationService->getDonationByReference($reference);
+            $result = $this->donationService->resumeDonationPayment($donation);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Donation payment resumed',
+                'data' => [
+                    'redirect_url' => $result['redirect_url'],
+                    'transaction_id' => $result['transaction_id'],
+                ],
+            ]);
+        } catch (DonationException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('PublicDonationController resume failed', ['error' => $e->getMessage(), 'reference' => $reference]);
+            return response()->json(['success' => false, 'message' => 'Failed to resume payment'], 500);
+        }
+    }
+
+    /**
+     * Cancel Donation (by reference)
+     * 
+     * @group Donations - Public
+     */
+    public function cancel(string $reference): JsonResponse
+    {
+        try {
+            $success = $this->donationService->cancelDonation($reference);
+
+            if (!$success) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to cancel donation or donation not in cancelable state'
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Donation cancelled successfully',
+            ]);
+        } catch (DonationException $e) {
+            return $e->render();
+        } catch (\Exception $e) {
+            Log::error('PublicDonationController cancel failed', ['error' => $e->getMessage(), 'reference' => $reference]);
+            return response()->json(['success' => false, 'message' => 'Failed to cancel donation'], 500);
+        }
+    }
 }

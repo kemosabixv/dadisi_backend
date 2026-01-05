@@ -45,19 +45,26 @@ class WebhookService implements WebhookServiceContract
                 'status' => 'received',
             ]);
 
-            // Verify signature - currently skipped in development
-            // In production, signature should be verified against Pesapal's public key
+            // Verify security token - prevents unauthorized pings to this endpoint
+            // The token is passed via query parameter during IPN registration
+            $expectedToken = config('payment.pesapal.webhook_secret');
             $isSignatureValid = true;
-            // TODO: Implement signature verification when Pesapal public key is available
-            // $isSignatureValid = $this->pesapalGateway->verifySignature($payload, $signature);
+
+            if ($expectedToken) {
+                // We check if 'token' matches in payload (if passed via GET) or if passed explicitly
+                $token = $payload['token'] ?? null;
+                if ($token !== $expectedToken) {
+                    $isSignatureValid = false;
+                    Log::warning('Invalid Pesapal webhook token provided', ['provided' => $token]);
+                }
+            }
 
             if (!$isSignatureValid) {
                 $webhookEvent->update([
                     'status' => 'failed',
-                    'error' => 'Invalid signature',
+                    'error' => 'Invalid security token',
                 ]);
-                Log::warning('Invalid Pesapal webhook signature');
-                throw new \Exception('Invalid signature');
+                throw new \Exception('Invalid security token');
             }
 
             // Dispatch background job for processing
@@ -67,6 +74,12 @@ class WebhookService implements WebhookServiceContract
             return ['status' => 'OK'];
         } catch (\Exception $e) {
             Log::error('Webhook processing failed', ['error' => $e->getMessage()]);
+            if (app()->bound('sentry')) {
+                \Sentry\configureScope(function (\Sentry\State\Scope $scope) use ($payload) {
+                    $scope->setContext('webhook_raw', $payload);
+                });
+                \Sentry\captureException($e);
+            }
             throw $e;
         }
     }

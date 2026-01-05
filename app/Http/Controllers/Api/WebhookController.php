@@ -23,7 +23,7 @@ class WebhookController extends Controller
      * @group Integrations - Pesapal
      * @groupDescription Endpoints for handling external callbacks and system integrations, specifically the Pesapal payment gateway.
      * @unauthenticated
-    * @header X-Pesapal-Signature string required HMAC signature sent by Pesapal for webhook verification.
+     * @queryParam token string optional Security token for verification. Example: secret_token_123
     * @bodyParam OrderTrackingId string optional External tracking id provided by Pesapal. Example: 12345-abc
     * @bodyParam OrderMerchantReference string optional Merchant reference or order id. Example: ORD-98765
     * @bodyParam reference string optional Generic reference field sometimes used by providers. Example: ref_123
@@ -33,7 +33,7 @@ class WebhookController extends Controller
      *   "status": "OK"
      * }
      * @response 400 {
-     *   "error": "Invalid signature"
+     *   "error": "Invalid security token"
      * }
     * @response 404 {
     *   "error": "Payment not found"
@@ -45,7 +45,8 @@ class WebhookController extends Controller
     public function pesapal(Request $request)
     {
         try {
-            $payload = $request->all();
+            // Include query parameters (like 'token') in the payload
+            $payload = array_merge($request->query(), $request->all());
             $signature = $request->header('X-Pesapal-Signature', '');
 
             $result = $this->webhookService->processPesapalWebhook($payload, $signature);

@@ -2,15 +2,13 @@
 
 namespace Tests\Feature\Services\Payments;
 
-use App\DTOs\Payments\PaymentRequestDTO;
 use App\Exceptions\PaymentException;
 use App\Models\Payment;
 use App\Models\User;
-use App\Services\Payments\PaymentService;
 use App\Services\PaymentGateway\GatewayManager;
-use App\Services\PaymentGateway\MockGatewayAdapter;
-use PHPUnit\Framework\Attributes\Test;
+use App\Services\Payments\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
@@ -29,16 +27,18 @@ class PaymentServiceTest extends TestCase
     use RefreshDatabase;
 
     private PaymentService $service;
+
     private User $payer;
+
     private User $admin;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Use mock gateway for tests
         config(['payment.gateway' => 'mock']);
-        
+
         $this->service = app(PaymentService::class);
         $this->payer = User::factory()->create();
         $this->admin = User::factory()->create();
@@ -149,7 +149,7 @@ class PaymentServiceTest extends TestCase
 
         $this->assertArrayHasKey('payment_id', $result);
         $this->assertEquals('pending', $result['status']);
-        
+
         $payment = Payment::find($result['payment_id']);
         $this->assertEquals('USD', $payment->currency);
         $this->assertEquals(50, $payment->amount);
@@ -337,7 +337,7 @@ class PaymentServiceTest extends TestCase
 
         $this->assertTrue($result['success']);
         $this->assertEquals('refunded', $result['status']);
-        
+
         $payment->refresh();
         $this->assertEquals('refunded', $payment->status);
         $this->assertEquals('REF-999', $payment->metadata['refund_transaction_id']);
@@ -436,7 +436,7 @@ class PaymentServiceTest extends TestCase
 
         $this->assertEquals(0, $payments->total());
     }
-    
+
     // ============ Recurring Payment Tests ============
     #[Test]
     /**
@@ -452,7 +452,7 @@ class PaymentServiceTest extends TestCase
             'name' => ['en' => 'Monthly Plan'],
             'slug' => 'monthly',
         ]);
-        
+
         $subscription = \App\Models\PlanSubscription::create([
             'subscriber_id' => $this->payer->id,
             'subscriber_type' => 'App\Models\User',
@@ -461,23 +461,23 @@ class PaymentServiceTest extends TestCase
             'ends_at' => now()->addDays(2), // Ending soon
             'status' => 'active',
             'name' => 'Monthly Plan',
-            'slug' => 'monthly-plan-' . uniqid(),
+            'slug' => 'monthly-plan-'.uniqid(),
         ]);
-        
+
         \App\Models\SubscriptionEnhancement::create([
             'subscription_id' => $subscription->id,
             'status' => 'active',
         ]);
-        
+
         $originalEndsAt = $subscription->ends_at;
 
         // 2. Mock Gateway queryStatus response for a RECURRING notification
         // The account_number format is expected to be USER-{userId}-PLAN-{planId}
         $accountNumber = "USER-{$this->payer->id}-PLAN-{$plan->id}";
-        
+
         $mockStatus = new \App\DTOs\Payments\PaymentStatusDTO(
             transactionId: 'REC_TXN_001',
-            merchantReference: 'SUB_' . $subscription->id,
+            merchantReference: 'SUB_'.$subscription->id,
             status: 'COMPLETED',
             amount: 2000,
             currency: 'KES',
@@ -493,7 +493,7 @@ class PaymentServiceTest extends TestCase
         // Mock the GatewayManager to return this status
         $mock = \Mockery::mock(\App\Services\PaymentGateway\GatewayManager::class)->makePartial();
         $mock->shouldReceive('queryStatus')->with('REC_TXN_001')->andReturn($mockStatus);
-        
+
         // Temporarily replace the gateway manager in the service
         $reflection = new \ReflectionClass($this->service);
         $property = $reflection->getProperty('gatewayManager');
@@ -508,12 +508,12 @@ class PaymentServiceTest extends TestCase
 
         // 4. Verify results
         $this->assertEquals('recurring_processed', $result['status']);
-        
+
         // Check if subscription was extended
         $subscription->refresh();
         $this->assertTrue($subscription->ends_at->isAfter($originalEndsAt));
         $this->assertEquals($originalEndsAt->addMonth()->toDateTimeString(), $subscription->ends_at->toDateTimeString());
-        
+
         // Check if a new payment record was created
         $this->assertDatabaseHas('payments', [
             'transaction_id' => 'REC_TXN_001',
@@ -539,22 +539,22 @@ class PaymentServiceTest extends TestCase
             'ends_at' => now()->addDays(2),
             'status' => 'active',
             'name' => 'Monthly Plan',
-            'slug' => 'monthly-plan-' . uniqid(),
+            'slug' => 'monthly-plan-'.uniqid(),
         ]);
-        
+
         // Create an existing payment for this transaction
         Payment::factory()->create([
             'transaction_id' => 'REC_TXN_DUP',
             'status' => 'paid',
             'payer_id' => $this->payer->id,
         ]);
-        
+
         $originalEndsAt = $subscription->ends_at;
 
         // Mock gateway
         $mockStatus = new \App\DTOs\Payments\PaymentStatusDTO(
             transactionId: 'REC_TXN_DUP',
-            merchantReference: 'SUB_' . $subscription->id,
+            merchantReference: 'SUB_'.$subscription->id,
             status: 'COMPLETED',
             amount: 2000,
             rawDetails: ['account_number' => "USER-{$this->payer->id}-PLAN-{$plan->id}", 'payment_method' => 'Card']
@@ -562,7 +562,7 @@ class PaymentServiceTest extends TestCase
 
         $mock = \Mockery::mock(\App\Services\PaymentGateway\GatewayManager::class)->makePartial();
         $mock->shouldReceive('queryStatus')->andReturn($mockStatus);
-        
+
         $reflection = new \ReflectionClass($this->service);
         $property = $reflection->getProperty('gatewayManager');
         $property->setAccessible(true);
@@ -574,7 +574,7 @@ class PaymentServiceTest extends TestCase
 
         $this->assertEquals('paid', $result['status']);
         $this->assertEquals('Already processed', $result['message']);
-        
+
         // Ensure ends_at DID NOT change (since it was already "processed" by our manual factory creation above)
         $subscription->refresh();
         $this->assertEquals($originalEndsAt->toDateTimeString(), $subscription->ends_at->toDateTimeString());
@@ -591,12 +591,12 @@ class PaymentServiceTest extends TestCase
             merchantReference: 'INVALID_REF',
             status: 'COMPLETED',
             amount: 2000,
-            rawDetails: ['account_number' => "INVALID"]
+            rawDetails: ['account_number' => 'INVALID']
         );
 
         $mock = \Mockery::mock(\App\Services\PaymentGateway\GatewayManager::class)->makePartial();
         $mock->shouldReceive('queryStatus')->andReturn($mockStatus);
-        
+
         $reflection = new \ReflectionClass($this->service);
         $property = $reflection->getProperty('gatewayManager');
         $property->setAccessible(true);
@@ -627,15 +627,15 @@ class PaymentServiceTest extends TestCase
             'ends_at' => now()->addDays(2),
             'status' => 'active',
             'name' => 'Monthly Plan',
-            'slug' => 'monthly-plan-' . uniqid(),
+            'slug' => 'monthly-plan-'.uniqid(),
         ]);
-        
+
         $originalEndsAt = $subscription->ends_at;
 
         // Mock gateway with PENDING status
         $mockStatus = new \App\DTOs\Payments\PaymentStatusDTO(
             transactionId: 'REC_TXN_PENDING',
-            merchantReference: 'SUB_' . $subscription->id,
+            merchantReference: 'SUB_'.$subscription->id,
             status: 'PENDING',
             amount: 2000,
             rawDetails: ['account_number' => "USER-{$this->payer->id}-PLAN-{$plan->id}"]
@@ -643,7 +643,7 @@ class PaymentServiceTest extends TestCase
 
         $mock = \Mockery::mock(\App\Services\PaymentGateway\GatewayManager::class)->makePartial();
         $mock->shouldReceive('queryStatus')->andReturn($mockStatus);
-        
+
         $reflection = new \ReflectionClass($this->service);
         $property = $reflection->getProperty('gatewayManager');
         $property->setAccessible(true);
@@ -655,7 +655,7 @@ class PaymentServiceTest extends TestCase
         ]);
 
         $this->assertFalse($result['is_paid']);
-        
+
         // Ensure ends_at DID NOT change
         $subscription->refresh();
         $this->assertEquals($originalEndsAt->toDateTimeString(), $subscription->ends_at->toDateTimeString());

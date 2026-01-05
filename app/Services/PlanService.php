@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Services\Contracts\PlanServiceContract;
 use App\Models\Plan;
-use Illuminate\Support\Collection;
+use App\Models\SystemFeature;
+use App\Services\Contracts\PlanServiceContract;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -25,12 +25,12 @@ class PlanService implements PlanServiceContract
         try {
             $query = Plan::where('is_active', true)->orderBy('sort_order');
 
-            if (!empty($filters['include_features'])) {
+            if (! empty($filters['include_features'])) {
                 $query->with(['features', 'systemFeatures']);
             }
 
             return $query->get()->map(function ($plan) use ($filters) {
-                return $this->formatPlanData($plan, !empty($filters['include_features']));
+                return $this->formatPlanData($plan, ! empty($filters['include_features']));
             });
         } catch (\Exception $e) {
             Log::error('Failed to retrieve plans', ['error' => $e->getMessage()]);
@@ -46,10 +46,19 @@ class PlanService implements PlanServiceContract
         try {
             $plan->load(['features', 'systemFeatures']);
 
+            // Get all active system features to ensure the frontend sees all options
+            $allFeatures = SystemFeature::active()->sorted()->get();
+            $planFeatures = $plan->systemFeatures->keyBy('id');
+
             return [
                 'id' => $plan->id,
                 'name' => $this->decodeString($plan->name),
                 'description' => $this->decodeString($plan->description),
+                'base_monthly_price' => (float) $plan->base_monthly_price,
+                'price' => (float) $plan->price,
+                'currency' => $plan->currency ?? 'KES',
+                'is_active' => (bool) $plan->is_active,
+                'requires_student_approval' => (bool) $plan->requires_student_approval,
                 'pricing' => $plan->pricing,
                 'promotions' => $plan->promotions,
                 'features' => $plan->features->map(function ($feature) {
@@ -59,15 +68,19 @@ class PlanService implements PlanServiceContract
                         'limit' => $feature->pivot?->limit ?? null,
                     ];
                 }),
-                'system_features' => $plan->systemFeatures->map(function ($sf) {
+                'display_features' => $plan->features->pluck('name')->map(fn ($name) => $this->decodeString($name))->toArray(),
+                'system_features' => $allFeatures->map(function ($sf) use ($planFeatures) {
+                    $planSf = $planFeatures->get($sf->id);
+
                     return [
                         'id' => $sf->id,
                         'slug' => $sf->slug,
                         'name' => $sf->name,
-                        'value' => $sf->pivot->value,
-                        'display_name' => $sf->pivot->display_name ?? $sf->name,
-                        'display_description' => $sf->pivot->display_description ?? $sf->description,
+                        'value' => $planSf ? $planSf->pivot->value : $sf->default_value,
+                        'display_name' => $planSf?->pivot->display_name ?? $sf->name,
+                        'display_description' => $planSf?->pivot->display_description ?? $sf->description,
                         'value_type' => $sf->value_type,
+                        'is_set' => (bool) $planSf,
                     ];
                 }),
             ];
@@ -91,7 +104,7 @@ class PlanService implements PlanServiceContract
                 $createData = [
                     'name' => json_encode(['en' => $data['name']]),
                     'slug' => $slug,
-                    'description' => json_encode(['en' => $data['name'] . ' Plan']),
+                    'description' => json_encode(['en' => $data['name'].' Plan']),
                     'price' => $data['monthly_price_kes'],
                     'base_monthly_price' => $data['monthly_price_kes'],
                     'signup_fee' => 0,
@@ -116,11 +129,11 @@ class PlanService implements PlanServiceContract
 
                 $plan = Plan::create($createData);
 
-                if (!empty($data['features'])) {
+                if (! empty($data['features'])) {
                     $this->attachFeatures($plan, $data['features']);
                 }
 
-                if (!empty($data['system_features'])) {
+                if (! empty($data['system_features'])) {
                     $this->attachSystemFeatures($plan, $data['system_features']);
                 }
 
@@ -146,7 +159,7 @@ class PlanService implements PlanServiceContract
                 if (isset($data['name'])) {
                     $updateData['name'] = json_encode(['en' => $data['name']]);
                     $updateData['slug'] = Str::slug($data['name']);
-                    $updateData['description'] = json_encode(['en' => $data['name'] . ' Plan']);
+                    $updateData['description'] = json_encode(['en' => $data['name'].' Plan']);
                 }
 
                 if (isset($data['monthly_price_kes'])) {
@@ -156,6 +169,10 @@ class PlanService implements PlanServiceContract
 
                 if (isset($data['is_active'])) {
                     $updateData['is_active'] = $data['is_active'];
+                }
+
+                if (isset($data['requires_student_approval'])) {
+                    $updateData['requires_student_approval'] = $data['requires_student_approval'];
                 }
 
                 $plansTable = config('laravel-subscriptions.tables.plans', 'plans');
@@ -180,11 +197,25 @@ class PlanService implements PlanServiceContract
                     }
                 }
 
-                if (!empty($updateData)) {
+                if (! empty($updateData)) {
                     $plan->update($updateData);
                 }
 
-                if (isset($data['features'])) {
+                // Handle display_features: convert simple string array to legacy features
+                if (isset($data['display_features'])) {
+                    $plan->features()->delete();
+                    foreach ($data['display_features'] as $featureName) {
+                        if (! empty(trim($featureName))) {
+                            $plan->features()->create([
+                                'name' => json_encode(['en' => $featureName]),
+                                'slug' => Str::slug($featureName.'-'.$plan->id.'-'.Str::random(6)),
+                                'value' => 'true',
+                                'description' => json_encode(['en' => '']),
+                            ]);
+                        }
+                    }
+                } elseif (isset($data['features'])) {
+                    // Legacy: if features array with objects is passed
                     $plan->features()->delete();
                     $this->attachFeatures($plan, $data['features']);
                 }
@@ -212,6 +243,7 @@ class PlanService implements PlanServiceContract
             }
 
             $plan->delete();
+
             return true;
         } catch (\Exception $e) {
             Log::error('Failed to delete plan', ['error' => $e->getMessage(), 'plan_id' => $plan->id]);
@@ -227,7 +259,7 @@ class PlanService implements PlanServiceContract
         foreach ($features as $featureData) {
             $plan->features()->create([
                 'name' => json_encode(['en' => $featureData['name']]),
-                'slug' => Str::slug($featureData['name'] . '-' . $plan->id . '-' . uniqid()),
+                'slug' => Str::slug($featureData['name'].'-'.$plan->id.'-'.uniqid()),
                 'value' => $featureData['limit'] ?? 'true',
                 'description' => json_encode(['en' => $featureData['description'] ?? '']),
             ]);
@@ -264,10 +296,18 @@ class PlanService implements PlanServiceContract
         ];
 
         if ($includeFeatures) {
-            $data['features'] = $plan->features->map(fn($f) => [
+            $data['features'] = $plan->features->map(fn ($f) => [
                 'id' => $f->id,
                 'name' => $this->decodeString($f->name),
                 'limit' => $f->pivot?->limit ?? null,
+            ]);
+
+            $data['system_features'] = $plan->systemFeatures->map(fn ($sf) => [
+                'id' => $sf->id,
+                'slug' => $sf->slug,
+                'name' => $sf->name,
+                'value' => $sf->pivot->value,
+                'value_type' => $sf->value_type,
             ]);
         }
 
@@ -283,9 +323,11 @@ class PlanService implements PlanServiceContract
             $decoded = json_decode($value, true);
             if (is_array($decoded) && isset($decoded['en'])) {
                 $en = $decoded['en'];
-                return is_string($en) ? $en : (string)$en;
+
+                return is_string($en) ? $en : (string) $en;
             }
         }
-        return (string)$value;
+
+        return (string) $value;
     }
 }

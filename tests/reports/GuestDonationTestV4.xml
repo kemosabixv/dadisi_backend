@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="Tests\Feature\Donations\GuestDonationTest" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" tests="4" assertions="16" errors="0" failures="0" skipped="0" time="30.231086">
+    <testcase name="test_guest_can_initiate_donation" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="36" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="7" time="24.349397"/>
+    <testcase name="test_guest_receives_email_on_payment_completion" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="65" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="3" time="2.260932"/>
+    <testcase name="test_guest_can_resume_pending_donation_payment" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="124" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="2" time="1.468533"/>
+    <testcase name="test_guest_can_cancel_pending_donation" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Donations\GuestDonationTest.php" line="157" class="Tests\Feature\Donations\GuestDonationTest" classname="Tests.Feature.Donations.GuestDonationTest" assertions="4" time="2.152223"/>
+  </testsuite>
+</testsuites>

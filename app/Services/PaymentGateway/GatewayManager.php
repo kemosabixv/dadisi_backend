@@ -56,6 +56,7 @@ class GatewayManager
                         'environment' => $dbSettings->get('pesapal.environment'),
                         'callback_url' => $dbSettings->get('pesapal.callback_url'),
                         'ipn_url' => $dbSettings->get('pesapal.webhook_url'), // Map to ipn_url
+                        'webhook_secret' => $dbSettings->get('pesapal.webhook_secret'),
                     ];
                     // Filter out nulls to allow fallback in PesapalGateway constructor
                     $pesapalConfig = array_filter($pesapalConfig);

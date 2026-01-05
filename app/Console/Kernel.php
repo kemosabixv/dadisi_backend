@@ -22,8 +22,14 @@ class Kernel extends ConsoleKernel
                 $command = $schedule->command($scheduler->command_name);
                 
                 switch ($scheduler->frequency) {
+                    case 'everyThirtyMinutes':
+                        $command->everyThirtyMinutes();
+                        break;
                     case 'hourly':
                         $command->hourly();
+                        break;
+                    case 'everyFourHours':
+                        $command->everyFourHours();
                         break;
                     case 'daily':
                         $command->dailyAt($scheduler->run_time);
@@ -46,20 +52,35 @@ class Kernel extends ConsoleKernel
                 'error' => $e->getMessage()
             ]);
             
-            // Fallback schedules
-            $schedule->command('media:cleanup-temporary')->hourly();
-            $schedule->command('renewals:send-reminders --dueDays=0')
-                ->dailyAt('09:00')
+            // Fallback schedules (used when SchedulerSetting table unavailable)
+            
+            // Process queued jobs (Tier 2 notifications)
+            $schedule->command('queue:work --stop-when-empty --max-time=25')
+                ->everyThirtyMinutes()
+                ->withoutOverlapping()
+                ->runInBackground()
+                ->name('queue.work');
+            
+            // Cleanup temporary media uploads and stale chunks (Every 4 hours)
+            $schedule->command('media:cleanup-temporary')
+                ->everyFourHours()
                 ->timezone('Africa/Nairobi')
-                ->name('renewals.send_reminders');
+                ->name('media.cleanup_temporary');
+            
+            // Cleanup expired user data based on retention settings
+            $schedule->command('users:cleanup-expired --sync')
+                ->weeklyOn(0, '04:00') // Sunday at 4am
+                ->timezone('Africa/Nairobi')
+                ->name('users.cleanup_expired');
+            
+            // Payment reconciliation
             $schedule->command('reconciliation:run')
                 ->dailyAt('02:00')
                 ->timezone('Africa/Nairobi')
                 ->name('reconciliation.run');
-            $schedule->command('subscriptions:process-expired')
-                ->dailyAt('06:00')
-                ->timezone('Africa/Nairobi')
-                ->name('subscriptions.process_expired');
+            
+            // Note: Subscription renewals are handled by Pesapal recurring billing,
+            // not by scheduled commands.
         }
     }
 

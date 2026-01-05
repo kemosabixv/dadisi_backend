@@ -25,6 +25,15 @@ class StoreAuthorPostRequest extends FormRequest
         return auth()->check();
     }
 
+    protected function prepareForValidation()
+    {
+        if ($this->has('body') && ! $this->has('content')) {
+            $this->merge([
+                'content' => $this->input('body'),
+            ]);
+        }
+    }
+
     public function rules()
     {
         return [

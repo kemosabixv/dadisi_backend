@@ -112,6 +112,17 @@ class SampleRegistrationsSeeder extends Seeder
                 'email_verified_at' => now(),
             ]);
 
+            // Add member profile
+            \App\Models\MemberProfile::create([
+                'user_id' => $user->id,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'phone_number' => '+2547' . rand(10000000, 99999999),
+                'county_id' => rand(1, 47),
+                'terms_accepted' => true,
+                'is_staff' => false,
+            ]);
+
             $newUsers->push($user);
         }
 

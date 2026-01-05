@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="Tests\Feature\Notifications\NotificationRoutingTest" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" tests="5" assertions="3" errors="3" failures="0" skipped="0" time="46.428363">
+    <testcase name="test_event_registration_confirmation_is_routed_to_user" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" line="40" class="Tests\Feature\Notifications\NotificationRoutingTest" classname="Tests.Feature.Notifications.NotificationRoutingTest" assertions="1" time="25.311562"/>
+    <testcase name="test_donation_received_is_routed_to_donor" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" line="63" class="Tests\Feature\Notifications\NotificationRoutingTest" classname="Tests.Feature.Notifications.NotificationRoutingTest" assertions="0" time="6.631849">
+      <error type="Illuminate\Database\QueryException">Tests\Feature\Notifications\NotificationRoutingTest::test_donation_received_is_routed_to_donor&#13;
+Illuminate\Database\QueryException: SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: payments.order_reference (Connection: sqlite, SQL: insert into "payments" ("payable_id", "payable_type", "payer_id", "amount", "currency", "status", "transaction_id", "gateway", "updated_at", "created_at") values (1, donation, 1, 1000, KES, pending, TEST_TX_123, mock, 2026-01-05 00:42:31, 2026-01-05 00:42:31))
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:826
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:780
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:559
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:523
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Query\Processors\Processor.php:32
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Query\Builder.php:3853
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:2235
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1436
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1401
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1240
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:1219
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Support\helpers.php:390
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:1218
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Support\Traits\ForwardsCalls.php:23
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2540
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2556
+D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php:76</error>
+    </testcase>
+    <testcase name="test_subscription_activated_is_routed_to_subscriber" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" line="105" class="Tests\Feature\Notifications\NotificationRoutingTest" classname="Tests.Feature.Notifications.NotificationRoutingTest" assertions="0" time="3.569719">
+      <error type="Illuminate\Database\QueryException">Tests\Feature\Notifications\NotificationRoutingTest::test_subscription_activated_is_routed_to_subscriber&#13;
+Illuminate\Database\QueryException: SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: payments.order_reference (Connection: sqlite, SQL: insert into "payments" ("payable_id", "payable_type", "payer_id", "amount", "currency", "status", "transaction_id", "gateway", "updated_at", "created_at") values (1, plan_subscription, 1, 500, KES, pending, SUB_TX_123, mock, 2026-01-05 00:42:35, 2026-01-05 00:42:35))
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:826
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:780
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:559
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:523
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Query\Processors\Processor.php:32
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Query\Builder.php:3853
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:2235
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1436
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1401
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1240
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:1219
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Support\helpers.php:390
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:1218
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Support\Traits\ForwardsCalls.php:23
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2540
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2556
+D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php:130</error>
+    </testcase>
+    <testcase name="test_refund_processed_is_routed_to_payer" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" line="159" class="Tests\Feature\Notifications\NotificationRoutingTest" classname="Tests.Feature.Notifications.NotificationRoutingTest" assertions="0" time="5.400387">
+      <error type="Illuminate\Database\QueryException">Tests\Feature\Notifications\NotificationRoutingTest::test_refund_processed_is_routed_to_payer&#13;
+Illuminate\Database\QueryException: SQLSTATE[HY000]: General error: 1 table payments has no column named original_amount (Connection: sqlite, SQL: insert into "payments" ("payable_type", "payable_id", "amount", "currency", "status", "gateway", "external_reference", "order_reference", "payer_id", "original_amount", "transaction_id", "updated_at", "created_at") values (App\Models\EventOrder, 1, 1000, KES, paid, mock, PAY-33731973, ORDER-52964978, 1, 1000, TX_TO_REFUND, 2026-01-05 00:42:40, 2026-01-05 00:42:40))
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:826
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:780
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:559
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:523
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Query\Processors\Processor.php:32
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Query\Builder.php:3853
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:2235
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1436
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1401
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1240
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Factories\Factory.php:370
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Collections\Traits\EnumeratesValues.php:271
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Factories\Factory.php:365
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Factories\Factory.php:321
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Factories\Factory.php:315
+D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php:164</error>
+    </testcase>
+    <testcase name="test_student_approval_submitted_is_routed_to_relevant_staff" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" line="204" class="Tests\Feature\Notifications\NotificationRoutingTest" classname="Tests.Feature.Notifications.NotificationRoutingTest" assertions="2" time="5.514845"/>
+  </testsuite>
+</testsuites>

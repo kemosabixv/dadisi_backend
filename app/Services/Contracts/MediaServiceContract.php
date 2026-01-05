@@ -60,6 +60,59 @@ interface MediaServiceContract
     public function deleteMedia(Authenticatable $user, Media $media): bool;
 
     /**
+     * Rename a media file
+     *
+     * @param Authenticatable $user
+     * @param Media $media
+     * @param string $newName
+     * @return Media
+     */
+    public function renameMedia(Authenticatable $user, Media $media, string $newName): Media;
+
+    /**
+     * Update media visibility
+     *
+     * @param Authenticatable $user
+     * @param Media $media
+     * @param string $visibility
+     * @param bool $allowDownload
+     * @return Media
+     */
+    public function updateVisibility(Authenticatable $user, Media $media, string $visibility, bool $allowDownload = true): Media;
+
+    /**
+     * Initialize a multipart upload
+     *
+     * @param Authenticatable $user
+     * @param string $fileName
+     * @param int $totalSize
+     * @param string $mimeType
+     * @return array
+     */
+    public function initMultipartUpload(Authenticatable $user, string $fileName, int $totalSize, string $mimeType): array;
+
+    /**
+     * Upload a chunk for a multipart upload
+     *
+     * @param string $uploadId
+     * @param int $chunkIndex
+     * @param \Illuminate\Http\UploadedFile $chunk
+     * @return bool
+     */
+    public function uploadChunk(string $uploadId, int $chunkIndex, \Illuminate\Http\UploadedFile $chunk): bool;
+
+    /**
+     * Complete a multipart upload
+     *
+     * @param Authenticatable $user
+     * @param string $uploadId
+     * @param string $fileName
+     * @param string $mimeType
+     * @return Media
+     */
+    public function completeMultipartUpload(Authenticatable $user, string $uploadId, string $fileName, string $mimeType): Media;
+
+    /**
      * Get the public URL for a media file
      *
      * @param Media $media The media record
@@ -71,9 +124,10 @@ interface MediaServiceContract
      * Validate file type and size
      *
      * @param \Illuminate\Http\UploadedFile $file The file to validate
+     * @param Authenticatable|null $user The user to check quotas for
      * @return array ['valid' => bool, 'type' => string|null, 'error' => string|null]
      */
-    public function validateFile(\Illuminate\Http\UploadedFile $file): array;
+    public function validateFile(\Illuminate\Http\UploadedFile $file, Authenticatable $user = null): array;
 
     /**
      * Get allowed MIME types

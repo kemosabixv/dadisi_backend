@@ -11,6 +11,15 @@ class UpdatePostRequest extends FormRequest
         return $this->user()->can('update', $this->route('post'));
     }
 
+    protected function prepareForValidation()
+    {
+        if ($this->has('body') && !$this->has('content')) {
+            $this->merge([
+                'content' => $this->input('body'),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         $post = $this->route('post');
@@ -21,7 +30,8 @@ class UpdatePostRequest extends FormRequest
             'slug' => 'string|max:255|unique:posts,slug,' . $postId,
             'excerpt' => 'string|max:500',
             'content' => 'string',
-            'county_id' => 'exists:counties,id',
+            'body' => 'string',
+            'county_id' => 'nullable|exists:counties,id',
             'status' => 'in:draft,published',
             'is_featured' => 'boolean',
             'meta_title' => 'nullable|string|max:160',

@@ -6,10 +6,14 @@ use App\Exceptions\MediaException;
 use App\Models\AuditLog;
 use App\Models\Media;
 use App\Models\UserDataRetentionSetting;
+use App\Notifications\SecureShareCreated;
+use App\Notifications\StorageQuotaExceeded;
+use App\Notifications\StorageUsageAlert;
 use App\Services\Contracts\MediaServiceContract;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Services\SubscriptionCoreService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -45,7 +49,22 @@ class MediaService implements MediaServiceContract
         'video' => ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'],
         'pdf' => ['application/pdf'],
         'gif' => ['image/gif'],
+        'document' => [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',       // xlsx
+            'text/csv',
+        ],
     ];
+
+    /**
+     * @var SubscriptionCoreService
+     */
+    private $subscriptionService;
+
+    public function __construct(SubscriptionCoreService $subscriptionService)
+    {
+        $this->subscriptionService = $subscriptionService;
+    }
 
     /**
      * Upload a new media file
@@ -63,7 +82,7 @@ class MediaService implements MediaServiceContract
             DB::beginTransaction();
 
             // Validate file
-            $validation = $this->validateFile($file);
+            $validation = $this->validateFile($file, $user);
             if (!$validation['valid']) {
                 throw MediaException::validationFailed($validation['error']);
             }
@@ -98,9 +117,7 @@ class MediaService implements MediaServiceContract
                 'type' => $type,
                 'mime_type' => $mimeType,
                 'file_size' => $file->getSize(),
-                'is_public' => false,
-                'attached_to' => $metadata['attached_to'] ?? null,
-                'attached_to_id' => $metadata['attached_to_id'] ?? null,
+                'visibility' => 'private',
                 'temporary_until' => $temporaryUntil,
             ]);
 
@@ -110,6 +127,9 @@ class MediaService implements MediaServiceContract
                 'type' => $media->type,
                 'file_size' => $media->file_size,
             ], "Uploaded media: {$media->file_name}");
+
+            // Notify user about storage thresholds
+            $this->checkAndNotifyStorageThresholds($user, $media->file_size);
 
             Log::info('Media uploaded', [
                 'media_id' => $media->id,
@@ -160,7 +180,11 @@ class MediaService implements MediaServiceContract
      */
     public function listMedia(Authenticatable $user, array $filters = [], int $perPage = 30): LengthAwarePaginator
     {
-        $query = Media::where('user_id', $user->getAuthIdentifier());
+        $query = Media::where('user_id', $user->getAuthIdentifier())
+            // Exclude media attached to entities (featured images, etc.)
+            // These should be managed through their respective entity forms
+            ->whereNull('attached_to')
+            ->whereNull('attached_to_id');
 
         // Filter by type
         if (!empty($filters['type'])) {
@@ -173,6 +197,207 @@ class MediaService implements MediaServiceContract
         }
 
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
+    }
+
+    /**
+     * Rename a media file (display name only)
+     *
+     * @param Authenticatable $user
+     * @param Media $media
+     * @param string $newName
+     * @return Media
+     * @throws MediaException
+     */
+    public function renameMedia(Authenticatable $user, Media $media, string $newName): Media
+    {
+        if ($media->user_id !== $user->getAuthIdentifier()) {
+            throw MediaException::unauthorized('rename');
+        }
+
+        // Sanitize name: remove path separators and handle extension
+        $newName = basename($newName);
+        
+        // Preserve original extension if not provided in new name
+        $originalExt = pathinfo($media->file_name, PATHINFO_EXTENSION);
+        $newExt = pathinfo($newName, PATHINFO_EXTENSION);
+        
+        if (empty($newExt) && !empty($originalExt)) {
+            $newName .= '.' . $originalExt;
+        }
+
+        $oldName = $media->file_name;
+        $media->update(['file_name' => $newName]);
+
+        $this->logAudit($user->getAuthIdentifier(), 'update', $media, 
+            ['file_name' => $oldName], 
+            ['file_name' => $newName], 
+            "Renamed media from {$oldName} to {$newName}"
+        );
+
+        return $media;
+    }
+
+    /**
+     * Update media visibility
+     *
+     * @param Authenticatable $user
+     * @param Media $media
+     * @param string $visibility 'public', 'private', 'shared'
+     * @param bool $allowDownload
+     * @return Media
+     * @throws MediaException
+     */
+    public function updateVisibility(Authenticatable $user, Media $media, string $visibility, bool $allowDownload = true): Media
+    {
+        if ($media->user_id !== $user->getAuthIdentifier()) {
+            throw MediaException::unauthorized('update visibility');
+        }
+
+        if (!in_array($visibility, ['public', 'private', 'shared'])) {
+            throw MediaException::validationFailed("Invalid visibility level: {$visibility}");
+        }
+
+        $oldVisibility = $media->visibility;
+        $updateData = [
+            'visibility' => $visibility,
+            'allow_download' => $allowDownload
+        ];
+
+        // Generate token if switching to shared and none exists
+        if ($visibility === 'shared' && empty($media->share_token)) {
+            $updateData['share_token'] = (string) Str::uuid();
+        }
+
+        $media->update($updateData);
+
+        $this->logAudit($user->getAuthIdentifier(), 'update_visibility', $media,
+            ['visibility' => $oldVisibility],
+            $updateData,
+            "Changed visibility to {$visibility}"
+        );
+
+        // Notify if newly shared
+        if ($visibility === 'shared' && $oldVisibility !== 'shared') {
+            $user->notify(new SecureShareCreated($media));
+        }
+
+        return $media;
+    }
+
+    /**
+     * Initialize a multipart upload
+     *
+     * @param Authenticatable $user
+     * @param string $fileName
+     * @param int $totalSize
+     * @param string $mimeType
+     * @return array
+     */
+    public function initMultipartUpload(Authenticatable $user, string $fileName, int $totalSize, string $mimeType): array
+    {
+        // Total quota check
+        $totalUserSize = Media::where('user_id', $user->getAuthIdentifier())->sum('file_size');
+        $quotaLimitMB = $this->subscriptionService->getFeatureValue($user, 'media-storage-mb');
+        
+        if ($quotaLimitMB && is_numeric($quotaLimitMB)) {
+            $quotaLimitBytes = (int)$quotaLimitMB * 1024 * 1024;
+            if (($totalUserSize + $totalSize) > $quotaLimitBytes) {
+                throw MediaException::validationFailed("Storage quota exceeded. Limit: {$quotaLimitMB}MB");
+            }
+        }
+
+        $uploadId = Str::uuid()->toString();
+        $chunkDir = "chunks/{$uploadId}";
+        
+        Storage::disk('local')->makeDirectory($chunkDir);
+
+        return [
+            'upload_id' => $uploadId,
+            'chunk_size' => 5 * 1024 * 1024, // 5MB default chunk size
+            'file_name' => $fileName,
+            'total_size' => $totalSize,
+            'mime_type' => $mimeType,
+        ];
+    }
+
+    /**
+     * Upload a chunk for a multipart upload
+     *
+     * @param string $uploadId
+     * @param int $chunkIndex
+     * @param UploadedFile $chunk
+     * @return bool
+     */
+    public function uploadChunk(string $uploadId, int $chunkIndex, UploadedFile $chunk): bool
+    {
+        $chunkDir = "chunks/{$uploadId}";
+        
+        if (!Storage::disk('local')->exists($chunkDir)) {
+            throw MediaException::validationFailed("Invalid upload ID");
+        }
+
+        $path = Storage::disk('local')->putFileAs($chunkDir, $chunk, "chunk_{$chunkIndex}");
+        
+        return (bool) $path;
+    }
+
+    /**
+     * Complete a multipart upload and assemble the file
+     *
+     * @param Authenticatable $user
+     * @param string $uploadId
+     * @param string $fileName
+     * @param string $mimeType
+     * @return Media
+     */
+    public function completeMultipartUpload(Authenticatable $user, string $uploadId, string $fileName, string $mimeType): Media
+    {
+        $chunkDir = "chunks/{$uploadId}";
+        $localDisk = Storage::disk('local');
+        
+        if (!$localDisk->exists($chunkDir)) {
+            throw MediaException::validationFailed("Invalid upload ID");
+        }
+
+        $chunks = $localDisk->files($chunkDir);
+        sort($chunks, SORT_NATURAL);
+
+        // Assemble file in a temporary location
+        $tempPath = storage_path("app/temp_{$uploadId}");
+        $fileHandle = fopen($tempPath, 'w');
+
+        foreach ($chunks as $chunk) {
+            $chunkContent = $localDisk->get($chunk);
+            fwrite($fileHandle, $chunkContent);
+        }
+
+        fclose($fileHandle);
+
+        // Now treat as a regular file upload to Media table
+        $uploadedFile = new UploadedFile(
+            $tempPath,
+            $fileName,
+            $mimeType,
+            null,
+            true // internal upload
+        );
+
+        try {
+            $media = $this->uploadMedia($user, $uploadedFile);
+            
+            // Cleanup
+            $localDisk->deleteDirectory($chunkDir);
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+
+            return $media;
+        } catch (\Exception $e) {
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+            throw $e;
+        }
     }
 
     /**
@@ -256,7 +481,7 @@ class MediaService implements MediaServiceContract
      * @param UploadedFile $file The file to validate
      * @return array ['valid' => bool, 'type' => string|null, 'error' => string|null]
      */
-    public function validateFile(UploadedFile $file): array
+    public function validateFile(UploadedFile $file, Authenticatable $user = null): array
     {
         $mimeType = $file->getMimeType();
 
@@ -270,15 +495,40 @@ class MediaService implements MediaServiceContract
             ];
         }
 
-        // Check file size
+        // Determine max file size (from plan or fallback)
         $maxSize = self::FILE_LIMITS[$type] ?? 5 * 1024 * 1024;
+        
+        if ($user) {
+            $planLimit = $this->subscriptionService->getFeatureValue($user, 'media-max-upload-mb');
+            if ($planLimit && is_numeric($planLimit)) {
+                $maxSize = (int)$planLimit * 1024 * 1024;
+            }
+        }
+
         if ($file->getSize() > $maxSize) {
-            $maxSizeMB = $maxSize / (1024 * 1024);
+            $maxSizeMB = round($maxSize / (1024 * 1024), 2);
             return [
                 'valid' => false,
                 'type' => $type,
                 'error' => "File exceeds maximum size of {$maxSizeMB}MB",
             ];
+        }
+
+        // Total quota check
+        if ($user) {
+            $totalSize = Media::where('user_id', $user->getAuthIdentifier())->sum('file_size');
+            $quotaLimitMB = $this->subscriptionService->getFeatureValue($user, 'media-storage-mb');
+            
+            if ($quotaLimitMB && is_numeric($quotaLimitMB)) {
+                $quotaLimitBytes = (int)$quotaLimitMB * 1024 * 1024;
+                if (($totalSize + $file->getSize()) > $quotaLimitBytes) {
+                    return [
+                        'valid' => false,
+                        'type' => $type,
+                        'error' => "Storage quota exceeded. Limit: {$quotaLimitMB}MB",
+                    ];
+                }
+            }
         }
 
         return [
@@ -322,6 +572,37 @@ class MediaService implements MediaServiceContract
             }
         }
         return null;
+    }
+
+    /**
+     * Check storage thresholds and notify user if 80% or 100% is reached
+     *
+     * @param Authenticatable $user
+     * @param int $addedSize
+     * @return void
+     */
+    private function checkAndNotifyStorageThresholds(Authenticatable $user, int $addedSize): void
+    {
+        $quotaLimitMB = $this->subscriptionService->getFeatureValue($user, 'media-storage-mb');
+        if (!$quotaLimitMB || !is_numeric($quotaLimitMB)) {
+            return;
+        }
+
+        $quotaLimitBytes = (int)$quotaLimitMB * 1024 * 1024;
+        $totalSizeBefore = Media::where('user_id', $user->getAuthIdentifier())->sum('file_size') - $addedSize;
+        $totalSizeAfter = $totalSizeBefore + $addedSize;
+
+        $percentageBefore = ($totalSizeBefore / $quotaLimitBytes) * 100;
+        $percentageAfter = ($totalSizeAfter / $quotaLimitBytes) * 100;
+
+        // Notify at 100%
+        if ($percentageBefore < 100 && $percentageAfter >= 100) {
+            $user->notify(new StorageQuotaExceeded((int)$quotaLimitMB));
+        } 
+        // Notify at 80%
+        elseif ($percentageBefore < 80 && $percentageAfter >= 80) {
+            $user->notify(new StorageUsageAlert(80, (int)$quotaLimitMB));
+        }
     }
 
     /**

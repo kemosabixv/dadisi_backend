@@ -24,9 +24,40 @@ class SystemSettingService implements SystemSettingServiceContract
             $query->where('group', $group);
         }
 
-        return $query->get()->mapWithKeys(function ($item) {
+        $dbSettings = $query->get()->mapWithKeys(function ($item) {
             return [$item->key => $item->value];
         });
+
+        // For 'pesapal' group, merge with environment config as fallback
+        if ($group === 'pesapal') {
+            $envConfig = collect([
+                'pesapal.environment' => config('payment.pesapal.environment', 'sandbox'),
+                'pesapal.consumer_key' => config('payment.pesapal.consumer_key', ''),
+                'pesapal.consumer_secret' => config('payment.pesapal.consumer_secret', ''),
+                'pesapal.callback_url' => config('payment.pesapal.callback_url'),
+                'pesapal.webhook_url' => config('payment.pesapal.ipn_url'),
+                'pesapal.webhook_secret' => config('payment.pesapal.webhook_secret'),
+            ]);
+            
+            // DB settings take precedence generally, but for URLs we force config values
+            // to ensure they always match the current environment domain.
+            $settings = $envConfig->merge($dbSettings);
+            $settings['pesapal.callback_url'] = config('payment.pesapal.callback_url');
+            $settings['pesapal.webhook_url'] = config('payment.pesapal.ipn_url');
+
+            return $settings;
+        }
+        
+        // For 'payment' group, include gateway setting
+        if ($group === 'payment') {
+            $envConfig = collect([
+                'payment.gateway' => config('payment.default', 'mock'),
+                'payment.mock_success_rate' => '100',
+            ]);
+            return $envConfig->merge($dbSettings);
+        }
+
+        return $dbSettings;
     }
 
     /**

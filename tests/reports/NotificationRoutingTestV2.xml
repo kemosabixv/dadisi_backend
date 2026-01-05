@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="Tests\Feature\Notifications\NotificationRoutingTest" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" tests="6" assertions="4" errors="3" failures="0" skipped="0" time="31.266592">
+    <testcase name="test_event_registration_confirmation_is_routed_to_user" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" line="40" class="Tests\Feature\Notifications\NotificationRoutingTest" classname="Tests.Feature.Notifications.NotificationRoutingTest" assertions="1" time="22.003545"/>
+    <testcase name="test_donation_received_is_routed_to_donor" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" line="63" class="Tests\Feature\Notifications\NotificationRoutingTest" classname="Tests.Feature.Notifications.NotificationRoutingTest" assertions="0" time="1.931676">
+      <error type="Error">Tests\Feature\Notifications\NotificationRoutingTest::test_donation_received_is_routed_to_donor&#13;
+Error: Class "donation" not found
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasRelationships.php:1035
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasRelationships.php:448
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasRelationships.php:417
+D:\Documents\Dadisi\dadisi_app\backend\app\Models\Payment.php:52
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php:621
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php:573
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php:494
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2423
+D:\Documents\Dadisi\dadisi_app\backend\app\Services\Payments\PaymentService.php:203
+D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php:95</error>
+    </testcase>
+    <testcase name="test_subscription_activated_is_routed_to_subscriber" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" line="106" class="Tests\Feature\Notifications\NotificationRoutingTest" classname="Tests.Feature.Notifications.NotificationRoutingTest" assertions="0" time="1.610726">
+      <error type="Error">Tests\Feature\Notifications\NotificationRoutingTest::test_subscription_activated_is_routed_to_subscriber&#13;
+Error: Class "plan_subscription" not found
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasRelationships.php:1035
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasRelationships.php:448
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasRelationships.php:417
+D:\Documents\Dadisi\dadisi_app\backend\app\Models\Payment.php:52
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php:621
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php:573
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Concerns\HasAttributes.php:494
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2423
+D:\Documents\Dadisi\dadisi_app\backend\app\Services\Payments\PaymentService.php:203
+D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php:150</error>
+    </testcase>
+    <testcase name="test_refund_processed_is_routed_to_payer" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" line="161" class="Tests\Feature\Notifications\NotificationRoutingTest" classname="Tests.Feature.Notifications.NotificationRoutingTest" assertions="0" time="2.370821">
+      <error type="Illuminate\Database\QueryException">Tests\Feature\Notifications\NotificationRoutingTest::test_refund_processed_is_routed_to_payer&#13;
+Illuminate\Database\QueryException: SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: refunds.original_amount (Connection: sqlite, SQL: insert into "refunds" ("payment_id", "refundable_type", "refundable_id", "amount", "status", "reason", "requested_at", "currency", "gateway", "updated_at", "created_at") values (1, App\Models\User, 1, 1000, approved, Test, 2026-01-05 00:44:22, KES, mock, 2026-01-05 00:44:22, 2026-01-05 00:44:22))
+&#13;
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:826
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:780
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:559
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Connection.php:523
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Query\Processors\Processor.php:32
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Query\Builder.php:3853
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:2235
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1436
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1401
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1240
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:1219
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Support\helpers.php:390
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:1218
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Support\Traits\ForwardsCalls.php:23
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2540
+D:\Documents\Dadisi\dadisi_app\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:2556
+D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php:175</error>
+    </testcase>
+    <testcase name="test_student_approval_submitted_is_routed_to_relevant_staff" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" line="205" class="Tests\Feature\Notifications\NotificationRoutingTest" classname="Tests.Feature.Notifications.NotificationRoutingTest" assertions="2" time="1.798520"/>
+    <testcase name="test_guest_donation_received_is_routed_to_email" file="D:\Documents\Dadisi\dadisi_app\backend\tests\Feature\Notifications\NotificationRoutingTest.php" line="244" class="Tests\Feature\Notifications\NotificationRoutingTest" classname="Tests.Feature.Notifications.NotificationRoutingTest" assertions="1" time="1.551304"/>
+  </testsuite>
+</testsuites>

@@ -2,8 +2,8 @@
 
 namespace App\Services\Contracts;
 
-use App\Models\PlanSubscription;
 use App\Models\RenewalPreference;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
 
 interface SubscriptionCoreServiceContract
@@ -25,4 +25,9 @@ interface SubscriptionCoreServiceContract
     public function cancelSubscription(int $userId, ?string $reason = null): array;
 
     public function cancelSubscriptionPayment(int $subscriptionId, ?string $reason = null): array;
+
+    /**
+     * Get feature value for a user's subscription or system defaults
+     */
+    public function getFeatureValue(Authenticatable $user, string $featureSlug): mixed;
 }
