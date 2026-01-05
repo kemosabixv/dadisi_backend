@@ -148,6 +148,13 @@ class PesapalGateway implements PaymentGatewayInterface
     protected function getJwtToken(): ?string
     {
         try {
+            \Log::debug('Pesapal JWT Request Debug', [
+                'consumer_key_len' => strlen($this->consumerKey ?? ''),
+                'consumer_secret_len' => strlen($this->consumerSecret ?? ''),
+                'consumer_key_preview' => substr($this->consumerKey ?? '', 0, 4) . '...',
+                'api_base' => $this->apiBase,
+            ]);
+
             /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::asJson()->post(
                 $this->apiBase.'/Auth/RequestToken',
