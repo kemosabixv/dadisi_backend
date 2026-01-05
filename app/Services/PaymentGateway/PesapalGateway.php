@@ -33,17 +33,17 @@ class PesapalGateway implements PaymentGatewayInterface
         $this->consumerSecret = $config['consumer_secret'] ?? config('payment.pesapal.consumer_secret');
         $this->environment = $config['environment'] ?? config('payment.pesapal.environment', 'sandbox');
         $this->apiBase = $config['api_base'] ?? config('payment.pesapal.api_base');
-        
+
         // Resilience: Ensure apiBase doesn't end with slash and has /api suffix if not present
         if ($this->apiBase) {
             $this->apiBase = rtrim($this->apiBase, '/');
-            if (!str_ends_with($this->apiBase, '/api')) {
+            if (! str_ends_with($this->apiBase, '/api')) {
                 $this->apiBase .= '/api';
             }
         }
 
-        $this->callbackUrl = $config['callback_url'] ?? config('payment.pesapal.callback_url', config('app.url') . '/payment/callback');
-        $this->ipnUrl = $config['ipn_url'] ?? config('payment.pesapal.ipn_url', config('app.url') . '/api/webhooks/pesapal');
+        $this->callbackUrl = $config['callback_url'] ?? config('payment.pesapal.callback_url', config('app.url').'/payment/callback');
+        $this->ipnUrl = $config['ipn_url'] ?? config('payment.pesapal.ipn_url', config('app.url').'/api/webhooks/pesapal');
         $this->ipnNotificationType = $config['ipn_notification_type'] ?? config('payment.pesapal.ipn_notification_type', 'POST');
         $this->webhookSecret = $config['webhook_secret'] ?? config('payment.pesapal.webhook_secret');
     }
@@ -149,9 +149,8 @@ class PesapalGateway implements PaymentGatewayInterface
     {
         try {
             \Log::debug('Pesapal JWT Request Debug', [
-                'consumer_key_len' => strlen($this->consumerKey ?? ''),
-                'consumer_secret_len' => strlen($this->consumerSecret ?? ''),
-                'consumer_key_preview' => substr($this->consumerKey ?? '', 0, 4) . '...',
+                'consumer_key' => $this->consumerKey,
+                'consumer_secret' => $this->consumerSecret,
                 'api_base' => $this->apiBase,
             ]);
 
@@ -177,6 +176,7 @@ class PesapalGateway implements PaymentGatewayInterface
                     'body' => $response->body(),
                     'url' => $this->apiBase.'/Auth/RequestToken',
                 ]);
+
                 return null;
             }
 
@@ -216,10 +216,10 @@ class PesapalGateway implements PaymentGatewayInterface
     protected function getIpnList(string $token): array
     {
         try {
-            $url = $this->apiBase . '/URLSetup/GetIpnList';
+            $url = $this->apiBase.'/URLSetup/GetIpnList';
             /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::asJson()->withHeaders([
-                'Authorization' => 'Bearer ' . $token,
+                'Authorization' => 'Bearer '.$token,
             ])->get($url);
 
             if ($response->successful()) {
@@ -238,6 +238,7 @@ class PesapalGateway implements PaymentGatewayInterface
             \Log::error('Pesapal GetIpnList exception', [
                 'error' => $e->getMessage(),
             ]);
+
             return [];
         }
     }
