@@ -180,11 +180,9 @@ class MediaService implements MediaServiceContract
      */
     public function listMedia(Authenticatable $user, array $filters = [], int $perPage = 30): LengthAwarePaginator
     {
-        $query = Media::where('user_id', $user->getAuthIdentifier())
-            // Exclude media attached to entities (featured images, etc.)
-            // These should be managed through their respective entity forms
-            ->whereNull('attached_to')
-            ->whereNull('attached_to_id');
+        // Show ALL user media (including attached to posts/events/campaigns)
+        // UI will show visual indicators for where media is used
+        $query = Media::where('user_id', $user->getAuthIdentifier());
 
         // Filter by type
         if (!empty($filters['type'])) {

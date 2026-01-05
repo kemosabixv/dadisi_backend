@@ -118,77 +118,91 @@ class PostService implements PostServiceContract
             $this->validateBlogCreationQuota($author);
         }
 
-        try {
-            return DB::transaction(function () use ($author, $data) {
-                $postData = [
-                    'user_id' => $author->getAuthIdentifier(),
-                    'county_id' => $data['county_id'] ?? null,
-                    'title' => $data['title'],
-                    'slug' => $data['slug'] ?? Str::slug($data['title']),
-                    'excerpt' => $data['excerpt'] ?? (isset($data['content']) ? Str::limit(strip_tags($data['content']), 200) : (isset($data['body']) ? Str::limit(strip_tags($data['body']), 200) : null)),
-                    'body' => $data['content'] ?? $data['body'] ?? '',
-                    'status' => $data['status'] ?? 'draft',
-                    'published_at' => ($data['status'] ?? 'draft') === 'published' ? now() : null,
-                    'hero_image_path' => $data['hero_image_path'] ?? null,
-                    'meta_title' => $data['meta_title'] ?? null,
-                    'meta_description' => $data['meta_description'] ?? null,
-                    'is_featured' => $data['is_featured'] ?? false,
-                ];
-
-                // Ensure slug uniqueness
-                if (!isset($data['slug'])) {
-                    $baseSlug = $postData['slug'];
-                    $count = Post::where('slug', 'like', $baseSlug . '%')->count();
-                    if ($count > 0) {
-                        $postData['slug'] = $baseSlug . '-' . ($count + 1);
+            try {
+                return DB::transaction(function () use ($author, $data) {
+                    // Strip domain from hero_image_path if present
+                    $heroImagePath = $data['hero_image_path'] ?? null;
+                    if ($heroImagePath) {
+                        // Remove http://localhost:8000 or any domain prefix
+                        $heroImagePath = preg_replace('#^https?://[^/]+#', '', $heroImagePath);
                     }
-                }
 
-                $post = Post::create($postData);
+                    $postData = [
+                        'user_id' => $author->getAuthIdentifier(),
+                        'county_id' => $data['county_id'] ?? null,
+                        'title' => $data['title'],
+                        'slug' => $data['slug'] ?? Str::slug($data['title']),
+                        'excerpt' => $data['excerpt'] ?? (isset($data['content']) ? Str::limit(strip_tags($data['content']), 200) : (isset($data['body']) ? Str::limit(strip_tags($data['body']), 200) : null)),
+                        'body' => $data['content'] ?? $data['body'] ?? '',
+                        'status' => $data['status'] ?? 'draft',
+                        'published_at' => ($data['status'] ?? 'draft') === 'published' ? now() : null,
+                        'hero_image_path' => $heroImagePath,
+                        'meta_title' => $data['meta_title'] ?? null,
+                        'meta_description' => $data['meta_description'] ?? null,
+                        'is_featured' => $data['is_featured'] ?? false,
+                    ];
 
-                if (isset($data['category_ids'])) {
-                    $post->categories()->sync($data['category_ids']);
-                } elseif (isset($data['category'])) {
-                    $category = Category::where('slug', $data['category'])
-                        ->orWhere('name', $data['category'])
-                        ->first();
-                    if ($category) {
-                        $post->categories()->sync([$category->id]);
+                    // Ensure slug uniqueness
+                    if (!isset($data['slug'])) {
+                        $baseSlug = $postData['slug'];
+                        $count = Post::where('slug', 'like', $baseSlug . '%')->count();
+                        if ($count > 0) {
+                            $postData['slug'] = $baseSlug . '-' . ($count + 1);
+                        }
                     }
-                }
 
-                if (isset($data['tag_ids'])) {
-                    $post->tags()->sync($data['tag_ids']);
-                }
+                    $post = Post::create($postData);
 
-                if (isset($data['media_ids'])) {
-                    $post->media()->sync($data['media_ids']);
-                    $post->updateAttachedMediaPrivacy();
-                }
+                    if (isset($data['category_ids'])) {
+                        $post->categories()->sync($data['category_ids']);
+                    } elseif (isset($data['category'])) {
+                        $category = Category::where('slug', $data['category'])
+                            ->orWhere('name', $data['category'])
+                            ->first();
+                        if ($category) {
+                            $post->categories()->sync([$category->id]);
+                        }
+                    }
 
-                // Mark hero image as permanent
-                if (!empty($postData['hero_image_path'])) {
-                    $this->markMediaAsPermanent($postData['hero_image_path']);
-                }
+                    if (isset($data['tag_ids'])) {
+                        $post->tags()->sync($data['tag_ids']);
+                    }
 
-                AuditLog::create([
-                    'action' => 'created_post',
-                    'model_type' => Post::class,
-                    'model_id' => $post->id,
-                    'user_id' => $author->getAuthIdentifier(),
-                    'new_values' => $postData,
-                    'ip_address' => request()->ip(),
-                    'user_agent' => request()->userAgent(),
-                    'notes' => "Created post: " . $post->title,
-                ]);
+                    if (isset($data['media_ids'])) {
+                        $post->media()->sync($data['media_ids']);
+                        // Mark all attached media as belonging to this post
+                        \App\Models\Media::whereIn('id', $data['media_ids'])
+                            ->where('user_id', $post->user_id)
+                            ->update([
+                                'attached_to' => 'post',
+                                'attached_to_id' => $post->id,
+                            ]);
+                        $post->updateAttachedMediaPrivacy();
+                    }
 
-                Log::info('Post created', [
-                    'post_id' => $post->id,
-                    'created_by' => $author->getAuthIdentifier(),
-                ]);
+                    // Mark hero image as attached to this post (so it doesn't show in media library)
+                    if (!empty($heroImagePath)) {
+                        $this->attachMediaToPost($post, $heroImagePath);
+                    }
 
-                return $post->load(['author:id,username', 'categories', 'tags', 'media']);
-            });
+                    AuditLog::create([
+                        'action' => 'created_post',
+                        'model_type' => Post::class,
+                        'model_id' => $post->id,
+                        'user_id' => $author->getAuthIdentifier(),
+                        'new_values' => $postData,
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                        'notes' => "Created post: " . $post->title,
+                    ]);
+
+                    Log::info('Post created', [
+                        'post_id' => $post->id,
+                        'created_by' => $author->getAuthIdentifier(),
+                    ]);
+
+                    return $post->load(['author:id,username', 'categories', 'tags', 'media']);
+                });
         } catch (\Exception $e) {
             Log::error('Post creation failed', ['error' => $e->getMessage()]);
             throw PostException::creationFailed($e->getMessage());
@@ -519,7 +533,7 @@ class PostService implements PostServiceContract
 
         // Get the plan's blog creation limit
         $plan = $subscription->plan;
-        $blogCreationLimit = (int)$plan->getFeatureValue('blog_creation_limit', 0);
+        $blogCreationLimit = (int)$plan->getFeatureValue('blog-posts-monthly', 0);
 
         if ($blogCreationLimit === 0) {
             throw PostException::create('Your plan does not include the ability to create blog posts.');
@@ -539,15 +553,29 @@ class PostService implements PostServiceContract
         }
     }
 
-    private function markMediaAsPermanent(string $heroImagePath): void
+    /**
+     * Attach media to a post so it doesn't appear in the user's media library.
+     * Sets attached_to and attached_to_id to mark it as an entity-specific image.
+     */
+    private function attachMediaToPost(Post $post, string $heroImagePath): void
     {
         try {
-            $filePath = preg_replace('#^.*/storage#', '', $heroImagePath);
+            // Extract file path from the URL (remove /storage prefix)
+            $filePath = preg_replace('#^/storage#', '', $heroImagePath);
+            
+            // Find media by file_path and mark it as attached to this post
             \App\Models\Media::where('file_path', $filePath)
-                ->whereNotNull('temporary_until')
-                ->update(['temporary_until' => null]);
+                ->where('user_id', $post->user_id)
+                ->update([
+                    'attached_to' => 'post',
+                    'attached_to_id' => $post->id,
+                    'temporary_until' => null, // Mark as permanent
+                ]);
         } catch (\Exception $e) {
-            Log::error('Failed to mark media as permanent', ['error' => $e->getMessage()]);
+            Log::error('Failed to attach media to post', [
+                'post_id' => $post->id,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }
