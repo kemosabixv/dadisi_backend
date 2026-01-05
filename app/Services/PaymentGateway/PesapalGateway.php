@@ -158,14 +158,19 @@ class PesapalGateway implements PaymentGatewayInterface
             );
 
             if ($response->successful()) {
-                $contentType = strtolower($response->header('Content-Type') ?? '');
-                if (str_contains($contentType, 'application/json')) {
-                    $data = $response->json();
+                $data = $response->json();
+                $token = $data['token'] ?? $data['access_token'] ?? null;
 
-                    return $data['token'] ?? $data['access_token'] ?? $response->body();
+                if ($token) {
+                    return $token;
                 }
 
-                return trim($response->body()) ?: null;
+                \Log::error('Pesapal Auth success status but missing token', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'url' => $this->apiBase.'/Auth/RequestToken',
+                ]);
+                return null;
             }
 
             $error = $response->json() ?? [];
