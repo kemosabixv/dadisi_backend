@@ -52,6 +52,11 @@ class LabSpaceController extends Controller
                 $query->byType($request->type);
             }
 
+            // Filter by county
+            if ($request->has('county')) {
+                $query->forCounty($request->county);
+            }
+
             // Search
             if ($request->has('search')) {
                 $search = $request->search;
@@ -61,11 +66,11 @@ class LabSpaceController extends Controller
                 });
             }
 
-            $spaces = $query->orderBy('name')->get();
+            $spaces = $query->with('media')->orderBy('name')->get();
 
             // Add computed attributes
             $spaces->each(function ($space) {
-                $space->append(['image_url', 'type_name']);
+                $space->append(['image_url', 'type_name', 'gallery_media', 'is_active', 'amenities']);
             });
 
             return response()->json([
@@ -103,7 +108,7 @@ class LabSpaceController extends Controller
     public function show(string $slug): JsonResponse
     {
         try {
-            $space = LabSpace::where('slug', $slug)->active()->first();
+            $space = LabSpace::with('media')->where('slug', $slug)->active()->first();
 
             if (!$space) {
                 return response()->json([
@@ -112,7 +117,7 @@ class LabSpaceController extends Controller
                 ], 404);
             }
 
-            $space->append(['image_url', 'type_name']);
+            $space->append(['image_url', 'type_name', 'gallery_media', 'is_active', 'amenities']);
 
             return response()->json([
                 'success' => true,

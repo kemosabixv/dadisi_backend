@@ -180,9 +180,15 @@ class MediaService implements MediaServiceContract
      */
     public function listMedia(Authenticatable $user, array $filters = [], int $perPage = 30): LengthAwarePaginator
     {
-        // Show ALL user media (including attached to posts/events/campaigns)
-        // UI will show visual indicators for where media is used
-        $query = Media::where('user_id', $user->getAuthIdentifier());
+        // Check if user is an admin to decide whether to filter by user_id
+        $isAdmin = \App\Support\AdminAccessResolver::canAccessAdmin($user);
+        
+        $query = Media::query();
+
+        if (!$isAdmin) {
+            // Non-admins only see their own media
+            $query->where('user_id', $user->getAuthIdentifier());
+        }
 
         // Filter by type
         if (!empty($filters['type'])) {
@@ -208,7 +214,8 @@ class MediaService implements MediaServiceContract
      */
     public function renameMedia(Authenticatable $user, Media $media, string $newName): Media
     {
-        if ($media->user_id !== $user->getAuthIdentifier()) {
+        $isAdmin = \App\Support\AdminAccessResolver::canAccessAdmin($user);
+        if (!$isAdmin && $media->user_id !== $user->getAuthIdentifier()) {
             throw MediaException::unauthorized('rename');
         }
 
@@ -247,7 +254,8 @@ class MediaService implements MediaServiceContract
      */
     public function updateVisibility(Authenticatable $user, Media $media, string $visibility, bool $allowDownload = true): Media
     {
-        if ($media->user_id !== $user->getAuthIdentifier()) {
+        $isAdmin = \App\Support\AdminAccessResolver::canAccessAdmin($user);
+        if (!$isAdmin && $media->user_id !== $user->getAuthIdentifier()) {
             throw MediaException::unauthorized('update visibility');
         }
 
@@ -276,7 +284,10 @@ class MediaService implements MediaServiceContract
 
         // Notify if newly shared
         if ($visibility === 'shared' && $oldVisibility !== 'shared') {
-            $user->notify(new SecureShareCreated($media));
+            // Cast to User instance for notification
+            if ($user instanceof User) {
+                $user->notify(new SecureShareCreated($media));
+            }
         }
 
         return $media;
@@ -407,12 +418,21 @@ class MediaService implements MediaServiceContract
      *
      * @throws MediaException If unauthorized or deletion fails
      */
-    public function deleteMedia(Authenticatable $user, Media $media): bool
+    public function deleteMedia(Authenticatable $user, Media $media, bool $force = false): bool
     {
         try {
-            // Ownership check
-            if ($media->user_id !== $user->getAuthIdentifier()) {
+            // Ownership check (with admin bypass)
+            $isAdmin = \App\Support\AdminAccessResolver::canAccessAdmin($user);
+            if (!$isAdmin && $media->user_id !== $user->getAuthIdentifier()) {
                 throw MediaException::unauthorized('delete');
+            }
+
+            // Only allow deletion without force if the media is marked temporary
+            // (temporary_until set). Prevent accidental deletion of permanent/shared media
+            // from client-side quick actions. To delete permanent media, caller must
+            // explicitly pass `force=true` (and should be an admin or deliberate flow).
+            if (!$force && is_null($media->temporary_until)) {
+                throw MediaException::validationFailed('Only temporary media can be deleted without confirmation. Use force=true to permanently delete.');
             }
 
             DB::beginTransaction();
@@ -479,7 +499,7 @@ class MediaService implements MediaServiceContract
      * @param UploadedFile $file The file to validate
      * @return array ['valid' => bool, 'type' => string|null, 'error' => string|null]
      */
-    public function validateFile(UploadedFile $file, Authenticatable $user = null): array
+    public function validateFile(UploadedFile $file, ?Authenticatable $user = null): array
     {
         $mimeType = $file->getMimeType();
 
@@ -581,6 +601,11 @@ class MediaService implements MediaServiceContract
      */
     private function checkAndNotifyStorageThresholds(Authenticatable $user, int $addedSize): void
     {
+        // Type cast to User for notification
+        if (!($user instanceof User)) {
+            return;
+        }
+        /** @var User $userInstance */
         $quotaLimitMB = $this->subscriptionService->getFeatureValue($user, 'media-storage-mb');
         if (!$quotaLimitMB || !is_numeric($quotaLimitMB)) {
             return;
@@ -595,11 +620,11 @@ class MediaService implements MediaServiceContract
 
         // Notify at 100%
         if ($percentageBefore < 100 && $percentageAfter >= 100) {
-            $user->notify(new StorageQuotaExceeded((int)$quotaLimitMB));
+            $userInstance->notify(new StorageQuotaExceeded((int)$quotaLimitMB));
         } 
         // Notify at 80%
         elseif ($percentageBefore < 80 && $percentageAfter >= 80) {
-            $user->notify(new StorageUsageAlert(80, (int)$quotaLimitMB));
+            $userInstance->notify(new StorageUsageAlert(80, (int)$quotaLimitMB));
         }
     }
 

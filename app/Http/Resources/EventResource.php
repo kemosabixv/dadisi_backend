@@ -41,6 +41,42 @@ class EventResource extends JsonResource
             }),
             'image_path' => $this->image_path,
             'image_url' => $this->image_path ? url('storage/' . $this->image_path) : null,
+            'featured_media_id' => $this->media->firstWhere('pivot.role', 'featured')?->id,
+            'featured_media' => $this->whenLoaded('media', function () {
+                $featured = $this->media->firstWhere('pivot.role', 'featured');
+                return $featured ? [
+                    'id' => $featured->id,
+                    'file_name' => $featured->file_name,
+                    'file_path' => $featured->file_path,
+                    'url' => $featured->url,
+                    'original_url' => $featured->original_url,
+                    'mime_type' => $featured->mime_type,
+                    'size' => $featured->size,
+                ] : null;
+            }),
+            'gallery_media_ids' => $this->media->where('pivot.role', 'gallery')->pluck('id'),
+            'gallery_media' => $this->whenLoaded('media', function () {
+                return $this->media->where('pivot.role', 'gallery')->map(function ($m) {
+                    return [
+                        'id' => $m->id,
+                        'file_name' => $m->file_name,
+                        'url' => $m->url,
+                    ];
+                })->values();
+            }),
+            'media' => $this->whenLoaded('media', function () {
+                return $this->media->map(function ($m) {
+                    return [
+                        'id' => $m->id,
+                        'file_name' => $m->file_name,
+                        'file_path' => $m->file_path,
+                        'url' => $m->url,
+                        'original_url' => $m->original_url,
+                        'mime_type' => $m->mime_type,
+                        'size' => $m->size,
+                    ];
+                })->values();
+            }),
             'price' => (float) $this->price,
             'currency' => $this->currency,
             'status' => $this->status,

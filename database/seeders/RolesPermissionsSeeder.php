@@ -121,6 +121,15 @@ class RolesPermissionsSeeder extends Seeder
 
             // Retention Settings
             'manage_retention_settings',
+
+            // Finance & Payments
+            'view_finance_analytics',
+            'manage_payments',
+            'refund_payments',
+
+            // Subscription Management
+            'view_subscriptions',
+            'manage_subscriptions',
         ];
 
         foreach ($permissions as $permission) {
@@ -151,6 +160,10 @@ class RolesPermissionsSeeder extends Seeder
                 'view_student_approvals', 'approve_student_approvals', 'reject_student_approvals',
                 // Retention Settings
                 'manage_retention_settings',
+                // Finance & Payments
+                'view_finance_analytics', 'manage_payments', 'refund_payments',
+                // Subscription Management
+                'view_subscriptions', 'manage_subscriptions',
             ],
             'finance' => [
                 'view_donation_ledger', 'export_donations', 'reconcile_payments', 'view_reports',
@@ -158,6 +171,10 @@ class RolesPermissionsSeeder extends Seeder
                 'view_reconciliation', 'manage_reconciliation',
                 // Admin Panel Access
                 'view_audit_logs', // Often needed for finance to check transaction logs
+
+                // New Finance Permissions
+                'view_finance_analytics', 'manage_payments', 'refund_payments',
+                'view_subscriptions',
             ],
             'events_manager' => [
                 'create_events', 'edit_events', 'delete_events', 'view_all_events', 'manage_event_attendees', 'view_reports',

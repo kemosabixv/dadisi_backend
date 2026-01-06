@@ -68,6 +68,7 @@ class SpeakerController extends Controller
                 'linkedin_url' => 'nullable|url',
                 'is_featured' => 'boolean',
                 'sort_order' => 'integer',
+                'photo_media_id' => 'nullable|integer|exists:media,id',
             ]);
 
             if ($request->hasFile('photo')) {
@@ -106,6 +107,7 @@ class SpeakerController extends Controller
                 'linkedin_url' => 'nullable|url',
                 'is_featured' => 'nullable|boolean',
                 'sort_order' => 'nullable|integer',
+                'photo_media_id' => 'nullable|integer|exists:media,id',
             ]);
 
             if ($request->hasFile('photo')) {

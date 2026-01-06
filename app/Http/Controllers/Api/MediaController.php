@@ -11,6 +11,7 @@ use App\Services\Contracts\MediaServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @group Media Management
@@ -196,8 +197,9 @@ class MediaController extends Controller
         try {
             $user = $request->user();
 
-            // Ownership check
-            if ($media->user_id !== $user->id) {
+            // Ownership check (with admin bypass)
+            $isAdmin = \App\Support\AdminAccessResolver::canAccessAdmin($user);
+            if (!$isAdmin && $media->user_id !== $user->id) {
                 throw MediaException::unauthorized('view');
             }
 
@@ -244,7 +246,8 @@ class MediaController extends Controller
         try {
             $user = $request->user();
 
-            $this->mediaService->deleteMedia($user, $media);
+            $force = $request->boolean('force', false);
+            $this->mediaService->deleteMedia($user, $media, $force);
 
             return response()->json([
                 'success' => true,

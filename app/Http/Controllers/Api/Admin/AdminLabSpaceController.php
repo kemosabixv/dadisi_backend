@@ -50,7 +50,7 @@ class AdminLabSpaceController extends Controller
         }
 
         $perPage = $request->input('per_page', 15);
-        $spaces = $query->orderBy('name')->paginate($perPage);
+        $spaces = $query->with('media')->orderBy('name')->paginate($perPage);
 
         return response()->json([
             'success' => true,
@@ -90,10 +90,18 @@ class AdminLabSpaceController extends Controller
 
         $space = LabSpace::create($validated);
 
+        // Handle media attachments
+        if (!empty($validated['featured_media_id'])) {
+            $space->setFeaturedMedia($validated['featured_media_id']);
+        }
+        if (!empty($validated['gallery_media_ids'])) {
+            $space->addGalleryMedia($validated['gallery_media_ids']);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Lab space created successfully',
-            'data' => $space,
+            'data' => $space->load('media'),
         ], 201);
     }
 
@@ -109,15 +117,20 @@ class AdminLabSpaceController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $space = LabSpace::findOrFail($id);
+        $space = LabSpace::with('media')->findOrFail($id);
 
         $this->authorize('view', $space);
 
         $space->loadCount('bookings');
 
+        // Add media IDs to response
+        $responseData = $space->toArray();
+        $responseData['featured_media_id'] = $space->media->firstWhere('pivot.role', 'featured')?->id;
+        $responseData['gallery_media_ids'] = $space->media->where('pivot.role', 'gallery')->pluck('id')->values();
+
         return response()->json([
             'success' => true,
-            'data' => $space,
+            'data' => $responseData,
         ]);
     }
 
@@ -145,10 +158,21 @@ class AdminLabSpaceController extends Controller
 
         $space->update($validated);
 
+        // Handle media attachments
+        if (array_key_exists('featured_media_id', $validated)) {
+            $space->setFeaturedMedia($validated['featured_media_id']);
+        }
+        if (array_key_exists('gallery_media_ids', $validated)) {
+            $space->media()->wherePivot('role', 'gallery')->detach();
+            if (!empty($validated['gallery_media_ids'])) {
+                $space->addGalleryMedia($validated['gallery_media_ids']);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Lab space updated successfully',
-            'data' => $space->fresh(),
+            'data' => $space->fresh()->load('media'),
         ]);
     }
 

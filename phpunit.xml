@@ -4,6 +4,8 @@
          bootstrap="vendor/autoload.php"
          colors="true"
          beStrictAboutOutputDuringTests="true"
+         displayDetailsOnTestsThatTriggerDeprecations="false"
+         displayDetailsOnPhpunitDeprecations="false"
 >
     <testsuites>
         <testsuite name="Unit">

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Post extends Model
 {
@@ -29,6 +31,7 @@ class Post extends Model
         'author_id',
         'content',
         'category',
+        'allow_comments',
     ];
 
     protected $casts = [
@@ -36,7 +39,8 @@ class Post extends Model
         'county_id' => 'integer',
         'published_at' => 'datetime',
         'is_featured' => 'boolean',
-        'views_count' => 'integer', // Cast views_count as integer for proper handling
+        'allow_comments' => 'boolean',
+        'views_count' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -46,6 +50,10 @@ class Post extends Model
         'featured_image',
         'content',
         'is_published',
+        'likes_count',
+        'dislikes_count',
+        'comments_count',
+        'gallery_images',
     ];
 
     protected $attributes = [
@@ -123,12 +131,67 @@ class Post extends Model
     }
 
     /**
-     * Media relationship (attached images)
+     * Comments relationship (polymorphic)
      */
-    public function media(): BelongsToMany
+    public function comments(): MorphMany
     {
-        return $this->belongsToMany(Media::class, 'post_media', 'post_id', 'media_id')
+        return $this->morphMany(Comment::class, 'commentable');
+    }
+
+    /**
+     * Likes relationship (polymorphic)
+     */
+    public function likes(): MorphMany
+    {
+        return $this->morphMany(Like::class, 'likeable');
+    }
+
+    /**
+     * Media relationship (attached images via polymorphic pivot)
+     * Uses media_attachments pivot table for many-to-many polymorphic relationship
+     */
+    public function media(): MorphToMany
+    {
+        return $this->morphToMany(Media::class, 'attachable', 'media_attachments')
+            ->withPivot('role')
             ->withTimestamps();
+    }
+
+    /**
+     * Get the featured image media (role = 'featured')
+     */
+    public function featuredMedia()
+    {
+        return $this->media()->wherePivot('role', 'featured')->first();
+    }
+
+    /**
+     * Get gallery images (role = 'gallery')
+     */
+    public function galleryMedia()
+    {
+        return $this->media()->wherePivot('role', 'gallery');
+    }
+
+    /**
+     * Attach media as featured image (replaces existing featured)
+     */
+    public function setFeaturedMedia(int $mediaId): void
+    {
+        // Detach existing featured
+        $this->media()->wherePivot('role', 'featured')->detach();
+        // Attach new featured
+        $this->media()->attach($mediaId, ['role' => 'featured']);
+    }
+
+    /**
+     * Attach media as gallery images
+     */
+    public function addGalleryMedia(array $mediaIds): void
+    {
+        foreach ($mediaIds as $id) {
+            $this->media()->syncWithoutDetaching([$id => ['role' => 'gallery']]);
+        }
     }
 
     /**
@@ -217,9 +280,9 @@ class Post extends Model
     /**
      * Accessor: content (alias for body)
      */
-    public function getContentAttribute(): string
+    public function getContentAttribute(): ?string
     {
-        return $this->body;
+        return $this->body ?? '';
     }
 
     /**
@@ -239,6 +302,45 @@ class Post extends Model
     }
 
     /**
+     * Accessor: likes_count
+     * Uses eager-loaded counts when available, otherwise queries the relationship.
+     */
+    public function getLikesCountAttribute(): int
+    {
+        // If eager-loaded via withCount, use that value
+        if (array_key_exists('likes_count', $this->attributes)) {
+            return (int) $this->attributes['likes_count'];
+        }
+        return $this->likes()->where('type', 'like')->count();
+    }
+
+    /**
+     * Accessor: dislikes_count
+     * Uses eager-loaded counts when available, otherwise queries the relationship.
+     */
+    public function getDislikesCountAttribute(): int
+    {
+        // If eager-loaded via withCount, use that value
+        if (array_key_exists('dislikes_count', $this->attributes)) {
+            return (int) $this->attributes['dislikes_count'];
+        }
+        return $this->likes()->where('type', 'dislike')->count();
+    }
+
+    /**
+     * Accessor: comments_count
+     * Uses eager-loaded counts when available, otherwise queries the relationship.
+     */
+    public function getCommentsCountAttribute(): int
+    {
+        // If eager-loaded via withCount, use that value
+        if (array_key_exists('comments_count', $this->attributes)) {
+            return (int) $this->attributes['comments_count'];
+        }
+        return $this->comments()->count();
+    }
+
+    /**
      * Mutator: featured_image
      */
     public function setFeaturedImageAttribute(?string $value): void
@@ -247,12 +349,35 @@ class Post extends Model
     }
 
     /**
+     * Accessor: gallery_images
+     * Returns all media attached to this post with the 'gallery' role.
+     */
+    public function getGalleryImagesAttribute()
+    {
+        // Use loaded relationship if available to avoid N+1
+        if ($this->relationLoaded('media')) {
+            return $this->media->filter(function ($m) {
+                return $m->pivot && $m->pivot->role === 'gallery';
+            })->values();
+        }
+
+        return $this->galleryMedia()->get();
+    }
+
+    /**
      * Get featured image from media relationship (primary image)
-     * Returns the first image media attached to this post
+     * Returns the image media attached to this post with role='featured'
      */
     public function getFeaturedMediaImage()
     {
-        return $this->media()->where('type', 'image')->first();
+        // Use loaded relationship if available
+        if ($this->relationLoaded('media')) {
+            return $this->media->first(function ($m) {
+                return $m->pivot && $m->pivot->role === 'featured';
+            });
+        }
+
+        return $this->media()->wherePivot('role', 'featured')->first();
     }
 
     /**
@@ -318,12 +443,10 @@ class Post extends Model
         });
 
         static::deleting(function ($post) {
-            // When post is deleted, make all media private again
-            $post->media()->update([
-                'is_public' => false,
-                'attached_to' => null,
-                'attached_to_id' => null,
-            ]);
+            // When post is deleted, make all attached media private and detach
+            $post->media()->update(['is_public' => false]);
+            // Detach all media (pivot entries removed automatically on cascade)
+            $post->media()->detach();
         });
     }
 }

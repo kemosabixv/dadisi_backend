@@ -25,8 +25,8 @@ class EventService implements EventServiceContract
     /**
      * Create a new event
      *
-     * @param Authenticatable $actor The user creating the event
-     * @param CreateEventDTO $dto Event creation data
+     * @param  Authenticatable  $actor  The user creating the event
+     * @param  CreateEventDTO  $dto  Event creation data
      * @return Event The created event
      *
      * @throws EventException If creation fails
@@ -41,22 +41,33 @@ class EventService implements EventServiceContract
             $event = Event::create($data);
 
             // Handle Tickets
-            if (!empty($data['tickets'])) {
+            if (! empty($data['tickets'])) {
                 foreach ($data['tickets'] as $ticketData) {
                     $event->tickets()->create($ticketData);
                 }
             }
 
             // Handle Speakers
-            if (!empty($data['speakers'])) {
+            if (! empty($data['speakers'])) {
                 foreach ($data['speakers'] as $speakerData) {
-                    $event->speakers()->create($speakerData);
+                    $speaker = $event->speakers()->create($speakerData);
+                    if (! empty($speakerData['photo_media_id'])) {
+                        $speaker->setPhotoMedia($speakerData['photo_media_id']);
+                    }
                 }
             }
 
             // Handle Tags
-            if (!empty($data['tag_ids'])) {
+            if (! empty($data['tag_ids'])) {
                 $event->tags()->sync($data['tag_ids']);
+            }
+
+            // Handle Media
+            if (! empty($data['featured_media_id'])) {
+                $event->setFeaturedMedia($data['featured_media_id']);
+            }
+            if (! empty($data['gallery_media_ids'])) {
+                $event->addGalleryMedia($data['gallery_media_ids']);
             }
 
             AuditLog::create([
@@ -92,9 +103,9 @@ class EventService implements EventServiceContract
     /**
      * Update an existing event
      *
-     * @param Authenticatable $actor The user updating the event
-     * @param Event $event The event to update
-     * @param UpdateEventDTO $dto Update data
+     * @param  Authenticatable  $actor  The user updating the event
+     * @param  Event  $event  The event to update
+     * @param  UpdateEventDTO  $dto  Update data
      * @return Event The updated event
      *
      * @throws EventException If update fails
@@ -104,7 +115,7 @@ class EventService implements EventServiceContract
         try {
             $data = $dto->toArray();
 
-            if (!empty($data)) {
+            if (! empty($data)) {
                 $oldValues = $event->toArray();
 
                 $event->update($data);
@@ -119,7 +130,7 @@ class EventService implements EventServiceContract
                     }
                 }
 
-                if (!empty($changes)) {
+                if (! empty($changes)) {
                     AuditLog::create([
                         'user_id' => $actor->getAuthIdentifier(),
                         'action' => 'updated_event',
@@ -149,13 +160,25 @@ class EventService implements EventServiceContract
                 if (isset($data['speakers'])) {
                     $event->speakers()->delete();
                     foreach ($data['speakers'] as $speakerData) {
-                        $event->speakers()->create($speakerData);
+                        $speaker = $event->speakers()->create($speakerData);
+                        if (! empty($speakerData['photo_media_id'])) {
+                            $speaker->setPhotoMedia($speakerData['photo_media_id']);
+                        }
                     }
                 }
 
                 // Handle Tags
                 if (isset($data['tag_ids'])) {
                     $event->tags()->sync($data['tag_ids']);
+                }
+
+                // Handle Media
+                if (isset($data['featured_media_id'])) {
+                    $event->setFeaturedMedia($data['featured_media_id']);
+                }
+                if (isset($data['gallery_media_ids'])) {
+                    $event->media()->wherePivot('role', 'gallery')->detach();
+                    $event->addGalleryMedia($data['gallery_media_ids']);
                 }
             }
 
@@ -174,7 +197,7 @@ class EventService implements EventServiceContract
     /**
      * Retrieve an event by ID
      *
-     * @param string $id The event ID
+     * @param  string  $id  The event ID
      * @return Event The event with relationships
      *
      * @throws EventException If event not found
@@ -182,7 +205,7 @@ class EventService implements EventServiceContract
     public function getById(string $id): Event
     {
         try {
-            return Event::with(['organizer', 'registrations'])->findOrFail($id);
+            return Event::with(['organizer', 'registrations', 'media'])->findOrFail($id);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             throw EventException::notFound($id);
         }
@@ -191,13 +214,13 @@ class EventService implements EventServiceContract
     /**
      * List events with filtering and pagination
      *
-     * @param ListEventsFiltersDTO $filters Filtering criteria
-     * @param int $perPage Results per page
+     * @param  ListEventsFiltersDTO  $filters  Filtering criteria
+     * @param  int  $perPage  Results per page
      * @return LengthAwarePaginator Paginated results
      */
     public function listEvents(ListEventsFiltersDTO $filters, int $perPage = 15): LengthAwarePaginator
     {
-        $query = Event::query()->with(['organizer', 'category', 'county']);
+        $query = Event::query()->with(['organizer', 'category', 'county', 'media']);
 
         if ($filters->status && $filters->status !== 'all') {
             $query->where('status', $filters->status);
@@ -226,7 +249,7 @@ class EventService implements EventServiceContract
         if ($filters->search) {
             $query->where(function ($q) use ($filters) {
                 $q->where('title', 'like', "%{$filters->search}%")
-                  ->orWhere('description', 'like', "%{$filters->search}%");
+                    ->orWhere('description', 'like', "%{$filters->search}%");
             });
         }
 
@@ -238,10 +261,19 @@ class EventService implements EventServiceContract
             $query->where('event_type', $filters->event_type);
         }
 
+        if ($filters->type) {
+            if ($filters->type === 'online') {
+                $query->where('is_online', true);
+            } elseif ($filters->type === 'in_person') {
+                $query->where('is_online', false);
+            }
+        }
+
         if ($filters->timeframe === 'upcoming' || $filters->upcoming) {
             $query->where('starts_at', '>', now());
         } elseif ($filters->timeframe === 'past') {
-            $query->where('ends_at', '<', now());
+            // Events are "past" if they have already started
+            $query->where('starts_at', '<', now());
         }
 
         if ($filters->start_date) {
@@ -260,7 +292,7 @@ class EventService implements EventServiceContract
     /**
      * Get event by slug
      *
-     * @param string $slug Event slug
+     * @param  string  $slug  Event slug
      * @return Event The event
      *
      * @throws EventException If not found
@@ -279,8 +311,8 @@ class EventService implements EventServiceContract
     /**
      * Soft delete an event
      *
-     * @param Authenticatable $actor The user deleting
-     * @param Event $event The event to delete
+     * @param  Authenticatable  $actor  The user deleting
+     * @param  Event  $event  The event to delete
      * @return bool True if successful
      *
      * @throws EventException If deletion fails
@@ -319,8 +351,8 @@ class EventService implements EventServiceContract
     /**
      * Restore a soft-deleted event
      *
-     * @param Authenticatable $actor The user restoring
-     * @param Event $event The event to restore
+     * @param  Authenticatable  $actor  The user restoring
+     * @param  Event  $event  The event to restore
      * @return Event The restored event
      *
      * @throws EventException If restoration fails
@@ -361,7 +393,7 @@ class EventService implements EventServiceContract
     /**
      * Get event statistics
      *
-     * @param Event $event The event
+     * @param  Event  $event  The event
      * @return array Statistics
      */
     public function getStatistics(Event $event): array
@@ -533,7 +565,7 @@ class EventService implements EventServiceContract
     {
         $query = $event->registrations()->with(['user', 'ticket', 'order']);
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 

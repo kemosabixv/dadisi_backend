@@ -27,6 +27,7 @@ class StorePostRequest extends FormRequest
             'category_ids' => 'required|array|min:1|exists:categories,id',
             'tag_ids' => 'nullable|array|exists:tags,id',
             'media_ids' => 'nullable|array|exists:media,id',
+            'allow_comments' => 'boolean',
         ];
     }
 
@@ -114,6 +115,11 @@ class StorePostRequest extends FormRequest
             'media_ids' => [
                 'description' => 'Array of media IDs for images/files',
                 'example' => [1, 2],
+                'required' => false,
+            ],
+            'allow_comments' => [
+                'description' => 'Whether comments are enabled for this post',
+                'example' => true,
                 'required' => false,
             ],
         ];

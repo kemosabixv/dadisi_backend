@@ -13,7 +13,13 @@ return new class extends Migration
     {
         Schema::create('likes', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->morphs('likeable'); // Creates columns + index automatically
+            $table->enum('type', ['like', 'dislike'])->default('like');
             $table->timestamps();
+
+            // One vote per user per entity
+            $table->unique(['user_id', 'likeable_id', 'likeable_type']);
         });
     }
 

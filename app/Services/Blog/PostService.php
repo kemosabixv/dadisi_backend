@@ -25,7 +25,16 @@ class PostService implements PostServiceContract
 {
     public function listPosts(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = Post::with(['author:id,username', 'categories', 'tags', 'media', 'county:id,name']);
+        $query = Post::with(['author:id,username', 'categories', 'tags', 'media', 'county:id,name'])
+            ->withCount([
+                'comments',
+                'likes as likes_count' => function ($q) {
+                    $q->where('type', 'like');
+                },
+                'likes as dislikes_count' => function ($q) {
+                    $q->where('type', 'dislike');
+                },
+            ]);
 
         if (($filters['status'] ?? null) === 'trashed') {
             $query->onlyTrashed();
@@ -140,6 +149,7 @@ class PostService implements PostServiceContract
                         'meta_title' => $data['meta_title'] ?? null,
                         'meta_description' => $data['meta_description'] ?? null,
                         'is_featured' => $data['is_featured'] ?? false,
+                        'allow_comments' => $data['allow_comments'] ?? true,
                     ];
 
                     // Ensure slug uniqueness
@@ -168,15 +178,9 @@ class PostService implements PostServiceContract
                         $post->tags()->sync($data['tag_ids']);
                     }
 
-                    if (isset($data['media_ids'])) {
-                        $post->media()->sync($data['media_ids']);
-                        // Mark all attached media as belonging to this post
-                        \App\Models\Media::whereIn('id', $data['media_ids'])
-                            ->where('user_id', $post->user_id)
-                            ->update([
-                                'attached_to' => 'post',
-                                'attached_to_id' => $post->id,
-                            ]);
+                    if (isset($data['media_ids']) && !empty($data['media_ids'])) {
+                        // Attach gallery images using the new pivot table
+                        $post->addGalleryMedia($data['media_ids']);
                         $post->updateAttachedMediaPrivacy();
                     }
 
@@ -243,12 +247,35 @@ class PostService implements PostServiceContract
                 }
 
                 if (array_key_exists('media_ids', $data)) {
-                    $post->media()->sync($data['media_ids']);
-                    $post->updateAttachedMediaPrivacy();
-                }
+                    $galleryIds = $data['media_ids'] ?? [];
+                    $syncData = [];
+                    foreach ($galleryIds as $id) {
+                        if ($id) {
+                            $syncData[(int)$id] = ['role' => 'gallery'];
+                        }
+                    }
 
-                if (!empty($data['hero_image_path'])) {
+                    // Re-attach hero image if provided or keep existing featured media
+                    $heroPath = $data['hero_image_path'] ?? $post->hero_image_path;
+                    if ($heroPath) {
+                        $filePath = preg_replace('#^https?://[^/]+#', '', $heroPath);
+                        $filePath = preg_replace('#^/storage#', '', $filePath);
+                        
+                        $featuredMedia = \App\Models\Media::where('file_path', $filePath)->first();
+                        if ($featuredMedia) {
+                            $syncData[$featuredMedia->id] = ['role' => 'featured'];
+                            // Mark as permanent
+                            if ($featuredMedia->temporary_until) {
+                                $featuredMedia->update(['temporary_until' => null]);
+                            }
+                        }
+                    }
+
+                    $post->media()->sync($syncData);
+                    $post->updateAttachedMediaPrivacy();
+                } elseif (!empty($data['hero_image_path'])) {
                     $this->markMediaAsPermanent($data['hero_image_path']);
+                    $this->attachMediaToPost($post, $data['hero_image_path']);
                 }
 
                 AuditLog::create([
@@ -554,8 +581,30 @@ class PostService implements PostServiceContract
     }
 
     /**
-     * Attach media to a post so it doesn't appear in the user's media library.
-     * Sets attached_to and attached_to_id to mark it as an entity-specific image.
+     * Mark media as permanent (remove temporary_until flag)
+     */
+    private function markMediaAsPermanent(string $heroImagePath): void
+    {
+        try {
+            // Extract file path from the URL (remove /storage prefix)
+            $filePath = preg_replace('#^/storage#', '', $heroImagePath);
+            
+            // Find media by file_path and mark as permanent
+            $media = \App\Models\Media::where('file_path', $filePath)->first();
+            
+            if ($media && $media->temporary_until) {
+                $media->update(['temporary_until' => null]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to mark media as permanent', [
+                'file_path' => $heroImagePath,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Attach media to a post as the featured image using the pivot table.
      */
     private function attachMediaToPost(Post $post, string $heroImagePath): void
     {
@@ -563,14 +612,16 @@ class PostService implements PostServiceContract
             // Extract file path from the URL (remove /storage prefix)
             $filePath = preg_replace('#^/storage#', '', $heroImagePath);
             
-            // Find media by file_path and mark it as attached to this post
-            \App\Models\Media::where('file_path', $filePath)
+            // Find media by file_path
+            $media = \App\Models\Media::where('file_path', $filePath)
                 ->where('user_id', $post->user_id)
-                ->update([
-                    'attached_to' => 'post',
-                    'attached_to_id' => $post->id,
-                    'temporary_until' => null, // Mark as permanent
-                ]);
+                ->first();
+            
+            if ($media) {
+                // Mark as permanent and attach using pivot table
+                $media->update(['temporary_until' => null]);
+                $post->setFeaturedMedia($media->id);
+            }
         } catch (\Exception $e) {
             Log::error('Failed to attach media to post', [
                 'post_id' => $post->id,

@@ -148,12 +148,6 @@ class PesapalGateway implements PaymentGatewayInterface
     protected function getJwtToken(): ?string
     {
         try {
-            \Log::debug('Pesapal JWT Request Debug', [
-                'consumer_key' => $this->consumerKey,
-                'consumer_secret' => $this->consumerSecret,
-                'api_base' => $this->apiBase,
-            ]);
-
             /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::asJson()->post(
                 $this->apiBase.'/Auth/RequestToken',
@@ -292,17 +286,6 @@ class PesapalGateway implements PaymentGatewayInterface
             if ($response->successful()) {
                 return $response->json()['ipn_id'] ?? null;
             }
-
-            \Log::error('Pesapal IPN registration failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-                'url' => $url,
-                'token_prefix' => substr($token, 0, 10),
-                'register_payload' => [
-                    'url' => $url,
-                    'ipn_notification_type' => $this->ipnNotificationType,
-                ],
-            ]);
 
             return null;
         } catch (\Exception $e) {

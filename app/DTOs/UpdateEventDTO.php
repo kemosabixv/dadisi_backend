@@ -25,6 +25,8 @@ class UpdateEventDTO
         public ?array $tag_ids = null,
         public ?array $tickets = null,
         public ?array $speakers = null,
+        public ?int $featured_media_id = null,
+        public ?array $gallery_media_ids = null,
     ) {}
 
     /**
@@ -53,6 +55,8 @@ class UpdateEventDTO
             tag_ids: $data['tag_ids'] ?? null,
             tickets: $data['tickets'] ?? null,
             speakers: $data['speakers'] ?? null,
+            featured_media_id: $data['featured_media_id'] ?? null,
+            gallery_media_ids: $data['gallery_media_ids'] ?? null,
         );
     }
 

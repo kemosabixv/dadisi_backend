@@ -32,8 +32,8 @@ class ListEventsFiltersDTO
     {
         return new self(
             status: $data['status'] ?? null,
-            event_type: $data['event_type'] ?? $data['type'] ?? null,
-            featured: isset($data['featured']) ? (bool) $data['featured'] : null,
+            event_type: $data['event_type'] ?? null,
+            featured: isset($data['featured']) ? filter_var($data['featured'], FILTER_VALIDATE_BOOLEAN) : null,
             organizer_id: isset($data['organizer_id']) ? (int) $data['organizer_id'] : null,
             search: $data['search'] ?? null,
             category_id: isset($data['category_id']) ? (int) $data['category_id'] : null,
@@ -47,7 +47,7 @@ class ListEventsFiltersDTO
             end_date: $data['end_date'] ?? null,
             sort_by: $data['sort_by'] ?? 'starts_at',
             sort_dir: $data['sort_dir'] ?? 'asc',
-            upcoming: isset($data['upcoming']) ? (bool) $data['upcoming'] : false,
+            upcoming: isset($data['upcoming']) ? filter_var($data['upcoming'], FILTER_VALIDATE_BOOLEAN) : false,
             per_page: isset($data['per_page']) ? (int) $data['per_page'] : 15,
         );
     }

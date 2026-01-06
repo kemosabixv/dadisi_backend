@@ -122,10 +122,10 @@ class DonationCampaignAdminController extends Controller
      * @group Admin - Donation Campaigns
      * @authenticated
      */
-    public function show(int $id): JsonResponse
+    public function show(string $campaign): JsonResponse
     {
         try {
-            $campaign = $this->campaignService->getCampaign($id);
+            $campaign = $this->campaignService->getCampaignBySlug($campaign);
 
             return response()->json([
                 'success' => true,
@@ -134,7 +134,7 @@ class DonationCampaignAdminController extends Controller
         } catch (DonationCampaignException $e) {
             return $e->render();
         } catch (\Exception $e) {
-            Log::error('DonationCampaignAdminController show failed', ['error' => $e->getMessage(), 'id' => $id]);
+            Log::error('DonationCampaignAdminController show failed', ['error' => $e->getMessage(), 'campaign' => $campaign]);
             return response()->json(['success' => false, 'message' => 'Failed to retrieve campaign details'], 500);
         }
     }
@@ -145,10 +145,10 @@ class DonationCampaignAdminController extends Controller
      * @group Admin - Donation Campaigns
      * @authenticated
      */
-    public function edit(int $id): JsonResponse
+    public function edit(string $campaign): JsonResponse
     {
         try {
-            $campaign = $this->campaignService->getCampaign($id);
+            $campaign = $this->campaignService->getCampaignBySlug($campaign);
             $counties = $this->campaignService->getCounties();
 
             return response()->json([
@@ -161,7 +161,7 @@ class DonationCampaignAdminController extends Controller
         } catch (DonationCampaignException $e) {
             return $e->render();
         } catch (\Exception $e) {
-            Log::error('DonationCampaignAdminController edit failed', ['error' => $e->getMessage(), 'id' => $id]);
+            Log::error('DonationCampaignAdminController edit failed', ['error' => $e->getMessage(), 'campaign' => $campaign]);
             return response()->json(['success' => false, 'message' => 'Failed to retrieve metadata'], 500);
         }
     }
@@ -176,10 +176,10 @@ class DonationCampaignAdminController extends Controller
      * @urlParam campaign integer required The campaign ID. Example: 1
      * @responseFile status=200 storage/responses/donation-campaign-update.json
      */
-    public function update(UpdateDonationCampaignRequest $request, int $id): JsonResponse
+    public function update(UpdateDonationCampaignRequest $request, string $campaign): JsonResponse
     {
         try {
-            $campaign = DonationCampaign::withTrashed()->findOrFail($id);
+            $campaign = DonationCampaign::withTrashed()->where('slug', $campaign)->firstOrFail();
             $data = $request->validated();
 
             if ($request->hasFile('hero_image')) {
@@ -197,7 +197,7 @@ class DonationCampaignAdminController extends Controller
         } catch (DonationCampaignException $e) {
             return $e->render();
         } catch (\Exception $e) {
-            Log::error('DonationCampaignAdminController update failed', ['error' => $e->getMessage(), 'id' => $id]);
+            Log::error('DonationCampaignAdminController update failed', ['error' => $e->getMessage(), 'campaign' => $campaign]);
             return response()->json(['success' => false, 'message' => 'Failed to update campaign'], 500);
         }
     }
@@ -208,10 +208,10 @@ class DonationCampaignAdminController extends Controller
      * @group Admin - Donation Campaigns
      * @authenticated
      */
-    public function destroy(Request $request, int $id): JsonResponse
+    public function destroy(Request $request, string $campaign): JsonResponse
     {
         try {
-            $campaign = DonationCampaign::findOrFail($id);
+            $campaign = DonationCampaign::where('slug', $campaign)->firstOrFail();
             $this->campaignService->deleteCampaign($request->user(), $campaign);
 
             return response()->json([
@@ -221,7 +221,7 @@ class DonationCampaignAdminController extends Controller
         } catch (DonationCampaignException $e) {
             return $e->render();
         } catch (\Exception $e) {
-            Log::error('DonationCampaignAdminController destroy failed', ['error' => $e->getMessage(), 'id' => $id]);
+            Log::error('DonationCampaignAdminController destroy failed', ['error' => $e->getMessage(), 'campaign' => $campaign]);
             return response()->json(['success' => false, 'message' => 'Failed to delete campaign'], 500);
         }
     }
@@ -256,10 +256,10 @@ class DonationCampaignAdminController extends Controller
      * @group Admin - Donation Campaigns
      * @authenticated
      */
-    public function publish(Request $request, int $id): JsonResponse
+    public function publish(Request $request, string $campaign): JsonResponse
     {
         try {
-            $campaign = DonationCampaign::findOrFail($id);
+            $campaign = DonationCampaign::where('slug', $campaign)->firstOrFail();
             $publishedCampaign = $this->campaignService->publishCampaign($request->user(), $campaign);
 
             return response()->json([
@@ -270,7 +270,7 @@ class DonationCampaignAdminController extends Controller
         } catch (DonationCampaignException $e) {
             return $e->render();
         } catch (\Exception $e) {
-            Log::error('DonationCampaignAdminController publish failed', ['error' => $e->getMessage(), 'id' => $id]);
+            Log::error('DonationCampaignAdminController publish failed', ['error' => $e->getMessage(), 'campaign' => $campaign]);
             return response()->json(['success' => false, 'message' => 'Failed to publish campaign'], 500);
         }
     }
@@ -281,10 +281,10 @@ class DonationCampaignAdminController extends Controller
      * @group Admin - Donation Campaigns
      * @authenticated
      */
-    public function unpublish(Request $request, int $id): JsonResponse
+    public function unpublish(Request $request, string $campaign): JsonResponse
     {
         try {
-            $campaign = DonationCampaign::findOrFail($id);
+            $campaign = DonationCampaign::where('slug', $campaign)->firstOrFail();
             $unpublishedCampaign = $this->campaignService->unpublishCampaign($request->user(), $campaign);
 
             return response()->json([
@@ -295,7 +295,7 @@ class DonationCampaignAdminController extends Controller
         } catch (DonationCampaignException $e) {
             return $e->render();
         } catch (\Exception $e) {
-            Log::error('DonationCampaignAdminController unpublish failed', ['error' => $e->getMessage(), 'id' => $id]);
+            Log::error('DonationCampaignAdminController unpublish failed', ['error' => $e->getMessage(), 'campaign' => $campaign]);
             return response()->json(['success' => false, 'message' => 'Failed to unpublish campaign'], 500);
         }
     }
@@ -306,10 +306,10 @@ class DonationCampaignAdminController extends Controller
      * @group Admin - Donation Campaigns
      * @authenticated
      */
-    public function complete(Request $request, int $id): JsonResponse
+    public function complete(Request $request, string $campaign): JsonResponse
     {
         try {
-            $campaign = DonationCampaign::findOrFail($id);
+            $campaign = DonationCampaign::where('slug', $campaign)->firstOrFail();
             $completedCampaign = $this->campaignService->completeCampaign($request->user(), $campaign);
 
             return response()->json([
@@ -320,7 +320,7 @@ class DonationCampaignAdminController extends Controller
         } catch (DonationCampaignException $e) {
             return $e->render();
         } catch (\Exception $e) {
-            Log::error('DonationCampaignAdminController complete failed', ['error' => $e->getMessage(), 'id' => $id]);
+            Log::error('DonationCampaignAdminController complete failed', ['error' => $e->getMessage(), 'campaign' => $campaign]);
             return response()->json(['success' => false, 'message' => 'Failed to complete campaign'], 500);
         }
     }

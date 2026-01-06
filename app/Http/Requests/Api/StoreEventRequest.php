@@ -53,6 +53,9 @@ class StoreEventRequest extends FormRequest
             
             // Image & Featured
             'image_path' => 'nullable|string|max:500',
+            'featured_media_id' => 'nullable|integer|exists:media,id',
+            'gallery_media_ids' => 'nullable|array',
+            'gallery_media_ids.*' => 'integer|exists:media,id',
             'featured' => 'nullable|boolean',
             'featured_until' => 'nullable|date|after:now',
             
@@ -79,6 +82,7 @@ class StoreEventRequest extends FormRequest
             'speakers.*.company' => 'nullable|string|max:255',
             'speakers.*.bio' => 'nullable|string',
             'speakers.*.is_featured' => 'nullable|boolean',
+            'speakers.*.photo_media_id' => 'nullable|integer|exists:media,id',
         ];
     }
 
@@ -101,7 +105,9 @@ class StoreEventRequest extends FormRequest
             'capacity' => 'event capacity',
             'waitlist_enabled' => 'waitlist enabled',
             'waitlist_capacity' => 'waitlist capacity',
-            'image_path' => 'event image',
+            'image_path' => 'event image path',
+            'featured_media_id' => 'featured image',
+            'gallery_media_ids' => 'gallery images',
             'featured' => 'featured status',
             'featured_until' => 'featured until date',
             'price' => 'event price',
@@ -164,7 +170,9 @@ class StoreEventRequest extends FormRequest
             'capacity' => ['description' => 'Maximum number of attendees', 'example' => 100],
             'waitlist_enabled' => ['description' => 'Enable waitlist for sold-out events', 'example' => true],
             'waitlist_capacity' => ['description' => 'Maximum waitlist size', 'example' => 20],
-            'image_path' => ['description' => 'Path to event image', 'example' => 'events/tech-conf-2025.jpg'],
+            'image_path' => ['description' => 'Path to event image (legacy)', 'example' => 'events/tech-conf-2025.jpg'],
+            'featured_media_id' => ['description' => 'ID of media for featured image', 'example' => 10],
+            'gallery_media_ids' => ['description' => 'IDs of media for gallery', 'example' => [11, 12, 13]],
             'featured' => ['description' => 'Whether event is featured', 'example' => true],
             'featured_until' => ['description' => 'Featured until date', 'example' => '2025-06-01 00:00:00'],
             'price' => ['description' => 'Base event price', 'example' => 500.00],

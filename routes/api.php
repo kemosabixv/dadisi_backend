@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\ExchangeRateController;
 use App\Http\Controllers\Api\Admin\ReconciliationController;
 use App\Http\Controllers\Api\PublicDonationController;
 use App\Http\Controllers\Api\AuditLogController;
+use App\Http\Controllers\Api\Admin\AdminPaymentController;
+use App\Http\Controllers\Api\Admin\FinanceAnalyticsController;
 
 Route::prefix('auth')->group(function () {
 	Route::post('signup', [AuthController::class, 'signup'])->middleware('throttle:5,1')->name('auth.signup');
@@ -290,6 +292,9 @@ Route::prefix('blog')->group(function () {
     Route::get('posts/{post:slug}', [PublicPostController::class, 'show'])->name('blog.posts.show');
     Route::get('categories', [PublicPostController::class, 'categories'])->name('blog.categories.index');
     Route::get('tags', [PublicPostController::class, 'tags'])->name('blog.tags.index');
+
+    // Comments (public: list)
+    Route::get('posts/{slug}/comments', [\App\Http\Controllers\Api\PostCommentController::class, 'index'])->name('blog.posts.comments.index');
 });
 
 // Blog Management - Admin routes (CRUD)
@@ -310,6 +315,9 @@ Route::prefix('admin/blog')->middleware(['auth:sanctum', 'admin'])->group(functi
     Route::delete('posts/{post:slug}/force', [PostAdminController::class, 'forceDelete'])->name('admin.blog.posts.forceDelete');
     Route::post('posts/{post:slug}/publish', [PostAdminController::class, 'publish'])->name('admin.blog.posts.publish');
     Route::post('posts/{post:slug}/unpublish', [PostAdminController::class, 'unpublish'])->name('admin.blog.posts.unpublish');
+
+    // Comments (admin: delete any)
+    Route::delete('comments/{comment}', [\App\Http\Controllers\Api\PostCommentController::class, 'destroy'])->name('admin.blog.comments.destroy');
 
 
     // Categories management - explicit routes
@@ -371,6 +379,15 @@ Route::prefix('blog')->middleware('auth:sanctum')->group(function () {
     Route::get('my-posts', [PublicPostController::class, 'myPosts'])->name('blog.my-posts');
     Route::put('my-posts/{post}', [PublicPostController::class, 'updateUserPost'])->name('blog.my-posts.update');
     Route::delete('my-posts/{post}', [PublicPostController::class, 'destroyUserPost'])->name('blog.my-posts.destroy');
+
+    // Comments (authenticated: create/delete own)
+    Route::post('posts/{slug}/comments', [\App\Http\Controllers\Api\PostCommentController::class, 'store'])->name('blog.posts.comments.store');
+    Route::delete('comments/{comment}', [\App\Http\Controllers\Api\PostCommentController::class, 'destroy'])->name('blog.comments.destroy');
+
+    // Likes (authenticated: toggle, status, likers)
+    Route::post('posts/{slug}/like', [\App\Http\Controllers\Api\PostLikeController::class, 'toggle'])->name('blog.posts.like.toggle');
+    Route::get('posts/{slug}/like-status', [\App\Http\Controllers\Api\PostLikeController::class, 'status'])->name('blog.posts.like.status');
+    Route::get('posts/{slug}/likers', [\App\Http\Controllers\Api\PostLikeController::class, 'likers'])->name('blog.posts.likers');
 });
 
 // Media Management - User routes
@@ -431,6 +448,20 @@ Route::prefix('subscriptions')->middleware('auth:sanctum')->group(function () {
     Route::post('cancel', [SubscriptionCoreController::class, 'cancelSubscription'])->name('subscriptions.cancel');
 
 });
+
+// Admin Finance routes
+Route::prefix('admin/finance')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('analytics', [FinanceAnalyticsController::class, 'stats'])->name('admin.finance.analytics');
+    
+    Route::apiResource('payments', AdminPaymentController::class)
+        ->only(['index', 'show'])
+        ->names([
+            'index' => 'admin.finance.payments.index',
+            'show' => 'admin.finance.payments.show',
+        ]);
+    Route::post('payments/{payment}/refund', [AdminPaymentController::class, 'refund'])->name('admin.finance.payments.refund');
+});
+
 // Student approval routes
 Route::prefix('student-approvals')->middleware('auth:sanctum')->group(function () {
     // User operations
@@ -499,6 +530,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // System Settings
     Route::get('system-settings', [\App\Http\Controllers\Api\Admin\SystemSettingController::class, 'index'])->name('admin.system-settings.index');
     Route::put('system-settings', [\App\Http\Controllers\Api\Admin\SystemSettingController::class, 'update'])->name('admin.system-settings.update');
+
+    // Subscription Management
+    Route::get('subscriptions', [\App\Http\Controllers\Api\Admin\SubscriptionManagementController::class, 'index'])->name('admin.subscriptions.index');
+    Route::get('subscriptions/{subscription}', [\App\Http\Controllers\Api\Admin\SubscriptionManagementController::class, 'show'])->name('admin.subscriptions.show');
 });
 
 // Event Management - Public routes

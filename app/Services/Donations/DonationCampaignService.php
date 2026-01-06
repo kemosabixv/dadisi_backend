@@ -24,7 +24,7 @@ class DonationCampaignService implements DonationCampaignServiceContract
 {
     public function listCampaigns(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = DonationCampaign::query()->with(['county']);
+        $query = DonationCampaign::query()->with(['county', 'media']);
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -48,7 +48,7 @@ class DonationCampaignService implements DonationCampaignServiceContract
     public function listActiveCampaigns(array $filters = [], int $perPage = 12): LengthAwarePaginator
     {
         $query = DonationCampaign::where('status', 'active')
-            ->with(['county']);
+            ->with(['county', 'media']);
 
         if (!empty($filters['county_id'])) {
             $query->where('county_id', $filters['county_id']);
@@ -60,7 +60,7 @@ class DonationCampaignService implements DonationCampaignServiceContract
 
     public function getCampaignBySlug(string $slug): DonationCampaign
     {
-        $campaign = DonationCampaign::where('slug', $slug)->with(['county'])->first();
+        $campaign = DonationCampaign::where('slug', $slug)->with(['county', 'media'])->first();
 
         if (!$campaign) {
             throw DonationCampaignException::notFound($slug);
@@ -71,7 +71,7 @@ class DonationCampaignService implements DonationCampaignServiceContract
 
     public function getCampaign(int $id): DonationCampaign
     {
-        $campaign = DonationCampaign::with(['county'])->find($id);
+        $campaign = DonationCampaign::with(['county', 'media'])->find($id);
 
         if (!$campaign) {
             throw DonationCampaignException::notFound($id);
@@ -111,6 +111,14 @@ class DonationCampaignService implements DonationCampaignServiceContract
                     'user_agent' => request()->userAgent(),
                 ]);
 
+                // Handle Media
+                if (!empty($data['featured_media_id'])) {
+                    $campaign->setFeaturedMedia($data['featured_media_id']);
+                }
+                if (!empty($data['gallery_media_ids'])) {
+                    $campaign->addGalleryMedia($data['gallery_media_ids']);
+                }
+
                 Log::info('Campaign created', [
                     'campaign_id' => $campaign->id,
                     'created_by' => $actor->getAuthIdentifier(),
@@ -144,6 +152,15 @@ class DonationCampaignService implements DonationCampaignServiceContract
 
                 if (!empty($updateData)) {
                     $campaign->update($updateData);
+                }
+
+                // Handle Media
+                if (isset($data['featured_media_id'])) {
+                    $campaign->setFeaturedMedia($data['featured_media_id']);
+                }
+                if (isset($data['gallery_media_ids'])) {
+                     $campaign->media()->wherePivot('role', 'gallery')->detach();
+                     $campaign->addGalleryMedia($data['gallery_media_ids']);
                 }
 
                 AuditLog::create([

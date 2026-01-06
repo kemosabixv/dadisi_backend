@@ -18,7 +18,7 @@ class ListEventsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('admin');
+        return auth()->check() && \App\Support\AdminAccessResolver::canAccessAdmin(auth()->user());
     }
 
     /**
@@ -29,12 +29,14 @@ class ListEventsRequest extends FormRequest
         return [
             'status' => 'nullable|string|in:draft,pending_approval,published,rejected,cancelled,suspended,all',
             'event_type' => 'nullable|string|in:organization,user',
-            'featured' => 'nullable|boolean',
+            'featured' => 'nullable|in:true,false,1,0',
             'organizer_id' => 'nullable|integer|exists:users,id',
             'search' => 'nullable|string|max:255',
             'sort_by' => 'nullable|string|in:title,starts_at,status,created_at',
             'sort_dir' => 'nullable|string|in:asc,desc',
-            'upcoming' => 'nullable|boolean',
+            'upcoming' => 'nullable|in:true,false,1,0',
+            'type' => 'nullable|string|in:online,in_person',
+            'timeframe' => 'nullable|string|in:upcoming,past,all',
             'per_page' => 'nullable|integer|min:1|max:100',
         ];
     }

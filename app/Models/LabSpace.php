@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LabSpace extends Model
@@ -42,6 +43,7 @@ class LabSpace extends Model
         'type_name',
         'is_active',
         'amenities',
+        'gallery_media',
     ];
 
     // ==================== Constants ====================
@@ -63,6 +65,53 @@ class LabSpace extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(LabBooking::class);
+    }
+
+    /**
+     * Polymorphic media relationship via media_attachments pivot.
+     */
+    public function media(): MorphToMany
+    {
+        return $this->morphToMany(Media::class, 'attachable', 'media_attachments')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get featured media.
+     */
+    public function featuredMedia()
+    {
+        return $this->media->firstWhere('pivot.role', 'featured');
+    }
+
+    /**
+     * Get gallery media.
+     */
+    public function galleryMedia()
+    {
+        return $this->media->where('pivot.role', 'gallery');
+    }
+
+    /**
+     * Set featured media by ID.
+     */
+    public function setFeaturedMedia(?int $mediaId): void
+    {
+        $this->media()->wherePivot('role', 'featured')->detach();
+        if ($mediaId) {
+            $this->media()->attach($mediaId, ['role' => 'featured']);
+        }
+    }
+
+    /**
+     * Add gallery media by IDs.
+     */
+    public function addGalleryMedia(array $mediaIds): void
+    {
+        foreach ($mediaIds as $id) {
+            $this->media()->attach($id, ['role' => 'gallery']);
+        }
     }
 
     // ==================== Scopes ====================
@@ -111,9 +160,17 @@ class LabSpace extends Model
 
     /**
      * Get the image URL for the lab space.
+     * Prioritizes polymorphic featured media, falls back to legacy image_path.
      */
     public function getImageUrlAttribute(): ?string
     {
+        // Check polymorphic featured media first
+        $featured = $this->featuredMedia();
+        if ($featured) {
+            return $featured->url;
+        }
+
+        // Fallback to legacy image_path
         if (!$this->image_path) {
             return null;
         }
@@ -123,9 +180,17 @@ class LabSpace extends Model
             return $this->image_path;
         }
 
-        // Otherwise, generate storage URL
-        return asset('storage/' . $this->image_path);
-    }
+    // Otherwise, generate storage URL
+    return asset('storage/' . $this->image_path);
+}
+
+/**
+ * Get gallery media (for frontend compatibility).
+ */
+public function getGalleryMediaAttribute()
+{
+    return $this->media->where('pivot.role', 'gallery')->values();
+}
 
     /**
      * Get human-readable type name.

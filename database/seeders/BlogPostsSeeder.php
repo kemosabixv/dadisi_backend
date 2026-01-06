@@ -249,6 +249,7 @@ class BlogPostsSeeder extends Seeder
                     'published_at' => $pData['status'] === 'published' ? now() : null,
                     'meta_title' => Str::limit($pData['title'], 57),
                     'meta_description' => Str::limit(strip_tags($pData['body']), 157),
+                    'allow_comments' => rand(1, 10) > 2, // 80% chance of allowing comments
                 ]
             );
 

@@ -31,6 +31,10 @@ class SpeakerService implements SpeakerServiceContract
             $speaker->update(['photo_path' => $path]);
         }
 
+        if (!empty($data['photo_media_id'])) {
+            $speaker->setPhotoMedia($data['photo_media_id']);
+        }
+
         return $speaker->fresh();
     }
 
@@ -47,6 +51,10 @@ class SpeakerService implements SpeakerServiceContract
             }
             $path = $data['photo_file']->store('events/speakers', 'public');
             $speaker->update(['photo_path' => $path]);
+        }
+
+        if (!empty($data['photo_media_id'])) {
+            $speaker->setPhotoMedia($data['photo_media_id']);
         }
 
         return $speaker->fresh();

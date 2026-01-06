@@ -29,6 +29,8 @@ class CreateEventDTO
         public ?array $tag_ids = null,
         public ?array $tickets = null,
         public ?array $speakers = null,
+        public ?int $featured_media_id = null,
+        public ?array $gallery_media_ids = null,
     ) {}
 
     /**
@@ -58,6 +60,8 @@ class CreateEventDTO
             tag_ids: $data['tag_ids'] ?? null,
             tickets: $data['tickets'] ?? null,
             speakers: $data['speakers'] ?? null,
+            featured_media_id: $data['featured_media_id'] ?? null,
+            gallery_media_ids: $data['gallery_media_ids'] ?? null,
         );
     }
 
@@ -88,6 +92,8 @@ class CreateEventDTO
             'tag_ids' => $this->tag_ids,
             'tickets' => $this->tickets,
             'speakers' => $this->speakers,
+            'featured_media_id' => $this->featured_media_id,
+            'gallery_media_ids' => $this->gallery_media_ids,
         ];
     }
 }

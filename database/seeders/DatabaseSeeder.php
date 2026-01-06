@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             SampleEventsSeeder::class,
             SampleAuthorsSeeder::class,
             BlogPostsSeeder::class,
+            BlogInteractionsSeeder::class,
             DonationCampaignSeeder::class,
             DonationSeeder::class,
             SampleRegistrationsSeeder::class,

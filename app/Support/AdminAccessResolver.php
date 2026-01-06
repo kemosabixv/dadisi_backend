@@ -2,8 +2,8 @@
 
 namespace App\Support;
 
-use Illuminate\Support\Facades\Log;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Centralized admin access resolver.
@@ -19,7 +19,6 @@ class AdminAccessResolver
      * - OR member profile `is_staff` is truthy
      *
      * @param  \App\Models\User|int|null  $user
-     * @return bool
      */
     public static function canAccessAdmin($user): bool
     {
@@ -44,33 +43,36 @@ class AdminAccessResolver
                 'events_manager',
                 'content_editor', 'editor',
                 'moderator', 'forum_moderator',
+                'lab_manager',
             ];
 
-            // Spatie's hasAnyRole will handle arrays and return false if roles are absent.
+            // Spatie's hasAnyRole checks roles regardless of guard by default
             if (method_exists($user, 'hasAnyRole')) {
-                // Check if user has any of the admin roles
-                $hasRole = $user->hasAnyRole($roles) ||
-                           $user->hasAnyRole($roles, 'api');
+                // Check if user has any of the admin roles (Spatie checks all guards the model uses)
+                $hasRole = $user->hasAnyRole($roles);
 
                 Log::info('AdminAccessResolver check', [
                     'user_id' => $user->id,
-                    'roles_checked' => $roles,
+                    'user_email' => $user->email,
                     'has_role' => $hasRole,
-                    'user_roles' => $user->getRoleNames()
+                    'user_roles' => $user->getRoleNames()->toArray(),
+                    'check_result' => $hasRole ? 'GRANTED' : 'DENIED',
                 ]);
+
                 if ($hasRole) {
                     return true;
                 }
             }
 
             // Fallback: member profile flag
-            if (isset($user->memberProfile) && !empty($user->memberProfile->is_staff)) {
+            if (isset($user->memberProfile) && ! empty($user->memberProfile->is_staff)) {
                 return true;
             }
 
             return false;
         } catch (\Throwable $e) {
             Log::warning('AdminAccessResolver error: '.$e->getMessage());
+
             return false;
         }
     }

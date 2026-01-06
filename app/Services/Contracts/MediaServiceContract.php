@@ -57,7 +57,7 @@ interface MediaServiceContract
      *
      * @throws \App\Exceptions\MediaException If unauthorized or deletion fails
      */
-    public function deleteMedia(Authenticatable $user, Media $media): bool;
+    public function deleteMedia(Authenticatable $user, Media $media, bool $force = false): bool;
 
     /**
      * Rename a media file
@@ -127,7 +127,7 @@ interface MediaServiceContract
      * @param Authenticatable|null $user The user to check quotas for
      * @return array ['valid' => bool, 'type' => string|null, 'error' => string|null]
      */
-    public function validateFile(\Illuminate\Http\UploadedFile $file, Authenticatable $user = null): array;
+    public function validateFile(\Illuminate\Http\UploadedFile $file, ?Authenticatable $user = null): array;
 
     /**
      * Get allowed MIME types

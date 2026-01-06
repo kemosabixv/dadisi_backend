@@ -27,6 +27,9 @@ class StoreDonationCampaignRequest extends FormRequest
             'minimum_amount' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'in:KES,USD'],
             'hero_image' => ['nullable', 'image', 'max:5120'], // 5MB
+            'featured_media_id' => ['nullable', 'integer', 'exists:media,id'],
+            'gallery_media_ids' => ['nullable', 'array'],
+            'gallery_media_ids.*' => ['integer', 'exists:media,id'],
             'county_id' => ['nullable', 'exists:counties,id'],
             'starts_at' => ['nullable', 'date', 'after_or_equal:today'],
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
@@ -44,6 +47,8 @@ class StoreDonationCampaignRequest extends FormRequest
             'minimum_amount' => ['description' => 'Minimum donation amount', 'example' => 100],
             'currency' => ['description' => 'Currency (KES or USD)', 'example' => 'KES'],
             'hero_image' => ['description' => 'Campaign hero image file (optional)', 'example' => null],
+            'featured_media_id' => ['description' => 'ID of media for featured image', 'example' => 10],
+            'gallery_media_ids' => ['description' => 'IDs of media for gallery', 'example' => [11, 12]],
             'county_id' => ['description' => 'Associated county ID', 'example' => 1],
             'starts_at' => ['description' => 'Campaign start date', 'example' => '2025-01-01'],
             'ends_at' => ['description' => 'Campaign end date', 'example' => '2025-01-31'],

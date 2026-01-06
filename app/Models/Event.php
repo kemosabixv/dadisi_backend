@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Event extends Model
@@ -246,10 +247,62 @@ class Event extends Model
      */
     public function getImageUrlAttribute(): ?string
     {
+        // First try to get from media system
+        $featuredMedia = $this->featuredMedia();
+        if ($featuredMedia) {
+            return asset('storage/' . $featuredMedia->file_path);
+        }
+
+        // Fall back to direct field
         if (!$this->image_path) {
             return null;
         }
 
         return asset('storage/' . $this->image_path);
+    }
+
+    /**
+     * Media relationship (attached images via polymorphic pivot)
+     */
+    public function media(): MorphToMany
+    {
+        return $this->morphToMany(Media::class, 'attachable', 'media_attachments')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the featured image media (role = 'featured')
+     */
+    public function featuredMedia(): ?Media
+    {
+        return $this->media()->wherePivot('role', 'featured')->first();
+    }
+
+    /**
+     * Get gallery images (role = 'gallery')
+     */
+    public function galleryMedia()
+    {
+        return $this->media()->wherePivot('role', 'gallery');
+    }
+
+    /**
+     * Attach media as featured image (replaces existing featured)
+     */
+    public function setFeaturedMedia(int $mediaId): void
+    {
+        $this->media()->wherePivot('role', 'featured')->detach();
+        $this->media()->attach($mediaId, ['role' => 'featured']);
+    }
+
+    /**
+     * Attach media as gallery images
+     */
+    public function addGalleryMedia(array $mediaIds): void
+    {
+        foreach ($mediaIds as $id) {
+            $this->media()->syncWithoutDetaching([$id => ['role' => 'gallery']]);
+        }
     }
 }

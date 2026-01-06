@@ -184,6 +184,6 @@ class PlanSubscription extends BaseSubscription
      */
     public function user()
     {
-        return $this->morphTo('subscriber', 'subscriber_type', 'subscriber_id', 'id');
+        return $this->morphTo('subscriber');
     }
 }

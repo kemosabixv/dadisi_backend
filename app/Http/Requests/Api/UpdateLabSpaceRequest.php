@@ -37,6 +37,9 @@ class UpdateLabSpaceRequest extends FormRequest
             'safety_requirements' => ['nullable', 'array'],
             'safety_requirements.*' => ['string'],
             'is_available' => ['nullable', 'boolean'],
+            'featured_media_id' => ['nullable', 'integer', 'exists:media,id'],
+            'gallery_media_ids' => ['nullable', 'array'],
+            'gallery_media_ids.*' => ['integer', 'exists:media,id'],
         ];
     }
 
@@ -51,6 +54,8 @@ class UpdateLabSpaceRequest extends FormRequest
             'equipment_list' => ['description' => 'Lab equipment', 'example' => ['projector', 'wifi', 'fume hood']],
             'safety_requirements' => ['description' => 'Safety requirements', 'example' => ['lab coat', 'goggles', 'gloves']],
             'is_available' => ['description' => 'Lab is available for booking', 'example' => true],
+            'featured_media_id' => ['description' => 'Featured image media ID', 'example' => 1],
+            'gallery_media_ids' => ['description' => 'Gallery media IDs', 'example' => [2, 3, 4]],
         ];
     }
 }
