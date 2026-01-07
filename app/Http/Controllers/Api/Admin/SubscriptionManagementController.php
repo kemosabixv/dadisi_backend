@@ -100,6 +100,7 @@ class SubscriptionManagementController extends Controller
                     'plan_id' => $sub->plan_id,
                     'plan_name' => $sub->plan?->name,
                     'plan_display_name' => $planDisplayName,
+                    'plan_price' => (float)($sub->plan?->price ?? 0),
                     'status' => $sub->status,
                     'starts_at' => $sub->starts_at,
                     'ends_at' => $sub->ends_at,
@@ -139,13 +140,52 @@ class SubscriptionManagementController extends Controller
     {
         abort_unless(auth()->user()->can('view_subscriptions'), 403, 'Unauthorized');
 
-        $subscription->load('plan');
-        $subscription->load('enhancements');
-        $subscription->load('subscriber.memberProfile');
+        $subscription->load([
+            'plan',
+            'enhancements',
+            'subscriber.memberProfile',
+            'payments' => function($q) { $q->latest(); },
+            'auditLogs' => function($q) { $q->latest(); }
+        ]);
 
         return response()->json([
             'success' => true,
             'data' => $subscription
         ]);
+    }
+
+    /**
+     * Terminate a subscription immediately
+     *
+     * @authenticated
+     */
+    public function cancel(PlanSubscription $subscription): JsonResponse
+    {
+        abort_unless(auth()->user()->can('manage_subscriptions'), 403, 'Unauthorized');
+
+        try {
+            // Cancel immediately
+            $subscription->cancel(true);
+            
+            \App\Models\AuditLog::log(
+                'subscription.cancelled', 
+                $subscription, 
+                ['status' => 'active'], 
+                ['status' => 'cancelled'], 
+                'Cancelled by administrator'
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Subscription cancelled successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Admin Subscription Cancellation Error', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to cancel subscription',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

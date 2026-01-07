@@ -159,7 +159,7 @@ class ForumThread extends Model
             $key = 'user_id';
         }
 
-        if ($key === 'category') {
+        if ($key === 'category_slug') {
             return $this;
         }
 
@@ -175,9 +175,9 @@ class ForumThread extends Model
     }
 
     /**
-     * Accessor: category (legacy compatibility for tests)
+     * Accessor: category_slug (legacy compatibility for tests)
      */
-    public function getCategoryAttribute(): ?string
+    public function getCategorySlugAttribute(): ?string
     {
         return $this->category?->slug;
     }

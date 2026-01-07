@@ -41,7 +41,7 @@ class PaymentSuccessMail extends Mailable
             ->view('emails.payment_success')
             ->with([
                 'payment' => $this->payment,
-                'payable' => $this->payment->payable,
+                'payable' => $this->payment->payable ?? null,
             ]);
     }
 }

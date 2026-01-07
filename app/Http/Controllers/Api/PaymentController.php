@@ -292,6 +292,28 @@ class PaymentController extends Controller
                 'meta' => $meta,
             ]);
 
+            // SIMULATE WEBHOOK: Create an event record so it shows up in the admin monitor
+            try {
+                \App\Models\WebhookEvent::create([
+                    'provider' => 'mock',
+                    'event_type' => 'COMPLETED',
+                    'external_id' => $payment->external_reference ?? $payment->transaction_id ?? 'MOCK_' . uniqid(),
+                    'order_reference' => $payment->order_reference ?? $payment->reference,
+                    'payload' => [
+                        'status' => 'completed',
+                        'amount' => $payment->amount,
+                        'currency' => $payment->currency,
+                        'payment_id' => $payment->id,
+                        'is_simulated' => true,
+                        'source' => 'mock_completion'
+                    ],
+                    'status' => 'processed',
+                    'processed_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('Failed to log simulated webhook event: ' . $e->getMessage());
+            }
+
             // Only process payable if it's a real payment (not a test marker)
             if (!$this->isTestPayment($payment)) {
                 $this->activatePayable($payment);
@@ -326,7 +348,9 @@ class PaymentController extends Controller
     private function isTestPayment(\App\Models\Payment $payment): bool
     {
         return $payment->payable_type === null || 
+               $payment->payable_type === 'test' ||
                $payment->payable_type === 'TestPayment' ||
+               $payment->payable_type === 'App\\Models\\TestPayment' ||
                str_contains($payment->payable_type ?? '', 'Test') ||
                ($payment->meta['test_payment'] ?? false);
     }
@@ -589,8 +613,10 @@ class PaymentController extends Controller
 
             // Create the payment record (using placeholder values for test payments since columns are NOT NULL)
             $payment = \App\Models\Payment::create([
-                'payable_type' => 'TestPayment', // Marker for test payments (column is NOT NULL)
+                'reference' => 'TEST-' . strtoupper(\Illuminate\Support\Str::random(10)), // Added reference for table display
+                'payable_type' => 'App\\Models\\TestPayment', // Marker for test payments
                 'payable_id' => 0,               // Zero indicates no real payable
+                'payer_id' => auth()->id(),      // Set the authenticated user as the payer
                 'gateway' => 'mock',
                 'method' => 'test',
                 'status' => 'pending',
@@ -674,8 +700,9 @@ class PaymentController extends Controller
 
             // Create a temporary payment record to track this test
             $payment = \App\Models\Payment::create([
-                'user_id' => auth()->id(),
+                'payer_id' => auth()->id(),      // Set the authenticated user as the payer
                 'transaction_id' => $trackingId,
+                'reference' => 'TEST-PESAPAL-' . strtoupper(\Illuminate\Support\Str::random(4)), // Added reference
                 'external_reference' => null, // Will be filled after initiation
                 'order_reference' => $merchantReference,
                 'amount' => $validated['amount'],

@@ -534,6 +534,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // Subscription Management
     Route::get('subscriptions', [\App\Http\Controllers\Api\Admin\SubscriptionManagementController::class, 'index'])->name('admin.subscriptions.index');
     Route::get('subscriptions/{subscription}', [\App\Http\Controllers\Api\Admin\SubscriptionManagementController::class, 'show'])->name('admin.subscriptions.show');
+    Route::post('subscriptions/{subscription}/cancel', [\App\Http\Controllers\Api\Admin\SubscriptionManagementController::class, 'cancel'])->name('admin.subscriptions.cancel');
 });
 
 // Event Management - Public routes

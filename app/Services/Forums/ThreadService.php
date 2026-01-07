@@ -466,8 +466,8 @@ class ThreadService implements ForumServiceContract
                     'id' => $thread->id,
                     'type' => 'thread',
                     'title' => $thread->title,
-                    'user' => $thread->user->username ?? 'Unknown',
-                    'category' => $thread->category->name ?? 'None',
+                    'user' => $thread->user?->username ?? 'Unknown',
+                    'category' => $thread->category?->name ?? 'None',
                     'created_at' => $thread->created_at,
                 ];
             })

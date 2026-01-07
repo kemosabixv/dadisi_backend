@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravelcm\Subscriptions\Models\Subscription as BaseSubscription;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class PlanSubscription extends BaseSubscription
 {
@@ -63,6 +64,10 @@ class PlanSubscription extends BaseSubscription
         'user_id',
         'expires_at',
         'plan',
+        'subscriber',
+        'enhancements',
+        'payments',
+        'auditLogs',
     ];
 
     /**
@@ -185,5 +190,21 @@ class PlanSubscription extends BaseSubscription
     public function user()
     {
         return $this->morphTo('subscriber');
+    }
+
+    /**
+     * Get all payments associated with this subscription.
+     */
+    public function payments(): MorphMany
+    {
+        return $this->morphMany(Payment::class, 'payable');
+    }
+
+    /**
+     * Get all audit logs for this subscription.
+     */
+    public function auditLogs(): MorphMany
+    {
+        return $this->morphMany(AuditLog::class, 'model');
     }
 }

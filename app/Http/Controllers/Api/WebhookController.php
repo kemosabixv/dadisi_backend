@@ -93,6 +93,11 @@ class WebhookController extends Controller
             $filters = [
                 'provider' => $request->input('provider'),
                 'status' => $request->input('status'),
+                'event_type' => $request->input('event_type'),
+                'date_from' => $request->input('date_from'),
+                'date_to' => $request->input('date_to'),
+                'order_by' => $request->input('order_by'),
+                'order_dir' => $request->input('order_dir'),
                 'per_page' => $request->input('per_page', 50),
             ];
 

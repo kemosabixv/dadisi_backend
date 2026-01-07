@@ -20,6 +20,7 @@ class ExchangeRate extends Model
     protected $casts = [
         'rate' => 'decimal:6',
         'inverse_rate' => 'decimal:6',
+        'cache_minutes' => 'integer',
         'last_updated' => 'datetime',
     ];
 

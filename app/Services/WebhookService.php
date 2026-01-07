@@ -100,7 +100,22 @@ class WebhookService implements WebhookServiceContract
                 $query->where('status', $filters['status']);
             }
 
-            return $query->orderBy('created_at', 'desc')
+            if (!empty($filters['event_type'])) {
+                $query->where('event_type', $filters['event_type']);
+            }
+
+            if (!empty($filters['date_from'])) {
+                $query->whereDate('created_at', '>=', $filters['date_from']);
+            }
+
+            if (!empty($filters['date_to'])) {
+                $query->whereDate('created_at', '<=', $filters['date_to']);
+            }
+
+            $orderField = $filters['order_by'] ?? 'created_at';
+            $orderDir = $filters['order_dir'] ?? 'desc';
+
+            return $query->orderBy($orderField, $orderDir)
                 ->paginate($filters['per_page'] ?? 50);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve webhook events', ['error' => $e->getMessage()]);

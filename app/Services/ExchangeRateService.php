@@ -146,7 +146,7 @@ class ExchangeRateService implements ExchangeRateServiceContract
             'usd_to_kes_rate' => (float) $exchangeRate->rate,
             'last_updated' => $exchangeRate->last_updated?->toIso8601String(),
             'next_auto_refresh' => $exchangeRate->last_updated
-                ? $exchangeRate->last_updated->addMinutes($exchangeRate->cache_minutes)->toIso8601String()
+                ? $exchangeRate->last_updated->addMinutes((int) $exchangeRate->cache_minutes)->toIso8601String()
                 : null,
             'cache_time_days' => intval($exchangeRate->cache_minutes / 1440),
             'cache_minutes' => (int) $exchangeRate->cache_minutes,

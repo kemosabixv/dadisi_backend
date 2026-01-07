@@ -28,6 +28,7 @@ class AdminPaymentController extends Controller
      * List all payments with advanced filtering and search
      *
      * @authenticated
+     *
      * @queryParam status string Filter by status (paid, pending, refunded, failed, canceled).
      * @queryParam type string Filter by payable type (e.g., event_order, donation, subscription).
      * @queryParam search string Search by payer name, email, or reference.
@@ -40,20 +41,42 @@ class AdminPaymentController extends Controller
         abort_unless(auth()->user()?->can('manage_payments'), 403, 'Unauthorized');
 
         try {
-            $query = Payment::query()->with(['payer', 'payable']);
+            // Test payment types (don't have real payable entities)
+            $testPayableTypes = [
+                'TestPayment',
+                'App\\Models\\TestPayment',
+                'test',
+            ];
+
+            // Real payment types with actual payable models
+            $realPayableTypes = [
+                'App\\Models\\EventOrder',
+                'App\\Models\\Donation',
+                'App\\Models\\PlanSubscription',
+                'Laravelcm\\Subscriptions\\Models\\Subscription',
+            ];
+
+            // Include all valid types
+            $validPayableTypes = array_merge($realPayableTypes, $testPayableTypes);
+
+            // Build query - only eager load payer (safe for all payment types)
+            // Payable is NOT eager loaded because test payments don't have real payable entities
+            $query = Payment::query()
+                ->whereIn('payable_type', $validPayableTypes)
+                ->with(['payer']);
 
             // Search by Payer or Reference
             if ($request->filled('search')) {
                 $search = $request->input('search');
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('reference', 'like', "%{$search}%")
-                      ->orWhere('external_reference', 'like', "%{$search}%")
-                      ->orWhere('transaction_id', 'like', "%{$search}%")
-                      ->orWhereHas('payer', function($pq) use ($search) {
-                          $pq->where('name', 'like', "%{$search}%")
-                             ->orWhere('email', 'like', "%{$search}%")
-                             ->orWhere('username', 'like', "%{$search}%");
-                      });
+                        ->orWhere('external_reference', 'like', "%{$search}%")
+                        ->orWhere('transaction_id', 'like', "%{$search}%")
+                        ->orWhereHas('payer', function ($pq) use ($search) {
+                            $pq->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhere('username', 'like', "%{$search}%");
+                        });
                 });
             }
 
@@ -83,25 +106,51 @@ class AdminPaymentController extends Controller
                 $query->whereDate('created_at', '<=', $request->input('date_to'));
             }
 
-            $payments = $query->orderBy('created_at', 'desc')
-                              ->paginate($request->get('per_page', 15));
+            $paginated = $query->orderBy('created_at', 'desc')
+                ->paginate($request->get('per_page', 15));
+
+            // Eagerly resolve "Guest" payers that are actually registered users by email
+            $items = $paginated->items();
+            $guestEmails = [];
+            foreach ($items as $payment) {
+                if (!$payment->payer_id && isset($payment->meta['user_email'])) {
+                    $guestEmails[] = $payment->meta['user_email'];
+                }
+            }
+
+            if (!empty($guestEmails)) {
+                $registeredUsers = \App\Models\User::whereIn('email', array_unique($guestEmails))
+                    ->with('memberProfile')
+                    ->get()
+                    ->keyBy('email');
+
+                foreach ($items as $payment) {
+                    if (!$payment->payer_id && isset($payment->meta['user_email'])) {
+                        $user = $registeredUsers->get($payment->meta['user_email']);
+                        if ($user) {
+                            // Set as temporary attribute or override relationship if needed for API uniformity
+                            $payment->setRelation('payer', $user);
+                        }
+                    }
+                }
+            }
 
             return response()->json([
                 'success' => true,
-                'data' => $payments->items(),
+                'data' => $items,
                 'meta' => [
-                    'current_page' => $payments->currentPage(),
-                    'last_page' => $payments->lastPage(),
-                    'total' => $payments->total(),
-                    'per_page' => $payments->perPage(),
+                    'last_page' => $paginated->lastPage(),
+                    'total' => $paginated->total(),
+                    'per_page' => $paginated->perPage(),
                 ],
             ]);
         } catch (\Exception $e) {
             Log::error('Admin Payment List Error', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve payments',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -115,11 +164,31 @@ class AdminPaymentController extends Controller
     {
         abort_unless(auth()->user()->can('manage_payments'), 403, 'Unauthorized');
 
-        $payment->load(['payer', 'payable']);
+        // Conditionally load payable only if it's a real model
+        $isTest = $payment->payable_type === 'test' || 
+                  $payment->payable_type === 'TestPayment' ||
+                  $payment->payable_type === 'App\\Models\\TestPayment' ||
+                  ($payment->meta['test_payment'] ?? false);
+
+        if ($isTest) {
+            $payment->load(['payer']);
+        } else {
+            $payment->load(['payer', 'payable']);
+        }
+
+        // Resolve "Guest" payer if it's actually a registered user
+        if (!$payment->payer && isset($payment->meta['user_email'])) {
+            $user = \App\Models\User::where('email', $payment->meta['user_email'])
+                ->with('memberProfile')
+                ->first();
+            if ($user) {
+                $payment->setRelation('payer', $user);
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'data' => $payment
+            'data' => $payment,
         ]);
     }
 
@@ -139,19 +208,20 @@ class AdminPaymentController extends Controller
         try {
             $result = $this->paymentService->refundPayment(auth()->user(), [
                 'transaction_id' => $payment->transaction_id ?? $payment->external_reference ?? $payment->id,
-                'reason' => $request->input('reason')
+                'reason' => $request->input('reason'),
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Refund processed successfully',
-                'data' => $result
+                'data' => $result,
             ]);
         } catch (\Exception $e) {
             Log::error('Admin Refund Error', ['error' => $e->getMessage(), 'payment_id' => $payment->id]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Refund failed: ' . $e->getMessage()
+                'message' => 'Refund failed: '.$e->getMessage(),
             ], 400);
         }
     }

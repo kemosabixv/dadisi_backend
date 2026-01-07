@@ -32,7 +32,7 @@ class PaymentFailedReminderMail extends Mailable
             ->view('emails.payment_failed_reminder')
             ->with([
                 'payment' => $this->payment,
-                'payable' => $this->payment->payable,
+                'payable' => $this->payment->payable ?? null,
                 'reason' => $this->reason,
             ]);
     }

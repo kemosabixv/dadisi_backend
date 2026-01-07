@@ -60,7 +60,7 @@ class AuditLogController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = AuditLog::query();
+            $query = AuditLog::with(['user']);
 
             // Filter by model type
             if ($request->filled('model_type')) {
@@ -180,7 +180,8 @@ class AuditLogController extends Controller
                 'model_id' => 'required|integer',
             ]);
 
-            $logs = AuditLog::where('model_type', $request->input('model_type'))
+            $logs = AuditLog::with(['user'])
+                ->where('model_type', $request->input('model_type'))
                 ->where('model_id', $request->input('model_id'))
                 ->latest()
                 ->paginate($request->input('per_page', 50));
@@ -229,7 +230,8 @@ class AuditLogController extends Controller
                 'user_id' => 'required|integer',
             ]);
 
-            $logs = AuditLog::where('user_id', $request->input('user_id'))
+            $logs = AuditLog::with(['user'])
+                ->where('user_id', $request->input('user_id'))
                 ->latest()
                 ->paginate($request->input('per_page', 50));
 
