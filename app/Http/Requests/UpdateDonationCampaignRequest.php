@@ -12,8 +12,10 @@ class UpdateDonationCampaignRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        $campaign = $this->route('campaign');
-        return $this->user()->can('update', $campaign);
+        // Patch: resolve campaign from slug for correct authorization
+        $slug = $this->route('campaign');
+        $campaign = \App\Models\DonationCampaign::where('slug', $slug)->first();
+        return $campaign && $this->user()->can('update', $campaign);
     }
 
     /**

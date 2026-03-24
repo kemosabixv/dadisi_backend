@@ -101,7 +101,7 @@ class PublicDonationCampaignController extends Controller
             // Validate campaign status and amount through service
             $this->campaignService->validateCampaignForDonation($campaign, (float) $validated['amount']);
 
-            $user = $request->user('sanctum');
+            $user = $request->user();
             
             $donationData = [
                 'donor_name' => $validated['first_name'] . ' ' . $validated['last_name'],

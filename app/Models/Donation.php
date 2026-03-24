@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -60,10 +61,9 @@ class Donation extends Model
     /**
      * Get the payment associated with this donation
      */
-    public function payment(): HasOne
+    public function payment(): MorphOne
     {
-        return $this->hasOne(Payment::class, 'payable_id')
-            ->where('payable_type', 'donation');
+        return $this->morphOne(Payment::class, 'payable');
     }
 
     /**

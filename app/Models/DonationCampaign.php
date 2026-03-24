@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,7 +12,7 @@ use Illuminate\Support\Str;
 
 class DonationCampaign extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'title',
@@ -21,10 +22,11 @@ class DonationCampaign extends Model
         'goal_amount',
         'minimum_amount',
         'currency',
-        'hero_image_path',
         'status',
         'county_id',
         'created_by',
+        'current_amount',
+        'donor_count',
         'starts_at',
         'ends_at',
         'published_at',
@@ -72,9 +74,14 @@ class DonationCampaign extends Model
 
     /**
      * Get the total amount donated to this campaign.
+     * Fallback to dynamic calculation if the column is null (safety).
      */
-    public function getCurrentAmountAttribute(): float
+    public function getCurrentAmountAttribute($value): float
     {
+        if ($value !== null) {
+            return (float) $value;
+        }
+
         return (float) $this->donations()->where('status', 'paid')->sum('amount');
     }
 
@@ -83,19 +90,25 @@ class DonationCampaign extends Model
      */
     public function getProgressPercentageAttribute(): float
     {
-        if (!$this->goal_amount || $this->goal_amount <= 0) {
+        if (! $this->goal_amount || $this->goal_amount <= 0) {
             return 0;
         }
 
         $percentage = ($this->current_amount / $this->goal_amount) * 100;
+
         return min(100, round($percentage, 2));
     }
 
     /**
      * Get the number of unique donors.
+     * Fallback to dynamic calculation if the column is null (safety).
      */
-    public function getDonorCountAttribute(): int
+    public function getDonorCountAttribute($value): int
     {
+        if ($value !== null) {
+            return (int) $value;
+        }
+
         return $this->donations()
             ->where('status', 'paid')
             ->distinct('donor_email')
@@ -107,7 +120,7 @@ class DonationCampaign extends Model
      */
     public function getIsGoalReachedAttribute(): bool
     {
-        if (!$this->goal_amount || $this->goal_amount <= 0) {
+        if (! $this->goal_amount || $this->goal_amount <= 0) {
             return false;
         }
 
@@ -115,22 +128,13 @@ class DonationCampaign extends Model
     }
 
     /**
-     * Get the full URL for the hero image.
+     * Get the full URL for the hero image (CAS/R2 only).
      */
     public function getHeroImageUrlAttribute(): ?string
     {
-        // First try to get from media system
         $featuredMedia = $this->featuredMedia();
-        if ($featuredMedia) {
-            return asset('storage/' . $featuredMedia->file_path);
-        }
 
-        // Fall back to direct field
-        if (!$this->hero_image_path) {
-            return null;
-        }
-
-        return asset('storage/' . $this->hero_image_path);
+        return $featuredMedia ? $featuredMedia->url : null;
     }
 
     /**
@@ -164,8 +168,14 @@ class DonationCampaign extends Model
      */
     public function setFeaturedMedia(int $mediaId): void
     {
+        $old = $this->featuredMedia();
+        if ($old) {
+            $old->decrement('usage_count');
+        }
+
         $this->media()->wherePivot('role', 'featured')->detach();
         $this->media()->attach($mediaId, ['role' => 'featured']);
+        Media::find($mediaId)?->increment('usage_count');
     }
 
     /**
@@ -174,8 +184,49 @@ class DonationCampaign extends Model
     public function addGalleryMedia(array $mediaIds): void
     {
         foreach ($mediaIds as $id) {
-            $this->media()->syncWithoutDetaching([$id => ['role' => 'gallery']]);
+            if (! $this->media()->wherePivot('role', 'gallery')->where('media_id', $id)->exists()) {
+                $this->media()->attach($id, ['role' => 'gallery']);
+                Media::find($id)?->increment('usage_count');
+            }
         }
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->slug)) {
+                $model->slug = static::generateUniqueSlug($model->title);
+            }
+        });
+
+        static::updating(function ($model) {
+            if ($model->isDirty('title') && ! $model->isDirty('slug')) {
+                $model->slug = static::generateUniqueSlug($model->title, $model->id);
+            }
+
+            // Handle slug change/folder rename
+            if ($model->isDirty('slug')) {
+                $oldSlug = $model->getOriginal('slug');
+                $newSlug = $model->slug;
+                if ($oldSlug && $newSlug) {
+                    app(\App\Services\Contracts\MediaServiceContract::class)->renameFolder(
+                        $model->creator ?? auth()->user() ?? User::find($model->created_by),
+                        'public',
+                        ['campaigns', $oldSlug],
+                        $newSlug
+                    );
+                }
+            }
+        });
+
+        static::deleting(function (self $campaign) {
+            foreach ($campaign->media as $media) {
+                $media->decrement('usage_count');
+            }
+            $campaign->media()->detach();
+        });
     }
 
     /**
@@ -192,7 +243,7 @@ class DonationCampaign extends Model
     public function scopePublished($query)
     {
         return $query->whereNotNull('published_at')
-                     ->where('status', 'active');
+            ->where('status', 'active');
     }
 
     /**
@@ -202,10 +253,10 @@ class DonationCampaign extends Model
     {
         return $query->where(function ($q) {
             $q->whereNull('starts_at')
-              ->orWhere('starts_at', '<=', now());
+                ->orWhere('starts_at', '<=', now());
         })->where(function ($q) {
             $q->whereNull('ends_at')
-              ->orWhere('ends_at', '>=', now());
+                ->orWhere('ends_at', '>=', now());
         });
     }
 
@@ -215,7 +266,7 @@ class DonationCampaign extends Model
     public function scopeUpcoming($query)
     {
         return $query->whereNotNull('starts_at')
-                     ->where('starts_at', '>', now());
+            ->where('starts_at', '>', now());
     }
 
     /**
@@ -233,7 +284,8 @@ class DonationCampaign extends Model
     public function shouldEnforceMinimumAmount(): bool
     {
         $env = app()->environment();
-        return !in_array($env, ['local', 'staging', 'testing']);
+
+        return ! in_array($env, ['local', 'staging', 'testing']);
     }
 
     /**
@@ -241,31 +293,11 @@ class DonationCampaign extends Model
      */
     public function getEffectiveMinimumAmount(): ?float
     {
-        if (!$this->shouldEnforceMinimumAmount()) {
+        if (! $this->shouldEnforceMinimumAmount()) {
             return null;
         }
 
         return $this->minimum_amount;
-    }
-
-    /**
-     * Boot method to auto-generate slug.
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->slug)) {
-                $model->slug = static::generateUniqueSlug($model->title);
-            }
-        });
-
-        static::updating(function ($model) {
-            if ($model->isDirty('title') && !$model->isDirty('slug')) {
-                $model->slug = static::generateUniqueSlug($model->title, $model->id);
-            }
-        });
     }
 
     /**
@@ -283,7 +315,7 @@ class DonationCampaign extends Model
         }
 
         while ($query->exists()) {
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
             $query = static::withTrashed()->where('slug', $slug);
             if ($excludeId) {

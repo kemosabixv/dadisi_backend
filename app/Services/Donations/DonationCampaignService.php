@@ -2,6 +2,8 @@
 
 namespace App\Services\Donations;
 
+use App\DTOs\CreateDonationCampaignDTO;
+use App\DTOs\UpdateDonationCampaignDTO;
 use App\Exceptions\DonationCampaignException;
 use App\Models\AuditLog;
 use App\Models\County;
@@ -80,10 +82,11 @@ class DonationCampaignService implements DonationCampaignServiceContract
         return $campaign;
     }
 
-    public function createCampaign(Authenticatable $actor, array $data): DonationCampaign
+    public function createCampaign(Authenticatable $actor, CreateDonationCampaignDTO $dto): DonationCampaign
     {
         try {
-            return DB::transaction(function () use ($actor, $data) {
+            return DB::transaction(function () use ($actor, $dto) {
+                $data = $dto->toArray();
                 $campaign = DonationCampaign::create([
                     'title' => $data['title'],
                     'slug' => Str::slug($data['title']) . '-' . Str::random(6),
@@ -91,7 +94,6 @@ class DonationCampaignService implements DonationCampaignServiceContract
                     'goal_amount' => $data['goal_amount'],
                     'currency' => $data['currency'] ?? 'KES',
                     'county_id' => $data['county_id'] ?? null,
-                    'featured_image' => $data['featured_image'] ?? null,
                     'starts_at' => $data['starts_at'] ?? null,
                     'ends_at' => $data['ends_at'] ?? null,
                     'status' => 'draft',
@@ -113,9 +115,19 @@ class DonationCampaignService implements DonationCampaignServiceContract
 
                 // Handle Media
                 if (!empty($data['featured_media_id'])) {
-                    $campaign->setFeaturedMedia($data['featured_media_id']);
+                    $media = \App\Models\Media::find($data['featured_media_id']);
+                    if ($media) {
+                        app(\App\Services\Media\MediaService::class)->promoteToPublic($media, 'campaigns', $campaign->slug);
+                        $campaign->setFeaturedMedia($media->id);
+                    }
                 }
                 if (!empty($data['gallery_media_ids'])) {
+                    foreach ($data['gallery_media_ids'] as $mediaId) {
+                        $media = \App\Models\Media::find($mediaId);
+                        if ($media) {
+                            app(\App\Services\Media\MediaService::class)->promoteToPublic($media, 'campaigns', $campaign->slug);
+                        }
+                    }
                     $campaign->addGalleryMedia($data['gallery_media_ids']);
                 }
 
@@ -132,10 +144,11 @@ class DonationCampaignService implements DonationCampaignServiceContract
         }
     }
 
-    public function updateCampaign(Authenticatable $actor, DonationCampaign $campaign, array $data): DonationCampaign
+    public function updateCampaign(Authenticatable $actor, DonationCampaign $campaign, UpdateDonationCampaignDTO $dto): DonationCampaign
     {
         try {
-            return DB::transaction(function () use ($actor, $campaign, $data) {
+            return DB::transaction(function () use ($actor, $campaign, $dto) {
+                $data = array_filter($dto->toArray(), fn($v) => $v !== null);
                 $oldValues = $campaign->toArray();
                 $updateData = [];
 
@@ -144,7 +157,7 @@ class DonationCampaignService implements DonationCampaignServiceContract
                     $updateData['slug'] = Str::slug($data['title']) . '-' . Str::random(6);
                 }
 
-                foreach (['description', 'goal_amount', 'currency', 'county_id', 'featured_image', 'starts_at', 'ends_at'] as $field) {
+                foreach (['description', 'goal_amount', 'currency', 'county_id', 'starts_at', 'ends_at', 'status'] as $field) {
                     if (array_key_exists($field, $data)) {
                         $updateData[$field] = $data[$field];
                     }
@@ -156,11 +169,27 @@ class DonationCampaignService implements DonationCampaignServiceContract
 
                 // Handle Media
                 if (isset($data['featured_media_id'])) {
-                    $campaign->setFeaturedMedia($data['featured_media_id']);
+                    if ($data['featured_media_id']) {
+                        $media = \App\Models\Media::find($data['featured_media_id']);
+                        if ($media) {
+                            app(\App\Services\Media\MediaService::class)->promoteToPublic($media, 'campaigns', $campaign->slug);
+                            $campaign->setFeaturedMedia($media->id);
+                        }
+                    } else {
+                        $campaign->setFeaturedMedia(null);
+                    }
                 }
                 if (isset($data['gallery_media_ids'])) {
                      $campaign->media()->wherePivot('role', 'gallery')->detach();
-                     $campaign->addGalleryMedia($data['gallery_media_ids']);
+                     if (!empty($data['gallery_media_ids'])) {
+                        foreach ($data['gallery_media_ids'] as $mediaId) {
+                            $media = \App\Models\Media::find($mediaId);
+                            if ($media) {
+                                app(\App\Services\Media\MediaService::class)->promoteToPublic($media, 'campaigns', $campaign->slug);
+                            }
+                        }
+                        $campaign->addGalleryMedia($data['gallery_media_ids']);
+                     }
                 }
 
                 AuditLog::create([

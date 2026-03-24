@@ -2,12 +2,15 @@
 
 namespace App\Services\Donations;
 
+use App\DTOs\CreateDonationDTO;
+use App\DTOs\UpdateDonationDTO;
 use App\Exceptions\DonationException;
 use App\Models\AuditLog;
+use App\Models\County;
 use App\Models\Donation;
 use App\Models\User;
-use App\Models\County;
 use App\Services\Contracts\DonationServiceContract;
+use App\Services\Contracts\NotificationServiceContract;
 use App\Services\Contracts\PaymentServiceContract;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -22,33 +25,31 @@ use Illuminate\Support\Facades\Log;
  */
 class DonationService implements DonationServiceContract
 {
-    /**
-     * @param PaymentServiceContract $paymentService
-     */
-    public function __construct(protected PaymentServiceContract $paymentService) {}
+    public function __construct(
+        protected PaymentServiceContract $paymentService,
+        protected NotificationServiceContract $notificationService
+    ) {}
 
     /**
      * Create a new donation
      */
-    public function createDonation(?Authenticatable $donor, array $data): Donation
+    public function createDonation(?Authenticatable $donor, CreateDonationDTO $dto): Donation
     {
         try {
-            return DB::transaction(function () use ($donor, $data) {
-                $donationData = [
-                    'user_id' => $donor?->getAuthIdentifier(),
-                    'donor_name' => $data['donor_name'],
-                    'donor_email' => $data['donor_email'],
-                    'donor_phone' => $data['donor_phone'] ?? null,
-                    'amount' => $data['amount'],
-                    'currency' => $data['currency'] ?? 'KES',
-                    'county_id' => $data['county_id'],
-                    'campaign_id' => $data['campaign_id'] ?? null,
-                    'reference' => $data['reference'] ?? Donation::generateReference(),
-                    'notes' => $data['notes'] ?? null,
-                    'status' => 'pending',
-                ];
+            return DB::transaction(function () use ($donor, $dto) {
+                $donationData = array_merge(
+                    $dto->toArray(),
+                    [
+                        'user_id' => $donor?->getAuthIdentifier(),
+                        'reference' => Donation::generateReference(),
+                        'status' => 'pending',
+                    ]
+                );
 
                 $donation = Donation::create($donationData);
+
+                // Dispatch notification
+                $this->notificationService->sendDonationInitiated($donation);
 
                 AuditLog::create([
                     'user_id' => $donor?->getAuthIdentifier(),
@@ -114,35 +115,35 @@ class DonationService implements DonationServiceContract
     {
         $query = Donation::query()->with(['user', 'county', 'campaign']);
 
-        if (!empty($filters['county_id'])) {
+        if (! empty($filters['county_id'])) {
             $query->where('county_id', $filters['county_id']);
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['user_id'])) {
+        if (! empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);
         }
 
-        if (!empty($filters['campaign_id'])) {
+        if (! empty($filters['campaign_id'])) {
             $query->where('campaign_id', $filters['campaign_id']);
         }
 
-        if (!empty($filters['start_date'])) {
+        if (! empty($filters['start_date'])) {
             $query->where('created_at', '>=', $filters['start_date']);
         }
 
-        if (!empty($filters['end_date'])) {
+        if (! empty($filters['end_date'])) {
             $query->where('created_at', '<=', $filters['end_date']);
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('donor_name', 'like', "%{$filters['search']}%")
-                  ->orWhere('donor_email', 'like', "%{$filters['search']}%")
-                  ->orWhere('reference', 'like', "%{$filters['search']}%");
+                    ->orWhere('donor_email', 'like', "%{$filters['search']}%")
+                    ->orWhere('reference', 'like', "%{$filters['search']}%");
             });
         }
 
@@ -201,12 +202,12 @@ class DonationService implements DonationServiceContract
     public function deleteDonation(Authenticatable $actor, Donation $donation): bool
     {
         /** @var \App\Models\User $actor */
-        if (!$donation->isPending() && !$actor->isAdmin()) {
+        if (! $donation->isPending() && ! $actor->isAdmin()) {
             throw DonationException::onlyPendingCanBeCancelled();
         }
 
         // Check ownership if not admin
-        if (!$actor->isAdmin() && $donation->user_id !== $actor->getAuthIdentifier()) {
+        if (! $actor->isAdmin() && $donation->user_id !== $actor->getAuthIdentifier()) {
             throw DonationException::unauthorized('cancel');
         }
 
@@ -229,7 +230,7 @@ class DonationService implements DonationServiceContract
                 'donation_id' => $donation->id,
                 'error' => $e->getMessage(),
             ]);
-            throw DonationException::creationFailed('Failed to cancel donation: ' . $e->getMessage());
+            throw DonationException::creationFailed('Failed to cancel donation: '.$e->getMessage());
         }
     }
 
@@ -252,11 +253,11 @@ class DonationService implements DonationServiceContract
     {
         $query = Donation::query();
 
-        if (!empty($filters['county_id'])) {
+        if (! empty($filters['county_id'])) {
             $query->where('county_id', $filters['county_id']);
         }
 
-        if (!empty($filters['campaign_id'])) {
+        if (! empty($filters['campaign_id'])) {
             $query->where('campaign_id', $filters['campaign_id']);
         }
 
@@ -331,11 +332,11 @@ class DonationService implements DonationServiceContract
             $paymentData = [
                 'amount' => $donation->amount,
                 'currency' => $donation->currency,
-                'payment_method' => 'pesapal', // Default
+                'payment_method' => null, // Method (mpesa/card) is set when payment completes
                 'description' => "Donation Reference: {$donation->reference}",
-                'reference' => $donation->reference . '_' . time(), // Unique reference for this attempt
+                'reference' => $donation->reference.'_'.time(), // Unique reference for this attempt
                 'county' => $donation->county?->name,
-                'payable_type' => 'App\\Models\\Donation',
+                'payable_type' => 'donation',
                 'payable_id' => $donation->id,
                 'first_name' => explode(' ', $donation->donor_name)[0] ?? 'Donor',
                 'last_name' => explode(' ', $donation->donor_name)[1] ?? 'Labs',
@@ -343,18 +344,16 @@ class DonationService implements DonationServiceContract
                 'phone' => $donation->donor_phone,
             ];
 
-            // For guests, we can pass a dummy user or just have PaymentService modified to handle it
-            // However, $paymentService->processPayment expects Authenticatable.
-            // We'll use the donation's user if it exists, otherwise a "Guest" placeholder user
-            $actor = $donation->user ?? User::where('email', 'admin@dadisilab.com')->first();
+            // Pass the donation's user directly (it will be null for guest donations)
+            $actor = $donation->user;
 
             return $this->paymentService->processPayment($actor, $paymentData);
         } catch (\Exception $e) {
             Log::error('Failed to resume donation payment', [
                 'donation_id' => $donation->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            throw DonationException::creationFailed('Could not resume payment: ' . $e->getMessage());
+            throw DonationException::creationFailed('Could not resume payment: '.$e->getMessage());
         }
     }
 
@@ -380,13 +379,19 @@ class DonationService implements DonationServiceContract
                     'user_agent' => request()->userAgent(),
                 ]);
 
-                return $donation->update(['status' => 'cancelled']);
+                $donation->update(['status' => 'cancelled']);
+
+                // Dispatch notification
+                $this->notificationService->sendDonationCancelled($donation);
+
+                return true;
             });
         } catch (\Exception $e) {
             Log::error('Guest donation cancellation failed', [
                 'reference' => $reference,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
