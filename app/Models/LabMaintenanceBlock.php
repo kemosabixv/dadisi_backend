@@ -11,10 +11,16 @@ class LabMaintenanceBlock extends Model
 {
     use HasFactory;
 
+    // Block type constants
+    const BLOCK_TYPE_MAINTENANCE = 'maintenance';
+    const BLOCK_TYPE_HOLIDAY = 'holiday';
+    const BLOCK_TYPE_CLOSURE = 'closure';
+
     protected $fillable = [
         'lab_space_id',
         'title',
         'reason',
+        'block_type',
         'starts_at',
         'ends_at',
         'recurring',
@@ -26,6 +32,7 @@ class LabMaintenanceBlock extends Model
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'recurring' => 'boolean',
+        'block_type' => 'string',
     ];
 
     // ==================== Relationships ====================
