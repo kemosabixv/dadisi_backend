@@ -2,12 +2,14 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Models\Donation;
+use App\Models\PlanSubscription;
+use App\Observers\DonationObserver;
+use App\Observers\PlanSubscriptionObserver;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use App\Observers\PlanSubscriptionObserver;
-use App\Models\PlanSubscription;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,13 +20,12 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register Service Contracts for Dependency Injection
         // =====================================================
-        
+
         // Currency/Exchange Rate Service
         $this->app->bind(
             \App\Services\Contracts\ExchangeRateServiceContract::class,
             \App\Services\ExchangeRateService::class
         );
-
 
         // Subscription Core Service
         $this->app->bind(
@@ -174,7 +175,6 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\PromoCodes\PromoCodeService::class
         );
 
-
         // Permission Service
         $this->app->bind(
             \App\Services\Contracts\PermissionServiceContract::class,
@@ -247,7 +247,6 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\SystemFeatureService::class
         );
 
-
         // Menu Service
         $this->app->bind(
             \App\Services\Contracts\MenuServiceContract::class,
@@ -296,7 +295,6 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\UIPermissionService::class
         );
 
-
         // Event Order Service
         $this->app->bind(
             \App\Services\Contracts\EventOrderServiceContract::class,
@@ -319,7 +317,7 @@ class AppServiceProvider extends ServiceProvider
         // Register QR Code Facade Alias
         if (class_exists(\SimpleSoftwareIO\QrCode\Facades\QrCode::class)) {
             \Illuminate\Foundation\AliasLoader::getInstance()->alias(
-                'QrCode', 
+                'QrCode',
                 \SimpleSoftwareIO\QrCode\Facades\QrCode::class
             );
         }
@@ -341,5 +339,15 @@ class AppServiceProvider extends ServiceProvider
 
         // Register model observers for data integrity
         PlanSubscription::observe(PlanSubscriptionObserver::class);
+        Donation::observe(DonationObserver::class);
+
+        // Define polymorphic relationship mapping
+        \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+            'user' => \App\Models\User::class,
+            'donation' => \App\Models\Donation::class,
+            'event_order' => \App\Models\EventOrder::class,
+            'subscription' => \App\Models\PlanSubscription::class,
+            'lab_booking' => \App\Models\LabBooking::class,
+        ]);
     }
 }

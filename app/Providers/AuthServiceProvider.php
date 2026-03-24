@@ -2,15 +2,13 @@
 
 namespace App\Providers;
 
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Gate;
 use App\Models\County;
+use App\Models\DonationCampaign;
 use App\Models\ForumTag;
 use App\Models\LabBooking;
 use App\Models\LabSpace;
 use App\Models\Plan;
 use App\Models\ReconciliationRun;
-use App\Models\DonationCampaign;
 use App\Policies\CountyPolicy;
 use App\Policies\DonationCampaignPolicy;
 use App\Policies\ForumTagPolicy;
@@ -20,6 +18,8 @@ use App\Policies\PermissionPolicy;
 use App\Policies\PlanPolicy;
 use App\Policies\ReconciliationRunPolicy;
 use App\Policies\RolePolicy;
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 

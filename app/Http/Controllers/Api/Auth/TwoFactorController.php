@@ -49,8 +49,10 @@ class TwoFactorController extends Controller
             $secret
         );
 
-        // Store secret temporarily in session for verification
-        session(['2fa_secret' => $secret]);
+        // Store secret temporarily in database for verification
+        $user->forceFill([
+            'two_factor_secret' => encrypt($secret),
+        ])->save();
 
         return response()->json([
             'secret' => $secret,
@@ -91,7 +93,7 @@ class TwoFactorController extends Controller
         ]);
 
         $user = $request->user();
-        $secret = session('2fa_secret');
+        $secret = $user->two_factor_secret ? decrypt($user->two_factor_secret) : null;
 
         if (!$secret) {
             return response()->json([
@@ -118,8 +120,8 @@ class TwoFactorController extends Controller
             'two_factor_confirmed_at' => now(),
         ])->save();
 
-        // Clear session
-        session()->forget('2fa_secret');
+        // No session cleanup needed — column gets overwritten on enable
+        // session()->forget('2fa_secret');
 
         return response()->json([
             'message' => 'Two-factor authentication has been enabled.',
@@ -181,8 +183,7 @@ class TwoFactorController extends Controller
      *     "id": 2,
      *     "username": "jane_doe",
      *     "email": "jane.doe@example.com"
-     *   },
-     *   "access_token": "3|abcdef1234567890..."
+     *   }
      * }
      * @response 422 {
      *   "message": "The provided code is invalid."
@@ -222,12 +223,11 @@ class TwoFactorController extends Controller
             ], 422);
         }
 
-        // Issue token
-        $token = $user->createToken('2fa-login')->plainTextToken;
+        // Login the user via session
+        Auth::login($user);
 
         return response()->json([
             'user' => new SecureUserResource($user),
-            'access_token' => $token,
         ]);
     }
 

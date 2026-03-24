@@ -4,22 +4,30 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+// use Laravel\Sanctum\HasApiTokens;
 use Laravelcm\Subscriptions\Models\Subscription;
+use NotificationChannels\WebPush\HasPushSubscriptions;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes;
+    use HasFactory, HasPushSubscriptions, HasRoles, Notifiable, SoftDeletes;
+
+    /**
+     * Guard name for Spatie Permission.
+     * Handled by getDefaultGuardName() to unified 'web' guard.
+     */
 
     /**
      * The attributes that are mass assignable.
@@ -44,9 +52,16 @@ class User extends Authenticatable
 
     public function getProfilePictureUrlAttribute(): ?string
     {
-        return $this->profile_picture_path
-            ? url('storage/' . $this->profile_picture_path)
-            : null;
+        if (!$this->profile_picture_path) {
+            return null;
+        }
+
+        // If path starts with blobs/, it's a CAS/R2 file
+        if (str_starts_with($this->profile_picture_path, 'blobs/')) {
+            return \Illuminate\Support\Facades\Storage::disk('r2')->url($this->profile_picture_path);
+        }
+
+        return url('storage/'.$this->profile_picture_path);
     }
 
     /**
@@ -68,15 +83,24 @@ class User extends Authenticatable
     /**
      * Get a display name for the user
      */
+    /**
+     * Get the name of the user's active plan
+     */
+    public function getActivePlanNameAttribute(): string
+    {
+        // Try to get from eager loaded relationship first
+        $subscription = $this->activeSubscription()->first();
+
+        return $subscription?->plan?->name ?? 'Free';
+    }
+
     public function getDisplayNameAttribute(): string
     {
-        return $this->name ?: $this->username;
+        return $this->name ?: ($this->username ?: 'User');
     }
 
     /**
      * The accessors to append to the model's array form.
-     *
-     * @var array
      */
     protected $appends = [
         'profile_picture_url',
@@ -189,6 +213,43 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's active lab subscription (subscription with lab quota features).
+     *
+     * Returns subscription only if:
+     * - Status is 'active'
+     * - Not in grace period (ends_at is NULL or future)
+     * - Not canceled
+     * - Plan has lab_hours_monthly feature (VALIDATED)
+     *
+     * Returns null if user has no active lab subscription, is in grace period,
+     * or plan doesn't have lab_hours_monthly feature.
+     *
+     * Grace period: After subscription anniversary (ends_at has passed), quota is NOT replenished
+     * until user renews or upgrades to another plan with quota.
+     *
+     * @return PlanSubscription|null
+     */
+    public function activeLabSubscription(): ?PlanSubscription
+    {
+        return $this->subscriptions()
+            ->where('status', 'active')
+            ->whereNull('canceled_at')
+            ->where(function ($query) {
+                // Exclude grace period: only active subscriptions on/before/at anniversary
+                // Grace period starts AFTER anniversary, so include anniversary date (>=)
+                $query->whereNull('ends_at')      // Indefinite subscription
+                      ->orWhere('ends_at', '>=', now()->startOfDay());  // Include anniversary date, exclude after midnight
+            })
+            ->with(['plan.systemFeatures'])
+            ->get()
+            ->first(function ($subscription) {
+                // Verify plan actually has lab_hours_monthly feature with value > 0
+                $quotaHours = $subscription->plan?->getFeatureValue('lab_hours_monthly');
+                return $quotaHours && (int)$quotaHours > 0;
+            });
+    }
+
+    /**
      * Get the user's current plan
      */
     public function plan(): BelongsTo
@@ -272,6 +333,7 @@ class User extends Authenticatable
             'active_subscription_id' => 'integer',
         ];
     }
+
     /**
      * Check if user can access admin panel
      */
@@ -279,7 +341,7 @@ class User extends Authenticatable
     {
         // Check if user has specific admin roles or is a staff member
         // Roles: super_admin, admin, finance, events_manager, content_editor, lab_manager
-        return $this->hasAnyRole(['super_admin', 'admin', 'finance', 'events_manager', 'content_editor', 'lab_manager']) 
+        return $this->hasAnyRole(['super_admin', 'admin', 'finance', 'events_manager', 'content_editor', 'lab_manager'])
                || ($this->memberProfile && $this->memberProfile->is_staff);
     }
 
@@ -332,19 +394,28 @@ class User extends Authenticatable
     }
 
     /**
-     * Private messages sent by this user
+     * Chat messages sent by this user
      */
     public function sentMessages(): HasMany
     {
-        return $this->hasMany(PrivateMessage::class, 'sender_id');
+        return $this->hasMany(ChatMessage::class, 'sender_id');
     }
 
     /**
-     * Private messages received by this user
+     * Chat messages received by this user
      */
     public function receivedMessages(): HasMany
     {
-        return $this->hasMany(PrivateMessage::class, 'recipient_id');
+        return $this->hasMany(ChatMessage::class, 'recipient_id');
+    }
+
+    /**
+     * Conversations this user is part of.
+     */
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'user_one_id')
+            ->orWhere('user_two_id', $this->id);
     }
 
     /**
@@ -355,6 +426,30 @@ class User extends Authenticatable
         return $this->hasMany(LabBooking::class);
     }
 
+    public function bookingSeries(): HasMany
+    {
+        return $this->hasMany(BookingSeries::class);
+    }
+
+    public function slotHolds(): HasMany
+    {
+        return $this->hasMany(SlotHold::class);
+    }
+
+    public function quotaCommitments(): HasMany
+    {
+        return $this->hasMany(QuotaCommitment::class);
+    }
+
+    /**
+     * Lab spaces assigned to this supervisor
+     */
+    public function assignedLabSpaces(): BelongsToMany
+    {
+        return $this->belongsToMany(LabSpace::class, 'lab_assignments', 'user_id', 'lab_space_id')
+            ->withTimestamps();
+    }
+
     /**
      * Get the default guard for role/permission checks.
      * For API requests with Sanctum authentication, use 'api' guard.
@@ -362,13 +457,7 @@ class User extends Authenticatable
      */
     public function getDefaultGuardName(): string
     {
-        // If we're in an API context (Sanctum token authentication), use 'api' guard
-        if ($this->tokenCan('*') || auth('sanctum')->check()) {
-            return 'api';
-        }
-
-        // Default to 'web' guard
-        return $this->getGuardNames()->first() ?? 'web';
+        return 'web';
     }
 
     /**

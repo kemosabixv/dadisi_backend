@@ -36,6 +36,16 @@ class SecureUserResource extends JsonResource
                     'last_name' => $this->memberProfile->last_name,
                 ];
             }),
+
+            // Include roles for frontend RBAC logic
+            'roles' => $this->whenLoaded('roles', function () {
+                return $this->roles->map(function ($role) {
+                    return [
+                        'id' => $role->id,
+                        'name' => $role->name,
+                    ];
+                });
+            }),
         ];
     }
 }

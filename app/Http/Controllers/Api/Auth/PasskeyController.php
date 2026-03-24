@@ -246,8 +246,7 @@ class PasskeyController extends Controller
      *     "id": 2,
      *     "username": "jane_doe",
      *     "email": "jane.doe@example.com"
-     *   },
-     *   "access_token": "4|passkey-token-secret-123..."
+     *   }
      * }
      * @response 422 {
      *   "message": "Passkey authentication failed."
@@ -269,12 +268,11 @@ class PasskeyController extends Controller
             // Update last used timestamp
             $credential->touch();
 
-            // Issue Sanctum token
-            $token = $user->createToken('passkey-auth')->plainTextToken;
+            // Login the user via session
+            Auth::login($user, true);
 
             return response()->json([
                 'user' => new SecureUserResource($user),
-                'access_token' => $token,
             ]);
 
         } catch (\Exception $e) {

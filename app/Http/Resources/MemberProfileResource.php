@@ -29,7 +29,7 @@ class MemberProfileResource extends JsonResource
             'bio' => $this->bio,
             'is_staff' => (bool) $this->is_staff,
             'plan_id' => $this->plan_id,
-            'plan_type' => $this->plan_type,
+            'plan_type' => $this->user->active_plan_name ?? $this->plan_type,
             'plan_expires_at' => $this->plan_expires_at ? (string) $this->plan_expires_at : null,
             'occupation' => $this->occupation,
             'emergency_contact_name' => $this->emergency_contact_name,

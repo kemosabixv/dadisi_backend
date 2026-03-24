@@ -24,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Apply security headers globally (CSP, HSTS, X-Frame-Options)
         $middleware->append(\App\Http\Middleware\SecurityHeadersMiddleware::class);
         
+        // Enable stateful API authentication for SPA
+        $middleware->statefulApi();
+        
         // Configure API authentication to return JSON instead of redirecting
         $middleware->redirectGuestsTo(function ($request) {
             // For API routes, return null to prevent redirect and let Sanctum handle it
@@ -61,6 +64,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Enqueue due renewals (including retries) - Daily
         $schedule->command('renewals:enqueue-due')
                 ->dailyAt('01:00')
+                ->withoutOverlapping();
+
+        // Cleanup orphaned media - Daily
+        $schedule->job(new \App\Jobs\CleanupOrphanedMediaJob())
+                ->dailyAt('03:00')
                 ->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
