@@ -21,12 +21,12 @@ class UpdateEventDTO
         public ?float $price = null,
         public ?string $currency = null,
         public ?bool $waitlist_enabled = null,
-        public ?int $waitlist_capacity = null,
         public ?array $tag_ids = null,
         public ?array $tickets = null,
         public ?array $speakers = null,
         public ?int $featured_media_id = null,
         public ?array $gallery_media_ids = null,
+        public ?array $promo_codes = null,
     ) {}
 
     /**
@@ -51,12 +51,12 @@ class UpdateEventDTO
             price: isset($data['price']) ? (float)$data['price'] : null,
             currency: $data['currency'] ?? null,
             waitlist_enabled: $data['waitlist_enabled'] ?? null,
-            waitlist_capacity: $data['waitlist_capacity'] ?? null,
             tag_ids: $data['tag_ids'] ?? null,
             tickets: $data['tickets'] ?? null,
             speakers: $data['speakers'] ?? null,
             featured_media_id: $data['featured_media_id'] ?? null,
             gallery_media_ids: $data['gallery_media_ids'] ?? null,
+            promo_codes: $data['promo_codes'] ?? null,
         );
     }
 

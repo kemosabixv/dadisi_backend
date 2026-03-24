@@ -12,6 +12,17 @@ class Ticket extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($ticket) {
+            if ($ticket->available === null && $ticket->quantity !== null) {
+                $ticket->available = $ticket->quantity;
+            }
+        });
+    }
+
     protected $fillable = [
         'event_id',
         'name',

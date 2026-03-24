@@ -19,8 +19,8 @@ class EventOrderController extends Controller
 {
     public function __construct(private EventOrderServiceContract $orderService)
     {
-        // Only purchase endpoint allows guest access
-        $this->middleware('auth:sanctum')->except(['purchase', 'checkPaymentStatus']);
+        // Only purchase, checkPaymentStatus, resume, and cancel endpoints allow guest access
+        $this->middleware('auth')->except(['purchase', 'checkPaymentStatus', 'resume', 'cancel']);
     }
 
     /**
@@ -50,9 +50,10 @@ class EventOrderController extends Controller
      */
     public function purchase(\App\Http\Requests\Api\CreateEventOrderRequest $request, Event $event): JsonResponse
     {
-        $user = Auth::guard('sanctum')->user();
+        $user = \Illuminate\Support\Facades\Auth::user();
         $validated = $request->validated();
         $purchaserData = [
+            'ticket_id' => $validated['ticket_id'],
             'name' => $validated['name'] ?? null,
             'email' => $validated['email'] ?? $user?->email,
             'phone' => $validated['phone'] ?? null,
@@ -62,21 +63,27 @@ class EventOrderController extends Controller
             $validated['quantity'],
             $purchaserData,
             $validated['promo_code'] ?? null,
-            $user
+            $user,
+            $validated['is_waitlist_action'] ?? false
         );
 
         if (!$result['success']) {
             return response()->json([
                 'success' => false,
                 'message' => $result['message'],
+                'is_sold_out' => $result['is_sold_out'] ?? false,
             ], 400);
         }
 
         $order = $result['order'];
+        $message = $result['payment_required'] ? 'Payment initiated' : 'Ticket confirmed';
+        if ($result['is_waitlisted'] ?? false) {
+            $message = 'Waitlist confirmed';
+        }
 
         return response()->json([
             'success' => true,
-            'message' => $result['payment_required'] ? 'Payment initiated' : 'Ticket confirmed',
+            'message' => $message,
             'data' => [
                 'order_id' => $order->id,
                 'reference' => $order->reference,
@@ -87,6 +94,8 @@ class EventOrderController extends Controller
                 'payment_required' => $result['payment_required'],
                 'redirect_url' => $result['redirect_url'] ?? null,
                 'qr_code_token' => $order->qr_code_token,
+                'is_waitlisted' => $result['is_waitlisted'] ?? false,
+                'is_race_condition' => $result['is_race_condition'] ?? false,
             ],
         ]);
     }
@@ -152,7 +161,7 @@ class EventOrderController extends Controller
             $result = $this->orderService->getUserOrders(Auth::user(), $filters, 20);
             return response()->json([
                 'success' => true,
-                'data' => $result['data'],
+                'data' => \App\Http\Resources\EventOrderResource::collection($result['data']),
                 'meta' => $result['meta'],
             ]);
         } catch (\Exception $e) {
@@ -204,6 +213,57 @@ class EventOrderController extends Controller
                 'success' => false,
                 'message' => $e->getMessage(),
             ], 403);
+        }
+    }
+
+    /**
+     * Resume Pending Payment
+     */
+    public function resume(string $reference): JsonResponse
+    {
+        try {
+            $order = EventOrder::where('reference', $reference)
+                ->where('status', 'pending')
+                ->firstOrFail();
+
+            $result = $this->orderService->resumeOrder($order);
+
+            if (!$result['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message'],
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'redirect_url' => $result['redirect_url'] ?? null,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Order not found or cannot be resumed'], 404);
+        }
+    }
+
+    /**
+     * Cancel Pending Order
+     */
+    public function cancel(string $reference): JsonResponse
+    {
+        try {
+            $order = EventOrder::where('reference', $reference)
+                ->whereIn('status', ['pending', 'waitlisted'])
+                ->firstOrFail();
+
+            $order->update(['status' => 'cancelled']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order cancelled successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Order not found or cannot be cancelled'], 404);
         }
     }
 

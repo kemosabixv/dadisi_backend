@@ -10,12 +10,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class EventRegistration extends Model
 {
     use HasFactory, SoftDeletes;
+    
+    public $is_race_condition = false;
 
     protected $table = 'event_registrations';
 
     protected $fillable = [
         'event_id',
         'user_id',
+        'guest_name',
+        'guest_email',
         'ticket_id',
         'order_id',
         'confirmation_code',
@@ -24,6 +28,7 @@ class EventRegistration extends Model
         'waitlist_position',
         'qr_code_token',
         'qr_code_path',
+        'qr_code_media_id',
         'reminded_24h_at',
         'reminded_1h_at',
     ];
@@ -53,5 +58,10 @@ class EventRegistration extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(EventOrder::class, 'order_id');
+    }
+
+    public function qrCodeMedia(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'qr_code_media_id');
     }
 }

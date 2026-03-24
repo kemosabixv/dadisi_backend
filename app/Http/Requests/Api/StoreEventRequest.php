@@ -20,7 +20,7 @@ class StoreEventRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('admin');
+        return auth()->check() && \App\Support\AdminAccessResolver::canAccessAdmin(auth()->user());
     }
 
     /**
@@ -49,7 +49,6 @@ class StoreEventRequest extends FormRequest
             // Capacity & Waitlist
             'capacity' => 'nullable|integer|min:1',
             'waitlist_enabled' => 'nullable|boolean',
-            'waitlist_capacity' => 'nullable|integer|min:1|required_if:waitlist_enabled,true',
             
             // Image & Featured
             'image_path' => 'nullable|string|max:500',
@@ -81,8 +80,18 @@ class StoreEventRequest extends FormRequest
             'speakers.*.designation' => 'nullable|string|max:255',
             'speakers.*.company' => 'nullable|string|max:255',
             'speakers.*.bio' => 'nullable|string',
-            'speakers.*.is_featured' => 'nullable|boolean',
             'speakers.*.photo_media_id' => 'nullable|integer|exists:media,id',
+            'speakers.*.website_url' => 'nullable|url|max:255',
+            'speakers.*.linkedin_url' => 'nullable|url|max:255',
+
+            // Promo Codes
+            'promo_codes' => 'nullable|array',
+            'promo_codes.*.code' => 'required_with:promo_codes|string|min:3|max:20',
+            'promo_codes.*.discount_type' => 'required_with:promo_codes|string|in:percentage,fixed',
+            'promo_codes.*.discount_value' => 'required_with:promo_codes|numeric|min:0',
+            'promo_codes.*.usage_limit' => 'nullable|integer|min:1',
+            'promo_codes.*.ticket_id' => 'nullable|integer',
+            'promo_codes.*.is_active' => 'nullable|boolean',
         ];
     }
 
@@ -104,7 +113,6 @@ class StoreEventRequest extends FormRequest
             'online_link' => 'online event link',
             'capacity' => 'event capacity',
             'waitlist_enabled' => 'waitlist enabled',
-            'waitlist_capacity' => 'waitlist capacity',
             'image_path' => 'event image path',
             'featured_media_id' => 'featured image',
             'gallery_media_ids' => 'gallery images',
@@ -127,8 +135,6 @@ class StoreEventRequest extends FormRequest
             'starts_at.after' => 'Event must start in the future',
             'ends_at.after' => 'Event must end after start time',
             'registration_deadline.before' => 'Registration deadline must be before event start time',
-            'online_link.required_if' => 'Online link is required for online events',
-            'waitlist_capacity.required_if' => 'Waitlist capacity is required when waitlist is enabled',
             'title.required' => 'Event title is required',
             'description.required' => 'Event description is required',
             'category_id.required' => 'Event category is required',
@@ -169,7 +175,6 @@ class StoreEventRequest extends FormRequest
             'online_link' => ['description' => 'Online meeting link (required if online)', 'example' => 'https://zoom.us/j/123456789'],
             'capacity' => ['description' => 'Maximum number of attendees', 'example' => 100],
             'waitlist_enabled' => ['description' => 'Enable waitlist for sold-out events', 'example' => true],
-            'waitlist_capacity' => ['description' => 'Maximum waitlist size', 'example' => 20],
             'image_path' => ['description' => 'Path to event image (legacy)', 'example' => 'events/tech-conf-2025.jpg'],
             'featured_media_id' => ['description' => 'ID of media for featured image', 'example' => 10],
             'gallery_media_ids' => ['description' => 'IDs of media for gallery', 'example' => [11, 12, 13]],

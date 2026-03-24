@@ -22,7 +22,7 @@ class EventCategoryController extends Controller
     public function __construct(EventTaxonomyServiceContract $taxonomyService)
     {
         $this->taxonomyService = $taxonomyService;
-        $this->middleware(['auth:sanctum', 'admin'])->except(['index', 'show']);
+        $this->middleware(['auth', 'admin'])->except(['index', 'show']);
     }
 
     /**

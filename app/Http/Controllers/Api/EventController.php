@@ -6,7 +6,9 @@ use App\DTOs\ListEventsFiltersDTO;
 use App\Exceptions\EventException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\EventResource;
+use App\Http\Resources\PromoCodeResource;
 use App\Services\Contracts\EventServiceContract;
+use App\Services\Contracts\PromoCodeServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -19,7 +21,8 @@ use Illuminate\Support\Facades\Log;
 class EventController extends Controller
 {
     public function __construct(
-        private EventServiceContract $eventService
+        private EventServiceContract $eventService,
+        private PromoCodeServiceContract $promoCodeService
     ) {}
 
     /**
@@ -70,6 +73,51 @@ class EventController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve event',
+            ], 500);
+        }
+    }
+
+    /**
+     * Validate Promo Code
+     * 
+     * @group Events
+     * @urlParam id integer required The event ID
+     * @queryParam code string required The promo code to validate
+     * @queryParam ticket_id integer The ticket tier ID
+     */
+    public function validatePromo(Request $request, $id)
+    {
+        try {
+            $code = $request->query('code');
+            $ticketId = $request->query('ticket_id');
+
+            if (!$code) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Promo code is required',
+                ], 422);
+            }
+
+            $promoCode = $this->promoCodeService->validateForEvent(
+                strtoupper($code),
+                (int) $id,
+                $ticketId ? (int) $ticketId : null
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => new PromoCodeResource($promoCode),
+            ]);
+        } catch (\App\Exceptions\PromoCodeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Promo code validation failed', ['error' => $e->getMessage(), 'event_id' => $id]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to validate promo code',
             ], 500);
         }
     }

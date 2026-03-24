@@ -31,7 +31,6 @@ class EventResource extends JsonResource
             'online_link' => $this->online_link,
             'capacity' => $this->capacity,
             'waitlist_enabled' => (bool) $this->waitlist_enabled,
-            'waitlist_capacity' => $this->waitlist_capacity,
             'county_id' => $this->county_id,
             'county' => $this->whenLoaded('county', function () {
                 return [
@@ -60,7 +59,11 @@ class EventResource extends JsonResource
                     return [
                         'id' => $m->id,
                         'file_name' => $m->file_name,
+                        'file_path' => $m->file_path,
                         'url' => $m->url,
+                        'original_url' => $m->original_url,
+                        'mime_type' => $m->mime_type,
+                        'size' => $m->size,
                     ];
                 })->values();
             }),
@@ -88,8 +91,10 @@ class EventResource extends JsonResource
             'creator' => new UserResource($this->whenLoaded('creator')),
             'tickets' => TicketResource::collection($this->whenLoaded('tickets')),
             'speakers' => SpeakerResource::collection($this->whenLoaded('speakers')),
+            'promo_codes' => PromoCodeResource::collection($this->whenLoaded('promoCodes')),
             'tags' => EventTagResource::collection($this->whenLoaded('tags')),
             'registrations_count' => $this->when(isset($this->registrations_count), $this->registrations_count),
+            'waitlist_count' => $this->when(isset($this->waitlist_count), $this->waitlist_count),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
