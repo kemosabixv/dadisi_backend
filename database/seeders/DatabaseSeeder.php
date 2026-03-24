@@ -55,7 +55,7 @@ class DatabaseSeeder extends Seeder
 
         // 3. Essential Administrative Accounts
         $this->call([
-            SystemAdminSeeder.class,
+            SystemAdminSeeder::class,
         ]);
     }
 
