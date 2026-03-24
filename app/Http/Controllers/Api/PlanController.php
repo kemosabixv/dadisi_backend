@@ -15,7 +15,7 @@ class PlanController extends Controller
     public function __construct(
         private PlanServiceContract $planService
     ) {
-        $this->middleware('auth:sanctum')->except(['index', 'show']);
+        $this->middleware('auth')->except(['index', 'show']);
     }
 
     /**

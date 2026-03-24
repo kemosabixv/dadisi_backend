@@ -8,7 +8,13 @@ class UpdatePostRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('post'));
+        $post = $this->route('post') ?? $this->route('slug') ?? $this->route('id');
+        
+        if (is_string($post) || is_numeric($post)) {
+            $post = \App\Models\Post::where('id', $post)->orWhere('slug', $post)->first();
+        }
+
+        return $this->user()->can('update', $post);
     }
 
     protected function prepareForValidation()
@@ -22,24 +28,32 @@ class UpdatePostRequest extends FormRequest
 
     public function rules(): array
     {
-        $post = $this->route('post');
+        $post = $this->route('post') ?? $this->route('slug') ?? $this->route('id');
+        
+        if (is_string($post) || is_numeric($post)) {
+            $post = \App\Models\Post::where('id', $post)->orWhere('slug', $post)->first();
+        }
+        
         $postId = $post?->id;
         
         return [
-            'title' => 'string|max:255',
-            'slug' => 'string|max:255|unique:posts,slug,' . $postId,
-            'excerpt' => 'string|max:500',
-            'content' => 'string',
-            'body' => 'string',
-            'county_id' => 'nullable|exists:counties,id',
-            'status' => 'in:draft,published',
-            'is_featured' => 'boolean',
-            'meta_title' => 'nullable|string|max:160',
-            'meta_description' => 'nullable|string|max:160',
-            'category_ids' => 'array|min:1|exists:categories,id',
-            'tag_ids' => 'nullable|array|exists:tags,id',
-            'media_ids' => 'nullable|array|exists:media,id',
-            'allow_comments' => 'boolean',
+            'title' => 'sometimes|string|max:255',
+            'slug' => 'sometimes|string|max:255|unique:posts,slug,' . $postId,
+            'excerpt' => 'sometimes|string|max:500',
+            'content' => 'sometimes|string',
+            'body' => 'sometimes|string',
+            'county_id' => 'sometimes|nullable|exists:counties,id',
+            'status' => 'sometimes|in:draft,published',
+            'is_featured' => 'sometimes|boolean',
+            'meta_title' => 'sometimes|nullable|string|max:160',
+            'meta_description' => 'sometimes|nullable|string|max:160',
+            'category_ids' => 'sometimes|array|min:1',
+            'category_ids.*' => 'exists:categories,id',
+            'tag_ids' => 'sometimes|nullable|array',
+            'tag_ids.*' => 'exists:tags,id',
+            'media_ids' => 'sometimes|nullable|array',
+            'media_ids.*' => 'exists:media,id',
+            'allow_comments' => 'sometimes|boolean',
         ];
     }
 

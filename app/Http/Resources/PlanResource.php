@@ -28,8 +28,6 @@ class PlanResource extends JsonResource
             'yearly_discount_percent' => (float)$this->yearly_discount_percent,
             'invoice_period' => $this->invoice_period,
             'invoice_interval' => $this->invoice_interval,
-            'trial_period' => $this->trial_period,
-            'trial_interval' => $this->trial_interval,
             'sort_order' => $this->sort_order,
             
             // Appended attributes from model

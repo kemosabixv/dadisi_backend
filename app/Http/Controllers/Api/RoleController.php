@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateRoleDTO;
+use App\DTOs\UpdateRoleDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreRoleRequest;
+use App\Http\Requests\UpdateRoleRequest;
+use App\Http\Resources\RoleResource;
 use App\Services\Contracts\RoleServiceContract;
 use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
@@ -110,25 +115,16 @@ class RoleController extends Controller
      *   }
      * }
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreRoleRequest $request): JsonResponse
     {
         try {
-            $this->authorize('create', Role::class);
+            $dto = CreateRoleDTO::fromArray($request->validated());
+            $role = $this->roleService->createRole($dto);
 
-            $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:roles,name',
-            ]);
-
-            $role = $this->roleService->createRole($validated);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Role created successfully',
-                'data' => $role,
-            ], 201);
+            return (new RoleResource($role))
+                ->response()
+                ->setStatusCode(201);
         } catch (AuthorizationException $e) {
-            throw $e;
-        } catch (ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
             Log::error('Failed to create role', ['error' => $e->getMessage(), 'data' => $request->all()]);
@@ -203,25 +199,14 @@ class RoleController extends Controller
      *   }
      * }
      */
-    public function update(Request $request, Role $role): JsonResponse
+    public function update(UpdateRoleRequest $request, Role $role): JsonResponse
     {
         try {
-            $this->authorize('update', $role);
+            $dto = UpdateRoleDTO::fromArray($request->validated());
+            $role = $this->roleService->updateRole($role, $dto);
 
-            $validated = $request->validate([
-                'name' => 'sometimes|required|string|max:255|unique:roles,name,' . $role->id,
-            ]);
-
-            $role = $this->roleService->updateRole($role, $validated);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Role updated successfully',
-                'data' => $role,
-            ]);
+            return (new RoleResource($role))->response();
         } catch (AuthorizationException $e) {
-            throw $e;
-        } catch (ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
             Log::error('Failed to update role', ['error' => $e->getMessage(), 'role_id' => $role->id]);
@@ -254,6 +239,14 @@ class RoleController extends Controller
     {
         try {
             $this->authorize('delete', $role);
+
+            // Prevent deletion of built-in system roles
+            if ($role->is_system ?? false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete built-in system roles',
+                ], 403);
+            }
 
             $this->roleService->deleteRole($role);
 

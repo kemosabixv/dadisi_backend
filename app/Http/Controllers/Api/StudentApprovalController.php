@@ -20,7 +20,7 @@ class StudentApprovalController extends Controller
     public function __construct(
         private StudentApprovalServiceContract $studentApprovalService
     ) {
-        $this->middleware('auth:sanctum');
+        $this->middleware('auth');
     }
 
     /**
@@ -140,7 +140,7 @@ class StudentApprovalController extends Controller
                     'id' => $approvalRequest->id,
                     'status' => $approvalRequest->status,
                     'student_institution' => $approvalRequest->student_institution,
-                    'submitted_at' => $approvalRequest->submitted_at,
+                    'requested_at' => $approvalRequest->requested_at,
                     'reviewed_at' => $approvalRequest->reviewed_at,
                     'expires_at' => $approvalRequest->expires_at,
                     'rejection_reason' => $approvalRequest->rejection_reason,
@@ -211,7 +211,7 @@ class StudentApprovalController extends Controller
                     'county' => $approvalRequest->county,
                     'documentation_url' => $approvalRequest->documentation_url,
                     'additional_notes' => $approvalRequest->additional_notes,
-                    'submitted_at' => $approvalRequest->submitted_at,
+                    'requested_at' => $approvalRequest->requested_at,
                     'reviewed_at' => $approvalRequest->reviewed_at,
                     'reviewed_by' => $approvalRequest->reviewed_by,
                     'rejection_reason' => $approvalRequest->rejection_reason,
@@ -300,7 +300,7 @@ class StudentApprovalController extends Controller
                         'county' => $item->county,
                         'documentation_url' => $item->documentation_url,
                         'additional_notes' => $item->additional_notes,
-                        'submitted_at' => $item->submitted_at,
+                        'requested_at' => $item->requested_at,
                         'reviewed_at' => $item->reviewed_at,
                         'reviewed_by' => $item->reviewed_by,
                         'rejection_reason' => $item->rejection_reason,
@@ -471,6 +471,81 @@ class StudentApprovalController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to reject request',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Overturn a rejection and approve the request (admin only)
+     *
+     * Allows administrators to approve a previously rejected request.
+     * This does NOT send automatic notifications - staff will contact the user manually.
+     *
+     * @group Subscriptions - Student Approvals
+     * @authenticated
+     *
+     * @urlParam request_id integer required The approval request ID. Example: 1
+     * @bodyParam admin_notes string optional Internal notes for the overturn. Example: User provided better documentation.
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "message": "Rejection overturned and request approved successfully",
+     *   "data": {
+     *     "status": "approved",
+     *     "approved_at": "2025-12-07T14:00:00Z"
+     *   }
+     * }
+     * @response 409 {
+     *   "success": false,
+     *   "message": "Request is not in rejected status"
+     * }
+     */
+    public function overturnRejection(Request $request, $requestId): JsonResponse
+    {
+        // Check admin authorization
+        if (!$request->user()->can('approve_student_approvals')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - inadequate permissions',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'admin_notes' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $approvalRequest = $this->studentApprovalService->overturnRejection(
+                $requestId,
+                $request->user()->id,
+                $validated['admin_notes'] ?? null
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Rejection overturned and request approved successfully',
+                'data' => [
+                    'status' => $approvalRequest->status,
+                    'approved_at' => $approvalRequest->reviewed_at,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'not in rejected status')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Request is not in rejected status',
+                ], 409);
+            }
+            Log::error('Student approval rejection overturn failed', [
+                'admin_id' => $request->user()->id,
+                'request_id' => $requestId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to overturn rejection',
                 'error' => $e->getMessage(),
             ], 500);
         }

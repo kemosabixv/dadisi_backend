@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreGroupRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return $this->user()?->hasPermissionTo('create group');
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'county_id' => ['required', 'exists:counties,id'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:groups,slug'],
+        ];
+    }
+
+    /**
+     * Get the error messages for the defined validation rules.
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Group name is required.',
+            'name.max' => 'Group name cannot exceed 255 characters.',
+            'county_id.required' => 'County is required.',
+            'county_id.exists' => 'The selected county does not exist.',
+            'slug.unique' => 'This group slug already exists.',
+            'slug.max' => 'Group slug cannot exceed 255 characters.',
+            'description.max' => 'Description cannot exceed 1000 characters.',
+        ];
+    }
+}

@@ -28,7 +28,6 @@ class SpeakerResource extends JsonResource
             }),
             'website_url' => $this->website_url,
             'linkedin_url' => $this->linkedin_url,
-            'is_featured' => (bool) $this->is_featured,
         ];
     }
 }

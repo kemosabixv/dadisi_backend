@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateSpeakerDTO;
+use App\DTOs\UpdateSpeakerDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SpeakerResource;
 use App\Models\Event;
@@ -16,7 +18,7 @@ class SpeakerController extends Controller
 {
     public function __construct(private SpeakerServiceContract $speakerService)
     {
-        $this->middleware('auth:sanctum')->except(['index']);
+        $this->middleware('auth')->except(['index']);
     }
 
     /**
@@ -71,11 +73,8 @@ class SpeakerController extends Controller
                 'photo_media_id' => 'nullable|integer|exists:media,id',
             ]);
 
-            if ($request->hasFile('photo')) {
-                $validated['photo_file'] = $request->file('photo');
-            }
-
-            $speaker = $this->speakerService->addSpeaker($event, $validated);
+            $dto = CreateSpeakerDTO::fromArray($validated + ['event_id' => $event->id]);
+            $speaker = $this->speakerService->addSpeaker($event, $dto);
 
             return response()->json([
                 'success' => true,
@@ -110,11 +109,8 @@ class SpeakerController extends Controller
                 'photo_media_id' => 'nullable|integer|exists:media,id',
             ]);
 
-            if ($request->hasFile('photo')) {
-                $validated['photo_file'] = $request->file('photo');
-            }
-
-            $updatedSpeaker = $this->speakerService->updateSpeaker($speaker, $validated);
+            $dto = UpdateSpeakerDTO::fromArray($validated);
+            $updatedSpeaker = $this->speakerService->updateSpeaker($speaker, $dto);
 
             return response()->json([
                 'success' => true,

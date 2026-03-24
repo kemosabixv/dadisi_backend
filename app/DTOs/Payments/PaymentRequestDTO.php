@@ -27,29 +27,31 @@ class PaymentRequestDTO
     /**
      * Create a new PaymentRequestDTO instance.
      *
-     * @param float $amount The payment amount
-     * @param string $payment_method The payment method identifier
-     * @param string $currency The currency code
-     * @param string|null $description Payment description
-     * @param string|null $reference Unique reference
-     * @param string|null $county County for compliance
-     * @param string|null $payable_type Payable model type
-     * @param int|null $payable_id Payable model ID
-     * @param array $metadata Additional metadata
-     * @param string|null $email Payer email
-     * @param string|null $phone Payer phone
-     * @param string|null $first_name Payer first name
-     * @param string|null $last_name Payer last name
+     * @param  float  $amount  The payment amount
+     * @param  string  $payment_method  The payment method identifier
+     * @param  string  $currency  The currency code
+     * @param  string|null  $description  Payment description
+     * @param  string|null  $reference  Unique reference
+     * @param  string|null  $county  County for compliance
+     * @param  string|null  $payable_type  Payable model type
+     * @param  int|null  $payable_id  Payable model ID
+     * @param  int|null  $payer_id  User ID of the payer
+     * @param  array  $metadata  Additional metadata
+     * @param  string|null  $email  Payer email
+     * @param  string|null  $phone  Payer phone
+     * @param  string|null  $first_name  Payer first name
+     * @param  string|null  $last_name  Payer last name
      */
     public function __construct(
         public float $amount,
-        public string $payment_method,
+        public ?string $payment_method = null,
         public string $currency = 'KES',
         public ?string $description = null,
         public ?string $reference = null,
         public ?string $county = null,
         public ?string $payable_type = null,
         public ?int $payable_id = null,
+        public ?int $payer_id = null,
         public array $metadata = [],
         public ?string $email = null,
         public ?string $phone = null,
@@ -60,20 +62,21 @@ class PaymentRequestDTO
     /**
      * Create DTO from array data.
      *
-     * @param array $data Input data array
+     * @param  array  $data  Input data array
      * @return self New PaymentRequestDTO instance
      */
     public static function fromArray(array $data): self
     {
         return new self(
             amount: (float) $data['amount'],
-            payment_method: $data['payment_method'],
+            payment_method: $data['payment_method'] ?? null,
             currency: $data['currency'] ?? 'KES',
             description: $data['description'] ?? null,
             reference: $data['reference'] ?? null,
             county: $data['county'] ?? null,
             payable_type: $data['payable_type'] ?? null,
             payable_id: isset($data['payable_id']) ? (int) $data['payable_id'] : null,
+            payer_id: isset($data['payer_id']) ? (int) $data['payer_id'] : null,
             metadata: $data['metadata'] ?? [],
             email: $data['email'] ?? null,
             phone: $data['phone'] ?? null,
