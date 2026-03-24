@@ -2,16 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Models\County;
 use App\Models\Event;
 use App\Models\EventCategory;
 use App\Models\EventTag;
-use App\Models\Ticket;
 use App\Models\Speaker;
-use App\Models\County;
+use App\Models\Ticket;
 use App\Models\User;
+use App\Services\Media\MediaService;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class SampleEventsSeeder extends Seeder
 {
@@ -21,23 +22,22 @@ class SampleEventsSeeder extends Seeder
         $nairobiCounty = County::where('name', 'Nairobi')->first() ?? County::first();
         $mombasaCounty = County::where('name', 'Mombasa')->first() ?? $nairobiCounty;
         $kisumu = County::where('name', 'Kisumu')->first() ?? $nairobiCounty;
-        
+
         // Ensure categories and tags exist (call EventManagementSeeder if empty)
         if (EventCategory::count() === 0) {
             $this->call(EventManagementSeeder::class);
         }
-        
+
         $categories = EventCategory::all()->keyBy('slug');
         $tags = EventTag::all()->keyBy('slug');
-        
-        
+
         // Get or create an organizer user
         $organizer = User::where('email', 'admin@dadisilab.com')->first();
-        if (!$organizer) {
+        if (! $organizer) {
             $organizer = User::first();
         }
-        
-        if (!$organizer) {
+
+        if (! $organizer) {
             $organizer = User::create([
                 'username' => 'eventorganizer',
                 'email' => 'organizer@dadisilab.com',
@@ -232,9 +232,9 @@ class SampleEventsSeeder extends Seeder
                     ['name' => 'In-Person VIP', 'price' => 5000, 'capacity' => 50],
                 ],
                 'speakers' => [
-                    ['name' => 'Dr. Wangari Maathai Jr.', 'designation' => 'Keynote Speaker', 'company' => 'Green Belt Movement', 'bio' => 'Environmental activist and sustainability advocate.', 'is_featured' => true],
-                    ['name' => 'James Mwangi', 'designation' => 'CEO', 'company' => 'Equity Bank', 'bio' => 'Banking and fintech pioneer in East Africa.', 'is_featured' => true],
-                    ['name' => 'Lupita Nyong\'o', 'designation' => 'Arts & Culture Panel', 'company' => 'Hollywood Actress', 'bio' => 'Oscar-winning actress and arts advocate.', 'is_featured' => true],
+                    ['name' => 'Dr. Wangari Maathai Jr.', 'designation' => 'Keynote Speaker', 'company' => 'Green Belt Movement', 'bio' => 'Environmental activist and sustainability advocate.'],
+                    ['name' => 'James Mwangi', 'designation' => 'CEO', 'company' => 'Equity Bank', 'bio' => 'Banking and fintech pioneer in East Africa.'],
+                    ['name' => 'Lupita Nyong\'o', 'designation' => 'Arts & Culture Panel', 'company' => 'Hollywood Actress', 'bio' => 'Oscar-winning actress and arts advocate.'],
                 ],
             ],
             [
@@ -262,7 +262,7 @@ class SampleEventsSeeder extends Seeder
 
         foreach ($eventsData as $eventData) {
             $category = $categories->get($eventData['category'] ?? null);
-            
+
             $event = Event::firstOrCreate(
                 ['slug' => Str::slug($eventData['title'])],
                 [
@@ -275,7 +275,6 @@ class SampleEventsSeeder extends Seeder
                     'county_id' => $eventData['county']?->id,
                     'capacity' => $eventData['capacity'],
                     'waitlist_enabled' => ($eventData['capacity'] ?? 0) > 0,
-                    'waitlist_capacity' => 20,
                     'price' => $eventData['price'],
                     'currency' => 'KES',
                     'status' => $eventData['status'],
@@ -289,7 +288,7 @@ class SampleEventsSeeder extends Seeder
                 ]
             );
 
-            // Assign Seed Images (Local/Testing only)
+            // Assign Seed Images (CAS / R2)
             if (app()->environment('local', 'testing', 'staging')) {
                 $eventImages = [
                     'Community Science Day 2025' => 'seed-images/stem-education.png',
@@ -301,14 +300,36 @@ class SampleEventsSeeder extends Seeder
                     'Coastal Health Outreach' => 'seed-images/medical-outreach.png',
                     'Innovation Summit 2025' => 'seed-images/tech-hub.png',
                 ];
-                
+
                 $imagePath = $eventImages[$eventData['title']] ?? null;
-                
-                $event->update(['image_path' => $imagePath]);
+
+                if ($imagePath) {
+                    $absolutePath = storage_path('app/public/' . $imagePath);
+                    if (file_exists($absolutePath)) {
+                        try {
+                            /** @var MediaService $mediaService */
+                            $mediaService = app(MediaService::class);
+                            $media = $mediaService->registerFile(
+                                $organizer,
+                                $absolutePath,
+                                basename($imagePath),
+                                [
+                                    'visibility' => 'public',
+                                    'root_type' => 'public',
+                                    'path' => ['events', Str::slug($event->title)],
+                                ]
+                            );
+                            
+                            $event->setFeaturedMedia($media->id);
+                        } catch (\Exception $e) {
+                            $this->command->warn('Failed to register CAS media for event: ' . $event->title . ' - ' . $e->getMessage());
+                        }
+                    }
+                }
             }
 
             // Attach tags
-            if (!empty($eventData['tags'])) {
+            if (! empty($eventData['tags'])) {
                 $tagIds = [];
                 foreach ($eventData['tags'] as $tagSlug) {
                     $tag = $tags->get($tagSlug);
@@ -320,7 +341,7 @@ class SampleEventsSeeder extends Seeder
             }
 
             // Create tickets
-            if (!empty($eventData['tickets'])) {
+            if (! empty($eventData['tickets'])) {
                 foreach ($eventData['tickets'] as $ticketData) {
                     $quantity = $ticketData['capacity'] ?? 100;
                     Ticket::firstOrCreate(
@@ -338,21 +359,50 @@ class SampleEventsSeeder extends Seeder
             }
 
             // Create speakers
-            if (!empty($eventData['speakers'])) {
+            if (! empty($eventData['speakers'])) {
                 foreach ($eventData['speakers'] as $speakerData) {
-                    Speaker::firstOrCreate(
+                    $speaker = Speaker::firstOrCreate(
                         ['event_id' => $event->id, 'name' => $speakerData['name']],
                         [
                             'company' => $speakerData['company'] ?? null,
                             'designation' => $speakerData['designation'] ?? null,
                             'bio' => $speakerData['bio'] ?? null,
-                            'is_featured' => $speakerData['is_featured'] ?? false,
                         ]
                     );
+
+                    // Optional: Assign speaker photo (randomly pick from seed images)
+                    if (app()->environment('local', 'testing', 'staging')) {
+                        $speakerImages = [
+                            'seed-images/supervisor.png',
+                            'seed-images/manager.png',
+                        ];
+                        $randomPhoto = $speakerImages[array_rand($speakerImages)];
+                        $photoPath = storage_path('app/public/' . $randomPhoto);
+                        
+                        if (file_exists($photoPath)) {
+                            try {
+                                /** @var MediaService $mediaService */
+                                $mediaService = app(MediaService::class);
+                                $media = $mediaService->registerFile(
+                                    $organizer,
+                                    $photoPath,
+                                    basename($randomPhoto),
+                                    [
+                                        'visibility' => 'public',
+                                        'root_type' => 'public',
+                                        'path' => ['speakers', Str::slug($speaker->name)],
+                                    ]
+                                );
+                                $speaker->setPhotoMedia($media->id);
+                            } catch (\Exception $e) {
+                                // Silent fail for speakers
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        $this->command->info('Created ' . count($eventsData) . ' events with tickets and speakers.');
+        $this->command->info('Created '.count($eventsData).' events with tickets and speakers.');
     }
 }

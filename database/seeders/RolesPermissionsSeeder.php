@@ -62,6 +62,7 @@ class RolesPermissionsSeeder extends Seeder
 
             // System
             'view_reports',
+            'manage_system_settings',
 
             // Exchange Rate Management
             'manage_exchange_rates',
@@ -104,11 +105,15 @@ class RolesPermissionsSeeder extends Seeder
 
             // Lab Space Booking
             'manage_lab_spaces',
+            'edit_lab_space',
             'view_all_lab_bookings',
-            'approve_lab_bookings',
             'manage_lab_maintenance',
             'view_lab_reports',
             'mark_lab_attendance',
+            'disable_lab_bookings',
+            'enable_lab_bookings',
+            'cancel_lab_booking',
+            'initiate_lab_refund',
 
             // Group Management
             'manage_groups',
@@ -125,15 +130,26 @@ class RolesPermissionsSeeder extends Seeder
             // Finance & Payments
             'view_finance_analytics',
             'manage_payments',
-            'refund_payments',
+            'manage_refunds',
 
             // Subscription Management
             'view_subscriptions',
             'manage_subscriptions',
+
+            // Support Tickets
+            'view_support_tickets',
+            'create_support_tickets',
+            'manage_support_tickets',
+            'assign_support_tickets',
+            'resolve_support_tickets',
+
+            // Lab Rollovers
+            'view_lab_rollovers',
+            'retry_lab_rollovers',
         ];
 
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
+            Permission::updateOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
         // Define role permissions mapping
@@ -145,15 +161,16 @@ class RolesPermissionsSeeder extends Seeder
                 'manage_users', 'view_all_users', 'invite_users', 'bulk_user_operations', 'view_audit_logs', 'create_events', 'edit_events',
                 'delete_events', 'view_all_events', 'manage_event_attendees',
                 'view_donation_ledger', 'export_donations', 'create_posts',
-                'edit_posts', 'publish_posts', 'delete_posts', 'view_posts', 'view_all_posts', 'view_reports',
+                'edit_posts', 'publish_posts', 'delete_posts', 'view_posts', 'view_all_posts', 'view_reports', 'manage_system_settings',
                 'manage_exchange_rates', 'view_exchange_rates',
                 'refresh_exchange_rates', 'configure_exchange_rates',
                 'view_plans', 'manage_plans',
                 'view_reconciliation', 'manage_reconciliation',
                 'manage_counties', 'manage_forum_tags',
                 // Lab Space Booking
-                'manage_lab_spaces', 'view_all_lab_bookings', 'approve_lab_bookings',
+                'manage_lab_spaces', 'edit_lab_space', 'view_all_lab_bookings',
                 'manage_lab_maintenance', 'view_lab_reports', 'mark_lab_attendance',
+                'disable_lab_bookings', 'enable_lab_bookings', 'cancel_lab_booking', 'initiate_lab_refund',
                 // Forum Admin
                 'view_forum', 'create_threads', 'reply_threads', 'moderate_forum', 'lock_threads', 'pin_threads', 'delete_any_thread', 'delete_any_forum_post', 'manage_forum_categories', 'manage_forum_tags',
                 // Student Approvals
@@ -161,9 +178,12 @@ class RolesPermissionsSeeder extends Seeder
                 // Retention Settings
                 'manage_retention_settings',
                 // Finance & Payments
-                'view_finance_analytics', 'manage_payments', 'refund_payments',
+                'view_finance_analytics', 'manage_payments', 'manage_refunds',
                 // Subscription Management
                 'view_subscriptions', 'manage_subscriptions',
+                // Support Tickets
+                'view_support_tickets', 'create_support_tickets', 'manage_support_tickets', 'assign_support_tickets', 'resolve_support_tickets',
+                'view_lab_rollovers', 'retry_lab_rollovers',
             ],
             'finance' => [
                 'view_donation_ledger', 'export_donations', 'reconcile_payments', 'view_reports',
@@ -173,7 +193,7 @@ class RolesPermissionsSeeder extends Seeder
                 'view_audit_logs', // Often needed for finance to check transaction logs
 
                 // New Finance Permissions
-                'view_finance_analytics', 'manage_payments', 'refund_payments',
+                'view_finance_analytics', 'manage_payments', 'manage_refunds',
                 'view_subscriptions',
             ],
             'events_manager' => [
@@ -203,36 +223,42 @@ class RolesPermissionsSeeder extends Seeder
             ],
             'lab_manager' => [
                 // Lab space management role (not full admin)
-                'view_all_lab_bookings', 'approve_lab_bookings',
+                'view_all_lab_bookings', 'edit_lab_space',
                 'manage_lab_maintenance', 'view_lab_reports', 'mark_lab_attendance',
+                'disable_lab_bookings', 'enable_lab_bookings', 'cancel_lab_booking', 'initiate_lab_refund',
+                'view_lab_rollovers', 'retry_lab_rollovers',
+            ],
+            'support_agent' => [
+                'view_support_tickets', 'create_support_tickets', 'manage_support_tickets', 'assign_support_tickets', 'resolve_support_tickets',
+                'view_reports', 'view_all_users',
+            ],
+            'lab_supervisor' => [
+                'view_all_lab_bookings', 'mark_lab_attendance', 'edit_lab_space',
+                'manage_lab_maintenance', 'view_lab_reports', 'view_lab_rollovers',
+                'cancel_lab_booking', 'initiate_lab_refund',
             ],
         ];
 
-        // Create roles and assign permissions for both guards
-        $guards = ['web', 'api'];
+        // Create roles and assign permissions (API guard only)
+        foreach ($rolePermissions as $roleName => $rolePerms) {
+            $role = Role::updateOrCreate(
+                ['name' => $roleName, 'guard_name' => 'web'],
+                [
+                    'name' => $roleName,
+                    'guard_name' => 'web',
+                    'is_system' => true, // All seeded roles are built-in system roles
+                ]
+            );
 
-        foreach ($guards as $guard) {
-            foreach ($rolePermissions as $roleName => $rolePerms) {
-                // Ensure permission exists for this guard
-                foreach ($rolePerms as $permName) {
-                    Permission::firstOrCreate(['name' => $permName, 'guard_name' => $guard]);
-                }
-
-                if ($roleName === 'super_admin') {
-                    // Super admin gets all permissions for this guard
-                    // Need to make sure they are created for this guard first
-                    foreach ($permissions as $permission) {
-                        Permission::firstOrCreate(['name' => $permission, 'guard_name' => $guard]);
-                    }
-                }
-
-                $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => $guard]);
-
-                if ($roleName === 'super_admin') {
-                    $role->givePermissionTo(Permission::where('guard_name', $guard)->get());
-                } else {
-                    $role->givePermissionTo($rolePerms);
-                }
+            if ($roleName === 'super_admin') {
+                // Super admin gets all permissions
+                $role->syncPermissions(Permission::where('guard_name', 'web')->get());
+            } else {
+                $role->syncPermissions(
+                    Permission::where('guard_name', 'web')
+                        ->whereIn('name', $rolePerms)
+                        ->get()
+                );
             }
         }
 

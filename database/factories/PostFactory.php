@@ -25,7 +25,6 @@ class PostFactory extends Factory
             'body' => $this->faker->paragraphs(5, true),
             'status' => 'draft',
             'published_at' => null,
-            'hero_image_path' => null,
         ];
     }
 

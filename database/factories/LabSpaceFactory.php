@@ -43,6 +43,7 @@ class LabSpaceFactory extends Factory
             'is_available' => true,
             'available_from' => '08:00',
             'available_until' => '18:00',
+            'hourly_rate' => 100.00,
             'equipment_list' => fake()->randomElements([
                 '3D Printer',
                 'Laser Cutter',
@@ -56,6 +57,7 @@ class LabSpaceFactory extends Factory
                 'Projector',
             ], fake()->numberBetween(3, 6)),
             'rules' => fake()->optional()->paragraph(),
+            'checkin_token' => 'LAB-' . Str::upper(Str::random(12)),
         ];
     }
 

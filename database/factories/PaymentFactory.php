@@ -14,6 +14,7 @@ class PaymentFactory extends Factory
         return [
             'payable_type' => 'App\\Models\\EventOrder',
             'payable_id' => 1,
+            'payer_id' => \App\Models\User::factory(),
             'amount' => $this->faker->randomFloat(2, 100, 5000),
             'currency' => 'KES',
             'status' => 'pending',

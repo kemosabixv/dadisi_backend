@@ -15,7 +15,7 @@ class PlanSubscriptionFactory extends Factory
     {
         return [
             'subscriber_id' => User::factory(),
-            'subscriber_type' => User::class,
+            'subscriber_type' => 'user',
             'plan_id' => Plan::factory(),
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -28,7 +28,7 @@ class PlanSubscriptionFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'subscriber_id' => $user->id,
-            'subscriber_type' => User::class,
+            'subscriber_type' => 'user',
         ]);
     }
 

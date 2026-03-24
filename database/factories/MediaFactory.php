@@ -3,9 +3,9 @@
 namespace Database\Factories;
 
 use App\Models\Media;
+use App\Models\MediaFile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 class MediaFactory extends Factory
 {
@@ -24,7 +24,7 @@ class MediaFactory extends Factory
             'gif' => ['image/gif'],
         ];
 
-        $fileName = $this->faker->word() . '.' . match($type) {
+        $fileName = $this->faker->word().'.'.match ($type) {
             'image' => $this->faker->randomElement(['jpg', 'png', 'webp']),
             'audio' => $this->faker->randomElement(['mp3', 'wav', 'ogg']),
             'video' => $this->faker->randomElement(['mp4', 'webm', 'mov']),
@@ -34,23 +34,21 @@ class MediaFactory extends Factory
 
         return [
             'user_id' => User::factory(),
+            'media_file_id' => MediaFile::factory(),
+            'folder_id' => null,
             'file_name' => $fileName,
-            'file_path' => '/media/2025-12/' . $fileName,
             'type' => $type,
             'mime_type' => $this->faker->randomElement($mimeTypes[$type]),
             'file_size' => $this->faker->numberBetween(1000, 5000000),
             'visibility' => 'private',
             'share_token' => null,
             'allow_download' => true,
-            'is_public' => false,
-            'attached_to' => null,
-            'attached_to_id' => null,
-            'owner_type' => null,
-            'owner_id' => null,
+            'usage_count' => 0,
+            'temporary_until' => null,
         ];
     }
 
-    public function withUser(User $user = null): self
+    public function withUser(?User $user = null): self
     {
         return $this->state(fn (array $attributes) => [
             'user_id' => $user?->id ?? User::factory(),
@@ -69,7 +67,7 @@ class MediaFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'type' => 'image',
             'mime_type' => 'image/jpeg',
-            'file_name' => $this->faker->word() . '.jpg',
+            'file_name' => $this->faker->word().'.jpg',
         ]);
     }
 
@@ -78,7 +76,7 @@ class MediaFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'type' => 'audio',
             'mime_type' => 'audio/mpeg',
-            'file_name' => $this->faker->word() . '.mp3',
+            'file_name' => $this->faker->word().'.mp3',
         ]);
     }
 
@@ -87,7 +85,7 @@ class MediaFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'type' => 'video',
             'mime_type' => 'video/mp4',
-            'file_name' => $this->faker->word() . '.mp4',
+            'file_name' => $this->faker->word().'.mp4',
         ]);
     }
 
@@ -96,7 +94,7 @@ class MediaFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'type' => 'pdf',
             'mime_type' => 'application/pdf',
-            'file_name' => $this->faker->word() . '.pdf',
+            'file_name' => $this->faker->word().'.pdf',
         ]);
     }
 }

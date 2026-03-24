@@ -45,6 +45,13 @@ class SchedulerSettingsSeeder extends Seeder
                 'enabled' => true,
                 'description' => 'Run payment reconciliation against external payment providers',
             ],
+            [
+                'command_name' => 'donations:send-reminders',
+                'run_time' => '10:00',
+                'frequency' => 'hourly',
+                'enabled' => true,
+                'description' => 'Send reminder emails for pending donations that haven\'t been completed',
+            ],
         ];
 
         foreach ($schedulers as $scheduler) {

@@ -20,8 +20,6 @@ class PromoCodeFactory extends Factory
             'discount_value' => $this->faker->randomFloat(2, 5, 50),
             'usage_limit' => $this->faker->optional()->numberBetween(10, 100),
             'used_count' => 0,
-            'valid_from' => now(),
-            'valid_until' => now()->addMonths(3),
             'is_active' => true,
         ];
     }
@@ -47,12 +45,14 @@ class PromoCodeFactory extends Factory
     }
 
     /**
-     * Indicate that the promo code is expired.
+     * Indicate that the promo code has reached its usage limit.
+     * (Note: 'expired' state removed as valid_until field no longer exists)
      */
-    public function expired(): static
+    public function fullyUsed(): static
     {
         return $this->state(fn(array $attributes) => [
-            'valid_until' => now()->subDay(),
+            'usage_limit' => 1,
+            'used_count' => 1,
         ]);
     }
 

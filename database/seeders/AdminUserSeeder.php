@@ -19,12 +19,6 @@ class AdminUserSeeder extends Seeder
         $demoUsers = [
             // Admin users
             [
-                'email' => 'superadmin@dadisilab.com',
-                'username' => 'superadmin',
-                'display_name' => 'Super Admin',
-                'role' => 'super_admin',
-            ],
-            [
                 'email' => 'admin@dadisilab.com',
                 'username' => 'admin',
                 'display_name' => 'Admin User',
@@ -35,6 +29,37 @@ class AdminUserSeeder extends Seeder
                 'username' => 'moderator',
                 'display_name' => 'Mod User',
                 'role' => 'moderator',
+            ],
+            [
+                'email' => 'finance@dadisilab.com',
+                'username' => 'finance',
+                'display_name' => 'Finance User',
+                'role' => 'finance',
+            ],
+            [
+                'email' => 'events@dadisilab.com',
+                'username' => 'eventsmanager',
+                'display_name' => 'Events Manager',
+                'role' => 'events_manager',
+            ],
+            [
+                'email' => 'blog@dadisilab.com',
+                'username' => 'contenteditor',
+                'display_name' => 'Content Editor',
+                'role' => 'content_editor',
+            ],
+            // Lab Staff
+            [
+                'email' => 'supervisor@dadisilab.com',
+                'username' => 'labsupervisor',
+                'display_name' => 'Lab Supervisor',
+                'role' => 'lab_supervisor',
+            ],
+            [
+                'email' => 'manager@dadisilab.com',
+                'username' => 'labmanager',
+                'display_name' => 'Lab Manager',
+                'role' => 'lab_manager',
             ],
             // Regular member users
             [
@@ -60,6 +85,10 @@ class AdminUserSeeder extends Seeder
             ],
         ];
 
+
+        // Fetch all county IDs
+        $countyIds = \App\Models\County::pluck('id')->toArray();
+
         foreach ($demoUsers as $userData) {
             $user = User::firstOrCreate(
                 ['email' => $userData['email']],
@@ -74,42 +103,75 @@ class AdminUserSeeder extends Seeder
             $user->assignRole($userData['role']);
 
             // Create member profile if it doesn't exist
-            if (!$user->memberProfile) {
-                $nameParts = explode(' ', $userData['display_name'], 2);
+            $nameParts = explode(' ', $userData['display_name'], 2);
 
-                // Get the appropriate subscription plan
-                $planName = $userData['subscription_plan'] ?? 'Free';
-                $plan = Plan::where('slug', Str::slug($planName))->first();
+            // Get the appropriate subscription plan
+            $planName = $userData['subscription_plan'] ?? 'Free';
+            $plan = Plan::where('slug', Str::slug($planName))->first();
 
-                // Generate realistic demo data
-                $genders = ['male', 'female'];
-                $occupations = [
-                    'Software Developer',
-                    'Research Scientist',
-                    'Community Organizer',
-                    'Student',
-                    'Lab Technician',
-                    'Environmental Scientist',
-                ];
+            // Generate realistic demo data
+            $genders = ['male', 'female'];
+            $occupations = [
+                'Software Developer',
+                'Research Scientist',
+                'Community Organizer',
+                'Student',
+                'Lab Technician',
+                'Environmental Scientist',
+            ];
 
-                MemberProfile::create([
-                    'user_id' => $user->id,
+            $randomCountyId = $countyIds[array_rand($countyIds)];
+
+            MemberProfile::updateOrCreate(
+                ['user_id' => $user->id],
+                [
                     'first_name' => $nameParts[0] ?? '',
                     'last_name' => $nameParts[1] ?? '',
                     'phone_number' => '+2547' . rand(10000000, 99999999),
-                    'county_id' => rand(1, 47), // Random county from Kenya's 47 counties
+                    'county_id' => $randomCountyId,
                     'sub_county' => 'Demo Sub-County',
                     'ward' => 'Demo Ward',
-                    'gender' => $genders[array_rand($genders)],
-                    'date_of_birth' => now()->subYears(rand(20, 45))->format('Y-m-d'),
-                    'occupation' => $occupations[array_rand($occupations)],
+                    'gender' => current($genders), // Just pick first to avoid changing on reseed
+                    'date_of_birth' => now()->subYears(25)->format('Y-m-d'),
+                    'occupation' => current($occupations),
                     'bio' => 'A passionate member of the Dadisi Community Labs community.',
                     'interests' => ['technology', 'community', 'biotech'],
                     'plan_id' => $plan?->id,
                     'terms_accepted' => true,
                     'marketing_consent' => (bool) rand(0, 1),
                     'is_staff' => $userData['role'] !== 'member',
-                ]);
+                ]
+            );
+
+            // Assign profile picture (CAS / R2)
+            if (app()->environment('local', 'testing', 'staging')) {
+                $avatarImages = [
+                    'seed-images/supervisor.png',
+                    'seed-images/manager.png',
+                    'seed-images/john-doe.png',
+                ];
+                $randomAvatar = $avatarImages[array_rand($avatarImages)];
+                $absolutePath = storage_path('app/public/' . $randomAvatar);
+                
+                if (file_exists($absolutePath)) {
+                    try {
+                        /** @var \App\Services\Media\MediaService $mediaService */
+                        $mediaService = app(\App\Services\Media\MediaService::class);
+                        $media = $mediaService->registerFile(
+                            $user,
+                            $absolutePath,
+                            basename($randomAvatar),
+                            [
+                                'visibility' => 'public',
+                                'root_type' => 'public',
+                                'path' => ['profiles', $user->username],
+                            ]
+                        );
+                        $user->update(['profile_picture_path' => $media->file_path]);
+                    } catch (\Exception $e) {
+                        $this->command->warn('Failed to register CAS avatar for user: ' . $user->username);
+                    }
+                }
             }
 
             // Create actual PlanSubscription record for members with a plan

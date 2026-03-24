@@ -18,6 +18,9 @@ class CountiesTableSeeder extends Seeder
             'Migori','Kisii','Nyamira','Nairobi City'
         ];
 
+        // Truncate table to avoid duplicates (compatible with SQLite)
+        \DB::statement('DELETE FROM counties');
+
         foreach ($counties as $name) {
             County::firstOrCreate(['name' => $name]);
         }
