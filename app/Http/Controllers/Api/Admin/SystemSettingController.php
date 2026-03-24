@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\DTOs\UpdateSystemSettingDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateSystemSettingRequest;
+use App\Http\Resources\SystemSettingResource;
 use App\Services\Contracts\SystemSettingServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +20,7 @@ class SystemSettingController extends Controller
     public function __construct(
         private SystemSettingServiceContract $settingService
     ) {
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**
@@ -71,15 +74,11 @@ class SystemSettingController extends Controller
      *   }
      * }
      */
-    public function update(Request $request): JsonResponse
+    public function update(UpdateSystemSettingRequest $request): JsonResponse
     {
         try {
-            $data = $request->all();
-            
-            // Remove token and other request metadata if present
-            unset($data['_token']);
-            
-            $updatedSettings = $this->settingService->updateSettings($data, $request->user()?->id);
+            $dto = UpdateSystemSettingDTO::fromArray($request->validated());
+            $updatedSettings = $this->settingService->updateSettings($dto->toArray(), $request->user()?->id);
 
             return response()->json([
                 'success' => true,

@@ -29,7 +29,7 @@ class BillingController extends Controller
         private EventOrderReconciliationService $orderReconciliation,
         private BillingExportServiceContract $exportService,
     ) {
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
         
         // Additional requirement for finance role for sensitive operations
         $this->middleware('permission:manage-finances')->only([

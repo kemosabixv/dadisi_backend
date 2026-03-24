@@ -19,7 +19,7 @@ class FinanceAnalyticsController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth:sanctum', 'verified']);
+        $this->middleware(['auth', 'verified']);
     }
 
     /**
@@ -94,6 +94,12 @@ class FinanceAnalyticsController extends Controller
                     'revenue' => $revenueData,
                     'refunds' => $refundData,
                     'categories' => $categoryData,
+                    'summary' => [
+                        'gross_revenue' => (float) Payment::where('status', 'paid')->where('created_at', '>=', $startDate)->sum('amount'),
+                        'total_refunded' => (float) Payment::where('status', 'refunded')->where('refunded_at', '>=', $startDate)->sum('amount'),
+                        'net_revenue' => (float) Payment::where('status', 'paid')->where('created_at', '>=', $startDate)->sum('amount') - 
+                                         (float) Payment::where('status', 'refunded')->where('refunded_at', '>=', $startDate)->sum('amount'),
+                    ],
                     'period' => $period,
                 ]
             ]);

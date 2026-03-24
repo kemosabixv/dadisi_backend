@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\DTOs\ApproveRefundDTO;
+use App\DTOs\RejectRefundDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ApproveRefundRequest;
+use App\Http\Requests\RejectRefundRequest;
 use App\Models\Refund;
+use App\Models\Payment;
 use App\Services\Contracts\RefundServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,7 +27,7 @@ class RefundController extends Controller
     public function __construct(
         private RefundServiceContract $refundService
     ) {
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**
@@ -53,6 +58,8 @@ class RefundController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('manage_refunds');
+
         try {
             $filters = [
                 'status' => $request->input('status'),
@@ -101,12 +108,80 @@ class RefundController extends Controller
      */
     public function show(Refund $refund): JsonResponse
     {
+        $this->authorize('manage_refunds');
+
         try {
-            $refund->load(['payment', 'processor', 'refundable']);
+            $refund->load(['payment', 'processor', 'refundable.user']);
+
+            // Pick essential fields to satisfy the AdminRefundSchema while avoiding relationship overexposure
+            $data = [
+                'id' => $refund->id,
+                'refundable_type' => $refund->refundable_type,
+                'refundable_id' => $refund->refundable_id,
+                'payment_id' => $refund->payment_id,
+                'processed_by' => $refund->processed_by,
+                'amount' => $refund->amount,
+                'currency' => $refund->currency,
+                'original_amount' => $refund->original_amount ?? $refund->amount,
+                'status' => $refund->status,
+                'reason' => $refund->reason,
+                'customer_notes' => $refund->customer_notes,
+                'admin_notes' => $refund->admin_notes,
+                'gateway' => $refund->gateway,
+                'requested_at' => $refund->requested_at->toIso8601String(),
+                'approved_at' => $refund->approved_at?->toIso8601String(),
+                'processed_at' => $refund->processed_at?->toIso8601String(),
+                'completed_at' => $refund->completed_at?->toIso8601String(),
+                'created_at' => $refund->created_at->toIso8601String(),
+                'updated_at' => $refund->updated_at->toIso8601String(),
+                'metadata' => $refund->metadata,
+                'payment' => $refund->payment ? [
+                    'id' => $refund->payment->id,
+                    'method' => $refund->payment->method ?? $refund->payment->payment_method,
+                    'transaction_id' => $refund->payment->transaction_id,
+                    'confirmation_code' => $refund->payment->confirmation_code,
+                    'external_reference' => $refund->payment->external_reference,
+                    'amount' => $refund->payment->amount,
+                    'currency' => $refund->payment->currency,
+                    'paid_at' => $refund->payment->paid_at?->toIso8601String(),
+                ] : null,
+                'processor' => $refund->processor ? [
+                    'id' => $refund->processor->id,
+                    'username' => $refund->processor->username,
+                ] : null,
+            ];
+
+            // Append requester info from the refundable (EventOrder, Donation, etc.)
+            $refundable = $refund->refundable;
+            if ($refundable) {
+                $data['requester'] = [
+                    'name' => $refundable->attendee_name ?? $refundable->guest_name ?? ($refundable->user?->display_name ?? $refundable->user?->username ?? 'Unknown'),
+                    'email' => $refundable->attendee_email ?? $refundable->guest_email ?? ($refundable->user?->email ?? null),
+                    'phone' => $refundable->guest_phone ?? ($refundable->user?->phone_number ?? null),
+                    'user_id' => $refundable->user_id ?? null,
+                    'is_guest' => ($refundable->user_id === null),
+                ];
+
+                // Append specific details based on type
+                if ($refundable instanceof \App\Models\LabBooking) {
+                    $data['refundable_details'] = [
+                        'space_name' => $refundable->labSpace?->name,
+                        'starts_at' => $refundable->starts_at->toIso8601String(),
+                        'ends_at' => $refundable->ends_at->toIso8601String(),
+                        'booking_reference' => $refundable->booking_reference,
+                        'series_id' => $refundable->booking_series_id,
+                    ];
+                } elseif ($refundable instanceof \App\Models\EventOrder) {
+                    $data['refundable_details'] = [
+                        'event_title' => $refundable->event?->title,
+                        'order_number' => $refundable->order_number,
+                    ];
+                }
+            }
 
             return response()->json([
                 'success' => true,
-                'data' => $refund,
+                'data' => $data,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to get refund details', ['error' => $e->getMessage(), 'refund_id' => $refund->id]);
@@ -129,13 +204,14 @@ class RefundController extends Controller
      *   "data": {...}
      * }
      */
-    public function approve(Request $request, Refund $refund): JsonResponse
+    public function approve(ApproveRefundRequest $request, Refund $refund): JsonResponse
     {
         try {
+            $dto = ApproveRefundDTO::fromArray($request->validated());
             $approvedRefund = $this->refundService->approveRefund(
                 $refund, 
                 auth()->user(), 
-                $request->input('admin_notes')
+                $dto->admin_notes
             );
 
             return response()->json([
@@ -167,17 +243,14 @@ class RefundController extends Controller
      *   "data": {...}
      * }
      */
-    public function reject(Request $request, Refund $refund): JsonResponse
+    public function reject(RejectRefundRequest $request, Refund $refund): JsonResponse
     {
         try {
-            $validated = $request->validate([
-                'admin_notes' => 'required|string|max:1000',
-            ]);
-
+            $dto = RejectRefundDTO::fromArray($request->validated());
             $rejectedRefund = $this->refundService->rejectRefund(
                 $refund, 
                 auth()->user(), 
-                $validated['admin_notes']
+                $dto->admin_notes
             );
 
             return response()->json([
@@ -210,6 +283,8 @@ class RefundController extends Controller
      */
     public function process(Refund $refund): JsonResponse
     {
+        $this->authorize('manage_refunds');
+
         try {
             $processedRefund = $this->refundService->processRefund($refund);
 
@@ -246,6 +321,8 @@ class RefundController extends Controller
      */
     public function stats(): JsonResponse
     {
+        $this->authorize('manage_refunds');
+
         try {
             $stats = $this->refundService->getStats();
 
@@ -256,6 +333,71 @@ class RefundController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to get refund stats', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Failed to retrieve statistics'], 500);
+        }
+    }
+
+    /**
+     * Initiate a new refund request (Admin only)
+     *
+     * @authenticated
+     * @bodyParam payment_reference string required The payment reference (transaction ID or external reference).
+     * @bodyParam reason string required The reason for the refund.
+     * @bodyParam amount float optional Custom refund amount.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $this->authorize('manage_refunds');
+
+        try {
+            $validated = $request->validate([
+                'payment_reference' => 'required|string',
+                'reason' => 'required|string|max:500',
+                'amount' => 'nullable|numeric|min:0.01',
+                'customer_notes' => 'nullable|string|max:1000',
+            ]);
+
+            // 1. Find the payment
+            $payment = Payment::where('external_reference', $validated['payment_reference'])
+                ->orWhere('transaction_id', $validated['payment_reference'])
+                ->first();
+
+            if (!$payment) {
+                return response()->json(['success' => false, 'message' => 'Payment not found.'], 404);
+            }
+
+            if (!$payment->isPaid()) {
+                return response()->json(['success' => false, 'message' => 'Only paid payments can be refunded.'], 400);
+            }
+
+            if (!$payment->payable_type || !$payment->payable_id) {
+                return response()->json(['success' => false, 'message' => 'Payment is not associated with a refundable entity.'], 400);
+            }
+
+            // 2. Submit the refund request
+            $refund = $this->refundService->submitRefundRequest(
+                $payment->payable_type,
+                $payment->payable_id,
+                $validated['reason'],
+                $validated['customer_notes'] ?? "Requested by admin: " . auth()->user()->username
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Refund request initiated successfully.',
+                'data' => $refund,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Admin refund initiation failed', [
+                'error' => $e->getMessage(),
+                'user' => auth()->id(),
+                'payload' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
         }
     }
 }

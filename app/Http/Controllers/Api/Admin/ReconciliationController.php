@@ -30,7 +30,7 @@ class ReconciliationController extends Controller
         $this->exporter = $exporter;
 
         // Require Sanctum authentication - authorization handled via policies
-        $this->middleware('auth:sanctum');
+        $this->middleware('auth');
     }
 
     /**
