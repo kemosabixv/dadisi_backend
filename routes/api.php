@@ -1,42 +1,60 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\Auth\AuthController;
-use App\Http\Controllers\Api\Auth\EmailVerificationController;
-use App\Http\Controllers\Api\Auth\RefreshTokenController;
-use App\Http\Controllers\Api\Auth\TwoFactorController;
-use App\Http\Controllers\Api\Auth\PasskeyController;
-use App\Http\Controllers\Api\ExchangeRateController;
-use App\Http\Controllers\Api\Admin\ReconciliationController;
-use App\Http\Controllers\Api\PublicDonationController;
-use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\Admin\AdminPaymentController;
 use App\Http\Controllers\Api\Admin\FinanceAnalyticsController;
+use App\Http\Controllers\Api\Admin\ReconciliationController;
+use App\Http\Controllers\Api\Admin\RefundController as AdminRefundController;
+use App\Http\Controllers\Api\AuditLogController;
+use App\Http\Controllers\Api\Auth\AuthController;
+use App\Http\Controllers\Api\Auth\EmailVerificationController;
+use App\Http\Controllers\Api\Auth\PasskeyController;
+use App\Http\Controllers\Api\Auth\RefreshTokenController;
+use App\Http\Controllers\Api\Auth\TwoFactorController;
+use App\Http\Controllers\Api\ExchangeRateController;
+use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\PublicDonationController;
+use App\Http\Controllers\Api\PublicSettingController;
+use App\Http\Controllers\Api\FolderController;
+use App\Http\Controllers\Api\MediaController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+// ============================================================================
+// PUBLIC SETTINGS (no auth required)
+// ============================================================================
+Route::get('settings/public', [PublicSettingController::class, 'index'])->name('settings.public');
+Route::post('contact', [\App\Http\Controllers\Api\ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
+
+// Public Invitation onboarding routes
+Route::prefix('invitations')->group(function () {
+    Route::get('{token}/verify', [\App\Http\Controllers\Api\InvitationController::class, 'verify'])->name('invitations.verify');
+    Route::post('{token}/accept', [\App\Http\Controllers\Api\InvitationController::class, 'accept'])->name('invitations.accept');
+});
 
 Route::prefix('auth')->group(function () {
-	Route::post('signup', [AuthController::class, 'signup'])->middleware('throttle:5,1')->name('auth.signup');
-	Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1')->name('auth.login');
-	Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
-	Route::get('user', [AuthController::class, 'getAuthenticatedUser'])->middleware('auth:sanctum')->name('auth.user');
-    Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum')->name('auth.me');
-    
+
+    Route::post('signup', [AuthController::class, 'signup'])->middleware('throttle:5,1')->name('auth.signup');
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1')->name('auth.login');
+    Route::post('logout', [AuthController::class, 'logout'])->middleware('auth')->name('auth.logout');
+    Route::get('user', [AuthController::class, 'getAuthenticatedUser'])->middleware('auth')->name('auth.user');
+    Route::get('me', [AuthController::class, 'me'])->middleware('auth')->name('auth.me');
+
     // Token refresh for silent token rotation
-    Route::post('refresh', [RefreshTokenController::class, 'refresh'])->middleware('auth:sanctum')->name('auth.refresh');
+    // Route::post('refresh', [RefreshTokenController::class, 'refresh'])->middleware('auth')->name('auth.refresh');
 
-	Route::post('/password/email', [AuthController::class, 'sendPasswordResetLinkEmail'])->middleware('throttle:5,1')->name('password.email');
-	Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('password.reset');
-    Route::post('/password/change', [AuthController::class, 'changePassword'])->middleware('auth:sanctum')->name('password.change');
+    Route::post('/password/email', [AuthController::class, 'sendPasswordResetLinkEmail'])->middleware('throttle:5,1')->name('password.email');
+    Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('password.reset');
+    Route::post('/password/change', [AuthController::class, 'changePassword'])->middleware('auth')->name('password.change');
 
-	// Email verification routes
-	Route::post('send-verification', [EmailVerificationController::class, 'send'])
-		->middleware(['auth:sanctum', 'throttle:6,1'])
-		->name('auth.send-verification');
-	Route::post('verify-email', [EmailVerificationController::class, 'verify'])
-		->name('auth.verify-email');
+    // Email verification routes
+    Route::post('send-verification', [EmailVerificationController::class, 'send'])
+        ->middleware(['auth', 'throttle:6,1'])
+        ->name('auth.send-verification');
+    Route::post('verify-email', [EmailVerificationController::class, 'verify'])
+        ->name('auth.verify-email');
 
     // Two-Factor Authentication - TOTP
-    Route::prefix('2fa/totp')->middleware('auth:sanctum')->group(function () {
+    Route::prefix('2fa/totp')->middleware('auth')->group(function () {
         Route::post('enable', [TwoFactorController::class, 'enable'])->name('auth.2fa.totp.enable');
         Route::post('verify', [TwoFactorController::class, 'verify'])->name('auth.2fa.totp.verify');
         Route::post('disable', [TwoFactorController::class, 'disable'])->name('auth.2fa.totp.disable');
@@ -51,7 +69,7 @@ Route::prefix('auth')->group(function () {
     // Passkeys (WebAuthn)
     Route::prefix('passkeys')->group(function () {
         // Registration requires auth
-        Route::middleware('auth:sanctum')->group(function () {
+        Route::middleware('auth')->group(function () {
             Route::post('register/options', [PasskeyController::class, 'registerOptions'])->name('auth.passkeys.register.options');
             Route::post('register', [PasskeyController::class, 'register'])->name('auth.passkeys.register');
             Route::get('/', [PasskeyController::class, 'index'])->name('auth.passkeys.index');
@@ -69,11 +87,12 @@ Route::prefix('auth')->group(function () {
 
 // Counties - Public read access (no auth required)
 use App\Http\Controllers\Api\CountyController;
+
 Route::get('counties', [CountyController::class, 'index'])->name('counties.index');
 Route::get('counties/{county}', [CountyController::class, 'show'])->name('counties.show');
 
 // Counties - Authenticated CUD (policy handles permission check)
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth')->group(function () {
     Route::post('counties', [CountyController::class, 'store'])->name('counties.store');
     Route::put('counties/{county}', [CountyController::class, 'update'])->name('counties.update');
     Route::delete('counties/{county}', [CountyController::class, 'destroy'])->name('counties.destroy');
@@ -82,7 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // Member Profile routes (authenticated)
 use App\Http\Controllers\Api\MemberProfileController;
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth')->group(function () {
     Route::get('member-profiles/me', [MemberProfileController::class, 'me']);
     Route::post('member-profiles', [MemberProfileController::class, 'store']);
     Route::get('member-profiles', [MemberProfileController::class, 'index']);
@@ -92,30 +111,46 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('member-profiles/profile-picture', [MemberProfileController::class, 'uploadProfilePicture']);
 });
 
+// Chat routes (authenticated)
+Route::middleware('auth')->prefix('chat')->group(function () {
+    Route::get('/conversations', [ChatController::class, 'index'])->name('chat.conversations');
+    Route::post('/conversations/start/{user}', [ChatController::class, 'startConversation'])->name('chat.start');
+    Route::get('/conversations/{conversation}/messages', [ChatController::class, 'messages'])->name('chat.messages');
+    Route::post('/messages', [ChatController::class, 'store'])->name('chat.store');
+    Route::delete('/messages/{message}', [ChatController::class, 'deleteMessage'])->name('chat.message.delete');
+    Route::delete('/conversations/{conversation}', [ChatController::class, 'deleteConversation'])->name('chat.conversation.delete');
+});
+
 // Notifications routes (authenticated)
 use App\Http\Controllers\Api\NotificationController;
 
-Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
+Route::middleware('auth')->prefix('notifications')->group(function () {
     Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
     Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
     Route::post('/clear-all', [NotificationController::class, 'clearAll'])->name('notifications.clear-all');
     Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
     Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // Web Push Subscriptions
+    Route::post('/push-subscription', [\App\Http\Controllers\Api\PushNotificationController::class, 'store'])->name('notifications.push.store');
+    Route::delete('/push-subscription', [\App\Http\Controllers\Api\PushNotificationController::class, 'destroy'])->name('notifications.push.destroy');
 });
 
 // User Management routes (authenticated)
 use App\Http\Controllers\Api\UserController;
+
 // Self-service user endpoints (authenticated)
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth')->group(function () {
     // Self-service operations (must come before parameterized routes)
     Route::delete('users/self', [UserController::class, 'deleteSelf']);
     Route::get('users/self/export', [UserController::class, 'exportData']);
     Route::post('users/self/profile-picture', [UserController::class, 'uploadProfilePicture']);
+    Route::post('users/self/invite', [UserController::class, 'selfInvite']);
 });
 
 // Admin-protected user management and RBAC operations
-Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // Bulk operations (Super Admin only) - MUST come before parameterized routes
     Route::post('users/bulk/assign-role', [UserController::class, 'bulkAssignRole']);
     Route::post('users/bulk/remove-role', [UserController::class, 'bulkRemoveRole']);
@@ -146,7 +181,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 // Data Retention Management routes (Super Admin only)
 use App\Http\Controllers\Api\UserDataRetentionController;
 
-Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Specific routes before parameterized routes
     Route::get('retention-settings-summary', [UserDataRetentionController::class, 'summary']);
     Route::post('retention-settings/update-days', [UserDataRetentionController::class, 'updateRetentionDays']);
@@ -161,9 +196,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('schedulers/update', [UserDataRetentionController::class, 'updateScheduler']);
 });
 
+use App\Http\Controllers\Api\AdminMenuController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
-use App\Http\Controllers\Api\AdminMenuController;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -172,6 +207,7 @@ Route::bind('permission', function ($value) {
     if (is_numeric($value)) {
         return Permission::where('id', $value)->firstOrFail();
     }
+
     return Permission::where('name', $value)->firstOrFail();
 });
 
@@ -179,16 +215,17 @@ Route::bind('role', function ($value) {
     if (is_numeric($value)) {
         return Role::where('id', $value)->firstOrFail();
     }
+
     return Role::where('name', $value)->firstOrFail();
 });
 
 // Admin Menu route: restricted to admin users only to avoid discovery of admin surface
-Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('menu', [AdminMenuController::class, 'index'])->name('admin.menu');
 });
 
 // RBAC Management routes (Super Admin only)
-Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // Permission Management
     Route::get('permissions', [PermissionController::class, 'index']);
     Route::get('permissions/{permission}', [PermissionController::class, 'show']);
@@ -206,6 +243,17 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 
     // Global Audit Logs
     Route::get('audit-logs', [UserController::class, 'bulkAuditLogs']);
+
+    // Refund Management
+    Route::prefix('refunds')->group(function () {
+        Route::get('/', [AdminRefundController::class, 'index'])->name('admin.refunds.index');
+        Route::get('stats', [AdminRefundController::class, 'stats'])->name('admin.refunds.stats');
+        Route::get('{refund}', [AdminRefundController::class, 'show'])->name('admin.refunds.show');
+        Route::post('/', [AdminRefundController::class, 'store'])->name('admin.refunds.store');
+        Route::post('{refund}/approve', [AdminRefundController::class, 'approve'])->name('admin.refunds.approve');
+        Route::post('{refund}/reject', [AdminRefundController::class, 'reject'])->name('admin.refunds.reject');
+        Route::post('{refund}/process', [AdminRefundController::class, 'process'])->name('admin.refunds.process');
+    });
 });
 
 // Plan Management routes
@@ -217,7 +265,7 @@ Route::get('plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
 
 // Exchange Rate routes (public read, admin-only write)
 Route::get('exchange-rates/latest', [ExchangeRateController::class, 'index'])->name('exchange-rates.latest');
-Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('exchange-rates', [ExchangeRateController::class, 'index'])->name('admin.exchange-rates.index');
     Route::get('exchange-rates/info', [ExchangeRateController::class, 'show'])->name('admin.exchange-rates.show');
     Route::post('exchange-rates/refresh', [ExchangeRateController::class, 'refresh'])->name('admin.exchange-rates.refresh');
@@ -226,15 +274,15 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 });
 
 // Admin-only plan management (create/update/delete)
-Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('plans', [PlanController::class, 'store'])->name('plans.store');
     Route::put('plans/{plan}', [PlanController::class, 'update'])->name('plans.update');
     Route::delete('plans/{plan}', [PlanController::class, 'destroy'])->name('plans.destroy');
 });
 
 // Donation Campaign routes
-use App\Http\Controllers\Api\PublicDonationCampaignController;
 use App\Http\Controllers\Api\DonationCampaignAdminController;
+use App\Http\Controllers\Api\PublicDonationCampaignController;
 
 // Public: list and view active donation campaigns
 Route::prefix('donation-campaigns')->group(function () {
@@ -244,7 +292,7 @@ Route::prefix('donation-campaigns')->group(function () {
 });
 
 // Admin-only donation campaign management
-Route::prefix('admin/donation-campaigns')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin/donation-campaigns')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [DonationCampaignAdminController::class, 'index'])->name('admin.donation-campaigns.index');
     Route::get('/create', [DonationCampaignAdminController::class, 'create'])->name('admin.donation-campaigns.create');
     Route::post('/', [DonationCampaignAdminController::class, 'store'])->name('admin.donation-campaigns.store');
@@ -268,21 +316,23 @@ Route::prefix('donations')->group(function () {
     Route::post('/', [PublicDonationController::class, 'store'])->name('donations.store');
 
     // Authenticated: List user's donations and create new donation
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware('auth')->group(function () {
         Route::get('/', [PublicDonationController::class, 'index'])->name('donations.index');
         Route::delete('/{donation}', [PublicDonationController::class, 'destroy'])->name('donations.destroy');
     });
 });
 
+// Refunds - Public request
+Route::post('refunds', [\App\Http\Controllers\Api\RefundController::class, 'store'])->name('refunds.store');
+
 // Admin Donations Management
 use App\Http\Controllers\Api\Admin\DonationAdminController;
 
-Route::prefix('admin/donations')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin/donations')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [DonationAdminController::class, 'index'])->name('admin.donations.index');
     Route::get('/stats', [DonationAdminController::class, 'stats'])->name('admin.donations.stats');
     Route::get('/{donation}', [DonationAdminController::class, 'show'])->name('admin.donations.show');
 });
-
 
 // Blog Management - Public routes (read-only)
 use App\Http\Controllers\Api\PublicPostController;
@@ -298,11 +348,11 @@ Route::prefix('blog')->group(function () {
 });
 
 // Blog Management - Admin routes (CRUD)
-use App\Http\Controllers\Api\PostAdminController;
 use App\Http\Controllers\Api\CategoryAdminController;
+use App\Http\Controllers\Api\PostAdminController;
 use App\Http\Controllers\Api\TagAdminController;
 
-Route::prefix('admin/blog')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin/blog')->middleware(['auth', 'admin'])->group(function () {
     // Posts management - using slug as primary identifier
     Route::get('posts', [PostAdminController::class, 'index'])->name('admin.blog.posts.index');
     Route::get('posts/create', [PostAdminController::class, 'create'])->name('admin.blog.posts.create');
@@ -318,7 +368,6 @@ Route::prefix('admin/blog')->middleware(['auth:sanctum', 'admin'])->group(functi
 
     // Comments (admin: delete any)
     Route::delete('comments/{comment}', [\App\Http\Controllers\Api\PostCommentController::class, 'destroy'])->name('admin.blog.comments.destroy');
-
 
     // Categories management - explicit routes
     Route::get('categories', [CategoryAdminController::class, 'index'])->name('admin.blog.categories.index');
@@ -348,7 +397,7 @@ Route::prefix('admin/blog')->middleware(['auth:sanctum', 'admin'])->group(functi
 use App\Http\Controllers\Api\AuthorBlogController;
 use App\Http\Controllers\Api\AuthorPostController;
 
-Route::prefix('user/blog')->middleware('auth:sanctum')->group(function () {
+Route::prefix('user/blog')->middleware('auth')->group(function () {
     // Posts (author's own) - using slug as primary identifier
     Route::get('posts', [AuthorPostController::class, 'index'])->name('user.blog.posts.index');
     Route::get('posts/create', [AuthorPostController::class, 'create'])->name('user.blog.posts.create');
@@ -375,7 +424,7 @@ Route::prefix('user/blog')->middleware('auth:sanctum')->group(function () {
 });
 
 // Blog Management - User routes (user's own posts)
-Route::prefix('blog')->middleware('auth:sanctum')->group(function () {
+Route::prefix('blog')->middleware('auth')->group(function () {
     Route::get('my-posts', [PublicPostController::class, 'myPosts'])->name('blog.my-posts');
     Route::put('my-posts/{post}', [PublicPostController::class, 'updateUserPost'])->name('blog.my-posts.update');
     Route::delete('my-posts/{post}', [PublicPostController::class, 'destroyUserPost'])->name('blog.my-posts.destroy');
@@ -390,21 +439,30 @@ Route::prefix('blog')->middleware('auth:sanctum')->group(function () {
     Route::get('posts/{slug}/likers', [\App\Http\Controllers\Api\PostLikeController::class, 'likers'])->name('blog.posts.likers');
 });
 
-// Media Management - User routes
-use App\Http\Controllers\Api\MediaController;
+// Folder Management
+Route::prefix('folders')->middleware('auth')->group(function () {
+    Route::get('', [FolderController::class, 'index'])->name('folders.index');
+    Route::post('', [FolderController::class, 'store'])->name('folders.store');
+    Route::post('rename-by-name', [FolderController::class, 'renameByName'])->name('folders.rename-by-name');
+    Route::put('{folder}', [FolderController::class, 'update'])->name('folders.update');
+    Route::delete('{folder}', [FolderController::class, 'destroy'])->name('folders.destroy');
+});
 
+// Media Management - User routes
 Route::prefix('media')->group(function () {
-    // Public share route
-    Route::get('shared/{token}', [MediaController::class, 'showShared'])->name('media.shared');
+    // Public share routes
+    Route::get('shared/{token}', [MediaController::class, 'getSharedInfo'])->name('media.shared.info');
+    Route::get('shared/{token}/download', [MediaController::class, 'showShared'])->name('media.shared.download');
 
     // Authenticated routes
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('quota', [MediaController::class, 'quota'])->name('media.quota');
         Route::get('', [MediaController::class, 'index'])->name('media.index');
         Route::post('', [MediaController::class, 'store'])->name('media.store');
         Route::get('{media}', [MediaController::class, 'show'])->name('media.show');
+        Route::put('{media}', [MediaController::class, 'update'])->name('media.update');
         Route::delete('{media}', [MediaController::class, 'destroy'])->name('media.destroy');
-        Route::patch('{media}/visibility', [MediaController::class, 'updateVisibility'])->name('media.visibility');
-        Route::patch('{media}/rename', [MediaController::class, 'rename'])->name('media.rename');
+        Route::post('bulk-move', [MediaController::class, 'bulkMove'])->name('media.bulk-move');
 
         // Multipart uploads
         Route::prefix('multipart')->group(function () {
@@ -419,17 +477,15 @@ Route::prefix('media')->group(function () {
 use App\Http\Controllers\Api\WebhookController;
 
 Route::match(['get', 'post'], 'webhooks/pesapal', [WebhookController::class, 'pesapal'])->name('webhooks.pesapal');
-Route::get('webhooks', [WebhookController::class, 'index'])->middleware('auth:sanctum');
+Route::get('webhooks', [WebhookController::class, 'index'])->middleware('auth');
 
 // Phase 1: Subscription & Payment Routes (Authenticated)
-use App\Http\Controllers\Api\SubscriptionCoreController;
-use App\Http\Controllers\Api\StudentApprovalController;
 use App\Http\Controllers\Api\PaymentController;
-use App\Http\Controllers\Api\RenewalController;
-use App\Http\Controllers\Api\UserPaymentMethodController;
+use App\Http\Controllers\Api\StudentApprovalController;
+use App\Http\Controllers\Api\SubscriptionCoreController;
 
 // Subscription routes
-Route::prefix('subscriptions')->middleware('auth:sanctum')->group(function () {
+Route::prefix('subscriptions')->middleware('auth')->group(function () {
     // Current subscription status
     Route::get('current', [SubscriptionCoreController::class, 'getCurrentSubscription'])->name('subscriptions.current');
     Route::get('status', [SubscriptionCoreController::class, 'getSubscriptionStatus'])->name('subscriptions.status');
@@ -446,13 +502,13 @@ Route::prefix('subscriptions')->middleware('auth:sanctum')->group(function () {
     Route::post('cancel-payment', [SubscriptionCoreController::class, 'cancelSubscriptionPayment'])->name('subscriptions.cancel-payment');
     Route::post('process-mock-payment', [SubscriptionCoreController::class, 'processMockPayment'])->name('subscriptions.process-mock-payment');
     Route::post('cancel', [SubscriptionCoreController::class, 'cancelSubscription'])->name('subscriptions.cancel');
-
+    Route::get('ref/{reference}', [SubscriptionCoreController::class, 'getPaymentByReference'])->name('subscriptions.by-reference');
 });
 
 // Admin Finance routes
-Route::prefix('admin/finance')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin/finance')->middleware(['auth', 'admin'])->group(function () {
     Route::get('analytics', [FinanceAnalyticsController::class, 'stats'])->name('admin.finance.analytics');
-    
+
     Route::apiResource('payments', AdminPaymentController::class)
         ->only(['index', 'show'])
         ->names([
@@ -463,7 +519,7 @@ Route::prefix('admin/finance')->middleware(['auth:sanctum', 'admin'])->group(fun
 });
 
 // Student approval routes
-Route::prefix('student-approvals')->middleware('auth:sanctum')->group(function () {
+Route::prefix('student-approvals')->middleware('auth')->group(function () {
     // User operations
     Route::post('submit', [StudentApprovalController::class, 'submitApprovalRequest'])->name('student-approvals.submit');
     Route::get('status', [StudentApprovalController::class, 'getApprovalStatus'])->name('student-approvals.status');
@@ -474,6 +530,7 @@ Route::prefix('student-approvals')->middleware('auth:sanctum')->group(function (
     Route::get('requests/{request}', [StudentApprovalController::class, 'getApprovalDetails'])->name('student-approvals.show');
     Route::post('requests/{request}/approve', [StudentApprovalController::class, 'approveRequest'])->name('student-approvals.approve');
     Route::post('requests/{request}/reject', [StudentApprovalController::class, 'rejectRequest'])->name('student-approvals.reject');
+    Route::post('requests/{request}/overturn', [StudentApprovalController::class, 'overturnRejection'])->name('student-approvals.overturn');
 });
 
 // Payment routes
@@ -483,7 +540,7 @@ Route::prefix('payments')->group(function () {
     Route::post('webhook', [PaymentController::class, 'handleWebhook'])->name('payments.webhook');
 
     // Authenticated payment operations
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware('auth')->group(function () {
         Route::get('form-metadata', [PaymentController::class, 'getPaymentFormMetadata'])->name('payments.form-metadata');
         Route::post('verify', [PaymentController::class, 'verifyPayment'])->name('payments.verify');
         Route::post('process', [PaymentController::class, 'processPayment'])->name('payments.process');
@@ -497,17 +554,17 @@ Route::prefix('payments')->group(function () {
 // Admin Exchange Rate Management routes (Super Admin only)
 use App\Http\Controllers\Api\Admin\BillingController;
 
-Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {  // Policy handles super_admin checks
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {  // Policy handles super_admin checks
     // Exchange rate routes already defined earlier in file
-    
+
     // Phase 3: Reconciliation management (Finance/Admin)
     Route::prefix('reconciliation')->group(function () {
-            Route::get('', [ReconciliationController::class, 'index'])->name('admin.reconciliation.index');
-            Route::get('stats', [ReconciliationController::class, 'stats'])->name('admin.reconciliation.stats');
-            Route::get('export', [ReconciliationController::class, 'export'])->name('admin.reconciliation.export');
-            Route::post('trigger', [ReconciliationController::class, 'trigger'])->name('admin.reconciliation.trigger');
-            Route::delete('{run}', [ReconciliationController::class, 'destroy'])->name('admin.reconciliation.destroy');
-            Route::get('{run}', [ReconciliationController::class, 'show'])->name('admin.reconciliation.show');
+        Route::get('', [ReconciliationController::class, 'index'])->name('admin.reconciliation.index');
+        Route::get('stats', [ReconciliationController::class, 'stats'])->name('admin.reconciliation.stats');
+        Route::get('export', [ReconciliationController::class, 'export'])->name('admin.reconciliation.export');
+        Route::post('trigger', [ReconciliationController::class, 'trigger'])->name('admin.reconciliation.trigger');
+        Route::delete('{run}', [ReconciliationController::class, 'destroy'])->name('admin.reconciliation.destroy');
+        Route::get('{run}', [ReconciliationController::class, 'show'])->name('admin.reconciliation.show');
     });
 
     // Billing and reconciliation management (Finance/Admin)
@@ -539,27 +596,36 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
 // Event Management - Public routes
 use App\Http\Controllers\Api\EventController;
-use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\SpeakerController;
+use App\Http\Controllers\Api\TicketController;
 
 Route::get('events', [EventController::class, 'index'])->name('events.index');
 Route::get('events/{slug}', [EventController::class, 'show'])->name('events.show');
+Route::get('events/{event}/validate-promo', [EventController::class, 'validatePromo'])->name('events.validate-promo');
 Route::get('events/{event}/tickets', [TicketController::class, 'index'])->name('events.tickets.index');
 Route::get('events/{event}/speakers', [SpeakerController::class, 'index'])->name('events.speakers.index');
 
 // Event Management - User routes (Attendees only - registration/RSVP)
-Route::middleware('auth:sanctum')->group(function () {
-    // Registration/RSVP
-    Route::post('events/{event}/register', [RegistrationController::class, 'store'])->name('events.register');
+Route::post('events/{event}/register', [RegistrationController::class, 'store'])->name('events.register');
+Route::post('events/{event}/leave-waitlist', [RegistrationController::class, 'leaveWaitlist'])->name('events.leave-waitlist');
+
+Route::delete('registrations/{registration}', [RegistrationController::class, 'destroy'])->name('registrations.destroy');
+
+// Token-based routes for universal ticket page
+Route::get('registrations/token/{token}', [RegistrationController::class, 'showByToken'])->name('registrations.show-by-token');
+Route::post('registrations/token/{token}/cancel', [RegistrationController::class, 'cancelByToken'])->name('registrations.token.cancel');
+Route::post('registrations/token/{token}/refund', [RegistrationController::class, 'refundRequestByToken'])->name('registrations.token.refund');
+
+Route::middleware('auth')->group(function () {
+    // Authenticated Registration operations
     Route::get('registrations/my', [RegistrationController::class, 'myRegistrations'])->name('registrations.my');
-    Route::delete('registrations/{registration}', [RegistrationController::class, 'destroy'])->name('registrations.destroy');
 });
 
 // Event Management - Admin routes
 use App\Http\Controllers\Api\Admin\AdminEventController;
 
-Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('events/stats', [AdminEventController::class, 'stats'])->name('admin.events.stats');
     Route::get('events', [AdminEventController::class, 'index'])->name('admin.events.index');
     Route::post('events', [AdminEventController::class, 'store'])->name('admin.events.store');
@@ -571,8 +637,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('events/{event}/feature', [AdminEventController::class, 'feature'])->name('admin.events.feature');
     Route::post('events/{event}/unfeature', [AdminEventController::class, 'unfeature'])->name('admin.events.unfeature');
     Route::get('events/{event}/registrations', [AdminEventController::class, 'registrations'])->name('admin.events.registrations');
+    Route::post('events/{event}/registrations/bulk/cancel', [\App\Http\Controllers\Api\RegistrationController::class, 'bulkCancel'])->name('admin.events.registrations.bulk-cancel');
     Route::delete('events/{event}', [AdminEventController::class, 'destroy'])->name('admin.events.destroy');
-    
+
     // Tickets management (admin only now)
     Route::post('events/{event}/tickets', [TicketController::class, 'store'])->name('admin.events.tickets.store');
     Route::put('tickets/{ticket}', [TicketController::class, 'update'])->name('admin.tickets.update');
@@ -589,7 +656,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('events/{event}/attendance/scan', [\App\Http\Controllers\Api\Admin\AdminEventAttendanceController::class, 'scan'])->name('admin.events.attendance.scan');
 });
 
-
 // Event Categories & Tags
 use App\Http\Controllers\Api\EventCategoryController;
 use App\Http\Controllers\Api\EventTagController;
@@ -597,7 +663,7 @@ use App\Http\Controllers\Api\EventTagController;
 Route::get('event-categories', [EventCategoryController::class, 'index'])->name('event-categories.index');
 Route::get('event-tags', [EventTagController::class, 'index'])->name('event-tags.index');
 
-Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::apiResource('event-categories', EventCategoryController::class)->except(['index']);
     Route::apiResource('event-tags', EventTagController::class)->only(['store', 'destroy']);
 });
@@ -611,51 +677,51 @@ Route::get('groups/{slug}', [GroupController::class, 'show'])->name('groups.show
 Route::get('groups/{slug}/members', [GroupController::class, 'members'])->name('groups.members');
 
 // Authenticated group actions
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth')->group(function () {
     Route::post('groups/{slug}/join', [GroupController::class, 'join'])->name('groups.join');
     Route::post('groups/{slug}/leave', [GroupController::class, 'leave'])->name('groups.leave');
 });
 
 // Forum API Routes
 use App\Http\Controllers\Api\ForumCategoryController;
-use App\Http\Controllers\Api\ForumThreadController;
 use App\Http\Controllers\Api\ForumPostController;
 use App\Http\Controllers\Api\ForumTagController;
+use App\Http\Controllers\Api\ForumThreadController;
 
 Route::prefix('forum')->group(function () {
     // Categories
     Route::get('categories', [ForumCategoryController::class, 'index'])->name('forum.categories.index');
     Route::get('categories/{category}', [ForumCategoryController::class, 'show'])->name('forum.categories.show');
-    
+
     // Threads - list all or filter by category
     Route::get('threads', [ForumThreadController::class, 'index'])->name('forum.threads.index');
     Route::get('categories/{category}/threads', [ForumThreadController::class, 'index'])->name('forum.categories.threads');
     Route::get('threads/{thread}', [ForumThreadController::class, 'show'])->name('forum.threads.show');
-    
+
     // Posts for a thread
     Route::get('threads/{thread}/posts', [ForumPostController::class, 'index'])->name('forum.posts.index');
-    
+
     // Authenticated forum actions
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware('auth')->group(function () {
         // Thread CRUD
         Route::post('categories/{category}/threads', [ForumThreadController::class, 'store'])->name('forum.threads.store');
         Route::put('threads/{thread}', [ForumThreadController::class, 'update'])->name('forum.threads.update');
         Route::delete('threads/{thread}', [ForumThreadController::class, 'destroy'])->name('forum.threads.destroy');
-        
+
         // Thread moderation (admin/moderator)
         Route::post('threads/{thread}/pin', [ForumThreadController::class, 'pin'])->name('forum.threads.pin');
         Route::post('threads/{thread}/unpin', [ForumThreadController::class, 'unpin'])->name('forum.threads.unpin');
         Route::post('threads/{thread}/lock', [ForumThreadController::class, 'lock'])->name('forum.threads.lock');
         Route::post('threads/{thread}/unlock', [ForumThreadController::class, 'unlock'])->name('forum.threads.unlock');
-        
+
         // Post CRUD
         Route::post('threads/{thread}/posts', [ForumPostController::class, 'store'])->name('forum.posts.store');
         Route::put('posts/{post}', [ForumPostController::class, 'update'])->name('forum.posts.update');
         Route::delete('posts/{post}', [ForumPostController::class, 'destroy'])->name('forum.posts.destroy');
     });
-    
+
     // Admin-only category management
-    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('categories', [ForumCategoryController::class, 'store'])->name('forum.categories.store');
         Route::put('categories/{category}', [ForumCategoryController::class, 'update'])->name('forum.categories.update');
         Route::delete('categories/{category}', [ForumCategoryController::class, 'destroy'])->name('forum.categories.destroy');
@@ -664,8 +730,8 @@ Route::prefix('forum')->group(function () {
     // Tags - public read, admin CUD
     Route::get('tags', [ForumTagController::class, 'index'])->name('forum.tags.index');
     Route::get('tags/{tag}', [ForumTagController::class, 'show'])->name('forum.tags.show');
-    
-    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+
+    Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('tags', [ForumTagController::class, 'store'])->name('forum.tags.store');
         Route::put('tags/{tag}', [ForumTagController::class, 'update'])->name('forum.tags.update');
         Route::delete('tags/{tag}', [ForumTagController::class, 'destroy'])->name('forum.tags.destroy');
@@ -676,17 +742,17 @@ Route::prefix('forum')->group(function () {
 });
 
 // Support Ticket Routes
-use App\Http\Controllers\Api\SupportTicketController;
 use App\Http\Controllers\Api\Admin\AdminSupportTicketController;
+use App\Http\Controllers\Api\SupportTicketController;
 
-Route::prefix('support')->middleware('auth:sanctum')->group(function () {
+Route::prefix('support')->middleware('auth')->group(function () {
     Route::get('tickets', [SupportTicketController::class, 'index'])->name('support.tickets.index');
     Route::post('tickets', [SupportTicketController::class, 'store'])->name('support.tickets.store');
     Route::get('tickets/{id}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
     Route::post('tickets/{id}/responses', [SupportTicketController::class, 'addResponse'])->name('support.tickets.responses.store');
 });
 
-Route::prefix('admin/support')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin/support')->middleware(['auth', 'admin'])->group(function () {
     Route::get('tickets', [AdminSupportTicketController::class, 'index'])->name('admin.support.tickets.index');
     Route::get('tickets/{id}', [AdminSupportTicketController::class, 'show'])->name('admin.support.tickets.show');
     Route::post('tickets/{id}/responses', [AdminSupportTicketController::class, 'addResponse'])->name('admin.support.tickets.responses.store');
@@ -699,19 +765,15 @@ use App\Http\Controllers\Api\PublicProfileController;
 
 // Public: View user profile
 Route::get('users/{username}/public', [PublicProfileController::class, 'show'])->name('profile.public.show');
-
-// Authenticated: Privacy settings
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('profile/privacy-settings', [PublicProfileController::class, 'getPrivacySettings'])->name('profile.privacy.get');
-    Route::put('profile/privacy-settings', [PublicProfileController::class, 'updatePrivacySettings'])->name('profile.privacy.update');
-    Route::get('profile/preview', [PublicProfileController::class, 'preview'])->name('profile.preview');
-});
+Route::get('community/members', [PublicProfileController::class, 'community'])->name('profile.community');
 
 // Lab Space Booking Routes
-use App\Http\Controllers\Api\LabSpaceController;
-use App\Http\Controllers\Api\LabBookingController;
-use App\Http\Controllers\Api\Admin\AdminLabSpaceController;
 use App\Http\Controllers\Api\Admin\AdminLabBookingController;
+use App\Http\Controllers\Api\Admin\AdminLabSpaceController;
+use App\Http\Controllers\Api\LabBlockAdminController;
+use App\Http\Controllers\Api\BookingSeriesController;
+use App\Http\Controllers\Api\LabBookingController;
+use App\Http\Controllers\Api\LabSpaceController;
 
 // Public lab space routes (anyone can browse)
 Route::prefix('spaces')->group(function () {
@@ -720,40 +782,99 @@ Route::prefix('spaces')->group(function () {
     Route::get('/{slug}/availability', [LabSpaceController::class, 'availability'])->name('lab-spaces.availability');
 });
 
+// Lab Space Block Management (authenticated)
+Route::prefix('spaces/{space}/blocks')
+    ->middleware('auth')
+    ->whereNumber('space')
+    ->group(function () {
+        Route::get('/', [LabBlockAdminController::class, 'index'])->name('lab-blocks.index');
+        Route::post('/', [LabBlockAdminController::class, 'store'])->name('lab-blocks.store');
+        Route::patch('/{block}', [LabBlockAdminController::class, 'update'])->name('lab-blocks.update')->whereNumber('block');
+        Route::put('/{block}', [LabBlockAdminController::class, 'update'])->name('lab-blocks.update')->whereNumber('block');
+        Route::delete('/{block}', [LabBlockAdminController::class, 'destroy'])->name('lab-blocks.destroy')->whereNumber('block');
+    });
+
+// Public guest lab booking routes
+Route::post('bookings/guest', [LabBookingController::class, 'guestStore'])->name('lab-bookings.guest-store');
+Route::post('bookings/guest-cancel', [LabBookingController::class, 'guestCancel'])->name('lab-bookings.guest-cancel');
+
+// Discovery Engine (Publicly accessible for guest previews)
+Route::get('bookings/discover/recurring', [LabBookingController::class, 'discoverRecurring'])->name('lab-bookings.discover-recurring');
+Route::get('bookings/discover/flexible', [LabBookingController::class, 'discoverFlexible'])->name('lab-bookings.discover-flexible');
+
 // Authenticated lab booking routes
-Route::prefix('bookings')->middleware('auth:sanctum')->group(function () {
+Route::prefix('bookings')->middleware('auth')->group(function () {
     Route::get('/quota', [LabBookingController::class, 'quotaStatus'])->name('lab-bookings.quota');
     Route::get('/', [LabBookingController::class, 'index'])->name('lab-bookings.index');
+
+    // Two-Phase Booking
+    Route::post('/initiate', [LabBookingController::class, 'initiate'])->name('lab-bookings.initiate');
+    Route::post('/confirm', [LabBookingController::class, 'confirm'])->name('lab-bookings.confirm');
+    Route::post('/renew-hold', [LabBookingController::class, 'renewHold'])->name('lab-bookings.renew-hold');
+
+    // Booking Series (Container-centric)
+    Route::post('/series/{id}/cancel', [BookingSeriesController::class, 'cancel'])->name('booking-series.cancel');
+    Route::get('/series/{id}/refund-preview', [BookingSeriesController::class, 'refundPreview'])->name('booking-series.refund-preview');
+
     Route::post('/', [LabBookingController::class, 'store'])->name('lab-bookings.store');
-    Route::get('/{id}', [LabBookingController::class, 'show'])->name('lab-bookings.show');
-    Route::delete('/{id}', [LabBookingController::class, 'destroy'])->name('lab-bookings.destroy');
+    Route::get('/{id}', [LabBookingController::class, 'show'])->name('lab-bookings.show')->whereNumber('id');
+    Route::post('/{id}/cancel', [LabBookingController::class, 'cancel'])->name('lab-bookings.cancel')->whereNumber('id');
+    Route::post('/{id}/resolve-conflict', [LabBookingController::class, 'resolveConflict'])->name('lab-bookings.resolve-conflict')->whereNumber('id');
+    Route::put('/{id}/check-in', [LabBookingController::class, 'checkIn'])->name('lab-bookings.check-in')->whereNumber('id');
+    Route::post('/check-in-by-token', [LabBookingController::class, 'checkinByToken'])->name('lab-bookings.check-in-by-token');
+    Route::delete('/{id}', [LabBookingController::class, 'destroy'])->name('lab-bookings.destroy')->whereNumber('id');
 });
 
 // Admin lab management routes
-Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Lab Spaces CRUD
     Route::get('spaces', [AdminLabSpaceController::class, 'index'])->name('admin.lab-spaces.index');
+    Route::get('spaces/my-labs', [AdminLabSpaceController::class, 'mySupervisedLabs'])->name('admin.lab-spaces.my-labs');
     Route::post('spaces', [AdminLabSpaceController::class, 'store'])->name('admin.lab-spaces.store');
     Route::get('spaces/{id}', [AdminLabSpaceController::class, 'show'])->name('admin.lab-spaces.show');
     Route::put('spaces/{id}', [AdminLabSpaceController::class, 'update'])->name('admin.lab-spaces.update');
     Route::delete('spaces/{id}', [AdminLabSpaceController::class, 'destroy'])->name('admin.lab-spaces.destroy');
 
+    // Lab Bookings - Disable/Enable Feature (PHASE 1)
+    Route::post('spaces/{id}/bookings/disable', [AdminLabSpaceController::class, 'disableBookings'])->name('admin.lab-spaces.disable-bookings');
+    Route::post('spaces/{id}/bookings/enable', [AdminLabSpaceController::class, 'enableBookings'])->name('admin.lab-spaces.enable-bookings');
+
     // Lab Bookings Management
     Route::get('lab-bookings', [AdminLabBookingController::class, 'index'])->name('admin.lab-bookings.index');
     Route::get('lab-bookings/stats', [AdminLabBookingController::class, 'stats'])->name('admin.lab-bookings.stats');
-    Route::get('lab-bookings/{id}', [AdminLabBookingController::class, 'show'])->name('admin.lab-bookings.show');
-    Route::put('lab-bookings/{id}/approve', [AdminLabBookingController::class, 'approve'])->name('admin.lab-bookings.approve');
-    Route::put('lab-bookings/{id}/reject', [AdminLabBookingController::class, 'reject'])->name('admin.lab-bookings.reject');
-    Route::put('lab-bookings/{id}/check-in', [AdminLabBookingController::class, 'checkIn'])->name('admin.lab-bookings.check-in');
-    Route::put('lab-bookings/{id}/check-out', [AdminLabBookingController::class, 'checkOut'])->name('admin.lab-bookings.check-out');
-    Route::put('lab-bookings/{id}/no-show', [AdminLabBookingController::class, 'markNoShow'])->name('admin.lab-bookings.no-show');
+    Route::get('lab-bookings/{id}', [AdminLabBookingController::class, 'show'])->name('admin.lab-bookings.show')->whereNumber('id');
+    Route::put('lab-bookings/{id}/guest-check-in', [AdminLabBookingController::class, 'checkInGuest'])->name('admin.lab-bookings.guest-check-in')->whereNumber('id');
+    Route::post('lab-bookings/{id}/check-in', [AdminLabBookingController::class, 'checkIn'])->name('admin.lab-bookings.check-in')->whereNumber('id');
+    Route::post('lab-bookings/{id}/undo-check-in', [AdminLabBookingController::class, 'undoCheckIn'])->name('admin.lab-bookings.undo-check-in')->whereNumber('id');
+    Route::post('lab-bookings/{id}/no-show', [AdminLabBookingController::class, 'markNoShow'])->name('admin.lab-bookings.no-show')->whereNumber('id');
+
+    // Lab Attendance & Analytics
+    Route::get('lab-attendance/analytics', [AdminLabBookingController::class, 'attendanceAnalytics'])->name('admin.lab-attendance.analytics');
+    Route::get('lab-attendance/logs', [AdminLabBookingController::class, 'attendanceLogs'])->name('admin.lab-attendance.logs');
+    Route::post('lab-bookings/{id}/slot-attendance', [AdminLabBookingController::class, 'markSlotAttendance'])->name('admin.lab-bookings.slot-attendance')->whereNumber('id');
+
+    // Lab Bookings - Cancel & Refund (PHASE 1)
+    Route::post('bookings/series/{id}/cancel', [BookingSeriesController::class, 'adminCancel'])->name('admin.booking-series.cancel')->whereNumber('id');
+    Route::post('bookings/{id}/cancel', [AdminLabBookingController::class, 'cancelBooking'])->name('admin.bookings.cancel')->whereNumber('id');
+    Route::post('bookings/{id}/refund-request', [AdminLabBookingController::class, 'initiateRefund'])->name('admin.bookings.refund-request')->whereNumber('id');
+
+    // Lab Bookings - Per-Lab View (PHASE 1)
+    Route::get('spaces/{labId}/bookings', [AdminLabBookingController::class, 'labBookings'])->name('admin.lab-spaces.bookings')->whereNumber('labId');
 
     // Lab Maintenance Blocks
     Route::get('lab-maintenance', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'index'])->name('admin.lab-maintenance.index');
     Route::post('lab-maintenance', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'store'])->name('admin.lab-maintenance.store');
+    Route::post('lab-maintenance/bulk-create', [\App\Http\Controllers\Api\Admin\LabMaintenanceBlockController::class, 'bulkCreate'])->name('admin.lab-maintenance.bulk-create');
+    Route::get('lab-maintenance/rollover-reports', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'rolloverReports'])->name('admin.lab-maintenance.rollover-reports');
+    Route::post('lab-maintenance/rollover-retry/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'retryRollover'])->name('admin.lab-maintenance.rollover-retry')->whereNumber('id');
     Route::get('lab-maintenance/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'show'])->name('admin.lab-maintenance.show');
     Route::put('lab-maintenance/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'update'])->name('admin.lab-maintenance.update');
     Route::delete('lab-maintenance/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'destroy'])->name('admin.lab-maintenance.destroy');
+
+    // Lab Supervisor Assignments
+    Route::get('lab-supervisors', [AdminLabSpaceController::class, 'listAssignments'])->name('admin.lab-supervisors.list');
+    Route::post('lab-supervisors', [AdminLabSpaceController::class, 'assignSupervisor'])->name('admin.lab-supervisors.assign');
+    Route::delete('lab-supervisors/{labSpaceId}/{userId}', [AdminLabSpaceController::class, 'removeSupervisor'])->name('admin.lab-supervisors.remove');
 
     // Forum Stats
     Route::get('forum/stats', [\App\Http\Controllers\Api\Admin\ForumStatsController::class, 'index'])->name('admin.forum.stats');
@@ -789,17 +910,22 @@ use App\Http\Controllers\Api\EventOrderController;
 // Public ticket routes (no auth required for guest checkout)
 Route::post('events/{event}/purchase', [EventOrderController::class, 'purchase'])->name('event-orders.purchase');
 Route::get('event-orders/status/{reference}', [EventOrderController::class, 'checkPaymentStatus'])->name('event-orders.status');
+Route::post('event-orders/ref/{reference}/resume', [EventOrderController::class, 'resume'])->name('event-orders.resume');
+Route::post('event-orders/ref/{reference}/cancel', [EventOrderController::class, 'cancel'])->name('event-orders.cancel');
+
+// Public ticket retrieval
+Route::get('registrations/token/{token}', [RegistrationController::class, 'showByToken'])->name('registrations.show-by-token');
 
 // Authenticated ticket routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth')->group(function () {
     Route::get('my-tickets', [EventOrderController::class, 'myTickets'])->name('event-orders.my-tickets');
     Route::get('event-orders/{order}', [EventOrderController::class, 'show'])->name('event-orders.show');
-    
+
     // Organizer check-in (requires event update permission)
     Route::post('events/{event}/scan-ticket', [EventOrderController::class, 'scanTicket'])->name('event-orders.scan');
 });
 
-Route::prefix('admin/audit-logs')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin/audit-logs')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [AuditLogController::class, 'index'])->name('admin.audit-logs.index');
     Route::get('/{auditLog}', [AuditLogController::class, 'show'])->name('admin.audit-logs.show');
     Route::get('/model-history', [AuditLogController::class, 'getModelAuditLog'])->name('admin.audit-logs.model-history');
@@ -819,7 +945,7 @@ Route::prefix('blog')->group(function () {
 });
 
 // Author/Subscriber Blog Routes (authenticated)
-Route::prefix('author')->middleware('auth:sanctum')->group(function () {
+Route::prefix('author')->middleware('auth')->group(function () {
     Route::get('posts', [\App\Http\Controllers\Api\AuthorPostController::class, 'index'])->name('author.posts.index');
     Route::get('posts/create', [\App\Http\Controllers\Api\AuthorPostController::class, 'create'])->name('author.posts.create');
     Route::post('posts', [\App\Http\Controllers\Api\AuthorPostController::class, 'store'])->name('author.posts.store');
@@ -833,7 +959,7 @@ Route::prefix('author')->middleware('auth:sanctum')->group(function () {
 });
 
 // Subscriber Tag/Category Routes (authenticated, can create/update own)
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth')->group(function () {
     Route::post('tags', [\App\Http\Controllers\Api\TagAdminController::class, 'store'])->name('tags.store');
     Route::put('tags/{tag}', [\App\Http\Controllers\Api\TagAdminController::class, 'update'])->name('tags.update');
     Route::delete('tags/{tag}', [\App\Http\Controllers\Api\TagAdminController::class, 'destroy'])->name('tags.destroy');
@@ -844,7 +970,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Admin Blog Routes (staff only)
-Route::prefix('admin/blog')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin/blog')->middleware(['auth', 'admin'])->group(function () {
     Route::get('posts', [\App\Http\Controllers\Api\PostAdminController::class, 'index'])->name('admin.posts.index');
     Route::get('posts/{id}', [\App\Http\Controllers\Api\PostAdminController::class, 'show'])->name('admin.posts.show');
     Route::put('posts/{id}', [\App\Http\Controllers\Api\PostAdminController::class, 'update'])->name('admin.posts.update');
@@ -863,52 +989,52 @@ Route::prefix('forum')->group(function () {
     // Categories
     Route::get('categories', [\App\Http\Controllers\Api\ForumCategoryController::class, 'index'])->name('forum.categories.index');
     Route::get('categories/{category}', [\App\Http\Controllers\Api\ForumCategoryController::class, 'show'])->name('forum.categories.show');
-    
+
     // Threads - list all or filter by category
     Route::get('threads', [\App\Http\Controllers\Api\ForumThreadController::class, 'index'])->name('forum.threads.index');
     Route::get('categories/{category}/threads', [\App\Http\Controllers\Api\ForumThreadController::class, 'index'])->name('forum.categories.threads');
     Route::get('threads/{thread}', [\App\Http\Controllers\Api\ForumThreadController::class, 'show'])->name('forum.threads.show');
-    
+
     // Posts for a thread
     Route::get('threads/{thread}/posts', [\App\Http\Controllers\Api\ForumPostController::class, 'index'])->name('forum.posts.index');
-    
+
     // Authenticated forum actions (subscribers only)
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware('auth')->group(function () {
         // Thread CRUD
         Route::post('categories/{category}/threads', [\App\Http\Controllers\Api\ForumThreadController::class, 'store'])->name('forum.threads.store');
         Route::put('threads/{thread}', [\App\Http\Controllers\Api\ForumThreadController::class, 'update'])->name('forum.threads.update');
         Route::delete('threads/{thread}', [\App\Http\Controllers\Api\ForumThreadController::class, 'destroy'])->name('forum.threads.destroy');
-        
+
         // Thread moderation (staff only)
         Route::post('threads/{thread}/pin', [\App\Http\Controllers\Api\ForumThreadController::class, 'pin'])->name('forum.threads.pin');
         Route::post('threads/{thread}/unpin', [\App\Http\Controllers\Api\ForumThreadController::class, 'unpin'])->name('forum.threads.unpin');
         Route::post('threads/{thread}/lock', [\App\Http\Controllers\Api\ForumThreadController::class, 'lock'])->name('forum.threads.lock');
         Route::post('threads/{thread}/unlock', [\App\Http\Controllers\Api\ForumThreadController::class, 'unlock'])->name('forum.threads.unlock');
-        
+
         // Post CRUD
         Route::post('threads/{thread}/posts', [\App\Http\Controllers\Api\ForumPostController::class, 'store'])->name('forum.posts.store');
         Route::put('posts/{post}', [\App\Http\Controllers\Api\ForumPostController::class, 'update'])->name('forum.posts.update');
         Route::delete('posts/{post}', [\App\Http\Controllers\Api\ForumPostController::class, 'destroy'])->name('forum.posts.destroy');
     });
-    
+
     // Category management - auth for create/update, admin for delete (matches blog pattern)
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware('auth')->group(function () {
         Route::post('categories', [\App\Http\Controllers\Api\ForumCategoryController::class, 'store'])->name('forum.categories.store');
         Route::put('categories/{category}', [\App\Http\Controllers\Api\ForumCategoryController::class, 'update'])->name('forum.categories.update');
     });
-    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::middleware(['auth', 'admin'])->group(function () {
         Route::delete('categories/{category}', [\App\Http\Controllers\Api\ForumCategoryController::class, 'destroy'])->name('forum.categories.destroy');
     });
 
     // Tags - public read, auth create/update, admin delete (matches blog pattern)
     Route::get('tags', [\App\Http\Controllers\Api\ForumTagController::class, 'index'])->name('forum.tags.index');
     Route::get('tags/{tag}', [\App\Http\Controllers\Api\ForumTagController::class, 'show'])->name('forum.tags.show');
-    
-    Route::middleware('auth:sanctum')->group(function () {
+
+    Route::middleware('auth')->group(function () {
         Route::post('tags', [\App\Http\Controllers\Api\ForumTagController::class, 'store'])->name('forum.tags.store');
         Route::put('tags/{tag}', [\App\Http\Controllers\Api\ForumTagController::class, 'update'])->name('forum.tags.update');
     });
-    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::middleware(['auth', 'admin'])->group(function () {
         Route::delete('tags/{tag}', [\App\Http\Controllers\Api\ForumTagController::class, 'destroy'])->name('forum.tags.destroy');
     });
 
@@ -916,8 +1042,8 @@ Route::prefix('forum')->group(function () {
     Route::get('groups', [\App\Http\Controllers\Api\GroupController::class, 'index'])->name('forum.groups.index');
     Route::get('groups/{slug}', [\App\Http\Controllers\Api\GroupController::class, 'show'])->name('forum.groups.show');
     Route::get('groups/{slug}/members', [\App\Http\Controllers\Api\GroupController::class, 'members'])->name('forum.groups.members');
-    
-    Route::middleware('auth:sanctum')->group(function () {
+
+    Route::middleware('auth')->group(function () {
         Route::post('groups/{slug}/join', [\App\Http\Controllers\Api\GroupController::class, 'join'])->name('forum.groups.join');
         Route::post('groups/{slug}/leave', [\App\Http\Controllers\Api\GroupController::class, 'leave'])->name('forum.groups.leave');
     });

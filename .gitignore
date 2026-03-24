@@ -56,3 +56,22 @@ Thumbs.db
 full_test_output.txt
 composer.lock
 test_output.txt
+.env.prod current
+.gitignore
+/storage
+.scribe/*
+.env.prod
+.env.dev
+.scribe/endpoints/00.yaml
+.scribe/endpoints/01.yaml
+.scribe/endpoints/02.yaml
+.scribe/endpoints/03.yaml
+.scribe/endpoints/04.yaml
+.scribe/endpoints.cache/00.yaml
+.scribe/endpoints.cache/01.yaml
+.scribe/endpoints.cache/02.yaml
+.scribe/endpoints.cache/03.yaml
+.scribe/endpoints.cache/04.yaml
+.scribe/.filehashes
+bootstrap/cache/
+tests/tmp/

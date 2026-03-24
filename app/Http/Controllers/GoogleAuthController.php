@@ -135,7 +135,6 @@ class GoogleAuthController extends Controller
                         'slug' => $freePlan->slug . '-' . $user->id . '-' . time(),
                         'starts_at' => now(),
                         'ends_at' => null, // Free plan never expires
-                        'trial_ends_at' => null,
                     ]);
 
                     // Create subscription enhancement (active status)
@@ -165,17 +164,13 @@ class GoogleAuthController extends Controller
         // Ensure memberProfile is loaded for SecureUserResource
         $user->load('memberProfile');
 
-        // Create token like in AuthController
-        $tokenResult = $user->createToken($user->email);
-        $plainText = $tokenResult->plainTextToken;
+        // Log the user in via session
+        Auth::login($user, true);
 
         $frontendUrl = config('app.frontend_url').'/oauth/callback';
-        $params = http_build_query([
-            'access_token' => $plainText,
-            'user' => json_encode(new SecureUserResource($user)),
-            'email_verified' => !is_null($user->email_verified_at)
-        ]);
-
-        return redirect($frontendUrl . '#' . $params);
+        
+        // No tokens in the URL! The frontend will just witness a successful arrival
+        // and hit /api/auth/me to confirm the session.
+        return redirect($frontendUrl);
     }
 }

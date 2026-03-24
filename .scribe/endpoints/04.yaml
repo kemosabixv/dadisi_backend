@@ -1,74 +1,21 @@
-name: 'User Management'
+name: Counties
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
-      - DELETE
-    uri: api/users/self
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Delete Own Account'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      password:
-        custom: []
-        name: password
-        description: 'User password for verification.'
-        required: true
-        example: password123
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      reason:
-        custom: []
-        name: reason
-        description: 'Reason for account deletion. Must not be greater than 500 characters.'
-        required: false
-        example: 'No longer interested'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-    cleanBodyParameters:
-      password: password123
-      reason: 'No longer interested'
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
       - GET
-    uri: api/users/self/export
+    uri: api/counties
     metadata:
       custom: []
-      groupName: 'User Management'
+      groupName: Counties
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Export User Data'
-      description: ''
+      title: 'List all counties (PUBLIC)'
+      description: |-
+        Retrieves a list of all available counties, sorted alphabetically.
+        This is a public endpoint for populating dropdowns.
       authenticated: false
       deprecated: false
     headers:
@@ -84,13 +31,83 @@ endpoints:
     responses:
       -
         custom: []
-        status: 401
-        content: '{"message":"Unauthenticated."}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          vary: Origin
-        description: null
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "data": [
+              {"id": 1, "name": "Nairobi"},
+              {"id": 2, "name": "Mombasa"},
+              {"id": 3, "name": "Kisumu"}
+            ]
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/counties/{id}'
+    metadata:
+      custom: []
+      groupName: Counties
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get a single county (PUBLIC)'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the county.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      county:
+        custom: []
+        name: county
+        description: 'The ID of the county.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+      county: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "data": {"id": 1, "name": "Nairobi"}
+          }
+        headers: []
+        description: ''
     responseFields: []
     auth: []
     controller: null
@@ -100,45 +117,50 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: api/users/self/profile-picture
+    uri: api/counties
     metadata:
       custom: []
-      groupName: 'User Management'
+      groupName: Counties
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Upload Profile Picture'
-      description: 'Upload a new profile picture for the authenticated user.'
+      title: 'Create a county (ADMIN)'
+      description: 'Requires manage_counties permission.'
       authenticated: true
       deprecated: false
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: multipart/form-data
+      Content-Type: application/json
       Accept: application/json
     urlParameters: []
     cleanUrlParameters: []
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      image:
+      name:
         custom: []
-        name: image
-        description: 'Profile picture image file (JPEG, PNG, GIF, SVG, max 5MB). Must be an image. Must not be greater than 5120 kilobytes.'
+        name: name
+        description: 'The name of the county.'
         required: true
-        example: null
-        type: file
+        example: Nairobi
+        type: string
         enumValues: []
-        exampleWasSpecified: false
+        exampleWasSpecified: true
         nullable: false
         deprecated: false
-    cleanBodyParameters: []
-    fileParameters:
-      image: null
+    cleanBodyParameters:
+      name: Nairobi
+    fileParameters: []
     responses:
       -
         custom: []
-        status: 200
-        content: "{\r\n    \"success\": true,\r\n    \"message\": \"Profile picture updated\",\r\n    \"data\": {\r\n        \"profile_picture_url\": \"https://api.dadisilab.com/storage/profile-pictures/user_123_avatar.jpg\"\r\n    }\r\n}\r\n"
+        status: 201
+        content: |-
+          {
+            "success": true,
+            "data": {"id": 48, "name": "Nakuru"},
+            "message": "County created successfully"
+          }
         headers: []
         description: ''
     responseFields: []
@@ -152,602 +174,82 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - POST
-    uri: api/admin/users/bulk/assign-role
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Bulk Assign Role'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      user_ids:
-        custom: []
-        name: user_ids
-        description: 'The <code>id</code> of an existing record in the users table.'
-        required: false
-        example:
-          - 16
-        type: 'integer[]'
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      role:
-        custom: []
-        name: role
-        description: 'Role name to assign. The <code>name</code> of an existing record in the roles table.'
-        required: true
-        example: admin
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      user_ids:
-        - 16
-      role: admin
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: api/admin/users/bulk/remove-role
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Bulk Remove Role'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      user_ids:
-        custom: []
-        name: user_ids
-        description: 'The <code>id</code> of an existing record in the users table.'
-        required: false
-        example:
-          - 16
-        type: 'integer[]'
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      role:
-        custom: []
-        name: role
-        description: 'Role name to remove. The <code>name</code> of an existing record in the roles table.'
-        required: true
-        example: admin
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      user_ids:
-        - 16
-      role: admin
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: api/admin/users/bulk/delete
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Bulk Delete Users'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      user_ids:
-        custom: []
-        name: user_ids
-        description: 'The <code>id</code> of an existing record in the users table.'
-        required: false
-        example:
-          - 16
-        type: 'integer[]'
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      user_ids:
-        - 16
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: api/admin/users/bulk/restore
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Bulk Restore Users'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      user_ids:
-        custom: []
-        name: user_ids
-        description: ''
-        required: false
-        example:
-          - 16
-        type: 'integer[]'
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      user_ids:
-        - 16
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: api/admin/users/bulk/update
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Bulk Update Users'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      user_ids:
-        custom: []
-        name: user_ids
-        description: 'The <code>id</code> of an existing record in the users table.'
-        required: false
-        example:
-          - 16
-        type: 'integer[]'
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      data:
-        custom: []
-        name: data
-        description: 'Data to update for users.'
-        required: true
-        example:
-          username: newusername
-          email: newemail@example.com
-        type: object
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      data.username:
-        custom: []
-        name: data.username
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: newusername
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      data.email:
-        custom: []
-        name: data.email
-        description: 'Must be a valid email address.'
-        required: false
-        example: newemail@example.com
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      user_ids:
-        - 16
-      data:
-        username: newusername
-        email: newemail@example.com
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: api/admin/users/invite
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Invite User'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      email:
-        custom: []
-        name: email
-        description: 'Email address of user to invite. Must be a valid email address.'
-        required: true
-        example: user@example.com
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      username:
-        custom: []
-        name: username
-        description: 'Username for the new user. Must not be greater than 255 characters.'
-        required: true
-        example: john_doe
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      roles:
-        custom: []
-        name: roles
-        description: 'The <code>name</code> of an existing record in the roles table.'
-        required: false
-        example:
-          - architecto
-        type: 'string[]'
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      email: user@example.com
-      username: john_doe
-      roles:
-        - architecto
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: api/admin/users/bulk-invite
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Bulk Invite'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      users:
-        custom: []
-        name: users
-        description: 'Array of users to invite. Must have at least 1 items. Must not have more than 50 items.'
-        required: true
-        example:
-          -
-            email: user@example.com
-            username: username
-            roles:
-              - member
-        type: 'object[]'
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      'users[].email':
-        custom: []
-        name: 'users[].email'
-        description: 'Must be a valid email address.'
-        required: true
-        example: gbailey@example.net
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      'users[].username':
-        custom: []
-        name: 'users[].username'
-        description: ''
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      'users[].roles':
-        custom: []
-        name: 'users[].roles'
-        description: 'The <code>name</code> of an existing record in the roles table.'
-        required: false
-        example:
-          - architecto
-        type: 'string[]'
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      users:
-        -
-          email: user@example.com
-          username: username
-          roles:
-            - member
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: api/admin/users
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'List All Users'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"message":"Unauthenticated."}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          vary: Origin
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/admin/users/{id}'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Get User Details'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the user.'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"message":"Unauthenticated."}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          vary: Origin
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
       - PUT
-    uri: 'api/admin/users/{id}'
+    uri: 'api/counties/{id}'
     metadata:
       custom: []
-      groupName: 'User Management'
+      groupName: Counties
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Update User'
-      description: ''
-      authenticated: false
+      title: 'Update a county (ADMIN)'
+      description: 'Requires manage_counties permission.'
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       id:
         custom: []
         name: id
-        description: 'The ID of the user.'
+        description: 'The ID of the county.'
         required: true
-        example: architecto
-        type: string
+        example: 1
+        type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
+      county:
+        custom: []
+        name: county
+        description: 'The ID of the county.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
     cleanUrlParameters:
-      id: architecto
+      id: 1
+      county: 1
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      username:
+      name:
         custom: []
-        name: username
-        description: 'New username for the user. Must not be greater than 255 characters.'
-        required: false
-        example: new_username
+        name: name
+        description: 'The name of the county.'
+        required: true
+        example: Nairobi
         type: string
         enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      email:
-        custom: []
-        name: email
-        description: 'New email address for the user. Must be a valid email address.'
-        required: false
-        example: newemail@example.com
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
+        exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanBodyParameters:
-      username: new_username
-      email: newemail@example.com
+      name: Nairobi
     fileParameters: []
-    responses: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "success": true,
+            "data": {"id": 1, "name": "Nairobi City"},
+            "message": "County updated successfully"
+          }
+        headers: []
+        description: ''
     responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
     controller: null
     method: null
     route: null
@@ -755,163 +257,47 @@ endpoints:
     custom: []
     httpMethods:
       - DELETE
-    uri: 'api/admin/users/{id}'
+    uri: 'api/counties/{id}'
     metadata:
       custom: []
-      groupName: 'User Management'
+      groupName: Counties
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Deactivate User (Soft Delete)'
-      description: ''
-      authenticated: false
+      title: 'Delete a county (ADMIN)'
+      description: 'Requires manage_counties permission.'
+      authenticated: true
       deprecated: false
     headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters:
       id:
         custom: []
         name: id
-        description: 'The ID of the user.'
+        description: 'The ID of the county.'
         required: true
-        example: architecto
-        type: string
+        example: 1
+        type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: 'api/admin/users/{id}/restore'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Restore User'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
+      county:
         custom: []
-        name: id
-        description: 'The ID of the user.'
+        name: county
+        description: 'The ID of the county.'
         required: true
-        example: architecto
-        type: string
+        example: 1
+        type: integer
         enumValues: []
-        exampleWasSpecified: false
+        exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - DELETE
-    uri: 'api/admin/users/{id}/force'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Permanently Delete User'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the user.'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/admin/users/{id}/audit'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Get Audit Logs'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the user.'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
+      id: 1
+      county: 1
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
@@ -920,182 +306,15 @@ endpoints:
     responses:
       -
         custom: []
-        status: 401
-        content: '{"message":"Unauthenticated."}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          vary: Origin
-        description: null
+        status: 200
+        content: '{"message": "County deleted successfully"}'
+        headers: []
+        description: ''
     responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: 'api/admin/users/{id}/assign-role'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Assign Role'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the user.'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      role:
-        custom: []
-        name: role
-        description: 'Role name to assign. The <code>name</code> of an existing record in the roles table.'
-        required: true
-        example: admin
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      role: admin
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: 'api/admin/users/{id}/remove-role'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Remove Role'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the user.'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      role:
-        custom: []
-        name: role
-        description: 'Role name to remove. The <code>name</code> of an existing record in the roles table.'
-        required: true
-        example: admin
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      role: admin
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: 'api/admin/users/{id}/sync-roles'
-    metadata:
-      custom: []
-      groupName: 'User Management'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Sync Roles'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the user.'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      roles:
-        custom: []
-        name: roles
-        description: 'The <code>name</code> of an existing record in the roles table.'
-        required: false
-        example:
-          - architecto
-        type: 'string[]'
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      roles:
-        - architecto
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
     controller: null
     method: null
     route: null

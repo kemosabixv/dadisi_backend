@@ -1,135 +1,22 @@
-name: Counties
+name: Contact
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
-      - GET
-    uri: api/counties
-    metadata:
-      custom: []
-      groupName: Counties
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'List all counties (PUBLIC)'
-      description: |-
-        Retrieves a list of all available counties, sorted alphabetically.
-        This is a public endpoint for populating dropdowns.
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "success": true,
-            "data": [
-              {"id": 1, "name": "Nairobi"},
-              {"id": 2, "name": "Mombasa"},
-              {"id": 3, "name": "Kisumu"}
-            ]
-          }
-        headers: []
-        description: ''
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/counties/{id}'
-    metadata:
-      custom: []
-      groupName: Counties
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Get a single county (PUBLIC)'
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the county.'
-        required: true
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      county:
-        custom: []
-        name: county
-        description: 'The ID of the county.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: 16
-      county: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "success": true,
-            "data": {"id": 1, "name": "Nairobi"}
-          }
-        headers: []
-        description: ''
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
       - POST
-    uri: api/counties
+    uri: api/contact
     metadata:
       custom: []
-      groupName: Counties
+      groupName: Contact
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Create a county (ADMIN)'
-      description: 'Requires manage_counties permission.'
-      authenticated: true
+      title: 'Send Contact Message'
+      description: "Sends a contact form message to the site's configured contact email."
+      authenticated: false
       deprecated: false
     headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -140,181 +27,56 @@ endpoints:
       name:
         custom: []
         name: name
-        description: 'The name of the county.'
+        description: "The sender's full name."
         required: true
-        example: Nairobi
+        example: 'Jane Doe'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: "The sender's email."
+        required: true
+        example: jane@example.com
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      subject:
+        custom: []
+        name: subject
+        description: 'Message subject.'
+        required: true
+        example: 'Partnership inquiry'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      message:
+        custom: []
+        name: message
+        description: 'Message body.'
+        required: true
+        example: "I'd like to discuss..."
         type: string
         enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanBodyParameters:
-      name: Nairobi
+      name: 'Jane Doe'
+      email: jane@example.com
+      subject: 'Partnership inquiry'
+      message: "I'd like to discuss..."
     fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 201
-        content: |-
-          {
-            "success": true,
-            "data": {"id": 48, "name": "Nakuru"},
-            "message": "County created successfully"
-          }
-        headers: []
-        description: ''
+    responses: []
     responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PUT
-    uri: 'api/counties/{id}'
-    metadata:
-      custom: []
-      groupName: Counties
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Update a county (ADMIN)'
-      description: 'Requires manage_counties permission.'
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the county.'
-        required: true
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      county:
-        custom: []
-        name: county
-        description: 'The ID of the county.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: 16
-      county: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      name:
-        custom: []
-        name: name
-        description: 'The name of the county.'
-        required: true
-        example: Nairobi
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      name: Nairobi
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "success": true,
-            "data": {"id": 1, "name": "Nairobi City"},
-            "message": "County updated successfully"
-          }
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - DELETE
-    uri: 'api/counties/{id}'
-    metadata:
-      custom: []
-      groupName: Counties
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Delete a county (ADMIN)'
-      description: 'Requires manage_counties permission.'
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the county.'
-        required: true
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      county:
-        custom: []
-        name: county
-        description: 'The ID of the county.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: 16
-      county: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: '{"message": "County deleted successfully"}'
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    auth: []
     controller: null
     method: null
     route: null
