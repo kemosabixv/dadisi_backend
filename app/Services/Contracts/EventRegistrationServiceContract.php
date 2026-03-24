@@ -20,7 +20,7 @@ interface EventRegistrationServiceContract
     /**
      * Register a user for an event
      *
-     * @param Authenticatable $user The user registering
+     * @param Authenticatable|null $user The user registering (null for guests)
      * @param Event $event The event to register for
      * @param array $data Additional registration data (optional)
      * @return EventRegistration The registration record
@@ -28,19 +28,30 @@ interface EventRegistrationServiceContract
      * @throws \App\Exceptions\EventException If registration fails
      * @throws \App\Exceptions\EventCapacityExceededException If event is at capacity
      */
-    public function registerUser(Authenticatable $user, Event $event, array $data = []): EventRegistration;
+    public function registerUser(?Authenticatable $user, Event $event, array $data = [], bool $isWaitlistAction = false): EventRegistration;
 
     /**
      * Cancel a user's event registration
      *
-     * @param Authenticatable $user The user
+     * @param Authenticatable|null $user The user (null for guests)
      * @param Event $event The event
      * @param string|null $reason Cancellation reason
+     * @param EventRegistration|null $registration Specific registration instance (optional)
+     * @param string|null $customerNotes Customer notes for refund request (optional)
      * @return bool True if successful
      *
      * @throws \App\Exceptions\EventException If cancellation fails
      */
-    public function cancelRegistration(Authenticatable $user, Event $event, ?string $reason = null): bool;
+    public function cancelRegistration(?Authenticatable $user, Event $event, ?string $reason = null, ?EventRegistration $registration = null, ?string $customerNotes = null): bool;
+
+    /**
+     * Remove a user (or guest) from an event waitlist
+     *
+     * @param string $identifier User ID or guest email
+     * @param Event $event The event
+     * @return bool True if successful
+     */
+    public function leaveWaitlist(string $identifier, Event $event): bool;
 
     /**
      * Get registration for a user and event
@@ -101,13 +112,14 @@ interface EventRegistrationServiceContract
      * Bulk cancel registrations for an event
      *
      * @param Event $event The event
-     * @param array $userIds User IDs to cancel (max 50)
+     * @param array $registrationIds Registration IDs to cancel (max 50)
      * @param Authenticatable|null $actor The user performing the action
+     * @param string|null $reason Cancellation reason
      * @return int Number of cancellations
      *
      * @throws \App\Exceptions\EventException If limit exceeded
      */
-    public function bulkCancel(Event $event, array $userIds, ?Authenticatable $actor = null): int;
+    public function bulkCancel(Event $event, array $registrationIds, ?Authenticatable $actor = null, ?string $reason = null): int;
 
     /**
      * Check in a user using a QR code token

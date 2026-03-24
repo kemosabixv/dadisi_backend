@@ -2,12 +2,16 @@
 
 namespace App\Services\Blog;
 
+use App\DTOs\CreatePostDTO;
+use App\DTOs\UpdatePostDTO;
 use App\Exceptions\PostException;
 use App\Models\AuditLog;
 use App\Models\Post;
 use App\Models\Category;
 use App\Models\Tag;
 use App\Models\County;
+use App\Models\Media;
+use App\Services\Media\MediaService;
 use App\Services\Contracts\PostServiceContract;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -25,7 +29,7 @@ class PostService implements PostServiceContract
 {
     public function listPosts(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = Post::with(['author:id,username', 'categories', 'tags', 'media', 'county:id,name'])
+        $query = Post::with(['author.memberProfile', 'categories', 'tags', 'media', 'county:id,name'])
             ->withCount([
                 'comments',
                 'likes as likes_count' => function ($q) {
@@ -92,7 +96,7 @@ class PostService implements PostServiceContract
     {
         try {
             $query = Post::withTrashed()
-                ->with(['author:id,username', 'categories', 'tags', 'media', 'county:id,name']);
+                ->with(['author.memberProfile', 'categories', 'tags', 'media', 'county:id,name']);
 
             // Find post by ID or slug
             if (is_numeric($identifier)) {
@@ -120,14 +124,17 @@ class PostService implements PostServiceContract
         return array_merge(['post' => $post], $metadata);
     }
 
-    public function createPost(Authenticatable $author, array $data): Post
+    public function createPost(Authenticatable $author, CreatePostDTO $dto): Post
     {
         // Check feature-gating quota for non-staff users
         if (!$author->isStaffMember()) {
             $this->validateBlogCreationQuota($author);
         }
 
-            try {
+        // Convert DTO to array for internal processing
+        $data = array_merge($dto->toArray(), ['user_id' => $author->getAuthIdentifier()]);
+
+        try {
                 return DB::transaction(function () use ($author, $data) {
                     // Strip domain from hero_image_path if present
                     $heroImagePath = $data['hero_image_path'] ?? null;
@@ -178,14 +185,28 @@ class PostService implements PostServiceContract
                         $post->tags()->sync($data['tag_ids']);
                     }
 
-                    if (isset($data['media_ids']) && !empty($data['media_ids'])) {
-                        // Attach gallery images using the new pivot table
-                        $post->addGalleryMedia($data['media_ids']);
+                    if (!empty($data['gallery_media_ids'])) {
+                        foreach ($data['gallery_media_ids'] as $mediaId) {
+                            $media = Media::find($mediaId);
+                            if ($media) {
+                                app(MediaService::class)->promoteToPublic($media, 'posts', $post->slug);
+                            }
+                        }
+                        $post->addGalleryMedia($data['gallery_media_ids']);
                         $post->updateAttachedMediaPrivacy();
                     }
 
-                    // Mark hero image as attached to this post (so it doesn't show in media library)
-                    if (!empty($heroImagePath)) {
+                    if (!empty($data['featured_media_id'])) {
+                        $media = Media::find($data['featured_media_id']);
+                        if ($media) {
+                            app(MediaService::class)->promoteToPublic($media, 'posts', $post->slug);
+                            $post->setFeaturedMedia($media->id);
+                        }
+                        $post->updateAttachedMediaPrivacy();
+                    }
+
+                    // Legacy fallback for hero_image_path: keep backward compatibility.
+                    if (!empty($heroImagePath) && empty($data['featured_media_id'])) {
                         $this->attachMediaToPost($post, $heroImagePath);
                     }
 
@@ -205,7 +226,7 @@ class PostService implements PostServiceContract
                         'created_by' => $author->getAuthIdentifier(),
                     ]);
 
-                    return $post->load(['author:id,username', 'categories', 'tags', 'media']);
+                    return $post->load(['author.memberProfile', 'categories', 'tags', 'media']);
                 });
         } catch (\Exception $e) {
             Log::error('Post creation failed', ['error' => $e->getMessage()]);
@@ -213,10 +234,11 @@ class PostService implements PostServiceContract
         }
     }
 
-    public function updatePost(Authenticatable $actor, Post $post, array $data): Post
+    public function updatePost(Authenticatable $actor, Post $post, UpdatePostDTO $dto): Post
     {
         try {
-            return DB::transaction(function () use ($actor, $post, $data) {
+            return DB::transaction(function () use ($actor, $post, $dto) {
+                $data = array_filter($dto->toArray(), fn($v) => $v !== null);
                 $oldValues = $post->toArray();
                 
                 if (isset($data['content'])) {
@@ -246,37 +268,45 @@ class PostService implements PostServiceContract
                     $post->tags()->sync($data['tag_ids']);
                 }
 
-                if (array_key_exists('media_ids', $data)) {
-                    $galleryIds = $data['media_ids'] ?? [];
-                    $syncData = [];
-                    foreach ($galleryIds as $id) {
-                        if ($id) {
-                            $syncData[(int)$id] = ['role' => 'gallery'];
+if (array_key_exists('media_ids', $data) || array_key_exists('gallery_media_ids', $data) || array_key_exists('featured_media_id', $data)) {
+                        // Clean up old featured media usage
+                        $oldFeatured = $post->featuredMedia();
+                        if ($oldFeatured) {
+                            $oldFeatured->decrement('usage_count');
                         }
-                    }
+                        $post->media()->wherePivot('role', 'featured')->detach();
 
-                    // Re-attach hero image if provided or keep existing featured media
-                    $heroPath = $data['hero_image_path'] ?? $post->hero_image_path;
-                    if ($heroPath) {
-                        $filePath = preg_replace('#^https?://[^/]+#', '', $heroPath);
-                        $filePath = preg_replace('#^/storage#', '', $filePath);
-                        
-                        $featuredMedia = \App\Models\Media::where('file_path', $filePath)->first();
-                        if ($featuredMedia) {
-                            $syncData[$featuredMedia->id] = ['role' => 'featured'];
-                            // Mark as permanent
-                            if ($featuredMedia->temporary_until) {
-                                $featuredMedia->update(['temporary_until' => null]);
+                        // Clean up old gallery media usage
+                        foreach ($post->galleryMedia() as $media) {
+                            if ($media) {
+                                $media->decrement('usage_count');
                             }
                         }
-                    }
+                        $post->media()->wherePivot('role', 'gallery')->detach();
 
-                    $post->media()->sync($syncData);
-                    $post->updateAttachedMediaPrivacy();
-                } elseif (!empty($data['hero_image_path'])) {
-                    $this->markMediaAsPermanent($data['hero_image_path']);
-                    $this->attachMediaToPost($post, $data['hero_image_path']);
-                }
+                        if (!empty($data['featured_media_id'])) {
+                            $media = Media::find($data['featured_media_id']);
+                            if ($media) {
+                                app(MediaService::class)->promoteToPublic($media, 'posts', $post->slug);
+                                $post->setFeaturedMedia($media->id);
+                            }
+                        }
+
+                        $galleryIds = $data['gallery_media_ids'] ?? $data['media_ids'] ?? [];
+                        if (!empty($galleryIds)) {
+                            foreach ($galleryIds as $mediaId) {
+                                $media = Media::find($mediaId);
+                                if ($media) {
+                                    app(MediaService::class)->promoteToPublic($media, 'posts', $post->slug);
+                                }
+                            }
+                            $post->addGalleryMedia($galleryIds);
+                        }
+
+                    } elseif (!empty($data['hero_image_path'])) {
+                        $this->markMediaAsPermanent($data['hero_image_path']);
+                        $this->attachMediaToPost($post, $data['hero_image_path']);
+                    }
 
                 AuditLog::create([
                     'action' => 'updated_post',
@@ -295,7 +325,7 @@ class PostService implements PostServiceContract
                     'updated_by' => $actor->getAuthIdentifier(),
                 ]);
 
-                return $post->fresh(['author:id,username', 'categories', 'tags', 'media']);
+                return $post->fresh(['author.memberProfile', 'categories', 'tags', 'media']);
             });
         } catch (\Exception $e) {
             Log::error('Post update failed', ['post_id' => $post->id, 'error' => $e->getMessage()]);
@@ -303,10 +333,10 @@ class PostService implements PostServiceContract
         }
     }
 
-    public function updateAuthorPost(Authenticatable $author, string|int $identifier, array $data): Post
+    public function updateAuthorPost(Authenticatable $author, string|int $identifier, UpdatePostDTO $dto): Post
     {
         $post = $this->getAuthorPost($author, $identifier);
-        return $this->updatePost($author, $post, $data);
+        return $this->updatePost($author, $post, $dto);
     }
 
     public function deletePost(Authenticatable $actor, Post $post): bool
@@ -476,7 +506,7 @@ class PostService implements PostServiceContract
         try {
             return Post::published()
                 ->where('slug', $slug)
-                ->with(['author:id,username', 'categories', 'tags', 'media', 'county:id,name'])
+                ->with(['author.memberProfile', 'categories', 'tags', 'media', 'county:id,name'])
                 ->firstOrFail();
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             throw PostException::notFound($slug);
@@ -486,7 +516,7 @@ class PostService implements PostServiceContract
     public function listPublishedPosts(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = Post::published()
-            ->with(['author:id,username', 'categories', 'tags', 'media', 'county:id,name']);
+            ->with(['author.memberProfile', 'categories', 'tags', 'media', 'county:id,name']);
 
         $categoryFilter = $filters['category_id'] ?? $filters['category'] ?? null;
         if ($categoryFilter) {

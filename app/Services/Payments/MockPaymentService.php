@@ -175,10 +175,11 @@ class MockPaymentService
         }
 
         if ($status === 'completed') {
-            // Update payment status
+            // Update payment status and set method (simulating Pesapal's payment_method return)
             $payment->update([
                 'status' => 'paid',
                 'paid_at' => now(),
+                'method' => $payment->method ?: 'Mpesa',
             ]);
 
             // Activate payable
@@ -288,7 +289,24 @@ class MockPaymentService
                 
                 $order = \App\Models\EventOrder::find($payment->payable_id);
                 if ($order) {
-                    $order->update(['status' => 'paid', 'purchased_at' => now()]);
+                    $order->update([
+                        'status' => 'paid', 
+                        'purchased_at' => now(),
+                        'waitlist_position' => null
+                    ]);
+
+                    // Sync registrations to confirmed
+                    \App\Models\EventRegistration::where('order_id', $order->id)
+                        ->update([
+                            'status' => 'confirmed',
+                            'waitlist_position' => null
+                        ]);
+
+                    // Decrement ticket availability
+                    if ($order->ticket) {
+                        $order->ticket->decrement('available', $order->quantity);
+                    }
+
                     if ($order->promo_code_id) {
                         \App\Models\PromoCode::where('id', $order->promo_code_id)->increment('times_used');
                     }
@@ -375,6 +393,7 @@ class MockPaymentService
             'order_id' => $transactionData['order_id'] ?? null,
             'amount' => $transactionData['amount'] ?? 0,
             'currency' => $transactionData['currency'] ?? 'KES',
+            'confirmation_code' => 'MOCK_CONF_' . strtoupper(Str::random(10)),
             'message' => 'Payment completed successfully',
             'timestamp' => now()->toIso8601String(),
         ];
@@ -423,6 +442,31 @@ class MockPaymentService
         // Check cache first
         $cacheKey = 'mock_payment_' . $transactionId;
         $cached = cache()->get($cacheKey);
+
+        // If we have a payment record, prefer it over cached pending state.
+        // This allows tests and downstream updates to change status and confirmation code.
+        $payment = \App\Models\Payment::where('transaction_id', $transactionId)
+            ->orWhere('external_reference', $transactionId)
+            ->orWhere('order_reference', $transactionId)
+            ->orWhere('id', $transactionId)
+            ->first();
+
+        if ($payment) {
+            // In mock mode, ensure paid payments always have a confirmation code.
+            if (strtolower($payment->status) === 'paid' && empty($payment->confirmation_code)) {
+                $payment->update(['confirmation_code' => 'MOCK_CONF_' . strtoupper(Str::random(10))]);
+            }
+
+            return [
+                'transaction_id' => $transactionId,
+                'status' => $payment->status ?? 'unknown',
+                'amount' => $payment->amount ?? 0,
+                'currency' => $payment->currency ?? 'KES',
+                'confirmation_code' => $payment->confirmation_code ?? null,
+                'meta' => $payment->meta ?? [],
+            ];
+        }
+
         if ($cached) {
             return [
                 'transaction_id' => $transactionId,
@@ -432,57 +476,55 @@ class MockPaymentService
             ];
         }
 
-        // Try to find a Payment record
+        return [
+            'transaction_id' => $transactionId,
+            'status' => 'not_found',
+        ];
+    }
+
+    /**
+     * Process a mock refund for a transaction, simulating Pesapal workflow.
+     *
+     * @param string $reference Confirmation code or transaction ID
+     * @param float|null $amount
+     * @param string|null $username The admin initiating the refund
+     * @param string|null $remarks Rejection/Approval notes
+     * @return array
+     * @throws \Exception
+     */
+    public static function refundPayment(string $reference, ?float $amount = null, ?string $username = null, ?string $remarks = null): array
+    {
+        Log::info('Mock Pesapal refund requested', [
+            'reference' => $reference,
+            'amount' => $amount,
+            'username' => $username,
+            'remarks' => $remarks
+        ]);
+
         try {
-            $payment = \App\Models\Payment::where('transaction_id', $transactionId)
-                ->orWhere('external_reference', $transactionId)
-                ->orWhere('order_reference', $transactionId)
-                ->orWhere('id', $transactionId)
+            $payment = \App\Models\Payment::where('transaction_id', $reference)
+                ->orWhere('external_reference', $reference)
+                ->orWhere('order_reference', $reference)
+                ->orWhere('id', $reference)
                 ->first();
 
             if (!$payment) {
                 return [
-                    'transaction_id' => $transactionId,
-                    'status' => 'not_found',
+                    'status' => 500,
+                    'message' => 'Refund rejected: Invalid confirmation code or transaction not found.'
                 ];
             }
 
-            return [
-                'transaction_id' => $transactionId,
-                'status' => $payment->status ?? 'unknown',
-                'amount' => $payment->amount ?? 0,
-                'currency' => $payment->currency ?? 'KES',
-                'meta' => $payment->meta ?? [],
-            ];
-        } catch (\Exception $e) {
-            Log::error('MockPaymentService: queryPaymentStatus error', ['error' => $e->getMessage(), 'transaction_id' => $transactionId]);
-            return [
-                'transaction_id' => $transactionId,
-                'status' => 'error',
-                'error_message' => $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Process a mock refund for a transaction.
-     *
-     * @param string $transactionId
-     * @param float|null $amount
-     * @return array
-     * @throws \Exception
-     */
-    public static function refundPayment(string $transactionId, ?float $amount = null): array
-    {
-        try {
-            $payment = \App\Models\Payment::where('transaction_id', $transactionId)
-                ->orWhere('external_reference', $transactionId)
-                ->orWhere('order_reference', $transactionId)
-                ->orWhere('id', $transactionId)
-                ->first();
-
-            if (!$payment) {
-                throw new \Exception('Payment not found for refund');
+            // Simulate mobile money restriction (full refund only for specific patterns)
+            if ($payment->method === 'Mpesa' && $amount && $amount < $payment->amount) {
+                // Pesapal often restricts partial refunds on mobile money
+                // We'll simulate this failure for "999" references
+                if (str_contains($reference, '999')) {
+                    return [
+                        'status' => 500,
+                        'message' => 'Refund rejected: Partial refunds are not supported for this payment method.'
+                    ];
+                }
             }
 
             $refundAmount = $amount ?? ($payment->amount ?? 0);
@@ -491,35 +533,26 @@ class MockPaymentService
             $meta = $payment->meta ?? [];
             $meta['refunded_amount'] = ($meta['refunded_amount'] ?? 0) + $refundAmount;
             $meta['last_refund_at'] = now()->toIso8601String();
+            $meta['refund_processed_by'] = $username;
+            $meta['refund_remarks'] = $remarks;
 
             $payment->update([
                 'status' => 'refunded',
                 'meta' => $meta,
             ]);
 
-            // Optionally create a Refund model if it exists
-            if (class_exists('\App\Models\Refund')) {
-                try {
-                    \App\Models\Refund::create([
-                        'payment_id' => $payment->id,
-                        'amount' => $refundAmount,
-                        'reference' => 'REF_' . strtoupper(substr(md5(uniqid()), 0, 8)),
-                        'metadata' => ['reason' => 'mock_refund'],
-                    ]);
-                } catch (\Exception $e) {
-                    Log::warning('MockPaymentService: failed to create Refund model', ['error' => $e->getMessage()]);
-                }
-            }
-
             return [
-                'refund_id' => 'REF_' . strtoupper(substr(md5(uniqid()), 0, 8)),
-                'status' => 'completed',
-                'amount' => $refundAmount,
+                'status' => 200,
+                'message' => 'Refund request successfully',
+                'refund_id' => 'REF_' . strtoupper(Str::random(8)),
             ];
 
         } catch (\Exception $e) {
-            Log::error('MockPaymentService: refundPayment error', ['error' => $e->getMessage(), 'transaction_id' => $transactionId]);
-            throw $e;
+            Log::error('MockPaymentService: refundPayment error', ['error' => $e->getMessage(), 'reference' => $reference]);
+            return [
+                'status' => 500,
+                'message' => 'Refund failed: ' . $e->getMessage()
+            ];
         }
     }
 }

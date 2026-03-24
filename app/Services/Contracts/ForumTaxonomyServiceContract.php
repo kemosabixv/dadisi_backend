@@ -2,6 +2,10 @@
 
 namespace App\Services\Contracts;
 
+use App\DTOs\CreateForumCategoryDTO;
+use App\DTOs\UpdateForumCategoryDTO;
+use App\DTOs\CreateForumTagDTO;
+use App\DTOs\UpdateForumTagDTO;
 use App\Models\ForumCategory;
 use App\Models\ForumTag;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -22,12 +26,12 @@ interface ForumTaxonomyServiceContract
     /**
      * Create forum category.
      */
-    public function createCategory(array $data, ?Authenticatable $actor = null): ForumCategory;
+    public function createCategory(CreateForumCategoryDTO $dto, ?Authenticatable $actor = null): ForumCategory;
 
     /**
      * Update forum category.
      */
-    public function updateCategory(ForumCategory $category, array $data): ForumCategory;
+    public function updateCategory(ForumCategory $category, UpdateForumCategoryDTO $dto): ForumCategory;
 
     /**
      * Delete forum category.
@@ -47,12 +51,12 @@ interface ForumTaxonomyServiceContract
     /**
      * Create forum tag.
      */
-    public function createTag(array $data, ?Authenticatable $actor = null): ForumTag;
+    public function createTag(CreateForumTagDTO $dto, ?Authenticatable $actor = null): ForumTag;
 
     /**
      * Update forum tag.
      */
-    public function updateTag(ForumTag $tag, array $data): ForumTag;
+    public function updateTag(ForumTag $tag, UpdateForumTagDTO $dto): ForumTag;
 
     /**
      * Delete forum tag.

@@ -183,14 +183,15 @@ class PesapalGateway implements PaymentGatewayInterface
             ]);
 
             if (app()->bound('sentry')) {
-                \Sentry\captureMessage('Pesapal JWT Token Failed: '.$response->status(), [
-                    'extra' => [
-                        'url' => $this->apiBase.'/Auth/RequestToken',
+                \Sentry\withScope(function (\Sentry\State\Scope $scope) use ($response, $error) {
+                    $scope->setExtras([
+                        'url' => $this->apiBase . '/Auth/RequestToken',
                         'status' => $response->status(),
                         'body' => $error,
-                    ],
-                    'tags' => ['pesapal_api' => 'RequestToken'],
-                ]);
+                    ]);
+                    $scope->setTag('pesapal_api', 'RequestToken');
+                    \Sentry\captureMessage('Pesapal JWT Token Failed: ' . $response->status());
+                });
             }
 
             return null;
@@ -479,7 +480,7 @@ class PesapalGateway implements PaymentGatewayInterface
             ])->post(
                 $this->apiBase.'/Transactions/RefundRequest',
                 [
-                    'order_tracking_id' => $transactionId,
+                    'confirmation_code' => $transactionId,
                     'amount' => (string) $amount,
                     'username' => config('app.name', 'Dadisi Community Labs'),
                     'remarks' => $reason ?: 'Refund requested per customer request',

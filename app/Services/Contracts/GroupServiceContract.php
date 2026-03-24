@@ -2,6 +2,8 @@
 
 namespace App\Services\Contracts;
 
+use App\DTOs\CreateGroupDTO;
+use App\DTOs\UpdateGroupDTO;
 use App\Models\Group;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -26,19 +28,19 @@ interface GroupServiceContract
     /**
      * Create a new group
      *
-     * @param array $data
+     * @param CreateGroupDTO $dto
      * @return Group
      */
-    public function createGroup(array $data): Group;
+    public function createGroup(CreateGroupDTO $dto): Group;
 
     /**
      * Update an existing group
      *
      * @param Group $group
-     * @param array $data
+     * @param UpdateGroupDTO $dto
      * @return Group
      */
-    public function updateGroup(Group $group, array $data): Group;
+    public function updateGroup(Group $group, UpdateGroupDTO $dto): Group;
 
     /**
      * Delete a group

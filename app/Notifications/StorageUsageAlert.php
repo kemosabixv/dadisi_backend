@@ -8,8 +8,8 @@ use Illuminate\Notifications\Notification;
 class StorageUsageAlert extends Notification
 {
 
-    private $percentage;
-    private $limitMB;
+    public $percentage;
+    public $limitMB;
 
     /**
      * Create a new notification instance.
@@ -27,7 +27,15 @@ class StorageUsageAlert extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
+    }
+
+    /**
+     * Get the Supabase representation of the notification.
+     */
+    public function toSupabase(object $notifiable): array
+    {
+        return $this->toArray($notifiable);
     }
 
     /**

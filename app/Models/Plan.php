@@ -20,8 +20,6 @@ class Plan extends BasePlan
         'price',
         'signup_fee',
         'currency',
-        'trial_period',
-        'trial_interval',
         'invoice_period',
         'invoice_interval',
         'grace_period',
@@ -98,7 +96,6 @@ class Plan extends BasePlan
         'yearly_promotion_discount_percent' => 'decimal:2',
         'yearly_promotion_expires_at' => 'datetime',
         'is_active' => 'boolean',
-        'trial_period' => 'integer',
         'invoice_period' => 'integer',
         'grace_period' => 'integer',
         'sort_order' => 'integer',
@@ -177,6 +174,12 @@ class Plan extends BasePlan
         }
 
         return null;
+    }
+
+    public function isYearly(): bool
+    {
+        return strtolower($this->invoice_interval ?? '') === 'year' ||
+               strtolower($this->default_billing_period ?? '') === 'year';
     }
 
     /**

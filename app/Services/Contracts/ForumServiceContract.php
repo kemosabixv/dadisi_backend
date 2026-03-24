@@ -2,6 +2,8 @@
 
 namespace App\Services\Contracts;
 
+use App\DTOs\CreateForumThreadDTO;
+use App\DTOs\UpdateForumThreadDTO;
 use App\Models\ForumThread;
 use App\Models\ForumPost;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -18,20 +20,20 @@ interface ForumServiceContract
      * Create a new thread
      *
      * @param Authenticatable $author
-     * @param array $data
+     * @param CreateForumThreadDTO $dto
      * @return ForumThread
      */
-    public function createThread(Authenticatable $author, array $data): ForumThread;
+    public function createThread(Authenticatable $author, CreateForumThreadDTO $dto): ForumThread;
 
     /**
      * Update a thread
      *
      * @param Authenticatable $actor
      * @param ForumThread $thread
-     * @param array $data
+     * @param UpdateForumThreadDTO $dto
      * @return ForumThread
      */
-    public function updateThread(Authenticatable $actor, ForumThread $thread, array $data): ForumThread;
+    public function updateThread(Authenticatable $actor, ForumThread $thread, UpdateForumThreadDTO $dto): ForumThread;
 
     /**
      * Lock a thread

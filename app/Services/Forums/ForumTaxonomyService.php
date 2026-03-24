@@ -2,6 +2,10 @@
 
 namespace App\Services\Forums;
 
+use App\DTOs\CreateForumCategoryDTO;
+use App\DTOs\UpdateForumCategoryDTO;
+use App\DTOs\CreateForumTagDTO;
+use App\DTOs\UpdateForumTagDTO;
 use App\Models\ForumCategory;
 use App\Models\ForumTag;
 use App\Services\Contracts\ForumTaxonomyServiceContract;
@@ -38,8 +42,9 @@ class ForumTaxonomyService implements ForumTaxonomyServiceContract
     /**
      * Create forum category.
      */
-    public function createCategory(array $data, ?Authenticatable $actor = null): ForumCategory
+    public function createCategory(CreateForumCategoryDTO $dto, ?Authenticatable $actor = null): ForumCategory
     {
+        $data = $dto->toArray();
         $data['created_by'] = $actor?->getAuthIdentifier();
         if (!isset($data['slug'])) {
             $data['slug'] = \Str::slug($data['name']);
@@ -51,9 +56,12 @@ class ForumTaxonomyService implements ForumTaxonomyServiceContract
     /**
      * Update forum category.
      */
-    public function updateCategory(ForumCategory $category, array $data): ForumCategory
+    public function updateCategory(ForumCategory $category, UpdateForumCategoryDTO $dto): ForumCategory
     {
-        $category->update($data);
+        $data = $dto->toArray();
+        if (!empty($data)) {
+            $category->update($data);
+        }
         return $category->fresh();
     }
 
@@ -91,8 +99,9 @@ class ForumTaxonomyService implements ForumTaxonomyServiceContract
     /**
      * Create forum tag.
      */
-    public function createTag(array $data, ?Authenticatable $actor = null): ForumTag
+    public function createTag(CreateForumTagDTO $dto, ?Authenticatable $actor = null): ForumTag
     {
+        $data = $dto->toArray();
         $data['created_by'] = $actor?->getAuthIdentifier();
         if (!isset($data['slug'])) {
             $data['slug'] = \Str::slug($data['name']);
@@ -104,9 +113,12 @@ class ForumTaxonomyService implements ForumTaxonomyServiceContract
     /**
      * Update forum tag.
      */
-    public function updateTag(ForumTag $tag, array $data): ForumTag
+    public function updateTag(ForumTag $tag, UpdateForumTagDTO $dto): ForumTag
     {
-        $tag->update($data);
+        $data = $dto->toArray();
+        if (!empty($data)) {
+            $tag->update($data);
+        }
         return $tag->fresh();
     }
 

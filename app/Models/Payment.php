@@ -26,6 +26,7 @@ class Payment extends Model
         'external_reference',
         'order_reference',
         'transaction_id',
+        'confirmation_code',
         'pesapal_order_id',
         'receipt_url',
         'paid_at',

@@ -29,13 +29,10 @@ class ForumUserService implements ForumUserServiceContract
                     'users.created_at as joined_at',
                 ])
                 ->withCount(['forumThreads', 'forumPosts'])
-                ->leftJoin('member_profiles', 'users.id', '=', 'member_profiles.user_id')
-                ->where(function ($q) {
-                    // Only show users with public profiles enabled or no profile (default public)
-                    $q->whereNull('member_profiles.id')
-                      ->orWhere('member_profiles.public_profile_enabled', true);
-                })
-                ->whereNotNull('users.email_verified_at'); // Only verified users
+                ->whereNotNull('users.email_verified_at') // Only verified users
+                ->whereDoesntHave('roles', function ($q) {
+                    $q->where('name', 'super_admin');
+                });
 
             // Search by username
             if (!empty($filters['search'])) {
@@ -67,9 +64,7 @@ class ForumUserService implements ForumUserServiceContract
                 return [
                     'id' => $user->id,
                     'username' => $user->username,
-                    'profile_picture_url' => $user->profile_picture_path 
-                        ? url('storage/' . $user->profile_picture_path) 
-                        : null,
+                    'profile_picture_url' => $user->profile_picture_url,
                     'joined_at' => $user->joined_at,
                     'thread_count' => $user->forum_threads_count,
                     'post_count' => $user->forum_posts_count,

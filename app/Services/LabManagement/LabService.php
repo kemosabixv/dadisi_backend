@@ -2,14 +2,19 @@
 
 namespace App\Services\LabManagement;
 
+use App\DTOs\CreateLabSpaceDTO;
+use App\DTOs\UpdateLabSpaceDTO;
 use App\Exceptions\LabException;
 use App\Models\AuditLog;
 use App\Models\LabSpace;
+use App\Models\Media;
+use App\Services\Media\MediaService;
 use App\Services\Contracts\LabManagementServiceContract;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * LabService
@@ -21,23 +26,26 @@ class LabService implements LabManagementServiceContract
     /**
      * Create a new lab space
      *
-     * @param Authenticatable $creator
-     * @param array $data
-     * @return LabSpace
      *
      * @throws LabException
      */
-    public function createLabSpace(Authenticatable $creator, array $data): LabSpace
+    public function createLabSpace(Authenticatable $creator, CreateLabSpaceDTO $dto): LabSpace
     {
         try {
-            return DB::transaction(function () use ($creator, $data) {
+            return DB::transaction(function () use ($creator, $dto) {
+                $data = $dto->toArray();
                 $lab = LabSpace::create([
                     'name' => $data['name'],
+                    'slug' => $data['slug'] ?? Str::slug($data['name']),
+                    'type' => $data['type'] ?? null,
                     'county' => $data['county'] ?? 'Nairobi',
                     'description' => $data['description'] ?? null,
                     'location' => $data['location'] ?? null,
-                    'capacity' => $data['capacity'] ?? 50,
-                    'is_active' => true,
+                    'capacity' => $data['capacity'] ?? 4,
+                    'equipment_list' => $data['equipment_list'] ?? [],
+                    'safety_requirements' => $data['safety_requirements'] ?? [],
+                    'is_available' => $data['is_available'] ?? true,
+                    'hourly_rate' => $data['hourly_rate'] ?? 0,
                 ]);
 
                 AuditLog::create([
@@ -55,7 +63,25 @@ class LabService implements LabManagementServiceContract
                     'creator_id' => $creator->getAuthIdentifier(),
                 ]);
 
-                return $lab;
+                // Handle Media
+                if (! empty($data['featured_media_id'])) {
+                    $media = Media::find($data['featured_media_id']);
+                    if ($media) {
+                        app(MediaService::class)->promoteToPublic($media, 'lab-spaces', $lab->slug);
+                        $lab->setFeaturedMedia($media->id);
+                    }
+                }
+                if (! empty($data['gallery_media_ids'])) {
+                    foreach ($data['gallery_media_ids'] as $mediaId) {
+                        $media = Media::find($mediaId);
+                        if ($media) {
+                            app(MediaService::class)->promoteToPublic($media, 'lab-spaces', $lab->slug);
+                        }
+                    }
+                    $lab->addGalleryMedia($data['gallery_media_ids']);
+                }
+
+                return $lab->load('media');
             });
         } catch (\Exception $e) {
             Log::error('LabSpace creation failed', [
@@ -70,16 +96,13 @@ class LabService implements LabManagementServiceContract
     /**
      * Update a lab space
      *
-     * @param Authenticatable $actor
-     * @param LabSpace $lab
-     * @param array $data
-     * @return LabSpace
      *
      * @throws LabException
      */
-    public function updateLabSpace(Authenticatable $actor, LabSpace $lab, array $data): LabSpace
+    public function updateLabSpace(Authenticatable $actor, LabSpace $lab, UpdateLabSpaceDTO $dto): LabSpace
     {
         try {
+            $data = array_filter($dto->toArray(), fn ($v) => $v !== null);
             $oldValues = $lab->toArray();
             $lab->update($data);
 
@@ -99,7 +122,32 @@ class LabService implements LabManagementServiceContract
                 'updated_by' => $actor->getAuthIdentifier(),
             ]);
 
-            return $lab->fresh();
+            // Handle Media
+            if (isset($data['featured_media_id'])) {
+                if ($data['featured_media_id']) {
+                    $media = Media::find($data['featured_media_id']);
+                    if ($media) {
+                        app(MediaService::class)->promoteToPublic($media, 'lab-spaces', $lab->slug);
+                        $lab->setFeaturedMedia($media->id);
+                    }
+                } else {
+                    $lab->setFeaturedMedia(null);
+                }
+            }
+            if (isset($data['gallery_media_ids'])) {
+                $lab->media()->wherePivot('role', 'gallery')->detach();
+                if (! empty($data['gallery_media_ids'])) {
+                    foreach ($data['gallery_media_ids'] as $mediaId) {
+                        $media = Media::find($mediaId);
+                        if ($media) {
+                            app(MediaService::class)->promoteToPublic($media, 'lab-spaces', $lab->slug);
+                        }
+                    }
+                    $lab->addGalleryMedia($data['gallery_media_ids']);
+                }
+            }
+
+            return $lab->fresh()->load('media');
         } catch (\Exception $e) {
             throw LabException::updateFailed($e->getMessage());
         }
@@ -108,9 +156,6 @@ class LabService implements LabManagementServiceContract
     /**
      * Delete a lab space
      *
-     * @param Authenticatable $actor
-     * @param LabSpace $lab
-     * @return bool
      *
      * @throws LabException
      */
@@ -120,7 +165,7 @@ class LabService implements LabManagementServiceContract
             return DB::transaction(function () use ($actor, $lab) {
                 $labId = $lab->id;
                 $labName = $lab->name;
-                
+
                 $lab->delete();
 
                 AuditLog::create([
@@ -147,10 +192,6 @@ class LabService implements LabManagementServiceContract
 
     /**
      * List lab spaces with filtering
-     *
-     * @param array $filters
-     * @param int $perPage
-     * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function listLabSpaces(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
@@ -166,7 +207,7 @@ class LabService implements LabManagementServiceContract
 
         if (isset($filters['search']) && $filters['search']) {
             $query->where('name', 'like', "%{$filters['search']}%")
-                  ->orWhere('description', 'like', "%{$filters['search']}%");
+                ->orWhere('description', 'like', "%{$filters['search']}%");
         }
 
         return $query->orderBy('name', 'asc')->paginate($perPage);
@@ -174,21 +215,12 @@ class LabService implements LabManagementServiceContract
 
     /**
      * Get lab spaces by county
-     *
-     * @param string $county
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getLabSpacesByCounty(string $county): \Illuminate\Database\Eloquent\Collection
     {
-        // Note: LabSpace model doesn't currently have a county column in its migration, 
-        // but it's required by the contract. Returning empty collection for now if column missing.
-        try {
-            return LabSpace::where('county', $county)
-                ->where('is_active', true)
-                ->get();
-        } catch (\Exception $e) {
-            return new \Illuminate\Database\Eloquent\Collection();
-        }
+        return LabSpace::where('county', $county)
+            ->where('is_available', true)
+            ->get();
     }
 }
 

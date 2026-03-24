@@ -146,7 +146,7 @@ class CleanupExpiredUserData implements ShouldQueue
             $files = glob($backupPath . '/*');
             foreach ($files as $file) {
                 if (is_file($file) && filemtime($file) <= $cutoffDate->timestamp) {
-                    if (unlink($file)) {
+                    if (\Illuminate\Support\Facades\File::delete($file)) {
                         $deletedCount++;
                     } else {
                         $errors[] = "Failed to delete backup file: " . basename($file);
@@ -177,7 +177,7 @@ class CleanupExpiredUserData implements ShouldQueue
             $files = glob($tempPath . '/*');
             foreach ($files as $file) {
                 if (is_file($file) && filemtime($file) <= $cutoffDate->timestamp) {
-                    if (unlink($file)) {
+                    if (\Illuminate\Support\Facades\File::delete($file)) {
                         $deletedCount++;
                     } else {
                         $errors[] = "Failed to delete temp file: " . basename($file);

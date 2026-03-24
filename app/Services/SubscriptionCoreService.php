@@ -12,6 +12,7 @@ use App\Models\SystemFeature;
 use App\Models\SystemSetting;
 use App\Services\PaymentGateway\GatewayManager;
 use App\Services\Payments\MockPaymentService;
+use App\Models\Payment;
 use App\DTOs\Payments\PaymentRequestDTO;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
@@ -203,8 +204,26 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                 $billingPeriod = $data['billing_period'] ?? 'month';
                 $paymentGateway = $data['payment_method'] ?? 'mock';
 
-                // Calculate amount based on plan price and billing period
-                $amount = $billingPeriod === 'year' ? $plan->price * 12 : $plan->price;
+                // Calculate amount based on plan price and billing period, using effective pricing methods
+                $isPromoted = $plan->isMonthlyPromotionActive() || $plan->isYearlyPromotionActive();
+                
+                // Enforce "Manual Monthly Only" for promoted plans to prevent indefinite lock-in at Pesapal
+                if ($isPromoted) {
+                    if ($billingPeriod === 'year' || !empty($data['enable_auto_renewal'])) {
+                        Log::warning('Promoted plan purchase attempt with invalid billing/renewal settings', [
+                            'user_id' => $userId,
+                            'plan_id' => $plan->id,
+                            'billing_period' => $billingPeriod,
+                            'auto_renewal' => !empty($data['enable_auto_renewal'])
+                        ]);
+
+                        throw new \Exception("Promotional plans are limited to manual monthly renewal to ensure fair pricing.");
+                    }
+                }
+
+                $amount = $billingPeriod === 'year' 
+                    ? $plan->getEffectiveYearlyPrice() 
+                    : $plan->getEffectiveMonthlyPrice();
 
                 // Check if plan requires student approval and status of existing requests
                 $needsVerification = false;
@@ -246,7 +265,7 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                     // For pending verification, we allow creating the record but it stays pending
                     $subscription = PlanSubscription::create([
                         'subscriber_id' => $user->id,
-                        'subscriber_type' => 'App\\Models\\User',
+                        'subscriber_type' => 'user',
                         'plan_id' => $plan->id,
                         'starts_at' => now(),
                         'ends_at' => $billingPeriod === 'year' ? now()->addYear() : now()->addMonth(),
@@ -271,7 +290,7 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                 // If we reach here, either the plan doesn't require approval or the user is already approved
                 $subscription = PlanSubscription::create([
                     'subscriber_id' => $user->id,
-                    'subscriber_type' => 'App\\Models\\User',
+                    'subscriber_type' => 'user',
                     'plan_id' => $plan->id,
                     'starts_at' => now(),
                     'ends_at' => $billingPeriod === 'year' ? now()->addYear() : now()->addMonth(),
@@ -303,12 +322,12 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                     'payer_id' => $user->id,
                     'amount' => $amount,
                     'currency' => $data['currency'] ?? 'KES',
-                    'payment_method' => $paymentGateway,
+                    'gateway' => $paymentGateway,
                     'description' => $data['description'] ?? 'Subscription Payment - ' . $plan->name,
                     'reference' => 'SUB_' . $subscription->id . '_' . time(),
                     'order_reference' => 'ORDER_' . strtoupper(uniqid()),
                     'status' => 'pending',
-                    'payable_type' => 'App\\Models\\PlanSubscription',
+                    'payable_type' => 'subscription',
                     'payable_id' => $subscription->id,
                     'metadata' => [
                         'user_id' => $userId,
@@ -383,7 +402,13 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
 
                 $subscription = $enhancement->subscription;
                 $plan = $subscription->plan;
-                $amount = $subscription->plan_id ? $plan->price : 0;
+
+                // Determine billing period from metadata or default to month
+                $billingPeriod = $subscription->payments()->latest()->first()?->metadata['billing_period'] ?? 'month';
+
+                $amount = $billingPeriod === 'year' 
+                    ? $plan->getEffectiveYearlyPrice() 
+                    : $plan->getEffectiveMonthlyPrice();
 
                 Log::info('Processing mock payment', [
                     'user_id' => $userId,
@@ -442,6 +467,17 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                 // The package handles both immediate and end-of-cycle cancellation logic
                 $subscription->cancel();
 
+                // Trigger notification
+                try {
+                    $this->notificationService->sendSubscriptionCancelled($subscription, $reason);
+                } catch (\Exception $ne) {
+                    Log::warning('Failed to send subscription cancellation notification', [
+                        'subscription_id' => $subscription->id,
+                        'user_id' => $user->id,
+                        'error' => $ne->getMessage()
+                    ]);
+                }
+
                 Log::info('Subscription cancelled', [
                     'user_id' => $userId,
                     'subscription_id' => $subscription->id,
@@ -472,15 +508,36 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
             return DB::transaction(function () use ($subscriptionId, $reason) {
                 $subscription = PlanSubscription::findOrFail($subscriptionId);
 
-                if ($subscription->status === 'cancelled') {
-                    throw new \Exception('Subscription is already cancelled');
+                // Update subscription status to cancelled if not already
+                if ($subscription->status !== 'cancelled') {
+                    $subscription->update(['status' => 'cancelled']);
+                    
+                    // Also use the model's cancel method to set canceled_at and other metadata
+                    try {
+                        $subscription->cancel(true);
+                    } catch (\Exception $e) {
+                        Log::warning('Package cancel method failed, but status was updated', [
+                            'subscription_id' => $subscriptionId,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+
+                    Log::info('Subscription status updated to cancelled', [
+                        'subscription_id' => $subscriptionId,
+                        'reason' => $reason
+                    ]);
                 }
 
-                $subscription->update(['status' => 'cancelled']);
+                // Find and cancel associated pending payments
+                // We handle both morph alias 'subscription' and FQCN for safety
+                $updatedPayments = Payment::whereIn('payable_type', ['subscription', PlanSubscription::class])
+                    ->where('payable_id', $subscriptionId)
+                    ->whereIn('status', ['pending', 'payment_pending', 'failed'])
+                    ->update(['status' => 'cancelled']);
 
-                Log::info('Subscription payment cancelled', [
+                Log::info('Subscription payment cancellation synchronized', [
                     'subscription_id' => $subscriptionId,
-                    'user_id' => $subscription->user_id,
+                    'updated_payments_count' => $updatedPayments,
                     'reason' => $reason,
                 ]);
 
@@ -488,6 +545,7 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                     'success' => true,
                     'subscription_id' => $subscriptionId,
                     'status' => 'cancelled',
+                    'updated_payments' => $updatedPayments
                 ];
             });
         } catch (\Exception $e) {

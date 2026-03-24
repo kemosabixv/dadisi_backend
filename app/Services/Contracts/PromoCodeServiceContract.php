@@ -2,6 +2,8 @@
 
 namespace App\Services\Contracts;
 
+use App\DTOs\CreatePromoCodeDTO;
+use App\DTOs\UpdatePromoCodeDTO;
 use App\Models\PromoCode;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -17,20 +19,20 @@ interface PromoCodeServiceContract
      * Create a new promo code
      *
      * @param Authenticatable $creator
-     * @param array $data
+     * @param CreatePromoCodeDTO $dto
      * @return PromoCode
      */
-    public function createPromoCode(Authenticatable $creator, array $data): PromoCode;
+    public function createPromoCode(Authenticatable $creator, CreatePromoCodeDTO $dto): PromoCode;
 
     /**
      * Update a promo code
      *
      * @param Authenticatable $actor
      * @param PromoCode $promoCode
-     * @param array $data
+     * @param UpdatePromoCodeDTO $dto
      * @return PromoCode
      */
-    public function updatePromoCode(Authenticatable $actor, PromoCode $promoCode, array $data): PromoCode;
+    public function updatePromoCode(Authenticatable $actor, PromoCode $promoCode, UpdatePromoCodeDTO $dto): PromoCode;
 
     /**
      * Validate and redeem a promo code
@@ -117,4 +119,14 @@ interface PromoCodeServiceContract
      * @return PromoCode
      */
     public function getPromoCode(int|string $idOrCode): PromoCode;
+
+    /**
+     * Validate a promo code for a specific event and ticket tier
+     *
+     * @param string $code
+     * @param int $eventId
+     * @param int|null $ticketId
+     * @return PromoCode
+     */
+    public function validateForEvent(string $code, int $eventId, ?int $ticketId = null): PromoCode;
 }

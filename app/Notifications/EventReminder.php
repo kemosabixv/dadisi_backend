@@ -19,7 +19,7 @@ class EventReminder extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -54,7 +54,7 @@ class EventReminder extends Notification implements ShouldQueue
         return [
             'type' => 'event_reminder',
             'title' => 'Event Reminder',
-            'message' => "{$this->event->title} is {$timeText}!",
+            'message' => "{$this->event->title} is coming up {$timeText}!",
             'event_id' => $this->event->id,
             'event_slug' => $this->event->slug,
             'event_title' => $this->event->title,
@@ -62,5 +62,15 @@ class EventReminder extends Notification implements ShouldQueue
             'reminder_type' => $this->reminderType,
             'link' => "/events/{$this->event->slug}",
         ];
+    }
+
+    /**
+     * Get the Supabase representation of the notification.
+     */
+    public function toSupabase(object $notifiable): array
+    {
+        $data = $this->toArray($notifiable);
+        $data['recipient_type'] = 'user';
+        return $data;
     }
 }

@@ -44,6 +44,7 @@ class AdminAccessResolver
                 'content_editor', 'editor',
                 'moderator', 'forum_moderator',
                 'lab_manager',
+                'lab_supervisor',
             ];
 
             // Spatie's hasAnyRole checks roles regardless of guard by default

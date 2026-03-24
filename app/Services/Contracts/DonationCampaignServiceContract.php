@@ -2,6 +2,8 @@
 
 namespace App\Services\Contracts;
 
+use App\DTOs\CreateDonationCampaignDTO;
+use App\DTOs\UpdateDonationCampaignDTO;
 use App\Models\DonationCampaign;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -31,12 +33,12 @@ interface DonationCampaignServiceContract
     /**
      * Create a new campaign.
      */
-    public function createCampaign(Authenticatable $actor, array $data): DonationCampaign;
+    public function createCampaign(Authenticatable $actor, CreateDonationCampaignDTO $dto): DonationCampaign;
 
     /**
      * Update a campaign.
      */
-    public function updateCampaign(Authenticatable $actor, DonationCampaign $campaign, array $data): DonationCampaign;
+    public function updateCampaign(Authenticatable $actor, DonationCampaign $campaign, UpdateDonationCampaignDTO $dto): DonationCampaign;
 
     /**
      * Delete a campaign (soft).

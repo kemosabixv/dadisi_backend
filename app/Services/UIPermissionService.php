@@ -36,7 +36,6 @@ class UIPermissionService
             // Content Management
             'can_manage_blog' => $this->user->can('view_all_posts') || $this->user->can('edit_any_post'),
             'can_create_posts' => $this->user->can('create_posts'),
-            'can_manage_pages' => false, // Feature not yet in seeder
             'can_manage_media' => $this->user->can('manage_media'),
 
             // Financial
@@ -53,8 +52,8 @@ class UIPermissionService
             // Lab Space Booking
             'can_view_lab_spaces' => $this->user->can('view_all_lab_bookings') || $this->user->can('manage_lab_spaces'),
             'can_manage_lab_spaces' => $this->user->can('manage_lab_spaces'),
+            'can_edit_lab_spaces' => $this->user->can('edit_lab_space'),
             'can_view_lab_bookings' => $this->user->can('view_all_lab_bookings'),
-            'can_approve_lab_bookings' => $this->user->can('approve_lab_bookings'),
             'can_manage_lab_maintenance' => $this->user->can('manage_lab_maintenance'),
             'can_view_lab_reports' => $this->user->can('view_lab_reports'),
             'can_mark_lab_attendance' => $this->user->can('mark_lab_attendance'),
@@ -67,6 +66,12 @@ class UIPermissionService
 
             // Student Approvals
             'can_view_student_approvals' => $this->user->can('view_student_approvals'),
+            'can_approve_student_approvals' => $this->user->can('approve_student_approvals'),
+
+            // Finance & Payments
+            'can_view_finance_analytics' => $this->user->can('view_finance_analytics'),
+            'can_manage_payments' => $this->user->can('manage_payments'),
+            'can_manage_refunds' => $this->user->can('manage_refunds'),
 
             // Retention Settings
             'can_manage_retention_settings' => $this->user->can('manage_retention_settings'),

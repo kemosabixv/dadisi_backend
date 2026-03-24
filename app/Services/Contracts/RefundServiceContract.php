@@ -4,8 +4,9 @@ namespace App\Services\Contracts;
 
 use App\Models\Donation;
 use App\Models\EventOrder;
+use App\Models\LabBooking;
+use App\Models\PlanSubscription;
 use App\Models\Refund;
-use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -18,21 +19,22 @@ interface RefundServiceContract
 {
     /**
      * List all refunds with filtering
-     *
-     * @param array $filters
-     * @param int $perPage
-     * @return LengthAwarePaginator
      */
     public function listRefunds(array $filters = [], int $perPage = 20): LengthAwarePaginator;
 
     /**
+     * Submit a generic refund request (used by public and admin endpoints)
+     */
+    public function submitRefundRequest(
+        string $refundableType,
+        int $refundableId,
+        string $reason,
+        ?string $customerNotes = null,
+        ?float $amount = null
+    ): Refund;
+
+    /**
      * Request a refund for an event order
-     *
-     * @param EventOrder $order
-     * @param string $reason
-     * @param string|null $customerNotes
-     * @param float|null $amount
-     * @return Refund
      */
     public function requestEventOrderRefund(
         EventOrder $order,
@@ -43,11 +45,6 @@ interface RefundServiceContract
 
     /**
      * Request a refund for a donation
-     *
-     * @param Donation $donation
-     * @param string $reason
-     * @param string|null $customerNotes
-     * @return Refund
      */
     public function requestDonationRefund(
         Donation $donation,
@@ -56,37 +53,46 @@ interface RefundServiceContract
     ): Refund;
 
     /**
+     * Request a refund for a subscription
+     */
+    public function requestSubscriptionRefund(
+        PlanSubscription $subscription,
+        string $reason,
+        ?string $customerNotes = null,
+        ?float $amount = null
+    ): Refund;
+
+    /**
+     * Request a refund for a lab booking
+     */
+    public function requestLabBookingRefund(
+        LabBooking $booking,
+        string $reason,
+        ?string $customerNotes = null
+    ): Refund;
+
+    /**
+     * Get preview of potential refund for a lab booking
+     */
+    public function getLabBookingRefundPreview(LabBooking $booking): array;
+
+    /**
      * Approve a pending refund
-     *
-     * @param Refund $refund
-     * @param Authenticatable $admin
-     * @param string|null $adminNotes
-     * @return Refund
      */
     public function approveRefund(Refund $refund, Authenticatable $admin, ?string $adminNotes = null): Refund;
 
     /**
      * Reject a pending refund
-     *
-     * @param Refund $refund
-     * @param Authenticatable $admin
-     * @param string $reason
-     * @return Refund
      */
-    public function rejectRefund(Refund $refund, Authenticatable $admin, string $reason): Refund;
+    public function rejectRefund(Refund $refund, Authenticatable $admin, ?string $reason = null): Refund;
 
     /**
      * Process an approved refund via gateway
-     *
-     * @param Refund $refund
-     * @return Refund
      */
     public function processRefund(Refund $refund): Refund;
 
     /**
      * Get refund statistics
-     *
-     * @return array
      */
     public function getStats(): array;
 }

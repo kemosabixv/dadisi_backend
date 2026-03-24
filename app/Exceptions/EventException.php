@@ -146,6 +146,11 @@ class EventException extends Exception
         return new static("Failed to update event capacity: {$error}", Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
+    public static function duplicatePromoCode(string $code): self
+    {
+        return new self("The promo code '{$code}' already exists. Please use a unique code.", Response::HTTP_CONFLICT);
+    }
+
     public function render()
     {
         return response()->json([

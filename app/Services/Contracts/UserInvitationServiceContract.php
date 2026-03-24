@@ -31,11 +31,11 @@ interface UserInvitationServiceContract
      *
      * @param Authenticatable $actor The user performing the action
      * @param array $invitations Array of invitation data
-     * @return int Count of invited users
+     * @return array Results summary
      *
      * @throws \App\Exceptions\UserException
      */
-    public function bulkInvite(Authenticatable $actor, array $invitations): int;
+    public function bulkInvite(Authenticatable $actor, array $invitations): array;
 
     /**
      * Send invitation email

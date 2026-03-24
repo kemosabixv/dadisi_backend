@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\EventRegistration;
-use App\Models\Event;
+use App\Models\EventOrder;
+use App\Services\Media\MediaService;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class QrCodeService
 {
@@ -29,17 +30,87 @@ class QrCodeService
             $registration->update(['qr_code_token' => $token]);
         }
 
+        // 1. Generate QR SVG
         $qrImage = QrCode::format('svg')
             ->size(300)
             ->errorCorrection('H')
             ->generate($token);
 
-        $path = 'events/tickets/qr-' . $registration->confirmation_code . '.svg';
-        Storage::disk('public')->put($path, $qrImage);
+        // 2. Save to temporary file for MediaService
+        $tempPath = tempnam(sys_get_temp_dir(), 'qr_');
+        file_put_contents($tempPath, $qrImage);
 
-        $registration->update(['qr_code_path' => $path]);
+        try {
+            /** @var MediaService $mediaService */
+            $mediaService = app(MediaService::class);
+            
+            // 3. Register in CAS/R2
+            $media = $mediaService->registerFile(
+                $registration->user ?? User::first(), // Fallback to a system user if guest
+                $tempPath,
+                'qr-' . $registration->confirmation_code . '.svg',
+                [
+                    'visibility' => 'public',
+                    'root_type' => 'public',
+                    'path' => ['tickets', $registration->confirmation_code],
+                ]
+            );
 
-        return $path;
+            // 4. Update registration
+            $registration->update([
+                'qr_code_path' => $media->url,
+                'qr_code_media_id' => $media->id,
+            ]);
+
+            return $media->url;
+        } finally {
+            @unlink($tempPath);
+        }
+    }
+
+    /**
+     * Generate the QR code image for an order and return the storage path.
+     */
+    public function generateQrCodeForOrder(EventOrder $order): string
+    {
+        $token = $order->qr_code_token ?? $order->generateQrToken();
+        
+        if (!$order->qr_code_token) {
+            $order->update(['qr_code_token' => $token]);
+        }
+
+        $qrImage = QrCode::format('svg')
+            ->size(300)
+            ->errorCorrection('H')
+            ->generate($token);
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'qr_o_');
+        file_put_contents($tempPath, $qrImage);
+
+        try {
+            /** @var MediaService $mediaService */
+            $mediaService = app(MediaService::class);
+            
+            $media = $mediaService->registerFile(
+                $order->user ?? User::first(),
+                $tempPath,
+                'qr-order-' . $order->reference . '.svg',
+                [
+                    'visibility' => 'public',
+                    'root_type' => 'public',
+                    'path' => ['tickets', $order->reference],
+                ]
+            );
+
+            $order->update([
+                'qr_code_path' => $media->url,
+                'qr_code_media_id' => $media->id,
+            ]);
+
+            return $media->url;
+        } finally {
+            @unlink($tempPath);
+        }
     }
 
     /**

@@ -2,6 +2,8 @@
 
 namespace App\Services\Contracts;
 
+use App\DTOs\CreateDonationDTO;
+use App\DTOs\UpdateDonationDTO;
 use App\Models\Donation;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Pagination\Paginator;
@@ -17,7 +19,7 @@ interface DonationServiceContract
     /**
      * Create a new donation
      */
-    public function createDonation(?Authenticatable $donor, array $data): Donation;
+    public function createDonation(?Authenticatable $donor, CreateDonationDTO $dto): Donation;
 
     /**
      * Get donation by ID

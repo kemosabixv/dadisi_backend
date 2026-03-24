@@ -8,8 +8,7 @@ use Illuminate\Notifications\Notification;
 
 class SecureShareCreated extends Notification
 {
-
-    private $media;
+    private Media $media;
 
     /**
      * Create a new notification instance.
@@ -26,7 +25,29 @@ class SecureShareCreated extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
+    }
+
+    /**
+     * Get the Supabase representation of the notification.
+     */
+    public function toSupabase(object $notifiable): array
+    {
+        return $this->toArray($notifiable);
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        $shareUrl = config('app.url') . '/api/media/shared/' . $this->media->share_token;
+
+        return (new MailMessage)
+                    ->subject('Secure Share Link Created')
+                    ->line('A secure share link has been created for your file: ' . $this->media->file_name)
+                    ->action('View Shared File', $shareUrl)
+                    ->line('Anyone with this link can view the file according to the permissions set.');
     }
 
     /**
@@ -37,11 +58,11 @@ class SecureShareCreated extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'type' => 'share_created',
+            'type' => 'media_share_created',
             'media_id' => $this->media->id,
             'file_name' => $this->media->file_name,
             'share_token' => $this->media->share_token,
-            'message' => 'A secure share link was created for "' . $this->media->file_name . '".',
+            'message' => 'Secure share link created for ' . $this->media->file_name,
         ];
     }
 }

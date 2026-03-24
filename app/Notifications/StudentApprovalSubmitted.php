@@ -20,8 +20,21 @@ class StudentApprovalSubmitted extends Notification
 
     public function via(object $notifiable): array
     {
-        // Database first to ensure notification is stored even if mail fails
-        return ['database', 'mail'];
+        // Database first to ensure notification is stored even if pusher/supabase fails
+        return ['database', \App\Channels\SupabaseChannel::class, \NotificationChannels\WebPush\WebPushChannel::class];
+    }
+
+    /**
+     * Get the WebPush representation of the notification.
+     */
+    public function toWebPush($notifiable, $notification)
+    {
+        $userName = $this->approvalRequest->user->username ?? 'A member';
+        return (new \NotificationChannels\WebPush\WebPushMessage)
+            ->title('New Student Approval Request')
+            ->icon('/logo.png')
+            ->body("{$userName} has submitted a student approval request for {$this->approvalRequest->student_institution}.")
+            ->action('Review Request', 'review_approval');
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -53,5 +66,17 @@ class StudentApprovalSubmitted extends Notification
             'institution' => $this->approvalRequest->student_institution,
             'link' => '/admin/membership/approvals',
         ];
+    }
+
+    /**
+     * Get the Supabase representation of the notification.
+     */
+    public function toSupabase(object $notifiable): array
+    {
+        $data = $this->toArray($notifiable);
+        $data['recipient_type'] = 'staff';
+        $data['permission'] = 'can_approve_student_approvals';
+
+        return $data;
     }
 }

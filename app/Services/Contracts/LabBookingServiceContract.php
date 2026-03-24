@@ -2,7 +2,9 @@
 
 namespace App\Services\Contracts;
 
+use App\Models\BookingSeries;
 use App\Models\LabBooking;
+use App\Models\LabMaintenanceBlock;
 use App\Models\LabSpace;
 use App\Models\User;
 use Carbon\Carbon;
@@ -16,13 +18,44 @@ interface LabBookingServiceContract
 
     /**
      * Create a new lab booking.
+     * Returns array with success status, booking object, and potential race condition metadata.
      */
-    public function createBooking(User $user, array $data): LabBooking;
+    public function createBooking(User $user, array $data): array;
+
+    /**
+     * Calculate booking price based on user subscription and lab rates.
+     */
+    public function calculateBookingPrice(User $user, LabSpace $space, float $hours): array;
+
+    /**
+     * Cancel a lab booking series.
+     */
+    public function cancelSeries(BookingSeries $series, string $reason = 'User cancelled'): array;
 
     /**
      * Cancel a lab booking.
      */
-    public function cancelBooking(LabBooking $booking): LabBooking;
+    public function cancelBooking(LabBooking $booking, string $reason = 'User cancelled'): array;
+
+    /**
+     * Get refund preview for a series.
+     */
+    public function refundSeriesPreview(BookingSeries $series): array;
+
+    /**
+     * Get refund preview for a booking.
+     */
+    public function refundPreview(LabBooking $booking): array;
+
+    /**
+     * Calculate refund for a booking with specific structure for admin.
+     */
+    public function calculateRefund(LabBooking $booking): array;
+
+    /**
+     * Create a guest lab booking (no user account required).
+     */
+    public function createGuestBooking(array $data): array;
 
     /**
      * Check if user can book a space.
@@ -35,24 +68,15 @@ interface LabBookingServiceContract
     public function checkAvailability(int $spaceId, Carbon $start, Carbon $end, ?int $excludeBookingId = null): bool;
 
     /**
-     * Approve a booking.
-     */
-    public function approveBooking(LabBooking $booking, ?string $notes = null): LabBooking;
-
-    /**
-     * Reject a booking.
-     */
-    public function rejectBooking(LabBooking $booking, string $reason): LabBooking;
-
-    /**
      * Check in to a booking.
      */
-    public function checkIn(LabBooking $booking): LabBooking;
+    public function checkIn(LabBooking $booking, ?Carbon $checkInAt = null, ?User $staff = null): LabBooking;
 
     /**
-     * Check out from a booking.
+     * Check in via Lab Space static checkin_token.
      */
-    public function checkOut(LabBooking $booking): LabBooking;
+    public function checkInByToken(User $user, string $token): LabBooking;
+
 
     /**
      * Mark booking as no-show.
@@ -63,4 +87,34 @@ interface LabBookingServiceContract
      * Get availability calendar for a space.
      */
     public function getAvailabilityCalendar(LabSpace $space, Carbon $start, Carbon $end): array;
+
+    /**
+     * Find an alternative slot for a booking during maintenance/closure.
+     */
+    public function findAlternativeSlot(
+        int $spaceId,
+        int $durationHours,
+        LabMaintenanceBlock $blockToAvoid,
+        ?int $excludeBookingId = null
+    ): ?array;
+
+    /**
+     * Release quota for a cancelled booking.
+     */
+    public function releaseBookingQuota(LabBooking $booking): bool;
+
+    /**
+     * Mark attendance for a specific slot.
+     */
+    public function markSlotAttendance(LabBooking $booking, Carbon $slotStartTime, string $status, ?User $staff = null): bool;
+
+    /**
+     * Roll over bookings that conflict with a maintenance block.
+     */
+    public function rollOverBookings(LabMaintenanceBlock $block): array;
+
+    /**
+     * Resolve a booking conflict manually by selecting a new slot.
+     */
+    public function resolveConflict(LabBooking $booking, array $data): array;
 }

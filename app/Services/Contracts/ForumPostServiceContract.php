@@ -2,6 +2,8 @@
 
 namespace App\Services\Contracts;
 
+use App\DTOs\CreateForumPostDTO;
+use App\DTOs\UpdateForumPostDTO;
 use App\Models\ForumPost;
 use App\Models\ForumThread;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -19,20 +21,20 @@ interface ForumPostServiceContract
      *
      * @param Authenticatable $author
      * @param ForumThread $thread
-     * @param array $data
+     * @param CreateForumPostDTO $dto
      * @return ForumPost
      */
-    public function createPost(Authenticatable $author, ForumThread $thread, array $data): ForumPost;
+    public function createPost(Authenticatable $author, ForumThread $thread, CreateForumPostDTO $dto): ForumPost;
 
     /**
      * Update an existing post
      *
      * @param Authenticatable $actor
      * @param ForumPost $post
-     * @param array $data
+     * @param UpdateForumPostDTO $dto
      * @return ForumPost
      */
-    public function updatePost(Authenticatable $actor, ForumPost $post, array $data): ForumPost;
+    public function updatePost(Authenticatable $actor, ForumPost $post, UpdateForumPostDTO $dto): ForumPost;
 
     /**
      * Delete a post
