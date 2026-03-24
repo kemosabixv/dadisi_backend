@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 
 class MediaControllerTest extends TestCase
 {
@@ -30,7 +31,8 @@ class MediaControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function authenticated_user_can_list_media()
     {
-        $response = $this->actingAs($this->user)->getJson('/api/media');
+        $this->actingAs($this->user);
+        $response = $this->getJson('/api/media');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -47,8 +49,8 @@ class MediaControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function authenticated_user_can_list_media_with_pagination()
     {
-        $response = $this->actingAs($this->user)
-            ->getJson('/api/media?page=1&per_page=15');
+        $this->actingAs($this->user);
+        $response = $this->getJson('/api/media?page=1&per_page=15');
 
         $response->assertStatus(200)
             ->assertJsonPath('pagination.per_page', 15)
@@ -58,7 +60,8 @@ class MediaControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function media_index_filters_by_type()
     {
-        $response = $this->actingAs($this->user)->getJson('/api/media?type=image');
+        $this->actingAs($this->user);
+        $response = $this->getJson('/api/media?type=image');
 
         $response->assertStatus(200)
             ->assertJsonStructure(['success', 'data', 'pagination']);
@@ -67,7 +70,8 @@ class MediaControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function media_index_searches_by_filename()
     {
-        $response = $this->actingAs($this->user)->getJson('/api/media?search=test');
+        $this->actingAs($this->user);
+        $response = $this->getJson('/api/media?search=test');
 
         $response->assertStatus(200)
             ->assertJsonStructure(['success', 'data', 'pagination']);
@@ -87,7 +91,8 @@ class MediaControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function media_upload_validates_file_required()
     {
-        $response = $this->actingAs($this->user)->postJson('/api/media', []);
+        $this->actingAs($this->user);
+        $response = $this->postJson('/api/media', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['file']);
@@ -98,7 +103,8 @@ class MediaControllerTest extends TestCase
     {
         $file = \Illuminate\Http\UploadedFile::fake()->create('test.txt', 100);
 
-        $response = $this->actingAs($this->user)->postJson('/api/media', [
+        $this->actingAs($this->user);
+        $response = $this->postJson('/api/media', [
             'file' => $file,
         ]);
 
@@ -118,7 +124,8 @@ class MediaControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function media_show_returns_404_for_nonexistent()
     {
-        $response = $this->actingAs($this->user)->getJson('/api/media/99999');
+        $this->actingAs($this->user);
+        $response = $this->getJson('/api/media/99999');
 
         $response->assertStatus(404);
     }
@@ -135,7 +142,8 @@ class MediaControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function media_delete_returns_404_for_nonexistent()
     {
-        $response = $this->actingAs($this->user)->deleteJson('/api/media/99999');
+        $this->actingAs($this->user);
+        $response = $this->deleteJson('/api/media/99999');
 
         $response->assertStatus(404);
     }
@@ -145,7 +153,8 @@ class MediaControllerTest extends TestCase
     {
         $media = \App\Models\Media::factory()->forUser($this->user)->create();
 
-        $response = $this->actingAs($this->user)->getJson('/api/media/' . $media->id);
+        $this->actingAs($this->user);
+        $response = $this->getJson('/api/media/' . $media->id);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -164,7 +173,8 @@ class MediaControllerTest extends TestCase
     {
         $media = \App\Models\Media::factory()->forUser($this->user)->create();
 
-        $response = $this->actingAs($this->user)->deleteJson('/api/media/' . $media->id);
+        $this->actingAs($this->user);
+        $response = $this->deleteJson('/api/media/' . $media->id);
 
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
@@ -175,7 +185,8 @@ class MediaControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function media_index_sorts_by_date()
     {
-        $response = $this->actingAs($this->user)->getJson('/api/media?sort=-created_at');
+        $this->actingAs($this->user);
+        $response = $this->getJson('/api/media?sort=-created_at');
 
         $response->assertStatus(200)
             ->assertJsonStructure(['success', 'data', 'pagination']);
@@ -184,7 +195,8 @@ class MediaControllerTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function media_index_filters_by_is_public()
     {
-        $response = $this->actingAs($this->user)->getJson('/api/media?is_public=1');
+        $this->actingAs($this->user);
+        $response = $this->getJson('/api/media?is_public=1');
 
         $response->assertStatus(200)
             ->assertJsonStructure(['success', 'data', 'pagination']);

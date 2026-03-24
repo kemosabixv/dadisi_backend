@@ -189,6 +189,7 @@ class PesapalGatewayV3Test extends TestCase
                 'order_tracking_id' => 'order-123',
                 'merchant_reference' => 'customer_123',
                 'status' => 'COMPLETED',
+                'status_code' => 1,
                 'confirmation_code' => 'AA11BB22',
                 'payment_method' => 'MPESA',
                 'payment_status_description' => 'Payment Received',

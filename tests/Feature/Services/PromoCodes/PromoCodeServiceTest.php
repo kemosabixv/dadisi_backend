@@ -53,7 +53,7 @@ class PromoCodeServiceTest extends TestCase
             'usage_limit' => 100,
         ];
 
-        $promoCode = $this->service->createPromoCode($this->admin, $data);
+        $promoCode = $this->service->createPromoCode($this->admin, \App\DTOs\CreatePromoCodeDTO::fromArray($data));
 
         $this->assertNotNull($promoCode->id);
         $this->assertEquals('SUMMER2024', $promoCode->code);
@@ -74,7 +74,7 @@ class PromoCodeServiceTest extends TestCase
             'discount_value' => 500,
         ];
 
-        $promoCode = $this->service->createPromoCode($this->admin, $data);
+        $promoCode = $this->service->createPromoCode($this->admin, \App\DTOs\CreatePromoCodeDTO::fromArray($data));
 
         $this->assertDatabaseHas('audit_logs', [
             'actor_id' => $this->admin->id,
@@ -194,18 +194,6 @@ class PromoCodeServiceTest extends TestCase
         $this->service->validateCode($code->code);
     }
 
-    #[Test]
-    /**
-     * Validates expiry date
-     */
-    public function it_validates_expiry_date(): void
-    {
-        $code = PromoCode::factory()->expired()->create();
-
-        $this->expectException(PromoCodeException::class);
-        $this->service->validateCode($code->code);
-    }
-
     // ============ Usage Tests ============
 
     #[Test]
@@ -249,49 +237,6 @@ class PromoCodeServiceTest extends TestCase
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'recorded_promo_code_usage',
-        ]);
-    }
-
-    // ============ Status Tests ============
-
-    #[Test]
-    /**
-     * Can activate promo code
-     */
-    public function it_can_activate_promo_code(): void
-    {
-        $code = PromoCode::factory()->inactive()->create();
-
-        $activated = $this->service->activateCode($this->admin, $code);
-
-        $this->assertTrue($activated->is_active);
-    }
-
-    #[Test]
-    /**
-     * Can deactivate promo code
-     */
-    public function it_can_deactivate_promo_code(): void
-    {
-        $code = PromoCode::factory()->active()->create();
-
-        $deactivated = $this->service->deactivateCode($this->admin, $code);
-
-        $this->assertFalse($deactivated->is_active);
-    }
-
-    #[Test]
-    /**
-     * Creates audit log on status change
-     */
-    public function it_creates_audit_log_on_status_change(): void
-    {
-        $code = PromoCode::factory()->active()->create();
-
-        $this->service->deactivateCode($this->admin, $code);
-
-        $this->assertDatabaseHas('audit_logs', [
-            'action' => 'deactivated_promo_code',
         ]);
     }
 

@@ -261,7 +261,7 @@ class UserServiceTest extends TestCase
         // Calling delete() on a User model with non-existent ID silently succeeds.
         // This test documents that behavior rather than testing for exception.
         $admin = User::factory()->create();
-        $nonExistentUser = new User();
+        $nonExistentUser = new User;
         $nonExistentUser->id = 99999;
 
         // Delete returns true even for non-existent users (no DB validation)
@@ -300,7 +300,7 @@ class UserServiceTest extends TestCase
         // Calling restore() on a User model with non-existent ID silently succeeds.
         // This test documents that behavior rather than testing for exception.
         $admin = User::factory()->create();
-        $nonExistentUser = new User();
+        $nonExistentUser = new User;
         $nonExistentUser->id = 99999;
 
         // Restore completes without exception for non-existent users

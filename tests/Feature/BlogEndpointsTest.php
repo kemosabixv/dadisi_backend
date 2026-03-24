@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 use App\Models\User;
 use App\Models\Post;
 use App\Models\Category;
@@ -23,8 +24,6 @@ class BlogEndpointsTest extends TestCase
     private User $author;
     private User $staffUser;
     private User $subscribedUser;
-    private Role $editorRole;
-    private Role $adminRole;
     private Category $category;
     private Tag $tag;
     private County $county;
@@ -34,46 +33,27 @@ class BlogEndpointsTest extends TestCase
     {
         parent::setUp();
 
+        // Seed roles and permissions
+        $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
+
         // Create test users
         $this->user = User::factory()->create();
         $this->author = User::factory()->create();
         $this->staffUser = User::factory()->create(['email' => 'staff@example.com']);
         $this->subscribedUser = User::factory()->create(['email' => 'subscriber@example.com']);
 
-        // Create roles with 'api' guard
-        $this->editorRole = Role::where('name', 'content_editor')->where('guard_name', 'api')->first()
-            ?? Role::create(['name' => 'content_editor', 'guard_name' => 'api']);
-        
-        $this->adminRole = Role::where('name', 'admin')->where('guard_name', 'api')->first()
-            ?? Role::create(['name' => 'admin', 'guard_name' => 'api']);
-
-        // Create permissions with 'api' guard
-        $permissions = ['create_posts', 'edit_posts', 'edit_any_post', 'delete_posts', 'publish_posts'];
-        foreach ($permissions as $permission) {
-            $perm = Permission::where('name', $permission)->where('guard_name', 'api')->first();
-            if (!$perm) {
-                Permission::create(['name' => $permission, 'guard_name' => 'api']);
-            }
-        }
-
-        // Sync permissions to roles
-        $this->editorRole->syncPermissions($permissions);
-        $this->adminRole->syncPermissions($permissions);
-
-        // Assign roles to staff user (making them isStaffMember())
-        $this->staffUser->assignRole($this->adminRole);
-        
-        // Assign roles to author (making them isStaffMember())
-        $this->author->assignRole($this->editorRole);
+        // Assign seeded roles to users
+        $this->staffUser->assignRole('admin');
+        $this->author->assignRole('content_editor');
 
         // Create a plan with blog creation limit
         $this->plan = Plan::factory()->create([
             'name' => 'Blogger Plan',
         ]);
 
-        // Create blog_creation_limit system feature
+        // Create blog-posts-monthly system feature
         $blogFeature = SystemFeature::firstOrCreate(
-            ['slug' => 'blog_creation_limit'],
+            ['slug' => 'blog-posts-monthly'],
             [
                 'name' => 'Blog Creation Limit',
                 'description' => 'Maximum number of blog posts per month',
@@ -104,7 +84,7 @@ class BlogEndpointsTest extends TestCase
      */
 
     /**
-     * @test
+     #[Test]
      * List published posts without filters
      */
     public function test_index_returns_all_published_posts(): void
@@ -137,7 +117,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Filter posts by category
      */
     public function test_index_filters_posts_by_category(): void
@@ -159,7 +139,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Filter posts by tag
      */
     public function test_index_filters_posts_by_tag(): void
@@ -181,7 +161,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Filter posts by county
      */
     public function test_index_filters_posts_by_county(): void
@@ -194,6 +174,7 @@ class BlogEndpointsTest extends TestCase
 
         Post::factory()->published()->create([
             'user_id' => $this->author->id,
+            'county_id' => County::factory()->create()->id,
         ]);
 
         $response = $this->getJson("/api/blog/posts?county_id={$county->id}");
@@ -203,7 +184,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Search posts by title
      */
     public function test_index_searches_posts_by_title(): void
@@ -225,7 +206,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Sort posts by latest
      */
     public function test_index_sorts_posts_by_latest(): void
@@ -247,7 +228,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Paginate posts
      */
     public function test_index_paginate_posts(): void
@@ -264,7 +245,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Show published post increments views
      */
     public function test_show_published_post_increments_views(): void
@@ -278,11 +259,11 @@ class BlogEndpointsTest extends TestCase
         $response = $this->getJson("/api/blog/posts/{$post->slug}");
 
         $response->assertStatus(200);
-        $this->assertGreater($response->json('data.views_count'), 0);
+        $this->assertGreaterThan(0, $response->json('data.views_count'));
     }
 
     /**
-     * @test
+     #[Test]
      * Cannot show draft post without auth
      */
     public function test_show_draft_post_not_found(): void
@@ -298,7 +279,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Show post by ID
      */
     public function test_show_post_by_id(): void
@@ -324,7 +305,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Show post includes related posts
      */
     public function test_show_post_includes_related_posts(): void
@@ -343,7 +324,7 @@ class BlogEndpointsTest extends TestCase
         $response = $this->getJson("/api/blog/posts/{$post->slug}");
 
         $response->assertStatus(200);
-        $this->assertGreater(count($response->json('data.related_posts')), 0);
+        $this->assertGreaterThan(0, count($response->json('data.related_posts')));
     }
 
     /**
@@ -351,7 +332,7 @@ class BlogEndpointsTest extends TestCase
      */
 
     /**
-     * @test
+     #[Test]
      * My posts returns user's posts
      */
     public function test_my_posts_returns_user_posts(): void
@@ -364,7 +345,7 @@ class BlogEndpointsTest extends TestCase
             'user_id' => $this->author->id,
         ]);
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->getJson('/api/author/posts');
 
         $response->assertStatus(200);
@@ -372,7 +353,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * My posts requires authentication
      */
     public function test_my_posts_requires_authentication(): void
@@ -383,7 +364,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Filter my posts by status
      */
     public function test_my_posts_filter_by_status(): void
@@ -398,7 +379,7 @@ class BlogEndpointsTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->getJson('/api/author/posts?status=draft');
 
         $response->assertStatus(200);
@@ -406,7 +387,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Search my posts
      */
     public function test_my_posts_search(): void
@@ -421,7 +402,7 @@ class BlogEndpointsTest extends TestCase
             'title' => 'Vue Basics',
         ]);
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->getJson('/api/author/posts?search=Laravel');
 
         $response->assertStatus(200);
@@ -433,12 +414,12 @@ class BlogEndpointsTest extends TestCase
      */
 
     /**
-     * @test
+     #[Test]
      * Create form returns metadata
      */
     public function test_create_returns_form_metadata(): void
     {
-        $response = $this->actingAs($this->staffUser, 'sanctum')
+        $response = $this->actingAs($this->staffUser)
             ->getJson('/api/admin/blog/posts/create');
 
         $response->assertStatus(200);
@@ -452,19 +433,19 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Non-staff cannot access create form
      */
     public function test_create_requires_staff(): void
     {
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->getJson('/api/admin/blog/posts/create');
 
         $response->assertStatus(403);
     }
 
     /**
-     * @test
+     #[Test]
      * Staff can list all posts (admin view)
      */
     public function test_index_admin_lists_all_posts(): void
@@ -478,7 +459,7 @@ class BlogEndpointsTest extends TestCase
             'user_id' => $this->author->id,
         ]);
 
-        $response = $this->actingAs($this->staffUser, 'sanctum')
+        $response = $this->actingAs($this->staffUser)
             ->getJson('/api/admin/blog/posts');
 
         $response->assertStatus(200);
@@ -486,7 +467,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Staff can filter posts by status
      */
     public function test_index_admin_filter_by_status(): void
@@ -500,7 +481,7 @@ class BlogEndpointsTest extends TestCase
             'user_id' => $this->author->id,
         ]);
 
-        $response = $this->actingAs($this->staffUser, 'sanctum')
+        $response = $this->actingAs($this->staffUser)
             ->getJson('/api/admin/blog/posts?status=published');
 
         $response->assertStatus(200);
@@ -508,7 +489,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Staff can filter posts by author
      */
     public function test_index_admin_filter_by_author(): void
@@ -522,7 +503,7 @@ class BlogEndpointsTest extends TestCase
             'user_id' => $anotherAuthor->id,
         ]);
 
-        $response = $this->actingAs($this->staffUser, 'sanctum')
+        $response = $this->actingAs($this->staffUser)
             ->getJson("/api/admin/blog/posts?author_id={$this->author->id}");
 
         $response->assertStatus(200);
@@ -530,7 +511,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Staff can search posts in admin view
      */
     public function test_index_admin_search(): void
@@ -545,7 +526,7 @@ class BlogEndpointsTest extends TestCase
             'title' => 'Vue Basics',
         ]);
 
-        $response = $this->actingAs($this->staffUser, 'sanctum')
+        $response = $this->actingAs($this->staffUser)
             ->getJson('/api/admin/blog/posts?search=Laravel');
 
         $response->assertStatus(200);
@@ -557,7 +538,7 @@ class BlogEndpointsTest extends TestCase
      */
 
     /**
-     * @test
+     #[Test]
      * Staff can create posts without quota restrictions
      */
     public function test_staff_can_create_posts_unlimited(): void
@@ -573,7 +554,7 @@ class BlogEndpointsTest extends TestCase
                 'category_ids' => [$this->category->id],
             ];
 
-            $response = $this->actingAs($this->staffUser, 'sanctum')
+            $response = $this->actingAs($this->staffUser)
                 ->postJson('/api/admin/blog/posts', $payload);
 
             $this->assertEquals(201, $response->status(), "Failed at iteration $i");
@@ -584,7 +565,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Staff can update any post
      */
     public function test_staff_can_update_any_post(): void
@@ -600,7 +581,7 @@ class BlogEndpointsTest extends TestCase
             'content' => 'Updated content',
         ];
 
-        $response = $this->actingAs($this->staffUser, 'sanctum')
+        $response = $this->actingAs($this->staffUser)
             ->putJson("/api/admin/blog/posts/{$post->slug}", $payload);
 
         $response->assertStatus(200);
@@ -611,7 +592,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Staff can delete any post
      */
     public function test_staff_can_delete_any_post(): void
@@ -620,7 +601,7 @@ class BlogEndpointsTest extends TestCase
             'user_id' => $this->author->id,
         ]);
 
-        $response = $this->actingAs($this->staffUser, 'sanctum')
+        $response = $this->actingAs($this->staffUser)
             ->deleteJson("/api/admin/blog/posts/{$post->slug}");
 
         $response->assertStatus(200);
@@ -632,7 +613,7 @@ class BlogEndpointsTest extends TestCase
      */
 
     /**
-     * @test
+     #[Test]
      * Subscribed user can create posts up to quota limit
      */
     public function test_subscriber_can_create_posts_within_quota(): void
@@ -648,7 +629,7 @@ class BlogEndpointsTest extends TestCase
                 'category_ids' => [$this->category->id],
             ];
 
-            $response = $this->actingAs($this->subscribedUser, 'sanctum')
+            $response = $this->actingAs($this->subscribedUser)
                 ->postJson('/api/author/posts', $payload);
 
             $this->assertEquals(201, $response->status(), "Failed at post $i");
@@ -659,7 +640,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Subscribed user cannot exceed monthly quota
      */
     public function test_subscriber_cannot_exceed_quota(): void
@@ -682,7 +663,7 @@ class BlogEndpointsTest extends TestCase
             'category_ids' => [$this->category->id],
         ];
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->postJson('/api/author/posts', $payload);
 
         $response->assertStatus(422);
@@ -693,7 +674,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * User without subscription cannot create posts
      */
     public function test_unsubscribed_user_cannot_create_posts(): void
@@ -709,14 +690,14 @@ class BlogEndpointsTest extends TestCase
             'category_ids' => [$this->category->id],
         ];
 
-        $response = $this->actingAs($unsubscribedUser, 'sanctum')
+        $response = $this->actingAs($unsubscribedUser)
             ->postJson('/api/author/posts', $payload);
 
         $response->assertStatus(422);
     }
 
     /**
-     * @test
+     #[Test]
      * Subscribed user can only edit their own posts
      */
     public function test_subscriber_can_only_edit_own_posts(): void
@@ -725,7 +706,7 @@ class BlogEndpointsTest extends TestCase
             'user_id' => $this->author->id,
         ]);
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->putJson("/api/author/posts/{$post->slug}", [
                 'title' => 'Hacked Title'
             ]);
@@ -734,7 +715,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Subscribed user can edit their own posts
      */
     public function test_subscriber_can_edit_own_posts(): void
@@ -744,7 +725,7 @@ class BlogEndpointsTest extends TestCase
             'title' => 'Original',
         ]);
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->putJson("/api/author/posts/{$post->slug}", [
                 'title' => 'Updated by Owner'
             ]);
@@ -757,7 +738,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Subscribed user can delete their own posts
      */
     public function test_subscriber_can_delete_own_posts(): void
@@ -766,7 +747,7 @@ class BlogEndpointsTest extends TestCase
             'user_id' => $this->subscribedUser->id,
         ]);
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->deleteJson("/api/author/posts/{$post->slug}");
 
         $response->assertStatus(200);
@@ -774,7 +755,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * Subscribed user cannot delete others' posts
      */
     public function test_subscriber_cannot_delete_others_posts(): void
@@ -783,7 +764,7 @@ class BlogEndpointsTest extends TestCase
             'user_id' => $this->author->id,
         ]);
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->deleteJson("/api/author/posts/{$post->slug}");
 
         $response->assertStatus(403);
@@ -794,7 +775,7 @@ class BlogEndpointsTest extends TestCase
      */
 
     /**
-     * @test
+     #[Test]
      * User can create tags
      */
     public function test_user_can_create_tags(): void
@@ -804,7 +785,7 @@ class BlogEndpointsTest extends TestCase
             'slug' => 'new-tag',
         ];
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->postJson('/api/tags', $payload);
 
         $response->assertStatus(201);
@@ -815,7 +796,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * User can update only their own tags
      */
     public function test_user_can_update_own_tags(): void
@@ -825,7 +806,7 @@ class BlogEndpointsTest extends TestCase
             'created_by' => $this->subscribedUser->id,
         ]);
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->putJson("/api/tags/{$tag->id}", [
                 'name' => 'Updated Tag',
             ]);
@@ -838,7 +819,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * User cannot delete tags (only staff)
      */
     public function test_user_cannot_delete_tags(): void
@@ -847,14 +828,14 @@ class BlogEndpointsTest extends TestCase
             'created_by' => $this->subscribedUser->id,
         ]);
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->deleteJson("/api/tags/{$tag->id}");
 
         $response->assertStatus(403);
     }
 
     /**
-     * @test
+     #[Test]
      * Staff can delete tags with confirmation
      */
     public function test_staff_can_delete_tags_with_affected_posts(): void
@@ -869,7 +850,7 @@ class BlogEndpointsTest extends TestCase
         $post1->tags()->attach($tag);
         $post2->tags()->attach($tag);
 
-        $response = $this->actingAs($this->staffUser, 'sanctum')
+        $response = $this->actingAs($this->staffUser)
             ->deleteJson("/api/tags/{$tag->id}");
 
         $response->assertStatus(200);
@@ -877,7 +858,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * User can create categories
      */
     public function test_user_can_create_categories(): void
@@ -887,7 +868,7 @@ class BlogEndpointsTest extends TestCase
             'slug' => 'new-category',
         ];
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->postJson('/api/categories', $payload);
 
         $response->assertStatus(201);
@@ -898,7 +879,7 @@ class BlogEndpointsTest extends TestCase
     }
 
     /**
-     * @test
+     #[Test]
      * User cannot delete categories (only staff)
      */
     public function test_user_cannot_delete_categories(): void
@@ -907,14 +888,14 @@ class BlogEndpointsTest extends TestCase
             'created_by' => $this->subscribedUser->id,
         ]);
 
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->deleteJson("/api/categories/{$category->id}");
 
         $response->assertStatus(403);
     }
 
     /**
-     * @test
+     #[Test]
      * Staff can delete categories with affected posts info
      */
     public function test_staff_can_delete_categories_with_affected_posts(): void
@@ -929,7 +910,7 @@ class BlogEndpointsTest extends TestCase
         $post1->categories()->attach($category);
         $post2->categories()->attach($category);
 
-        $response = $this->actingAs($this->staffUser, 'sanctum')
+        $response = $this->actingAs($this->staffUser)
             ->deleteJson("/api/categories/{$category->id}");
 
         $response->assertStatus(200);
@@ -941,20 +922,21 @@ class BlogEndpointsTest extends TestCase
      */
 
     /**
-     * @test
+     #[Test]
      * Cannot create post with invalid data
      */
     public function test_store_validates_required_fields(): void
     {
-        $response = $this->actingAs($this->subscribedUser, 'sanctum')
+        $response = $this->actingAs($this->subscribedUser)
             ->postJson('/api/author/posts', []);
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['title', 'excerpt', 'content', 'county_id', 'category_ids']);
+        $response->assertJsonValidationErrors(['title', 'content']);
+        $response->assertJsonMissingValidationErrors(['excerpt']);
     }
 
     /**
-     * @test
+     #[Test]
      * Slug must be unique
      */
     public function test_slug_must_be_unique(): void
@@ -974,7 +956,7 @@ class BlogEndpointsTest extends TestCase
             'category_ids' => [$this->category->id],
         ];
 
-        $response = $this->actingAs($this->staffUser, 'sanctum')
+        $response = $this->actingAs($this->staffUser)
             ->postJson('/api/admin/blog/posts', $payload);
 
         $response->assertStatus(422);

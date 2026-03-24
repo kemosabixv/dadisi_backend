@@ -2,88 +2,67 @@
 
 namespace Tests\Unit\Services;
 
-use App\DTOs\Payments\TransactionResultDTO;
+use App\Models\Refund;
+use App\Models\EventOrder;
 use App\Models\Payment;
+use App\Models\Event;
 use App\Models\User;
-use App\Services\PaymentGateway\PaymentGatewayInterface;
-use App\Services\PaymentGateway\GatewayManager;
-use App\Services\Payments\PaymentService;
+use App\Services\RefundService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
-use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
-
 
 class PaymentRefundTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $paymentService;
-
-    protected $gatewayManager;
-
-    protected $gateway;
+    private RefundService $service;
+    private User $admin;
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        $this->gatewayManager = Mockery::mock(GatewayManager::class);
-        $this->gateway = Mockery::mock(PaymentGatewayInterface::class);
-
-        $this->paymentService = new PaymentService($this->gatewayManager);
+        $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
+        $this->admin = User::factory()->create();
+        $this->admin->assignRole('admin');
+        $this->service = new RefundService(
+            $this->createMock(\App\Services\PaymentGateway\GatewayManager::class),
+            $this->createMock(\App\Services\Contracts\NotificationServiceContract::class)
+        );
     }
 
-
-    #[Test]
-    public function it_can_refund_a_payment_successfully()
+    public function test_payment_record_is_correctly_updated_on_full_refund(): void
     {
+        // 1. Setup Payment & Refund
         $user = User::factory()->create();
+        $event = Event::factory()->create();
+        $order = EventOrder::factory()->create(['user_id' => $user->id, 'event_id' => $event->id, 'status' => 'paid']);
+        
         $payment = Payment::factory()->create([
+            'payable_type' => 'event_order',
+            'payable_id' => $order->id,
             'status' => 'paid',
-            'transaction_id' => 'TRANS_123',
-            'gateway' => 'pesapal',
-            'amount' => 100.00,
+            'amount' => 1000,
         ]);
 
-        // Mock the refund method directly on gatewayManager
-        $this->gatewayManager->shouldReceive('refund')
-            ->once()
-            ->with('TRANS_123', 100.00, 'Customer request')
-            ->andReturn(new TransactionResultDTO(
-                success: true,
-                transactionId: 'REF_123',
-                status: 'refunded',
-                message: 'Refund successful'
-            ));
-
-        $result = $this->paymentService->refundPayment($user, [
-            'transaction_id' => 'TRANS_123',
-            'reason' => 'Customer request',
+        $refund = Refund::factory()->create([
+            'payment_id' => $payment->id,
+            'refundable_type' => EventOrder::class,
+            'refundable_id' => $order->id,
+            'amount' => 1000,
+            'original_amount' => 1000,
+            'status' => Refund::STATUS_APPROVED,
+            'processed_by' => $this->admin->id,
+            'reason' => Refund::REASON_CUSTOMER_REQUEST,
         ]);
 
-        $this->assertTrue($result['success']);
-        $this->assertEquals('refunded', $payment->fresh()->status);
-        $this->assertNotNull($payment->fresh()->refunded_at);
-    }
+        // 2. Act
+        $this->service->processRefund($refund);
 
-
-    #[Test]
-    public function it_fails_if_payment_already_refunded()
-    {
-        $user = User::factory()->create();
-        $payment = Payment::factory()->create([
-            'status' => 'refunded',
-            'transaction_id' => 'TRANS_123',
-        ]);
-
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Only paid payments can be refunded');
-
-        $this->paymentService->refundPayment($user, [
-            'transaction_id' => 'TRANS_123',
-            'reason' => 'Customer request',
-        ]);
+        // 3. Assert
+        $payment->refresh();
+        $this->assertEquals('refunded', $payment->status);
+        $this->assertNotNull($payment->refunded_at);
+        $this->assertEquals($this->admin->id, $payment->refunded_by);
+        $this->assertEquals(Refund::REASON_CUSTOMER_REQUEST, $payment->refund_reason);
     }
 }
-

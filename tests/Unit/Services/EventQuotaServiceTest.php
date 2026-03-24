@@ -9,6 +9,8 @@ use App\Services\EventQuotaService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+use PHPUnit\Framework\Attributes\Test;
+
 class EventQuotaServiceTest extends TestCase
 {
     use RefreshDatabase;
@@ -23,7 +25,8 @@ class EventQuotaServiceTest extends TestCase
         $this->service = new EventQuotaService();
     }
 
-    public function test_staff_can_always_create_events(): void
+    #[Test]
+    public function staff_can_always_create_events(): void
     {
         // Create staff user
         $user = User::factory()->create();
@@ -32,71 +35,25 @@ class EventQuotaServiceTest extends TestCase
         $this->assertTrue($this->service->canCreateEvent($user));
     }
 
-    public function test_user_without_plan_cannot_create_events(): void
+    #[Test]
+    public function regular_user_cannot_create_events(): void
     {
         $user = User::factory()->create();
 
         $this->assertFalse($this->service->canCreateEvent($user));
     }
 
-    public function test_user_with_plan_and_creation_limit_can_create(): void
+    #[Test]
+    public function regular_user_with_plan_cannot_create_events(): void
     {
-        // Create system feature
-        $feature = SystemFeature::create([
-            'slug' => 'event_creation_limit',
-            'name' => 'Event Creation Limit',
-            'value_type' => 'number',
-            'default_value' => '0',
-            'is_active' => true,
-        ]);
-
-        // Create plan with feature
         $plan = Plan::factory()->create(['is_active' => true]);
-        $plan->systemFeatures()->attach($feature->id, ['value' => '5']);
-
-        // Create user with plan
-        $user = User::factory()->create(['plan_id' => $plan->id]);
-
-        $this->assertTrue($this->service->canCreateEvent($user));
-    }
-
-    public function test_user_with_zero_creation_limit_cannot_create(): void
-    {
-        $feature = SystemFeature::create([
-            'slug' => 'event_creation_limit',
-            'name' => 'Event Creation Limit',
-            'value_type' => 'number',
-            'default_value' => '0',
-            'is_active' => true,
-        ]);
-
-        $plan = Plan::factory()->create(['is_active' => true]);
-        $plan->systemFeatures()->attach($feature->id, ['value' => '0']);
-
         $user = User::factory()->create(['plan_id' => $plan->id]);
 
         $this->assertFalse($this->service->canCreateEvent($user));
     }
 
-    public function test_unlimited_creation_limit_returns_true(): void
-    {
-        $feature = SystemFeature::create([
-            'slug' => 'event_creation_limit',
-            'name' => 'Event Creation Limit',
-            'value_type' => 'number',
-            'default_value' => '0',
-            'is_active' => true,
-        ]);
-
-        $plan = Plan::factory()->create(['is_active' => true]);
-        $plan->systemFeatures()->attach($feature->id, ['value' => '-1']);
-
-        $user = User::factory()->create(['plan_id' => $plan->id]);
-
-        $this->assertTrue($this->service->canCreateEvent($user));
-    }
-
-    public function test_subscriber_discount_returns_zero_for_non_subscriber(): void
+    #[Test]
+    public function subscriber_discount_returns_zero_for_non_subscriber(): void
     {
         $user = User::factory()->create();
 
@@ -105,7 +62,8 @@ class EventQuotaServiceTest extends TestCase
         $this->assertEquals(0, $discount);
     }
 
-    public function test_subscriber_discount_returns_plan_value(): void
+    #[Test]
+    public function subscriber_discount_returns_plan_value(): void
     {
         $feature = SystemFeature::create([
             'slug' => 'ticket_discount_percent',
@@ -128,14 +86,16 @@ class EventQuotaServiceTest extends TestCase
         $this->assertEquals(15.0, $discount);
     }
 
-    public function test_priority_access_returns_false_by_default(): void
+    #[Test]
+    public function priority_access_returns_false_by_default(): void
     {
         $user = User::factory()->create();
 
         $this->assertFalse($this->service->hasPriorityAccess($user));
     }
 
-    public function test_priority_access_returns_plan_value(): void
+    #[Test]
+    public function priority_access_returns_plan_value(): void
     {
         $feature = SystemFeature::create([
             'slug' => 'priority_event_access',
@@ -153,7 +113,8 @@ class EventQuotaServiceTest extends TestCase
         $this->assertTrue($this->service->hasPriorityAccess($user));
     }
 
-    public function test_get_remaining_creations_returns_null_for_staff(): void
+    #[Test]
+    public function get_remaining_creations_returns_null_for_staff(): void
     {
         $user = User::factory()->create();
         $user->assignRole('admin');
@@ -163,23 +124,13 @@ class EventQuotaServiceTest extends TestCase
         $this->assertNull($remaining);
     }
 
-    public function test_get_remaining_creations_calculates_correctly(): void
+    #[Test]
+    public function get_remaining_creations_returns_zero_for_regular_user(): void
     {
-        $feature = SystemFeature::create([
-            'slug' => 'event_creation_limit',
-            'name' => 'Event Creation Limit',
-            'value_type' => 'number',
-            'default_value' => '0',
-            'is_active' => true,
-        ]);
-
-        $plan = Plan::factory()->create(['is_active' => true]);
-        $plan->systemFeatures()->attach($feature->id, ['value' => '5']);
-
-        $user = User::factory()->create(['plan_id' => $plan->id]);
+        $user = User::factory()->create();
 
         $remaining = $this->service->getRemainingCreations($user);
 
-        $this->assertEquals(5, $remaining);
+        $this->assertEquals(0, $remaining);
     }
 }

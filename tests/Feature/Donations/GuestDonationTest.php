@@ -2,14 +2,14 @@
 
 namespace Tests\Feature\Donations;
 
+use App\DTOs\Payments\PaymentStatusDTO;
+use App\DTOs\Payments\TransactionResultDTO;
 use App\Models\County;
 use App\Models\Donation;
 use App\Models\Payment;
 use App\Models\User;
 use App\Notifications\DonationReceived;
 use App\Services\PaymentGateway\GatewayManager;
-use App\DTOs\Payments\PaymentStatusDTO;
-use App\DTOs\Payments\TransactionResultDTO;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -22,11 +22,11 @@ class GuestDonationTest extends TestCase
     {
         parent::setUp();
         County::factory()->create(['name' => 'Nairobi']);
-        
+
         // Essential for tests that fall back to admin user
         User::factory()->create([
             'email' => 'admin@dadisilab.com',
-            'username' => 'admin'
+            'username' => 'admin',
         ]);
     }
 
@@ -49,13 +49,13 @@ class GuestDonationTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonStructure([
                 'success',
-                'data' => ['donation_id', 'reference', 'redirect_url']
+                'data' => ['donation_id', 'reference', 'redirect_url'],
             ]);
 
         $this->assertDatabaseHas('donations', [
             'donor_email' => 'guest@example.com',
             'user_id' => null,
-            'status' => 'pending'
+            'status' => 'pending',
         ]);
     }
 
@@ -83,18 +83,18 @@ class GuestDonationTest extends TestCase
             'status' => 'pending',
             'transaction_id' => 'GUEST_TX_123',
             'order_reference' => 'GUEST_ORDER_123',
-            'gateway' => 'mock'
+            'gateway' => 'mock',
         ]);
 
         // Mock gateway status check returning PaymentStatusDTO
         $mockResult = new PaymentStatusDTO(
-            'GUEST_TX_123', 
-            'GUEST_ORDER_123', 
-            'COMPLETED', 
-            1000, 
+            'GUEST_TX_123',
+            'GUEST_ORDER_123',
+            'COMPLETED',
+            1000,
             'KES'
         );
-        
+
         $this->mock(GatewayManager::class, function ($mock) use ($mockResult) {
             $mock->shouldReceive('queryStatus')->andReturn($mockResult);
         });
@@ -102,7 +102,7 @@ class GuestDonationTest extends TestCase
         // Verify payment as an admin/system actor
         $admin = User::first(); // Use the one from setUp
         $response = $this->actingAs($admin)->postJson('/api/payments/verify', [
-            'transaction_id' => 'GUEST_TX_123'
+            'transaction_id' => 'GUEST_TX_123',
         ]);
 
         $response->assertStatus(200);
@@ -134,7 +134,7 @@ class GuestDonationTest extends TestCase
         // Mock gateway for initiation
         $mockResult = TransactionResultDTO::success('NEW_TX_456', 'MERCH_789', 'PENDING', 'Redirecting...');
         $mockResult->redirectUrl = 'https://pesapal.com/checkout/NEW_TX_456';
-        
+
         $this->mock(GatewayManager::class, function ($mock) use ($mockResult) {
             $mock->shouldReceive('initiatePayment')->andReturn($mockResult);
         });
@@ -146,8 +146,8 @@ class GuestDonationTest extends TestCase
                 'success' => true,
                 'data' => [
                     'redirect_url' => 'https://pesapal.com/checkout/NEW_TX_456',
-                    'transaction_id' => 'NEW_TX_456'
-                ]
+                    'transaction_id' => 'NEW_TX_456',
+                ],
             ]);
     }
 
@@ -168,10 +168,10 @@ class GuestDonationTest extends TestCase
             ->assertJson(['success' => true]);
 
         $this->assertEquals('cancelled', $donation->fresh()->status);
-        
+
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'guest_cancelled_donation',
-            'model_id' => $donation->id
+            'model_id' => $donation->id,
         ]);
     }
 }

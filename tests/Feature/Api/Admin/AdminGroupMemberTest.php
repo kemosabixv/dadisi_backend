@@ -7,6 +7,7 @@ use App\Models\MemberProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Laravel\Sanctum\Sanctum;
 
 class AdminGroupMemberTest extends TestCase
 {
@@ -35,8 +36,8 @@ class AdminGroupMemberTest extends TestCase
             ]);
         }
 
-        $response = $this->actingAs($superAdmin)
-            ->getJson("/api/admin/groups/{$group->id}/members");
+        $this->actingAs($superAdmin, 'web');
+        $response = $this->getJson("/api/admin/groups/{$group->id}/members");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -49,7 +50,7 @@ class AdminGroupMemberTest extends TestCase
     public function test_moderator_can_list_group_members()
     {
         $moderator = User::factory()->create();
-        $moderator->assignRole(\Spatie\Permission\Models\Role::findByName('moderator', 'api'));
+        $moderator->assignRole(\Spatie\Permission\Models\Role::findByName('moderator', 'web'));
 
         $group = Group::factory()->create();
         $users = User::factory()->count(2)->create();
@@ -62,8 +63,8 @@ class AdminGroupMemberTest extends TestCase
             ]);
         }
 
-        $response = $this->actingAs($moderator, 'api')
-            ->getJson("/api/admin/groups/{$group->id}/members");
+        $this->actingAs($moderator, 'web');
+        $response = $this->getJson("/api/admin/groups/{$group->id}/members");
 
         // Moderator now has manage_groups permission in the seeder
         $response->assertStatus(200)
@@ -77,8 +78,8 @@ class AdminGroupMemberTest extends TestCase
 
         $labSpace = \App\Models\LabSpace::factory()->create();
 
-        $response = $this->actingAs($superAdmin)
-            ->putJson("/api/admin/spaces/{$labSpace->id}", [
+        $this->actingAs($superAdmin, 'web');
+        $response = $this->putJson("/api/admin/spaces/{$labSpace->id}", [
                 'name' => 'Updated Lab Name',
                 'type' => 'dry_lab',
                 'capacity' => 20,

@@ -5,7 +5,6 @@ namespace Tests\Feature\Admin;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
 use App\Services\BillingExportService;
 
 class AdminBillingExportTest extends TestCase
@@ -21,15 +20,7 @@ class AdminBillingExportTest extends TestCase
         $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
 
         $this->adminUser = User::factory()->create(['email' => 'admin-export@example.com']);
-
-        $financeRole = Role::findByName('finance');
-        $adminRole = Role::findByName('admin');
-
-        if ($financeRole) {
-            $this->adminUser->assignRole($financeRole);
-        } else {
-            $this->adminUser->assignRole($adminRole);
-        }
+        $this->adminUser->assignRole('finance');
 
         // Disable middleware for controller permission checks during tests
         $this->withoutMiddleware();

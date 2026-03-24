@@ -350,10 +350,10 @@ class EventServiceTest extends TestCase
         foreach ($users as $user) {
             $this->registrationService->registerUser($user, $event);
         }
-        $userIds = $users->pluck('id')->toArray();
+        $registrationIds = EventRegistration::where('event_id', $event->id)->pluck('id')->toArray();
 
         // Act
-        $count = $this->registrationService->bulkCancel($event, $userIds);
+        $count = $this->registrationService->bulkCancel($event, $registrationIds);
 
         // Assert
         $this->assertEquals(20, $count);
@@ -600,5 +600,269 @@ class EventServiceTest extends TestCase
 
         // Assert
         $this->assertGreaterThanOrEqual(5, $featured->count());
+    }
+
+    // ============================================================
+    // PROMO CODE SYNC TESTS (EventService::update)
+    // ============================================================
+
+    #[Test]
+    public function it_can_update_promo_code_discount_type_from_percentage_to_fixed(): void
+    {
+        $organizer = User::factory()->create();
+        $event = Event::factory()->create();
+        $event->promoCodes()->create([
+            'code' => 'TYPETEST',
+            'discount_type' => 'percentage',
+            'discount_value' => 20,
+            'usage_limit' => null,
+            'used_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $dto = new UpdateEventDTO(promo_codes: [
+            [
+                'code' => 'TYPETEST',
+                'discount_type' => 'fixed',
+                'discount_value' => 500,
+            ],
+        ]);
+
+        $this->eventService->update($organizer, $event, $dto);
+
+        $updated = $event->promoCodes()->where('code', 'TYPETEST')->first();
+        $this->assertEquals('fixed', $updated->discount_type);
+        $this->assertEquals(500, $updated->discount_value);
+    }
+
+    #[Test]
+    public function it_can_update_promo_code_discount_value(): void
+    {
+        $organizer = User::factory()->create();
+        $event = Event::factory()->create();
+        $event->promoCodes()->create([
+            'code' => 'VALTEST',
+            'discount_type' => 'percentage',
+            'discount_value' => 10,
+            'usage_limit' => null,
+            'used_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $dto = new UpdateEventDTO(promo_codes: [
+            [
+                'code' => 'VALTEST',
+                'discount_type' => 'percentage',
+                'discount_value' => 30,
+            ],
+        ]);
+
+        $this->eventService->update($organizer, $event, $dto);
+
+        $updated = $event->promoCodes()->where('code', 'VALTEST')->first();
+        $this->assertEquals(30, $updated->discount_value);
+    }
+
+    #[Test]
+    public function it_hard_deletes_unused_promo_code_on_removal(): void
+    {
+        $organizer = User::factory()->create();
+        $event = Event::factory()->create();
+        $event->promoCodes()->create([
+            'code' => 'UNUSED',
+            'discount_type' => 'percentage',
+            'discount_value' => 10,
+            'usage_limit' => null,
+            'used_count' => 0,
+            'is_active' => true,
+        ]);
+
+        // Update with empty promo_codes — removes UNUSED
+        $dto = new UpdateEventDTO(promo_codes: []);
+
+        $this->eventService->update($organizer, $event, $dto);
+
+        // Should be hard-deleted (not even soft-deleted)
+        $this->assertDatabaseMissing('promo_codes', ['code' => 'UNUSED']);
+    }
+
+    #[Test]
+    public function it_preserves_used_promo_code_on_removal(): void
+    {
+        $organizer = User::factory()->create();
+        $event = Event::factory()->create();
+        $event->promoCodes()->create([
+            'code' => 'USEDCODE',
+            'discount_type' => 'percentage',
+            'discount_value' => 15,
+            'usage_limit' => 10,
+            'used_count' => 3,
+            'is_active' => true,
+        ]);
+
+        // Update with empty promo_codes — tries to remove USEDCODE
+        $dto = new UpdateEventDTO(promo_codes: []);
+
+        $this->eventService->update($organizer, $event, $dto);
+
+        // Should still exist because used_count > 0
+        $this->assertDatabaseHas('promo_codes', [
+            'code' => 'USEDCODE',
+            'used_count' => 3,
+        ]);
+    }
+
+    #[Test]
+    public function it_rejects_duplicate_code_within_same_update(): void
+    {
+        $organizer = User::factory()->create();
+        $event = Event::factory()->create();
+
+        $dto = new UpdateEventDTO(promo_codes: [
+            [
+                'code' => 'DUPE',
+                'discount_type' => 'percentage',
+                'discount_value' => 10,
+            ],
+            [
+                'code' => 'DUPE',
+                'discount_type' => 'fixed',
+                'discount_value' => 500,
+            ],
+        ]);
+
+        $this->expectException(EventException::class);
+        $this->eventService->update($organizer, $event, $dto);
+    }
+
+    #[Test]
+    public function it_rejects_code_that_exists_on_another_event(): void
+    {
+        $organizer = User::factory()->create();
+        $event1 = Event::factory()->create();
+        $event2 = Event::factory()->create();
+
+        // Create code on event1
+        $event1->promoCodes()->create([
+            'code' => 'GLOBAL',
+            'discount_type' => 'percentage',
+            'discount_value' => 10,
+            'used_count' => 0,
+            'is_active' => true,
+        ]);
+
+        // Try to add same code to event2
+        $dto = new UpdateEventDTO(promo_codes: [
+            [
+                'code' => 'GLOBAL',
+                'discount_type' => 'fixed',
+                'discount_value' => 200,
+            ],
+        ]);
+
+        $this->expectException(EventException::class);
+        $this->eventService->update($organizer, $event2, $dto);
+    }
+
+    #[Test]
+    public function it_allows_same_code_on_same_event_during_update(): void
+    {
+        $organizer = User::factory()->create();
+        $event = Event::factory()->create();
+        $event->promoCodes()->create([
+            'code' => 'EXISTING',
+            'discount_type' => 'percentage',
+            'discount_value' => 10,
+            'used_count' => 0,
+            'is_active' => true,
+        ]);
+
+        // Re-sending the same code with updated value should work
+        $dto = new UpdateEventDTO(promo_codes: [
+            [
+                'code' => 'EXISTING',
+                'discount_type' => 'percentage',
+                'discount_value' => 25,
+            ],
+        ]);
+
+        $updated = $this->eventService->update($organizer, $event, $dto);
+
+        $code = $updated->promoCodes()->where('code', 'EXISTING')->first();
+        $this->assertEquals(25, $code->discount_value);
+    }
+
+    #[Test]
+    public function it_can_update_usage_limit_on_existing_code(): void
+    {
+        $organizer = User::factory()->create();
+        $event = Event::factory()->create();
+        $event->promoCodes()->create([
+            'code' => 'LIMITED',
+            'discount_type' => 'percentage',
+            'discount_value' => 10,
+            'usage_limit' => 5,
+            'used_count' => 2,
+            'is_active' => true,
+        ]);
+
+        $dto = new UpdateEventDTO(promo_codes: [
+            [
+                'code' => 'LIMITED',
+                'discount_type' => 'percentage',
+                'discount_value' => 10,
+                'usage_limit' => 20,
+            ],
+        ]);
+
+        $this->eventService->update($organizer, $event, $dto);
+
+        $code = $event->promoCodes()->where('code', 'LIMITED')->first();
+        $this->assertEquals(20, $code->usage_limit);
+        // used_count should be preserved
+        $this->assertEquals(2, $code->used_count);
+    }
+
+    #[Test]
+    public function it_can_reassign_ticket_id_on_promo_code(): void
+    {
+        $organizer = User::factory()->create();
+        $event = Event::factory()->create();
+        $ticket1 = $event->tickets()->create([
+            'name' => 'VIP',
+            'price' => 1000,
+            'quantity' => 50,
+            'available' => 50,
+        ]);
+        $ticket2 = $event->tickets()->create([
+            'name' => 'Regular',
+            'price' => 500,
+            'quantity' => 100,
+            'available' => 100,
+        ]);
+
+        $event->promoCodes()->create([
+            'code' => 'TIERSWAP',
+            'discount_type' => 'percentage',
+            'discount_value' => 10,
+            'ticket_id' => $ticket1->id,
+            'usage_limit' => null,
+            'used_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $dto = new UpdateEventDTO(promo_codes: [
+            [
+                'code' => 'TIERSWAP',
+                'discount_type' => 'percentage',
+                'discount_value' => 10,
+                'ticket_id' => $ticket2->id,
+            ],
+        ]);
+
+        $this->eventService->update($organizer, $event, $dto);
+
+        $code = $event->promoCodes()->where('code', 'TIERSWAP')->first();
+        $this->assertEquals($ticket2->id, $code->ticket_id);
     }
 }

@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
+use Laravel\Sanctum\Sanctum;
 
 class ReconciliationAdminApiTest extends TestCase
 {
@@ -32,9 +33,9 @@ class ReconciliationAdminApiTest extends TestCase
         $this->unauthorizedUser = User::factory()->create(['email' => 'user@example.com']);
 
         // Assign roles for API guard to ensure correct permission resolution in API tests
-        $adminRole = Role::where('name', 'admin')->where('guard_name', 'api')->first();
-        $financeRole = Role::where('name', 'finance')->where('guard_name', 'api')->first();
-        $memberRole = Role::where('name', 'member')->where('guard_name', 'api')->first();
+        $adminRole = Role::where('name', 'admin')->where('guard_name', 'web')->first();
+        $financeRole = Role::where('name', 'finance')->where('guard_name', 'web')->first();
+        $memberRole = Role::where('name', 'member')->where('guard_name', 'web')->first();
 
         $this->adminUser->assignRole($adminRole);
         $this->financeUser->assignRole($financeRole);
@@ -49,8 +50,8 @@ class ReconciliationAdminApiTest extends TestCase
         // Create sample runs
         ReconciliationRun::factory()->count(3)->create();
 
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->get('/api/admin/reconciliation');
+        $this->actingAs($this->adminUser);
+        $response = $this->getJson('/api/admin/reconciliation');
 
         $response->assertStatus(200);
         $response->assertJsonStructure([
@@ -68,8 +69,8 @@ class ReconciliationAdminApiTest extends TestCase
     {
         ReconciliationRun::factory()->count(3)->create();
 
-        $response = $this->actingAs($this->unauthorizedUser, 'sanctum')
-            ->get('/api/admin/reconciliation');
+        $this->actingAs($this->unauthorizedUser);
+        $response = $this->getJson('/api/admin/reconciliation');
 
         $response->assertStatus(403);
     }
@@ -97,8 +98,8 @@ class ReconciliationAdminApiTest extends TestCase
             'reconciliation_status' => 'unmatched_app',
         ]);
 
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->get("/api/admin/reconciliation/{$run->id}");
+        $this->actingAs($this->adminUser);
+        $response = $this->getJson("/api/admin/reconciliation/{$run->id}");
 
         $response->assertStatus(200);
         $response->assertJsonStructure([
@@ -121,8 +122,8 @@ class ReconciliationAdminApiTest extends TestCase
         ReconciliationRun::factory()->create(['status' => 'success', 'total_matched' => 95]);
         ReconciliationRun::factory()->create(['status' => 'running']);
 
-        $response = $this->actingAs($this->financeUser)
-            ->get('/api/admin/reconciliation/stats');
+        $this->actingAs($this->financeUser);
+        $response = $this->getJson('/api/admin/reconciliation/stats');
 
         $response->assertStatus(200);
         // Stats returns aggregate data
@@ -135,8 +136,8 @@ class ReconciliationAdminApiTest extends TestCase
      */
     public function test_trigger_reconciliation_dry_run()
     {
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->post('/api/admin/reconciliation/trigger', [
+        $this->actingAs($this->adminUser);
+        $response = $this->postJson('/api/admin/reconciliation/trigger', [
                 'dry_run' => true,
                 'sync' => false,
                 'amount_percentage_tolerance' => 1,
@@ -156,8 +157,8 @@ class ReconciliationAdminApiTest extends TestCase
      */
     public function test_trigger_reconciliation_sync()
     {
-        $response = $this->actingAs($this->financeUser)
-            ->post('/api/admin/reconciliation/trigger', [
+        $this->actingAs($this->financeUser);
+        $response = $this->postJson('/api/admin/reconciliation/trigger', [
                 'dry_run' => false,
                 'sync' => true,
                 'amount_percentage_tolerance' => 1,
@@ -182,8 +183,8 @@ class ReconciliationAdminApiTest extends TestCase
      */
     public function test_trigger_reconciliation_unauthorized()
     {
-        $response = $this->actingAs($this->unauthorizedUser, 'sanctum')
-            ->post('/api/admin/reconciliation/trigger', [
+        $this->actingAs($this->unauthorizedUser);
+        $response = $this->postJson('/api/admin/reconciliation/trigger', [
                 'dry_run' => true,
                 'sync' => false,
             ]);
@@ -203,8 +204,8 @@ class ReconciliationAdminApiTest extends TestCase
             'reconciliation_status' => 'matched',
         ]);
 
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->get("/api/admin/reconciliation/export?run_id={$run->id}");
+        $this->actingAs($this->adminUser);
+        $response = $this->getJson("/api/admin/reconciliation/export?run_id={$run->id}");
 
         $response->assertStatus(200);
         $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
@@ -228,8 +229,8 @@ class ReconciliationAdminApiTest extends TestCase
             'reconciliation_status' => 'unmatched_app',
         ]);
 
-        $response = $this->actingAs($this->financeUser)
-            ->get("/api/admin/reconciliation/export?run_id={$run->id}&status=matched");
+        $this->actingAs($this->financeUser);
+        $response = $this->getJson("/api/admin/reconciliation/export?run_id={$run->id}&status=matched");
 
         $response->assertStatus(200);
         $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
@@ -246,8 +247,8 @@ class ReconciliationAdminApiTest extends TestCase
             'reconciliation_run_id' => $run->id,
         ]);
 
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->delete("/api/admin/reconciliation/{$run->id}");
+        $this->actingAs($this->adminUser);
+        $response = $this->deleteJson("/api/admin/reconciliation/{$run->id}");
 
         $response->assertStatus(200);
         $response->assertJsonStructure(['message']);
@@ -263,8 +264,8 @@ class ReconciliationAdminApiTest extends TestCase
     {
         $run = ReconciliationRun::factory()->create();
 
-        $response = $this->actingAs($this->unauthorizedUser, 'sanctum')
-            ->delete("/api/admin/reconciliation/{$run->id}");
+        $this->actingAs($this->unauthorizedUser);
+        $response = $this->deleteJson("/api/admin/reconciliation/{$run->id}");
 
         $response->assertStatus(403);
     }
@@ -277,13 +278,13 @@ class ReconciliationAdminApiTest extends TestCase
         $run = ReconciliationRun::factory()->create();
 
         // View: should succeed
-        $response = $this->actingAs($this->financeUser, 'sanctum')
-            ->get('/api/admin/reconciliation');
+        $this->actingAs($this->financeUser);
+        $response = $this->getJson('/api/admin/reconciliation');
         $response->assertStatus(200);
 
         // Manage: should succeed
-        $response = $this->actingAs($this->financeUser)
-            ->post('/api/admin/reconciliation/trigger', [
+        $this->actingAs($this->financeUser);
+        $response = $this->postJson('/api/admin/reconciliation/trigger', [
                 'dry_run' => true,
                 'sync' => false,
             ]);
@@ -295,8 +296,8 @@ class ReconciliationAdminApiTest extends TestCase
      */
     public function test_trigger_reconciliation_invalid_tolerances()
     {
-        $response = $this->actingAs($this->adminUser)
-            ->postJson('/api/admin/reconciliation/trigger', [
+        $this->actingAs($this->adminUser);
+        $response = $this->postJson('/api/admin/reconciliation/trigger', [
                 'dry_run' => true,
                 'sync' => false,
                 'amount_percentage_tolerance' => 150, // Invalid: > 100
@@ -312,8 +313,8 @@ class ReconciliationAdminApiTest extends TestCase
      */
     public function test_export_missing_run_id()
     {
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/admin/reconciliation/export');
+        $this->actingAs($this->adminUser);
+        $response = $this->getJson('/api/admin/reconciliation/export');
 
         $response->assertStatus(422);
     }
@@ -323,8 +324,8 @@ class ReconciliationAdminApiTest extends TestCase
      */
     public function test_show_nonexistent_run()
     {
-        $response = $this->actingAs($this->adminUser)
-            ->get('/api/admin/reconciliation/9999');
+        $this->actingAs($this->adminUser);
+        $response = $this->getJson('/api/admin/reconciliation/9999');
 
         $response->assertStatus(404);
     }

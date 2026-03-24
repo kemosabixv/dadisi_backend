@@ -22,12 +22,7 @@ class AuthVerificationTest extends TestCase
         // Create a new unverified user (email_verified_at is null by default)
         $user = User::factory()->unverified()->create(["email" => "verifyme@example.com"]);
 
-        // Authenticate using a personal access token and call endpoint
-        $token = $user->createToken('tests')->plainTextToken;
-
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-        ])->postJson('/api/auth/send-verification', []);
+        $response = $this->actingAs($user)->postJson('/api/auth/send-verification', []);
 
         // Accept any 2xx success response (200, 202, 204, etc.)
         $response->assertSuccessful();
@@ -75,8 +70,8 @@ class AuthVerificationTest extends TestCase
             'code' => $code,
         ]);
 
-        // Should succeed and return token
+        // Should succeed and return user info
         $response->assertStatus(200);
-        $response->assertJsonStructure(['message', 'token', 'user']);
+        $response->assertJsonStructure(['message', 'user']);
     }
 }

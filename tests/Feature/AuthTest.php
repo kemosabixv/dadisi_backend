@@ -17,6 +17,7 @@ class AuthTest extends TestCase
             'email' => 'testuser@example.com',
             'password' => 'Password1!',
             'password_confirmation' => 'Password1!',
+            'terms_accepted' => true,
         ];
 
         $response = $this->postJson('/api/auth/signup', $payload);
@@ -28,7 +29,7 @@ class AuthTest extends TestCase
         ]);
     }
 
-    public function test_login_returns_token()
+    public function test_login_establishes_session()
     {
         $user = User::factory()->create([
             'password' => bcrypt('password123'),
@@ -40,7 +41,8 @@ class AuthTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $response->assertJsonStructure(['user', 'access_token']);
+        $response->assertJsonStructure(['user', 'email_verified']);
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_user_endpoint_requires_auth()
@@ -49,40 +51,30 @@ class AuthTest extends TestCase
         $response->assertStatus(401);
     }
 
-    public function test_logout_revokes_token()
+    public function test_logout_clears_session()
     {
         $user = User::factory()->create([
             'password' => bcrypt('password123'),
         ]);
 
-        // Login to get token
-        $loginResponse = $this->postJson('/api/auth/login', [
+        // Login to establish session
+        $this->postJson('/api/auth/login', [
             'email' => $user->email,
             'password' => 'password123',
-        ]);
+        ])->assertStatus(200);
 
-        $token = $loginResponse->json('access_token');
-
-        // Confirm token exists
-        $this->assertDatabaseHas('personal_access_tokens', [
-            'tokenable_id' => $user->id,
-        ]);
+        $this->assertAuthenticatedAs($user);
 
         // Logout
-        $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-        ])->postJson('/api/auth/logout')
-          ->assertStatus(200);
+        $this->postJson('/api/auth/logout')
+            ->assertStatus(200)
+            ->assertJson(['success' => true]);
 
-        // Token should be deleted
-        $this->assertDatabaseMissing('personal_access_tokens', [
-            'tokenable_id' => $user->id,
-        ]);
+        // Session should be cleared
+        $this->assertGuest();
 
-        // Subsequent request with same token should fail
-        $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-        ])->getJson('/api/auth/user')
+        // Subsequent request should fail
+        $this->getJson('/api/auth/user')
           ->assertStatus(401);
     }
 }

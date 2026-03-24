@@ -11,6 +11,7 @@ use App\Services\SubscriptionCoreService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
@@ -27,21 +28,28 @@ class MediaServiceTest extends TestCase
     {
         parent::setUp();
         Storage::fake('public');
+        Storage::fake('r2');
+        
+        $this->user = User::factory()->create();
         
         $subscriptionService = $this->mock(SubscriptionCoreService::class);
-        $subscriptionService->shouldReceive('getFeatureValue')->andReturn(100); // 100MB quota
+        $subscriptionService->shouldReceive('getFeatureValue')
+            ->with(\Mockery::any(), 'media-storage-mb')
+            ->andReturn(100);
+        $subscriptionService->shouldReceive('getFeatureValue')
+            ->with(\Mockery::any(), 'media-max-upload-mb')
+            ->andReturn(5);
         
         $this->mediaService = new MediaService($subscriptionService);
-        $this->user = User::factory()->create();
         
         // Set retention to 1 day for testing
         UserDataRetentionSetting::factory()->create([
-            'setting_key' => 'temporary_media',
-            'setting_value' => '1440',
+            'data_type' => 'temporary_media',
+            'retention_minutes' => 1440,
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function upload_media_creates_record_in_database()
     {
         $file = UploadedFile::fake()->image('test.jpg');
@@ -54,7 +62,7 @@ class MediaServiceTest extends TestCase
         $this->assertDatabaseHas('media', ['id' => $media->id]);
     }
 
-    /** @test */
+    #[Test]
     public function upload_media_with_temporary_flag_sets_expiration()
     {
         $file = UploadedFile::fake()->image('temp.jpg');
@@ -65,7 +73,7 @@ class MediaServiceTest extends TestCase
         $this->assertTrue($media->temporary_until->isFuture());
     }
 
-    /** @test */
+    #[Test]
     public function upload_media_without_temporary_flag_does_not_set_expiration()
     {
         $file = UploadedFile::fake()->image('permanent.jpg');
@@ -75,16 +83,27 @@ class MediaServiceTest extends TestCase
         $this->assertNull($media->temporary_until);
     }
 
-    /** @test */
-    public function delete_media_without_force_fails_for_permanent_media()
+    #[Test]
+    public function delete_media_without_force_succeeds_for_permanent_media_without_usage()
     {
-        $media = Media::factory()->for($this->user)->create(['temporary_until' => null]);
+        $media = Media::factory()->for($this->user)->create(['temporary_until' => null, 'usage_count' => 0]);
 
-        $this->expectException(MediaException::class);
-        $this->mediaService->deleteMedia($this->user, $media, false);
+        $result = $this->mediaService->deleteMedia($this->user, $media);
+
+        $this->assertTrue($result);
+        $this->assertDatabaseMissing('media', ['id' => $media->id]);
     }
 
-    /** @test */
+    #[Test]
+    public function delete_media_without_force_fails_when_media_in_use()
+    {
+        $media = Media::factory()->for($this->user)->create(['temporary_until' => null, 'usage_count' => 1]);
+
+        $this->expectException(MediaException::class);
+        $this->mediaService->deleteMedia($this->user, $media);
+    }
+
+    #[Test]
     public function delete_media_succeeds_for_temporary_media_without_force()
     {
         $media = Media::factory()->for($this->user)->create([
@@ -97,18 +116,27 @@ class MediaServiceTest extends TestCase
         $this->assertDatabaseMissing('media', ['id' => $media->id]);
     }
 
-    /** @test */
-    public function delete_media_with_force_succeeds_for_permanent_media()
+    #[Test]
+    public function delete_media_with_force_flag_is_redundant_and_succeeds_when_unused()
     {
-        $media = Media::factory()->for($this->user)->create(['temporary_until' => null]);
+        $media = Media::factory()->for($this->user)->create(['temporary_until' => null, 'usage_count' => 0]);
 
-        $result = $this->mediaService->deleteMedia($this->user, $media, true);
+        $result = $this->mediaService->deleteMedia($this->user, $media);
 
         $this->assertTrue($result);
         $this->assertDatabaseMissing('media', ['id' => $media->id]);
     }
 
-    /** @test */
+    #[Test]
+    public function delete_media_with_force_flag_still_fails_when_in_use()
+    {
+        $media = Media::factory()->for($this->user)->create(['temporary_until' => null, 'usage_count' => 1]);
+
+        $this->expectException(MediaException::class);
+        $this->mediaService->deleteMedia($this->user, $media);
+    }
+
+    #[Test]
     public function delete_media_fails_if_user_is_not_owner()
     {
         $otherUser = User::factory()->create();
@@ -118,7 +146,7 @@ class MediaServiceTest extends TestCase
         $this->mediaService->deleteMedia($this->user, $media);
     }
 
-    /** @test */
+    #[Test]
     public function validate_file_accepts_supported_image_types()
     {
         $jpegFile = UploadedFile::fake()->image('photo.jpg');
@@ -132,7 +160,7 @@ class MediaServiceTest extends TestCase
         $this->assertTrue($pngValidation['valid']);
     }
 
-    /** @test */
+    #[Test]
     public function validate_file_rejects_unsupported_types()
     {
         $file = UploadedFile::fake()->create('script.exe', 100, 'application/x-msdownload');
@@ -143,7 +171,7 @@ class MediaServiceTest extends TestCase
         $this->assertStringContainsString('Unsupported', $validation['error']);
     }
 
-    /** @test */
+    #[Test]
     public function validate_file_rejects_oversized_files()
     {
         $file = UploadedFile::fake()->create('huge.jpg', 6000, 'image/jpeg');
@@ -154,7 +182,7 @@ class MediaServiceTest extends TestCase
         $this->assertStringContainsString('exceeds', $validation['error']);
     }
 
-    /** @test */
+    #[Test]
     public function get_media_returns_correct_record()
     {
         $media = Media::factory()->for($this->user)->create();
@@ -164,14 +192,14 @@ class MediaServiceTest extends TestCase
         $this->assertEquals($media->id, $retrieved->id);
     }
 
-    /** @test */
+    #[Test]
     public function get_media_throws_exception_for_nonexistent_id()
     {
         $this->expectException(MediaException::class);
         $this->mediaService->getMedia(99999);
     }
 
-    /** @test */
+    #[Test]
     public function list_media_returns_only_users_media()
     {
         Media::factory()->for($this->user)->count(3)->create();
@@ -182,7 +210,7 @@ class MediaServiceTest extends TestCase
         $this->assertEquals(3, $result->total());
     }
 
-    /** @test */
+    #[Test]
     public function list_media_filters_by_type()
     {
         Media::factory()->for($this->user)->create(['type' => 'image']);
@@ -194,7 +222,7 @@ class MediaServiceTest extends TestCase
         $this->assertEquals('image', $result->first()->type);
     }
 
-    /** @test */
+    #[Test]
     public function list_media_searches_by_filename()
     {
         Media::factory()->for($this->user)->create(['file_name' => 'invoice-2025.pdf']);
@@ -206,11 +234,17 @@ class MediaServiceTest extends TestCase
         $this->assertStringContainsString('invoice', $result->first()->file_name);
     }
 
-    /** @test */
+    #[Test]
     public function get_media_url_returns_valid_path()
     {
+        $mediaFile = \App\Models\MediaFile::factory()->create([
+            'disk' => 'public',
+            'path' => 'media/2025-01/test.jpg',
+        ]);
+
         $media = Media::factory()->for($this->user)->create([
-            'file_path' => '/media/2025-01/test.jpg',
+            'media_file_id' => $mediaFile->id,
+            'file_name' => 'test.jpg',
         ]);
 
         $url = $this->mediaService->getMediaUrl($media);

@@ -52,7 +52,7 @@ class SubscriptionCoreControllerTest extends TestCase
 
         $subscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => 'App\Models\User',
+            'subscriber_type' => 'user',
             'plan_id' => $plan->id,
             'starts_at' => $startDate,
             'ends_at' => $endDate,
@@ -432,7 +432,7 @@ class SubscriptionCoreControllerTest extends TestCase
 
         $this->assertDatabaseHas('subscriptions', [
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => 'App\\Models\\User',
+            'subscriber_type' => 'user',
             'plan_id' => $this->premiumPlan->id,
         ]);
 

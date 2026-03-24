@@ -9,6 +9,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
@@ -23,7 +25,9 @@ class MediaUploadAndDeleteTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
         $this->user = User::factory()->create();
+        $this->user->assignRole('member');
         Storage::fake('public');
         
         // Set retention to 1 day for testing
@@ -35,12 +39,17 @@ class MediaUploadAndDeleteTest extends TestCase
         ]);
     }
 
-    /** @test */
+    private function authenticatedRequest(User $user, string $method, string $uri, array $data = [], array $files = []): TestResponse
+    {
+        return $this->actingAs($user)->json($method, $uri, $data, $files);
+    }
+
+    #[Test]
     public function user_can_upload_a_media_file()
     {
         $file = UploadedFile::fake()->image('test.jpg', 640, 480);
 
-        $response = $this->actingAs($this->user)->postJson('/api/media', [
+        $response = $this->authenticatedRequest($this->user, 'POST', '/api/media', [
             'file' => $file,
         ]);
 
@@ -52,12 +61,12 @@ class MediaUploadAndDeleteTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function upload_marks_media_as_temporary_when_temporary_flag_set()
     {
         $file = UploadedFile::fake()->image('temp-image.jpg', 640, 480);
 
-        $response = $this->actingAs($this->user)->postJson('/api/media', [
+        $response = $this->authenticatedRequest($this->user, 'POST', '/api/media', [
             'file' => $file,
             'temporary' => 1,
         ]);
@@ -69,12 +78,12 @@ class MediaUploadAndDeleteTest extends TestCase
         $this->assertTrue($media->temporary_until->isFuture());
     }
 
-    /** @test */
+    #[Test]
     public function upload_without_temporary_flag_creates_permanent_media()
     {
         $file = UploadedFile::fake()->image('permanent.jpg', 640, 480);
 
-        $response = $this->actingAs($this->user)->postJson('/api/media', [
+        $response = $this->authenticatedRequest($this->user, 'POST', '/api/media', [
             'file' => $file,
         ]);
 
@@ -84,50 +93,64 @@ class MediaUploadAndDeleteTest extends TestCase
         $this->assertNull($media->temporary_until);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_delete_temporary_media_without_force()
     {
         $media = Media::factory()->for($this->user)->create([
             'temporary_until' => now()->addDay(),
         ]);
 
-        $response = $this->actingAs($this->user)->deleteJson("/api/media/{$media->id}");
+        $response = $this->authenticatedRequest($this->user, 'DELETE', "/api/media/{$media->id}");
 
         $response->assertStatus(200);
         $this->assertDatabaseMissing('media', ['id' => $media->id]);
     }
 
-    /** @test */
-    public function user_cannot_delete_permanent_media_without_force()
+    #[Test]
+    public function user_can_delete_permanent_media_without_force_when_unused()
     {
         $media = Media::factory()->for($this->user)->create([
-            'temporary_until' => null, // Permanent
+            'temporary_until' => null,
+            'usage_count' => 0,
         ]);
 
-        $response = $this->actingAs($this->user)->deleteJson("/api/media/{$media->id}");
+        $response = $this->authenticatedRequest($this->user, 'DELETE', "/api/media/{$media->id}");
+
+        $response->assertStatus(200);
+        $this->assertDatabaseMissing('media', ['id' => $media->id]);
+    }
+
+    #[Test]
+    public function user_cannot_delete_permanent_media_without_force_when_in_use()
+    {
+        $media = Media::factory()->for($this->user)->create([
+            'temporary_until' => null,
+            'usage_count' => 1,
+        ]);
+
+        $response = $this->authenticatedRequest($this->user, 'DELETE', "/api/media/{$media->id}");
 
         $response->assertStatus(422);
-        // Check for validation error about deletion requirement
         $this->assertTrue($response->json('errors') !== null, 'Response should have validation errors');
         $this->assertDatabaseHas('media', ['id' => $media->id]);
     }
 
-    /** @test */
-    public function user_can_force_delete_permanent_media()
+    #[Test]
+    public function user_cannot_delete_permanent_media_in_use_even_with_force()
     {
         $media = Media::factory()->for($this->user)->create([
             'temporary_until' => null,
+            'usage_count' => 1,
         ]);
 
-        $response = $this->actingAs($this->user)->deleteJson("/api/media/{$media->id}", [
-            'force' => true,
-        ]);
+        // Force query param should be ignored and deletion blocked when in use
+        $response = $this->authenticatedRequest($this->user, 'DELETE', "/api/media/{$media->id}?force=1");
 
-        $response->assertStatus(200);
-        $this->assertDatabaseMissing('media', ['id' => $media->id]);
+        $response->assertStatus(422);
+        $this->assertDatabaseHas('media', ['id' => $media->id]);
     }
 
-    /** @test */
+    #[Test]
     public function user_cannot_delete_another_users_media()
     {
         $otherUser = User::factory()->create();
@@ -135,52 +158,52 @@ class MediaUploadAndDeleteTest extends TestCase
             'temporary_until' => now()->addDay(),
         ]);
 
-        $response = $this->actingAs($this->user)->deleteJson("/api/media/{$media->id}");
+        $response = $this->authenticatedRequest($this->user, 'DELETE', "/api/media/{$media->id}");
 
         $response->assertStatus(403);
         // Verify media still exists (not deleted)
         $this->assertDatabaseHas('media', ['id' => $media->id, 'deleted_at' => null]);
     }
 
-    /** @test */
+    #[Test]
     public function user_can_list_their_media()
     {
         Media::factory()->for($this->user)->count(3)->create();
         Media::factory()->for(User::factory())->count(2)->create();
 
-        $response = $this->actingAs($this->user)->getJson('/api/media');
+        $response = $this->authenticatedRequest($this->user, 'GET', '/api/media');
 
         $response->assertStatus(200);
         $response->assertJsonCount(3, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function media_list_can_be_filtered_by_type()
     {
         Media::factory()->for($this->user)->create(['type' => 'image']);
         Media::factory()->for($this->user)->create(['type' => 'pdf']);
 
-        $response = $this->actingAs($this->user)->getJson('/api/media?type=image');
+        $response = $this->authenticatedRequest($this->user, 'GET', '/api/media?type=image');
 
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data');
         $this->assertEquals('image', $response->json('data.0.type'));
     }
 
-    /** @test */
+    #[Test]
     public function media_list_can_be_searched_by_filename()
     {
         Media::factory()->for($this->user)->create(['file_name' => 'important.pdf']);
         Media::factory()->for($this->user)->create(['file_name' => 'random.txt']);
 
-        $response = $this->actingAs($this->user)->getJson('/api/media?search=important');
+        $response = $this->authenticatedRequest($this->user, 'GET', '/api/media?search=important');
 
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'data');
         $this->assertEquals('important.pdf', $response->json('data.0.file_name'));
     }
 
-    /** @test */
+    #[Test]
     public function unauthenticated_user_cannot_upload_media()
     {
         $file = UploadedFile::fake()->image('test.jpg');
@@ -190,7 +213,7 @@ class MediaUploadAndDeleteTest extends TestCase
         $response->assertStatus(401);
     }
 
-    /** @test */
+    #[Test]
     public function upload_rejects_unsupported_file_types()
     {
         $file = UploadedFile::fake()->create('malicious.exe', 100, 'application/x-msdownload');
@@ -202,7 +225,7 @@ class MediaUploadAndDeleteTest extends TestCase
         $response->assertStatus(422);
     }
 
-    /** @test */
+    #[Test]
     public function upload_rejects_oversized_files()
     {
         // Create a fake file larger than 5MB

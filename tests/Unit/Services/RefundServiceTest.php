@@ -21,11 +21,12 @@ class RefundServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        \Spatie\Permission\Models\Role::create(['name' => 'admin']);
+        $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
         $this->admin = User::factory()->create();
         $this->admin->assignRole('admin');
         $this->service = new RefundService(
-            $this->createMock(\App\Services\PaymentGateway\GatewayManager::class)
+            $this->createMock(\App\Services\PaymentGateway\GatewayManager::class),
+            $this->createMock(\App\Services\Contracts\NotificationServiceContract::class)
         );
     }
 
@@ -49,11 +50,11 @@ class RefundServiceTest extends TestCase
     public function test_cannot_request_duplicate_refund(): void
     {
         $user = User::factory()->create();
-        $event = Event::factory()->create(['organizer_id' => $user->id]);
+        $event = Event::factory()->create();
         
         $order = EventOrder::factory()->create([
-            'event_id' => $event->id,
             'user_id' => $user->id,
+            'event_id' => $event->id,
             'status' => 'paid',
         ]);
 
@@ -61,20 +62,11 @@ class RefundServiceTest extends TestCase
             'payable_type' => 'event_order',
             'payable_id' => $order->id,
             'status' => 'paid',
+            'amount' => 1000,
         ]);
 
         // Create first refund
-        Refund::create([
-            'refundable_type' => EventOrder::class,
-            'refundable_id' => $order->id,
-            'payment_id' => $payment->id,
-            'amount' => $order->total_amount,
-            'original_amount' => $order->total_amount,
-            'currency' => 'KES',
-            'status' => Refund::STATUS_PENDING,
-            'reason' => 'cancellation',
-            'requested_at' => now(),
-        ]);
+        $this->service->requestEventOrderRefund($order, 'cancellation');
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('A refund is already pending for this order.');
@@ -82,14 +74,14 @@ class RefundServiceTest extends TestCase
         $this->service->requestEventOrderRefund($order, 'duplicate');
     }
 
-    public function test_refund_amount_cannot_exceed_original(): void
+    public function test_refund_is_always_for_full_amount(): void
     {
         $user = User::factory()->create();
-        $event = Event::factory()->create(['organizer_id' => $user->id]);
+        $event = Event::factory()->create();
         
         $order = EventOrder::factory()->create([
-            'event_id' => $event->id,
             'user_id' => $user->id,
+            'event_id' => $event->id,
             'status' => 'paid',
             'total_amount' => 1000,
         ]);
@@ -98,12 +90,12 @@ class RefundServiceTest extends TestCase
             'payable_type' => 'event_order',
             'payable_id' => $order->id,
             'status' => 'paid',
+            'amount' => 1000,
         ]);
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Refund amount cannot exceed the original payment amount.');
-
-        $this->service->requestEventOrderRefund($order, 'cancellation', null, 2000);
+        $refund = $this->service->requestEventOrderRefund($order, 'cancellation', null, 500);
+        
+        $this->assertEquals(1000, $refund->amount);
     }
 
     public function test_refund_status_workflow(): void
@@ -151,6 +143,49 @@ class RefundServiceTest extends TestCase
             'reason' => Refund::REASON_CANCELLATION,
         ]);
 
-        $this->assertEquals('Event Cancellation', $refund->reason_display);
+        $this->assertEquals('Cancellation', $refund->reason_display);
+    }
+
+    public function test_complete_refund_updates_payment_record(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::factory()->create(['organizer_id' => $user->id]);
+        
+        $order = EventOrder::factory()->create([
+            'event_id' => $event->id,
+            'user_id' => $user->id,
+            'status' => 'paid',
+            'total_amount' => 1000,
+        ]);
+
+        $payment = Payment::factory()->create([
+            'payable_type' => 'event_order',
+            'payable_id' => $order->id,
+            'status' => 'paid',
+            'amount' => 1000,
+        ]);
+
+        $refund = Refund::factory()->create([
+            'refundable_type' => EventOrder::class,
+            'refundable_id' => $order->id,
+            'payment_id' => $payment->id,
+            'amount' => 1000,
+            'original_amount' => 1000,
+            'status' => Refund::STATUS_APPROVED,
+            'processed_by' => $this->admin->id,
+            'reason' => Refund::REASON_CANCELLATION,
+        ]);
+
+        // Process refund (in mock mode this calls completeRefund)
+        $this->service->processRefund($refund);
+
+        $payment->refresh();
+        $refund->refresh();
+
+        $this->assertEquals(Refund::STATUS_COMPLETED, $refund->status);
+        $this->assertEquals('refunded', $payment->status);
+        $this->assertNotNull($payment->refunded_at);
+        $this->assertEquals($this->admin->id, $payment->refunded_by);
+        $this->assertEquals(Refund::REASON_CANCELLATION, $payment->refund_reason);
     }
 }
