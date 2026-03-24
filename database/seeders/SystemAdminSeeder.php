@@ -46,7 +46,7 @@ class SystemAdminSeeder extends Seeder
                 'county_id' => $county?->id,
                 'sub_county' => 'System',
                 'ward' => 'System',
-                'gender' => 'other',
+                'gender' => null,
                 'date_of_birth' => '1990-01-01',
                 'occupation' => 'System Admin',
                 'bio' => 'Initial system administrator account.',
