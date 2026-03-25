@@ -31,7 +31,7 @@ class UserResource extends JsonResource
             'email_verified_at' => $this->when($canViewPII, $this->email_verified_at),
             
             // Relation-aware display name to prevent N+1
-            'display_name' => $this->relationLoaded('memberProfile') 
+            'display_name' => $this->relationLoaded('memberProfile') && $this->memberProfile
                 ? ($this->memberProfile->full_name ?: $this->username)
                 : $this->username,
 
@@ -49,7 +49,7 @@ class UserResource extends JsonResource
             }),
 
             // Full profile data with strict loading and PII guards
-            'member_profile' => $this->whenLoaded('memberProfile', function () use ($canViewPII) {
+            'member_profile' => $this->when($this->relationLoaded('memberProfile') && $this->memberProfile, function () use ($canViewPII) {
                 $profile = $this->memberProfile;
                 return [
                     'id' => $profile->id,

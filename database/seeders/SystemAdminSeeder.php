@@ -18,8 +18,8 @@ class SystemAdminSeeder extends Seeder
      */
     public function run(): void
     {
-        $email = env('INITIAL_ADMIN_EMAIL', 'superadmin@dadisilab.com');
-        $password = env('INITIAL_ADMIN_PASSWORD', 'password');
+        $email = config('app.initial_admin_email', 'superadmin@dadisilab.com');
+        $password = config('app.initial_admin_password', 'password');
 
         $user = User::updateOrCreate(
             ['email' => $email],

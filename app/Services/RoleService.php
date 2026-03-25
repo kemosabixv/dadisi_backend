@@ -30,7 +30,8 @@ class RoleService implements RoleServiceContract
         try {
             $query = Role::query()
                 ->select('roles.*')
-                ->where('guard_name', 'web');
+                ->where('guard_name', 'web')
+                ->where('name', '!=', 'member'); // Hide built-in 'member' role
 
             if (!empty($filters['search'])) {
                 $query->where('name', 'like', '%' . $filters['search'] . '%');
@@ -40,13 +41,17 @@ class RoleService implements RoleServiceContract
                 $query->with('permissions');
             }
 
+            // Use the morph alias if defined in AppServiceProvider
+            $userModel = \App\Models\User::class;
+            $modelType = \Illuminate\Database\Eloquent\Relations\Relation::getMorphAlias($userModel) ?? $userModel;
+
             // Use a raw subquery for user counts instead of withCount('users')
             // This avoids the Spatie Permission package's users() relationship issue
             $query->addSelect(\Illuminate\Support\Facades\DB::raw('(
                 SELECT COUNT(*)
                 FROM model_has_roles
                 WHERE model_has_roles.role_id = roles.id
-                AND model_has_roles.model_type = \'' . addslashes(\App\Models\User::class) . '\'
+                AND model_has_roles.model_type = \'' . addslashes($modelType) . '\'
             ) as users_count'));
 
             return $query->latest()->paginate($filters['per_page'] ?? 50);
@@ -82,7 +87,14 @@ class RoleService implements RoleServiceContract
     public function getRoleDetails(Role $role): array
     {
         try {
-            $usersCount = $role->users()->count();
+            $userModel = \App\Models\User::class;
+            $modelType = \Illuminate\Database\Eloquent\Relations\Relation::getMorphAlias($userModel) ?? $userModel;
+
+            $usersCount = \Illuminate\Support\Facades\DB::table('model_has_roles')
+                ->where('role_id', $role->id)
+                ->where('model_type', $modelType)
+                ->count();
+
             return array_merge($role->load('permissions')->toArray(), ['users_count' => $usersCount]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch role details', ['error' => $e->getMessage(), 'role_id' => $role->id]);

@@ -31,13 +31,7 @@ class SchedulerSettingsSeeder extends Seeder
                 'enabled' => true,
                 'description' => 'Send renewal reminders to members with expiring subscriptions',
             ],
-            [
-                'command_name' => 'renewals:enqueue-due',
-                'run_time' => '00:00',
-                'frequency' => 'hourly',
-                'enabled' => true,
-                'description' => 'Enqueue auto-renewals that are due for processing',
-            ],
+
             [
                 'command_name' => 'reconciliation:run',
                 'run_time' => '02:00',
