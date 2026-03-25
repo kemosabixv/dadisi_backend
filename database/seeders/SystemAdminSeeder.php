@@ -21,7 +21,7 @@ class SystemAdminSeeder extends Seeder
         $email = env('INITIAL_ADMIN_EMAIL', 'superadmin@dadisilab.com');
         $password = env('INITIAL_ADMIN_PASSWORD', 'password');
 
-        $user = User::firstOrCreate(
+        $user = User::updateOrCreate(
             ['email' => $email],
             [
                 'username' => 'superadmin',
