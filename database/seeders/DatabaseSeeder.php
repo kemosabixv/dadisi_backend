@@ -16,42 +16,72 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed roles and permissions first
+        $this->seedMandatory();
+
+        // Only seed demo content in non-production environments
+        if (!app()->isProduction() && !app()->environment('production')) {
+            $this->command->info('Non-production environment detected. Seeding demo content...');
+            $this->seedDemoContent();
+        }
+    }
+
+    /**
+     * Seed mandatory system data required for operation.
+     */
+    protected function seedMandatory(): void
+    {
+        $this->command->info('Seeding mandatory system data...');
+
+        // 1. Core RBAC
         $this->call([
             RolesPermissionsSeeder::class,
         ]);
 
-        // Seed reference data
+        // 2. Reference & Structural Data
         $this->call([
             CountiesTableSeeder::class,
+            CountyGroupsSeeder::class,
+            TaxonomySeeder::class,
             SystemFeatureSeeder::class,
             PlanSeeder::class,
             UserDataRetentionSettingsSeeder::class,
+            DataDestructionCommandSeeder::class,
             SchedulerSettingsSeeder::class,
+            SystemSettingsSeeder::class,
+            SystemSettingsPublicProfileSeeder::class,
             ExchangeRateSeeder::class,
-            AdminUserSeeder::class,
             EventManagementSeeder::class,
+        ]);
+
+        // 3. Essential Administrative Accounts
+        $this->call([
+            SystemAdminSeeder::class,
+        ]);
+    }
+
+    /**
+     * Seed optional demo content for development/staging.
+     */
+    protected function seedDemoContent(): void
+    {
+        $this->command->info('Seeding optional demo content...');
+
+        $this->call([
+            AdminUserSeeder::class, // Now repurposed for demo users
             SampleEventsSeeder::class,
-            SampleAuthorsSeeder::class,
             BlogPostsSeeder::class,
             BlogInteractionsSeeder::class,
             DonationCampaignSeeder::class,
             DonationSeeder::class,
-            SampleRegistrationsSeeder::class,
             SamplePromoCodesSeeder::class,
             ForumCategoriesSeeder::class,
-            CountyGroupsSeeder::class,
-            TaxonomySeeder::class,
             ForumThreadsSeeder::class,
             ForumTagsSeeder::class,
             LabSpaceSeeder::class,
+            LabBookingSeeder::class,
+            LabMaintenanceSeeder::class,
             GroupMembersSeeder::class,
+            E2ETestSeeder::class,
         ]);
-
-        // Optionally seed a demo user
-        // User::factory(1)->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
     }
 }

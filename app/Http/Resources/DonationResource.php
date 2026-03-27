@@ -17,12 +17,13 @@ class DonationResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        // Get payment method from associated payment
-        $payment = $this->relationLoaded('payment') ? $this->payment : (\App\Models\Payment::find($this->payment_id));
-        $paymentMethod = $payment?->meta['payment_method'] ?? null;
-        
-        $receiptUrl = ($this->status === 'paid' && $this->receipt_number) 
-            ? config('app.url') . "/donations/receipt/{$this->reference}"
+        // Get payment method from associated payment relationship
+        $payment = $this->payment;
+        // `method` = the paying method (mpesa, card); fallback to meta for older records
+        $paymentMethod = $payment?->method ?? $payment?->meta['payment_method'] ?? null;
+
+        $receiptUrl = ($this->status === 'paid' && $this->receipt_number)
+            ? config('app.frontend_url')."/donations/receipt/{$this->reference}"
             : null;
 
         return [
@@ -38,16 +39,16 @@ class DonationResource extends JsonResource
             'receipt_number' => $this->receipt_number,
             'receipt_url' => $receiptUrl,
             'notes' => $this->notes,
-            'county' => $this->whenLoaded('county', fn() => [
+            'county' => $this->whenLoaded('county', fn () => [
                 'id' => $this->county->id,
                 'name' => $this->county->name,
             ]),
-            'campaign' => $this->whenLoaded('campaign', fn() => [
+            'campaign' => $this->whenLoaded('campaign', fn () => [
                 'id' => $this->campaign->id,
                 'title' => $this->campaign->title,
                 'slug' => $this->campaign->slug,
             ]),
-            'user' => $this->whenLoaded('user', fn() => [
+            'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
                 'email' => $this->user->email,

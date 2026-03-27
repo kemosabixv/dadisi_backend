@@ -34,15 +34,6 @@ class UserException extends \Exception
         return new static('Please complete your profile first.', 400);
     }
 
-    /**
-     * Profile is private
-     *
-     * @return static
-     */
-    public static function profilePrivate(): static
-    {
-        return new static('This profile is private.', 403);
-    }
 
     /**
      * Creation failed

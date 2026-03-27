@@ -2,6 +2,8 @@
 
 namespace App\Services\Contracts;
 
+use App\DTOs\CreateCountyDTO;
+use App\DTOs\UpdateCountyDTO;
 use App\Models\County;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -31,19 +33,19 @@ interface CountyServiceContract
     /**
      * Create a new county
      *
-     * @param array $data County data
+     * @param CreateCountyDTO $dto County data
      * @return County
      */
-    public function createCounty(array $data): County;
+    public function createCounty(CreateCountyDTO $dto): County;
 
     /**
      * Update a county
      *
      * @param County $county
-     * @param array $data County data
+     * @param UpdateCountyDTO $dto County data
      * @return County
      */
-    public function updateCounty(County $county, array $data): County;
+    public function updateCounty(County $county, UpdateCountyDTO $dto): County;
 
     /**
      * Delete a county

@@ -103,4 +103,15 @@ class MediaException extends \Exception
     {
         return new static($message, 422);
     }
+
+    /**
+     * Bad request / Policy violation
+     *
+     * @param string $message
+     * @return static
+     */
+    public static function badRequest(string $message): static
+    {
+        return new static($message, 422);
+    }
 }

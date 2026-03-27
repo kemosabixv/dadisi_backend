@@ -20,6 +20,7 @@ class PromoCodeResource extends JsonResource
             'used_count' => $this->used_count,
             'valid_from' => $this->valid_from,
             'valid_until' => $this->valid_until,
+            'ticket_id' => $this->ticket_id,
             'is_active' => (bool) $this->is_active,
             'created_at' => $this->created_at,
         ];

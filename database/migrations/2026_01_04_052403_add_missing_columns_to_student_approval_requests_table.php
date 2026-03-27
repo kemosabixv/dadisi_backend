@@ -12,11 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('student_approval_requests', function (Blueprint $table) {
-            $table->string('student_email')->after('student_institution')->nullable();
-            $table->date('student_birth_date')->after('student_email')->nullable();
-            $table->string('county')->after('student_birth_date')->nullable();
-            $table->text('additional_notes')->after('rejection_reason')->nullable();
-            $table->renameColumn('requested_at', 'submitted_at');
+            if (!Schema::hasColumn('student_approval_requests', 'student_email')) {
+                $table->string('student_email')->after('student_institution')->nullable();
+            }
+            if (!Schema::hasColumn('student_approval_requests', 'student_birth_date')) {
+                $table->date('student_birth_date')->after('student_email')->nullable();
+            }
+            if (!Schema::hasColumn('student_approval_requests', 'county')) {
+                $table->string('county')->after('student_birth_date')->nullable();
+            }
+            if (!Schema::hasColumn('student_approval_requests', 'additional_notes')) {
+                $table->text('additional_notes')->after('rejection_reason')->nullable();
+            }
+            // Note: column remains 'requested_at' (not renamed to submitted_at)
         });
     }
 

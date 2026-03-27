@@ -20,7 +20,7 @@ class AuthorBlogController extends Controller
     public function __construct(BlogTaxonomyServiceContract $taxonomyService)
     {
         $this->taxonomyService = $taxonomyService;
-        $this->middleware('auth:sanctum');
+        $this->middleware('auth');
     }
 
     /**

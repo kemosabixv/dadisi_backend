@@ -4,11 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Post extends Model
 {
@@ -23,7 +23,6 @@ class Post extends Model
         'body',
         'status',
         'published_at',
-        'hero_image_path',
         'meta_title',
         'meta_description',
         'is_featured',
@@ -99,7 +98,7 @@ class Post extends Model
         parent::setAttribute($key, $value);
 
         // Auto-generate slug from title when title is set and slug is empty
-        if ($key === 'title' && !empty($value) && empty($this->getAttribute('slug'))) {
+        if ($key === 'title' && ! empty($value) && empty($this->getAttribute('slug'))) {
             $this->attributes['slug'] = \Illuminate\Support\Str::slug($value);
         }
 
@@ -178,10 +177,14 @@ class Post extends Model
      */
     public function setFeaturedMedia(int $mediaId): void
     {
-        // Detach existing featured
+        $old = $this->featuredMedia();
+        if ($old) {
+            $old?->decrement('usage_count');
+        }
+
         $this->media()->wherePivot('role', 'featured')->detach();
-        // Attach new featured
         $this->media()->attach($mediaId, ['role' => 'featured']);
+        Media::find($mediaId)?->increment('usage_count');
     }
 
     /**
@@ -190,8 +193,22 @@ class Post extends Model
     public function addGalleryMedia(array $mediaIds): void
     {
         foreach ($mediaIds as $id) {
-            $this->media()->syncWithoutDetaching([$id => ['role' => 'gallery']]);
+            if (! $this->media()->wherePivot('role', 'gallery')->where('media_id', $id)->exists()) {
+                $this->media()->attach($id, ['role' => 'gallery']);
+                Media::find($id)?->increment('usage_count');
+            }
         }
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::deleting(function (self $post) {
+            foreach ($post->media as $media) {
+                $media?->decrement('usage_count');
+            }
+            $post->media()->detach();
+        });
     }
 
     /**
@@ -253,8 +270,8 @@ class Post extends Model
     {
         return $query->where(function ($q) use ($term) {
             $q->where('title', 'like', "%{$term}%")
-              ->orWhere('excerpt', 'like', "%{$term}%")
-              ->orWhere('body', 'like', "%{$term}%");
+                ->orWhere('excerpt', 'like', "%{$term}%")
+                ->orWhere('body', 'like', "%{$term}%");
         });
     }
 
@@ -269,12 +286,13 @@ class Post extends Model
     }
 
     /**
-     * Accessor: featured_image (backward compatibility with hero_image_path field)
+     * Accessor: featured_image (CAS/R2 only)
      */
     public function getFeaturedImageAttribute(): ?string
     {
-        $path = $this->getFeaturedImagePath();
-        return $path ? asset('storage/' . $path) : null;
+        $media = $this->getFeaturedMediaImage();
+
+        return $media ? $media->url : null;
     }
 
     /**
@@ -311,6 +329,7 @@ class Post extends Model
         if (array_key_exists('likes_count', $this->attributes)) {
             return (int) $this->attributes['likes_count'];
         }
+
         return $this->likes()->where('type', 'like')->count();
     }
 
@@ -324,6 +343,7 @@ class Post extends Model
         if (array_key_exists('dislikes_count', $this->attributes)) {
             return (int) $this->attributes['dislikes_count'];
         }
+
         return $this->likes()->where('type', 'dislike')->count();
     }
 
@@ -337,15 +357,8 @@ class Post extends Model
         if (array_key_exists('comments_count', $this->attributes)) {
             return (int) $this->attributes['comments_count'];
         }
-        return $this->comments()->count();
-    }
 
-    /**
-     * Mutator: featured_image
-     */
-    public function setFeaturedImageAttribute(?string $value): void
-    {
-        $this->hero_image_path = $value;
+        return $this->comments()->count();
     }
 
     /**
@@ -381,19 +394,13 @@ class Post extends Model
     }
 
     /**
-     * Get featured image path (prioritizes media system, falls back to direct field)
-     * This provides a unified interface for getting the featured image
+     * Get featured image path (CAS/R2 only)
      */
     public function getFeaturedImagePath(): ?string
     {
-        // First try to get from media system
         $featuredMedia = $this->getFeaturedMediaImage();
-        if ($featuredMedia) {
-            return $featuredMedia->file_path;
-        }
 
-        // Fall back to direct field
-        return $this->hero_image_path;
+        return $featuredMedia ? $featuredMedia->file_path : null;
     }
 
     /**
@@ -404,15 +411,20 @@ class Post extends Model
     {
         $media = Media::find($mediaId);
 
-        if (!$media || $media->type !== 'image' || $media->user_id !== $this->user_id) {
+        if (! $media || $media->type !== 'image' || $media->user_id !== $this->user_id) {
             return false;
         }
 
         // Detach existing featured media first (simple approach: detach all images, attach new one)
+        $existing = $this->getFeaturedMediaImage();
+        if ($existing) {
+            $existing?->decrement('usage_count');
+        }
         $this->media()->where('type', 'image')->detach();
 
         // Attach the new featured image
         $this->media()->attach($mediaId);
+        Media::find($mediaId)?->increment('usage_count');
 
         // Update media public status based on post status
         $this->updateAttachedMediaPrivacy();
@@ -425,9 +437,9 @@ class Post extends Model
      */
     public function updateAttachedMediaPrivacy(): void
     {
-        $isPublic = $this->status === 'published';
+        $visibility = $this->status === 'published' ? 'public' : 'private';
 
-        $this->media()->update(['is_public' => $isPublic]);
+        $this->media()->update(['visibility' => $visibility]);
     }
 
     /**
@@ -440,12 +452,32 @@ class Post extends Model
             if ($post->isDirty('status')) {
                 $post->updateAttachedMediaPrivacy();
             }
+
+            // Also handle slug change/folder rename
+            if ($post->isDirty('slug')) {
+                $oldSlug = $post->getOriginal('slug');
+                $newSlug = $post->slug;
+                if ($oldSlug && $newSlug) {
+                    $mediaService = app(\App\Services\Contracts\MediaServiceContract::class);
+                    $author = $post->author ?? \App\Models\User::find($post->user_id);
+                    if ($author && method_exists($mediaService, 'renameFolder')) {
+                        $mediaService->renameFolder(
+                            $author,
+                            'public',
+                            ['posts', $oldSlug],
+                            $newSlug
+                        );
+                    }
+                }
+            }
         });
 
         static::deleting(function ($post) {
-            // When post is deleted, make all attached media private and detach
-            $post->media()->update(['is_public' => false]);
-            // Detach all media (pivot entries removed automatically on cascade)
+            // When post is deleted, make all attached media private, decrement usage, and detach
+            foreach ($post->media as $media) {
+                $media?->decrement('usage_count');
+            }
+            $post->media()->update(['visibility' => 'private']);
             $post->media()->detach();
         });
     }

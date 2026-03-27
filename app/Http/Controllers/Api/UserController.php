@@ -16,6 +16,7 @@ use App\Http\Requests\Api\BulkUpdateUserRequest;
 use App\Http\Requests\Api\DeleteSelfRequest;
 use App\Http\Requests\Api\InviteUserRequest;
 use App\Http\Requests\Api\RemoveRoleRequest;
+use App\Http\Requests\Api\SelfInviteUserRequest;
 use App\Http\Requests\Api\SyncRolesRequest;
 use App\Http\Requests\Api\UpdateUserRequest;
 use App\Http\Requests\Api\UploadProfilePictureRequest;
@@ -43,8 +44,8 @@ class UserController extends Controller
         private UserBulkOperationServiceContract $bulkService,
         private UserInvitationServiceContract $invitationService
     ) {
-        $this->middleware(['auth:sanctum', 'admin'])->except(['deleteSelf', 'uploadProfilePicture', 'exportData']);
-        $this->middleware('auth:sanctum')->only(['deleteSelf', 'uploadProfilePicture', 'exportData']);
+        $this->middleware(['auth', 'admin'])->except(['deleteSelf', 'uploadProfilePicture', 'exportData', 'selfInvite']);
+        $this->middleware('auth')->only(['deleteSelf', 'uploadProfilePicture', 'exportData', 'selfInvite']);
     }
 
     /**
@@ -97,7 +98,6 @@ class UserController extends Controller
                 'password' => 'required|string|min:8',
                 'first_name' => 'nullable|string|max:100',
                 'last_name' => 'nullable|string|max:100',
-                'is_staff' => 'nullable|boolean',
                 'roles' => 'nullable|array',
                 'roles.*' => 'string|exists:roles,name',
             ]);
@@ -111,7 +111,6 @@ class UserController extends Controller
             $profileData = [
                 'first_name' => $validated['first_name'] ?? null,
                 'last_name' => $validated['last_name'] ?? null,
-                'is_staff' => $validated['is_staff'] ?? false,
             ];
 
             $user = $this->userService->create($request->user(), $dto, $profileData);
@@ -489,13 +488,16 @@ class UserController extends Controller
     public function bulkInvite(BulkInviteUserRequest $request): JsonResponse
     {
         try {
-            $count = $this->invitationService->bulkInvite($request->user(), $request->input('invitations'));
+            $results = $this->invitationService->bulkInvite($request->user(), $request->input('invitations'));
+
+            $successCount = count($results['success']);
+            $failCount = count($results['failed']);
 
             return response()->json([
                 'success' => true,
-                'message' => "{$count} invitations sent",
-                'data' => ['count' => $count],
-            ]);
+                'message' => "Bulk invitation process completed: {$successCount} sent, {$failCount} failed.",
+                'data' => $results,
+            ], ($failCount > 0 && $successCount == 0) ? 422 : 201);
         } catch (UserException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
         }
@@ -516,6 +518,26 @@ class UserController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'User not found'], 404);
+        }
+    }
+
+    /**
+     * Self-service Invitation
+     * 
+     * Allows a regular user to invite someone (forced to member role).
+     */
+    public function selfInvite(SelfInviteUserRequest $request): JsonResponse
+    {
+        try {
+            $invitation = $this->invitationService->invite($request->user(), $request->validated());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invitation sent successfully',
+                'data' => $invitation,
+            ]);
+        } catch (UserException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 422);
         }
     }
 }

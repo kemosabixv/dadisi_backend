@@ -18,7 +18,7 @@ class DeletionReviewController extends Controller
     public function __construct(BlogTaxonomyServiceContract $taxonomyService)
     {
         $this->taxonomyService = $taxonomyService;
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**

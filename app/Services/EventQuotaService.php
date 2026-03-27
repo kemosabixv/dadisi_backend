@@ -60,28 +60,12 @@ class EventQuotaService
     }
 
     /**
-     * Check if user can create a new event based on their monthly quota.
+     * Check if user can create a new event.
+     * Only staff members are allowed to create events.
      */
     public function canCreateEvent(User $user): bool
     {
-        // Staff members have unlimited creation power
-        if ($user->isStaffMember()) {
-            return true;
-        }
-
-        $limit = $this->getFeatureLimit($user, 'event_creation_limit');
-
-        if ($limit === -1) {
-            return true;
-        }
-
-        if ($limit === 0) {
-            return false;
-        }
-
-        $usage = $this->getMonthlyCreationUsage($user);
-
-        return $usage < $limit;
+        return $user->isStaffMember();
     }
 
     /**

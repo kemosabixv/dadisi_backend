@@ -7,6 +7,7 @@ use App\Models\Post;
 use App\Models\Category;
 use App\Models\Tag;
 use App\Models\County;
+use App\Services\Media\MediaService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -263,7 +264,7 @@ class BlogPostsSeeder extends Seeder
                 collect($tagModels)->pluck('id')->random(rand(2, 3))
             );
 
-            // 5. Assign Seed Images (Local/Testing only)
+            // 5. Assign Seed Images (CAS / R2)
             if (app()->environment('local', 'testing', 'staging')) {
                 $seedImages = [
                     'seed-images/biotech-lab.png',
@@ -273,33 +274,34 @@ class BlogPostsSeeder extends Seeder
                 
                 // Assign a random seed image
                 $randomImage = $seedImages[array_rand($seedImages)];
+                $absolutePath = storage_path('app/public/' . $randomImage);
                 
-                $post->update(['hero_image_path' => $randomImage]);
-
-                // Create a Media record to exercise the media system
-                if (file_exists(storage_path('app/public/' . $randomImage))) {
+                if (file_exists($absolutePath)) {
                     try {
-                        $media = \App\Models\Media::firstOrCreate(
-                            ['file_path' => $randomImage],
+                        // Use MediaService to register the file in CAS/R2
+                        /** @var MediaService $mediaService */
+                        $mediaService = app(MediaService::class);
+                        
+                        $media = $mediaService->registerFile(
+                            $superAdmin, // Seeder owner
+                            $absolutePath,
+                            basename($randomImage),
                             [
-                                'user_id' => $post->user_id,
-                                'file_name' => basename($randomImage),
-                                'mime_type' => 'image/png',
-                                'file_size' => filesize(storage_path('app/public/' . $randomImage)),
-                                'type' => 'image',
-                                'is_public' => true,
+                                'visibility' => 'public',
+                                'root_type' => 'public',
+                                'path' => ['posts', $slug],
                             ]
                         );
                         
                         // Attach to post via post_media table
-                        $post->media()->syncWithoutDetaching([$media->id]);
+                        $post->media()->syncWithoutDetaching([$media->id => ['role' => 'featured']]);
                     } catch (\Exception $e) {
-                        $this->command->warn('Failed to link media for post: ' . $post->title);
+                        $this->command->warn('Failed to register CAS media for post: ' . $post->title . ' - ' . $e->getMessage());
                     }
                 }
             }
         }
 
-        $this->command->info('20 Biotechnology posts seeded successfully!');
+        $this->command->info('20 Biotechnology posts seeded successfully with CAS media!');
     }
 }

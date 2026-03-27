@@ -30,7 +30,6 @@ class PlanSubscription extends BaseSubscription
         'slug',
         'description',
         'timezone',
-        'trial_ends_at',
         'starts_at',
         'ends_at',
         'cancels_at',
@@ -52,7 +51,6 @@ class PlanSubscription extends BaseSubscription
         'slug',
         'description',
         'timezone',
-        'trial_ends_at',
         'starts_at',
         'ends_at',
         'cancels_at',
@@ -170,7 +168,7 @@ class PlanSubscription extends BaseSubscription
     {
         static::creating(function ($subscription) {
             if (empty($subscription->subscriber_type) && !empty($subscription->subscriber_id)) {
-                $subscription->subscriber_type = User::class;
+                $subscription->subscriber_type = 'user';
             }
         });
     }
@@ -206,5 +204,13 @@ class PlanSubscription extends BaseSubscription
     public function auditLogs(): MorphMany
     {
         return $this->morphMany(AuditLog::class, 'model');
+    }
+
+    /**
+     * Get all refunds for this subscription.
+     */
+    public function refunds(): MorphMany
+    {
+        return $this->morphMany(Refund::class, 'refundable');
     }
 }

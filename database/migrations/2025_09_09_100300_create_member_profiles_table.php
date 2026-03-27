@@ -12,8 +12,8 @@ return new class extends Migration {
             $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
 
             // Name components
-            $table->string('first_name', 100);
-            $table->string('last_name', 100);
+            $table->string('first_name', 100)->nullable();
+            $table->string('last_name', 100)->nullable();
 
             // Personal details
             $table->string('phone_number', 15)->nullable();

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\DTOs\CreateCountyDTO;
+use App\DTOs\UpdateCountyDTO;
 use App\Services\Contracts\CountyServiceContract;
 use App\Models\County;
 use Illuminate\Support\Facades\Log;
@@ -48,12 +50,12 @@ class CountyService implements CountyServiceContract
     /**
      * Create a new county
      */
-    public function createCounty(array $data): County
+    public function createCounty(CreateCountyDTO $dto): County
     {
         try {
-            return County::create($data);
+            return County::create($dto->toArray());
         } catch (\Exception $e) {
-            Log::error('Failed to create county', ['error' => $e->getMessage(), 'data' => $data]);
+            Log::error('Failed to create county', ['error' => $e->getMessage(), 'data' => $dto->toArray()]);
             throw $e;
         }
     }
@@ -61,10 +63,10 @@ class CountyService implements CountyServiceContract
     /**
      * Update an existing county
      */
-    public function updateCounty(County $county, array $data): County
+    public function updateCounty(County $county, UpdateCountyDTO $dto): County
     {
         try {
-            $county->update($data);
+            $county->update($dto->toArray());
             return $county->fresh();
         } catch (\Exception $e) {
             Log::error('Failed to update county', ['error' => $e->getMessage(), 'county_id' => $county->id]);

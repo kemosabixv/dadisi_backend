@@ -11,8 +11,7 @@ Route::post('/mock-payment/{paymentId}/complete', [PaymentController::class, 'co
 Route::post('/mock-payment/{paymentId}/cancel', [PaymentController::class, 'cancelMockPayment'])->name('mock-payment.cancel');
 Route::get('/payment/callback', [PaymentController::class, 'handlePesapalCallback'])->name('payment.callback');
 
-// Donation Receipts
-Route::get('/donations/receipt/{reference}', [\App\Http\Controllers\Api\PublicDonationController::class, 'receipt'])->name('donations.receipt');
+
 
 // Fallback route for SPA
 Route::fallback(function () {

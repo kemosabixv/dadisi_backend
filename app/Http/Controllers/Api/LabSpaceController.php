@@ -191,7 +191,7 @@ class LabSpaceController extends Controller
                 'success' => true,
                 'data' => [
                     'space' => $space->only(['id', 'name', 'slug', 'type', 'capacity']),
-                    'events' => $events,
+                    'events' => $events['events'] ?? [],
                 ],
             ]);
         } catch (\Exception $e) {

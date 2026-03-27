@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Media;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -20,13 +21,12 @@ class Event extends Model
         'category_id',
         'organizer_id',
         'venue',
+        'google_maps_url',
         'is_online',
         'online_link',
         'capacity',
         'waitlist_enabled',
-        'waitlist_capacity',
         'county_id',
-        'image_path',
         'price',
         'currency',
         'status',
@@ -50,7 +50,6 @@ class Event extends Model
         'registration_deadline' => 'datetime',
         'capacity' => 'integer',
         'waitlist_enabled' => 'boolean',
-        'waitlist_capacity' => 'integer',
         'is_online' => 'boolean',
         'price' => 'decimal:2',
         'published_at' => 'datetime',
@@ -216,10 +215,9 @@ class Event extends Model
     /**
      * Check if event has available capacity
      */
-    public function hasCapacity(): bool
+    public function hasCapacity(int $requested = 1): bool
     {
-        if (!$this->capacity) return true;
-        return $this->getTotalAttendees() < $this->capacity;
+        return $this->getRemainingCapacity() - $this->getPendingSpotsCount() >= $requested;
     }
 
     /**
@@ -229,6 +227,17 @@ class Event extends Model
     {
         if (!$this->capacity) return null;
         return max(0, $this->capacity - $this->getTotalAttendees());
+    }
+
+    /**
+     * Get count of pending spots from active payment attempts
+     */
+    public function getPendingSpotsCount(): int
+    {
+        return (int) $this->orders()
+            ->where('status', 'pending')
+            ->where('created_at', '>=', now()->subMinutes(30))
+            ->sum('quantity');
     }
 
     /**
@@ -243,22 +252,12 @@ class Event extends Model
     }
 
     /**
-     * Get the full URL for the image. (Matches frontend image_url)
+     * Get the full URL for the image (CAS/R2 only).
      */
     public function getImageUrlAttribute(): ?string
     {
-        // First try to get from media system
         $featuredMedia = $this->featuredMedia();
-        if ($featuredMedia) {
-            return asset('storage/' . $featuredMedia->file_path);
-        }
-
-        // Fall back to direct field
-        if (!$this->image_path) {
-            return null;
-        }
-
-        return asset('storage/' . $this->image_path);
+        return $featuredMedia ? $featuredMedia->url : null;
     }
 
     /**
@@ -292,8 +291,14 @@ class Event extends Model
      */
     public function setFeaturedMedia(int $mediaId): void
     {
+        $old = $this->featuredMedia();
+        if ($old) {
+            $old->decrement('usage_count');
+        }
+
         $this->media()->wherePivot('role', 'featured')->detach();
         $this->media()->attach($mediaId, ['role' => 'featured']);
+        Media::find($mediaId)?->increment('usage_count');
     }
 
     /**
@@ -302,7 +307,52 @@ class Event extends Model
     public function addGalleryMedia(array $mediaIds): void
     {
         foreach ($mediaIds as $id) {
-            $this->media()->syncWithoutDetaching([$id => ['role' => 'gallery']]);
+            if (!$this->media()->wherePivot('role', 'gallery')->where('media_id', $id)->exists()) {
+                $this->media()->attach($id, ['role' => 'gallery']);
+                Media::find($id)?->increment('usage_count');
+            }
         }
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::updating(function (self $event) {
+            if ($event->isDirty('slug')) {
+                $oldSlug = $event->getOriginal('slug');
+                $newSlug = $event->slug;
+                if ($oldSlug && $newSlug) {
+                    app(\App\Services\Contracts\MediaServiceContract::class)->renameFolder(
+                        $event->creator ?? auth()->user() ?? User::find($event->created_by),
+                        'public', 
+                        ['events', $oldSlug], 
+                        $newSlug
+                    );
+                }
+            }
+        });
+
+        static::deleting(function (self $event) {
+            foreach ($event->media as $media) {
+                $media->decrement('usage_count');
+            }
+            $event->media()->detach();
+        });
+    }
+
+    /**
+     * Check if the event is a paid event.
+     */
+    public function getIsPaidAttribute(): bool
+    {
+        return $this->price > 0;
+    }
+
+    /**
+     * Check if the event is free.
+     */
+    public function getIsFreeAttribute(): bool
+    {
+        return !$this->is_paid;
     }
 }

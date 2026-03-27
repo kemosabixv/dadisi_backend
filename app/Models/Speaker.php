@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -19,15 +20,13 @@ class Speaker extends Model
         'company',
         'designation',
         'bio',
-        'photo_path',
+        // Migration: legacy photo_path removed, now using CAS media_id
         'website_url',
         'linkedin_url',
-        'is_featured',
         'sort_order',
     ];
 
     protected $casts = [
-        'is_featured' => 'boolean',
         'sort_order' => 'integer',
     ];
 
@@ -41,22 +40,12 @@ class Speaker extends Model
     }
 
     /**
-     * Get the full URL for the speaker photo.
+     * Get the full URL for the speaker photo (CAS/R2 only).
      */
     public function getPhotoUrlAttribute(): ?string
     {
-        // First try to get from media system
         $photoMedia = $this->photoMedia();
-        if ($photoMedia) {
-            return asset('storage/' . $photoMedia->file_path);
-        }
-
-        // Fall back to direct field
-        if (!$this->photo_path) {
-            return null;
-        }
-
-        return asset('storage/' . $this->photo_path);
+        return $photoMedia ? $photoMedia->url : null;
     }
 
     /**
@@ -82,8 +71,40 @@ class Speaker extends Model
      */
     public function setPhotoMedia(int $mediaId): void
     {
+        $old = $this->photoMedia();
+        if ($old) {
+            $old->decrement('usage_count');
+        }
         $this->media()->wherePivot('role', 'speaker_photo')->detach();
         $this->media()->attach($mediaId, ['role' => 'speaker_photo']);
+        Media::find($mediaId)?->increment('usage_count');
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::updating(function (self $speaker) {
+            if ($speaker->isDirty('name')) {
+                $oldSlug = \Illuminate\Support\Str::slug($speaker->getOriginal('name'));
+                $newSlug = \Illuminate\Support\Str::slug($speaker->name);
+                if ($oldSlug && $newSlug && $oldSlug !== $newSlug) {
+                    $event = $speaker->event;
+                    app(\App\Services\Contracts\MediaServiceContract::class)->renameFolder(
+                        $event->creator ?? auth()->user() ?? User::find($event->created_by),
+                        'public', 
+                        ['speakers', $oldSlug], 
+                        $newSlug
+                    );
+                }
+            }
+        });
+
+        static::deleting(function (self $speaker) {
+            foreach ($speaker->media as $media) {
+                $media->decrement('usage_count');
+            }
+            $speaker->media()->detach();
+        });
     }
 }
 

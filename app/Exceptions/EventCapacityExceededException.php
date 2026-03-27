@@ -30,8 +30,10 @@ class EventCapacityExceededException extends Exception
     public function render()
     {
         return response()->json([
+            'success' => false,
             'message' => $this->message,
             'type' => 'capacity_exceeded',
+            'is_sold_out' => true,
         ], $this->status);
     }
 }

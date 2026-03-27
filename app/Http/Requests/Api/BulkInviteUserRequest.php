@@ -14,20 +14,30 @@ class BulkInviteUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'users' => 'required|array|min:1|max:50',
-            'users.*.email' => 'required|email',
-            'users.*.username' => 'required|string',
-            'users.*.roles' => 'sometimes|array',
-            'users.*.roles.*' => 'string|exists:roles,name',
+            'invitations' => 'required|array|min:1|max:50',
+            'invitations.*.email' => [
+                'required',
+                'email',
+                'unique:users,email',
+                function ($attribute, $value, $fail) {
+                    $exists = \App\Models\Invitation::where('email', $value)
+                        ->whereNull('accepted_at')
+                        ->where('expires_at', '>', now())
+                        ->exists();
+                    if ($exists) {
+                        $fail("A pending invitation already exists for {$value}.");
+                    }
+                },
+            ],
         ];
     }
 
     public function bodyParameters(): array
     {
         return [
-            'users' => [
-                'description' => 'Array of users to invite',
-                'example' => [['email' => 'user@example.com', 'username' => 'username', 'roles' => ['member']]],
+            'invitations' => [
+                'description' => 'Array of invitations to send',
+                'example' => [['email' => 'user@example.com']],
             ],
         ];
     }

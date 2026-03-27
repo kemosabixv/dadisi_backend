@@ -21,7 +21,7 @@ class AdminPaymentController extends Controller
     public function __construct(
         protected PaymentServiceContract $paymentService
     ) {
-        $this->middleware(['auth:sanctum', 'verified']);
+        $this->middleware(['auth', 'verified']);
     }
 
     /**
@@ -41,26 +41,20 @@ class AdminPaymentController extends Controller
         abort_unless(auth()->user()?->can('manage_payments'), 403, 'Unauthorized');
 
         try {
-            // Test payment types (don't have real payable entities)
-            $testPayableTypes = [
+            // Valid payable types (morph names or class names)
+            $validPayableTypes = [
+                'event_order',
+                'donation',
+                'subscription',
+                'App\\Models\\EventOrder',
+                'App\\Models\\Donation',
+                'App\\Models\\PlanSubscription',
                 'TestPayment',
                 'App\\Models\\TestPayment',
                 'test',
             ];
 
-            // Real payment types with actual payable models
-            $realPayableTypes = [
-                'App\\Models\\EventOrder',
-                'App\\Models\\Donation',
-                'App\\Models\\PlanSubscription',
-                'Laravelcm\\Subscriptions\\Models\\Subscription',
-            ];
-
-            // Include all valid types
-            $validPayableTypes = array_merge($realPayableTypes, $testPayableTypes);
-
             // Build query - only eager load payer (safe for all payment types)
-            // Payable is NOT eager loaded because test payments don't have real payable entities
             $query = Payment::query()
                 ->whereIn('payable_type', $validPayableTypes)
                 ->with(['payer']);
@@ -73,9 +67,12 @@ class AdminPaymentController extends Controller
                         ->orWhere('external_reference', 'like', "%{$search}%")
                         ->orWhere('transaction_id', 'like', "%{$search}%")
                         ->orWhereHas('payer', function ($pq) use ($search) {
-                            $pq->where('name', 'like', "%{$search}%")
-                                ->orWhere('email', 'like', "%{$search}%")
-                                ->orWhere('username', 'like', "%{$search}%");
+                            $pq->where('email', 'like', "%{$search}%")
+                                ->orWhere('username', 'like', "%{$search}%")
+                                ->orWhereHas('memberProfile', function ($mq) use ($search) {
+                                    $mq->where('first_name', 'like', "%{$search}%")
+                                        ->orWhere('last_name', 'like', "%{$search}%");
+                                });
                         });
                 });
             }
@@ -88,14 +85,16 @@ class AdminPaymentController extends Controller
             // Filter by Type (Payable Type)
             if ($request->filled('type')) {
                 $type = $request->input('type');
-                // Map short names to full model names if needed
+                // Map short names to potential legacy class names for broad search
                 $typeMap = [
-                    'event' => 'App\\Models\\EventOrder',
-                    'donation' => 'App\\Models\\Donation',
-                    'subscription' => 'App\\Models\\PlanSubscription',
+                    'event' => ['event_order', 'App\\Models\\EventOrder'],
+                    'event_order' => ['event_order', 'App\\Models\\EventOrder'],
+                    'donation' => ['donation', 'App\\Models\\Donation'],
+                    'subscription' => ['subscription', 'App\\Models\\PlanSubscription'],
                 ];
-                $actualType = $typeMap[$type] ?? $type;
-                $query->where('payable_type', 'like', "%{$actualType}%");
+
+                $searchTypes = $typeMap[$type] ?? [$type];
+                $query->whereIn('payable_type', $searchTypes);
             }
 
             // Filter by Date
@@ -109,28 +108,66 @@ class AdminPaymentController extends Controller
             $paginated = $query->orderBy('created_at', 'desc')
                 ->paginate($request->get('per_page', 15));
 
-            // Eagerly resolve "Guest" payers that are actually registered users by email
+            // Eagerly resolve "Guest" payers that are actually registered users
             $items = $paginated->items();
             $guestEmails = [];
+            $orderPayableIds = [];
+
             foreach ($items as $payment) {
-                if (!$payment->payer_id && isset($payment->meta['user_email'])) {
-                    $guestEmails[] = $payment->meta['user_email'];
+                if (! $payment->payer_id) {
+                    if (isset($payment->meta['user_email'])) {
+                        $guestEmails[] = $payment->meta['user_email'];
+                    }
+                    if ($payment->payable_type === 'event_order' || $payment->payable_type === 'App\\Models\\EventOrder') {
+                        $orderPayableIds[] = $payment->payable_id;
+                    }
                 }
             }
 
-            if (!empty($guestEmails)) {
-                $registeredUsers = \App\Models\User::whereIn('email', array_unique($guestEmails))
+            // 1. Resolve by Email (Existing Meta Logic)
+            $usersByEmail = collect();
+            if (! empty($guestEmails)) {
+                $usersByEmail = \App\Models\User::whereIn('email', array_unique($guestEmails))
                     ->with('memberProfile')
                     ->get()
                     ->keyBy('email');
+            }
 
-                foreach ($items as $payment) {
-                    if (!$payment->payer_id && isset($payment->meta['user_email'])) {
-                        $user = $registeredUsers->get($payment->meta['user_email']);
-                        if ($user) {
-                            // Set as temporary attribute or override relationship if needed for API uniformity
-                            $payment->setRelation('payer', $user);
-                        }
+            // 2. Resolve by linked EventOrder user_id (New Fallback Logic)
+            $orderUserIdMap = collect();
+            $usersById = collect();
+            if (! empty($orderPayableIds)) {
+                $orderUserIdMap = \App\Models\EventOrder::whereIn('id', array_unique($orderPayableIds))
+                    ->whereNotNull('user_id')
+                    ->get(['id', 'user_id'])
+                    ->pluck('user_id', 'id');
+
+                if ($orderUserIdMap->isNotEmpty()) {
+                    $usersById = \App\Models\User::whereIn('id', $orderUserIdMap->values()->unique())
+                        ->with('memberProfile')
+                        ->get()
+                        ->keyBy('id');
+                }
+            }
+
+            // Apply relations
+            foreach ($items as $payment) {
+                if ($payment->payer_id) continue;
+
+                // Priority: Direct ID link from EventOrder
+                if ($payment->payable_type === 'event_order' || $payment->payable_type === 'App\\Models\\EventOrder') {
+                    $userId = $orderUserIdMap->get($payment->payable_id);
+                    if ($userId && $usersById->has($userId)) {
+                        $payment->setRelation('payer', $usersById->get($userId));
+                        continue;
+                    }
+                }
+
+                // Fallback: Email-based resolution
+                if (isset($payment->meta['user_email'])) {
+                    $user = $usersByEmail->get($payment->meta['user_email']);
+                    if ($user) {
+                        $payment->setRelation('payer', $user);
                     }
                 }
             }
@@ -165,7 +202,7 @@ class AdminPaymentController extends Controller
         abort_unless(auth()->user()->can('manage_payments'), 403, 'Unauthorized');
 
         // Conditionally load payable only if it's a real model
-        $isTest = $payment->payable_type === 'test' || 
+        $isTest = $payment->payable_type === 'test' ||
                   $payment->payable_type === 'TestPayment' ||
                   $payment->payable_type === 'App\\Models\\TestPayment' ||
                   ($payment->meta['test_payment'] ?? false);
@@ -173,14 +210,35 @@ class AdminPaymentController extends Controller
         if ($isTest) {
             $payment->load(['payer']);
         } else {
-            $payment->load(['payer', 'payable']);
+            $relations = ['payer', 'payable'];
+            
+            // Only attempt to load promoCode if it's an EventOrder
+            if ($payment->payable_type === 'event_order' || $payment->payable_type === 'App\\Models\\EventOrder') {
+                $relations[] = 'payable.promoCode';
+            }
+            
+            $payment->load($relations);
         }
 
         // Resolve "Guest" payer if it's actually a registered user
-        if (!$payment->payer && isset($payment->meta['user_email'])) {
-            $user = \App\Models\User::where('email', $payment->meta['user_email'])
-                ->with('memberProfile')
-                ->first();
+        if (! $payment->payer) {
+            $user = null;
+
+            // 1. Try resolving by EventOrder user_id (New Fallback Logic)
+            if ($payment->payable_type === 'event_order' && $payment->payable) {
+                $userId = $payment->payable->user_id;
+                if ($userId) {
+                    $user = \App\Models\User::where('id', $userId)->with('memberProfile')->first();
+                }
+            }
+
+            // 2. Try resolving by Email (Existing Meta Logic)
+            if (! $user && isset($payment->meta['user_email'])) {
+                $user = \App\Models\User::where('email', $payment->meta['user_email'])
+                    ->with('memberProfile')
+                    ->first();
+            }
+
             if ($user) {
                 $payment->setRelation('payer', $user);
             }

@@ -38,4 +38,9 @@ class PermissionException extends \Exception
     {
         return new static("Role not found: {$roleName}");
     }
+
+    public static function assignmentFailed(string $message = 'Role/Permission assignment failed'): static
+    {
+        return new static($message);
+    }
 }

@@ -34,9 +34,17 @@ class EventOrderResource extends JsonResource
             'created_at' => $this->created_at->toIso8601String(),
             
             // Relationships
+            'qr_code_url' => $this->qr_code_path ? url('storage/' . $this->qr_code_path) : null,
             'event' => new EventResource($this->whenLoaded('event')),
             'user' => new UserResource($this->whenLoaded('user')),
             'payments' => PaymentResource::collection($this->whenLoaded('payments')),
+            'latest_refund' => ($latestRefund = $this->refunds()->latest()->first()) ? [
+                'status' => $latestRefund->status,
+                'amount' => $latestRefund->amount,
+                'currency' => $latestRefund->currency,
+                'requested_at' => $latestRefund->requested_at,
+                'reason' => $latestRefund->reason_display,
+            ] : null,
         ];
     }
 }

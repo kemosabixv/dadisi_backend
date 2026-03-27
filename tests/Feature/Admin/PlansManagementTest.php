@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\Plan;
+use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class PlansManagementTest extends TestCase
@@ -39,7 +40,8 @@ class PlansManagementTest extends TestCase
             'is_active' => true,
         ]);
 
-        $resp = $this->actingAs($this->admin)->getJson('/api/plans');
+        $this->actingAs($this->admin);
+        $resp = $this->getJson('/api/plans');
 
         $resp->assertStatus(200)->assertJson(['success' => true]);
     }
@@ -53,7 +55,8 @@ class PlansManagementTest extends TestCase
             'currency' => 'KES',
         ];
 
-        $resp = $this->actingAs($this->admin)->postJson('/api/plans', $payload);
+        $this->actingAs($this->admin);
+        $resp = $this->postJson('/api/plans', $payload);
 
         $resp->assertStatus(201)->assertJson(['success' => true]);
         $this->assertDatabaseHas('plans', ['currency' => 'KES']);
@@ -71,7 +74,8 @@ class PlansManagementTest extends TestCase
             'is_active' => true,
         ]);
 
-        $resp = $this->actingAs($this->admin)->putJson('/api/plans/' . $plan->id, [
+        $this->actingAs($this->admin);
+        $resp = $this->putJson('/api/plans/' . $plan->id, [
             'name' => 'Updated Plan ' . $this->ts,
             'monthly_price_kes' => 2200,
         ]);
@@ -91,7 +95,8 @@ class PlansManagementTest extends TestCase
             'is_active' => true,
         ]);
 
-        $resp = $this->actingAs($this->admin)->deleteJson('/api/plans/' . $plan->id);
+        $this->actingAs($this->admin);
+        $resp = $this->deleteJson('/api/plans/' . $plan->id);
         $resp->assertStatus(200);
     }
 }

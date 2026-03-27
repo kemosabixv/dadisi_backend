@@ -16,7 +16,7 @@ class PermissionController extends Controller
     public function __construct(
         private PermissionServiceContract $permissionService
     ) {
-        $this->middleware('auth:sanctum');
+        $this->middleware('auth');
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\Events;
 
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\Event;
@@ -49,6 +50,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Create Event with Valid Data
      * Expects: 201 Created with Event resource
      */
+    #[Test]
     public function test_store_event_with_valid_data(): void
     {
         $eventData = [
@@ -69,7 +71,7 @@ class AdminEventControllerTest extends TestCase
             'featured' => false,
         ];
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->postJson('/api/admin/events', $eventData);
 
         $response->assertCreated()
@@ -99,6 +101,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Create Event with Missing Required Field
      * Expects: 422 Validation Error
      */
+    #[Test]
     public function test_store_event_fails_without_title(): void
     {
         $eventData = [
@@ -107,7 +110,7 @@ class AdminEventControllerTest extends TestCase
             'starts_at' => now()->addMonth()->toDateTimeString(),
         ];
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->postJson('/api/admin/events', $eventData);
 
         $response->assertUnprocessable()
@@ -118,6 +121,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Create Online Event with Missing Link
      * Expects: 422 Validation Error
      */
+    #[Test]
     public function test_store_online_event_requires_link(): void
     {
         $eventData = [
@@ -129,7 +133,7 @@ class AdminEventControllerTest extends TestCase
             // Missing online_link
         ];
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->postJson('/api/admin/events', $eventData);
 
         $response->assertUnprocessable()
@@ -140,6 +144,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Create In-Person Event with Missing Venue
      * Expects: 422 Validation Error
      */
+    #[Test]
     public function test_store_inperson_event_requires_venue(): void
     {
         $eventData = [
@@ -153,7 +158,7 @@ class AdminEventControllerTest extends TestCase
             // Missing venue
         ];
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->postJson('/api/admin/events', $eventData);
 
         $response->assertUnprocessable()
@@ -164,6 +169,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Create Event with Nested Tickets
      * Expects: 201 Created with tickets in response
      */
+    #[Test]
     public function test_store_event_with_tickets(): void
     {
         $eventData = [
@@ -192,7 +198,7 @@ class AdminEventControllerTest extends TestCase
             ],
         ];
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->postJson('/api/admin/events', $eventData);
 
         $response->assertCreated()
@@ -203,6 +209,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Create Event with Nested Speakers
      * Expects: 201 Created with speakers in response
      */
+    #[Test]
     public function test_store_event_with_speakers(): void
     {
         $eventData = [
@@ -225,7 +232,7 @@ class AdminEventControllerTest extends TestCase
             ],
         ];
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->postJson('/api/admin/events', $eventData);
 
         $response->assertCreated()
@@ -236,6 +243,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Update Event with Valid Data
      * Expects: 200 OK with updated Event resource
      */
+    #[Test]
     public function test_update_event_with_valid_data(): void
     {
         $event = Event::factory()
@@ -251,7 +259,7 @@ class AdminEventControllerTest extends TestCase
             'description' => 'Updated description',
         ];
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->putJson("/api/admin/events/{$event->id}", $updateData);
 
         $response->assertOk()
@@ -267,6 +275,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Delete Event
      * Expects: 204 No Content
      */
+    #[Test]
     public function test_delete_event(): void
     {
         $event = Event::factory()
@@ -276,7 +285,7 @@ class AdminEventControllerTest extends TestCase
                 'county_id' => $this->county->id,
             ]);
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->deleteJson("/api/admin/events/{$event->id}");
 
         $response->assertNoContent();
@@ -288,6 +297,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Publish Event
      * Expects: 200 OK with updated status
      */
+    #[Test]
     public function test_publish_event(): void
     {
         $event = Event::factory()
@@ -298,7 +308,7 @@ class AdminEventControllerTest extends TestCase
                 'county_id' => $this->county->id,
             ]);
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->postJson("/api/admin/events/{$event->id}/publish");
 
         $response->assertOk()
@@ -309,6 +319,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Feature Event
      * Expects: 200 OK with featured set to true
      */
+    #[Test]
     public function test_feature_event(): void
     {
         $event = Event::factory()
@@ -323,7 +334,7 @@ class AdminEventControllerTest extends TestCase
             'featured_until' => now()->addMonth()->toDateString(),
         ];
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->postJson("/api/admin/events/{$event->id}/feature", $featureData);
 
         $response->assertOk()
@@ -334,6 +345,7 @@ class AdminEventControllerTest extends TestCase
      * Test: List Events with Pagination
      * Expects: 200 OK with paginated events
      */
+    #[Test]
     public function test_list_events_with_pagination(): void
     {
         Event::factory()
@@ -343,7 +355,7 @@ class AdminEventControllerTest extends TestCase
                 'county_id' => $this->county->id,
             ]);
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->getJson('/api/admin/events?per_page=15');
 
         $response->assertOk()
@@ -356,6 +368,7 @@ class AdminEventControllerTest extends TestCase
      * Test: List Events with Filter by Status
      * Expects: 200 OK with filtered events
      */
+    #[Test]
     public function test_list_events_filter_by_status(): void
     {
         Event::factory()
@@ -374,7 +387,7 @@ class AdminEventControllerTest extends TestCase
                 'county_id' => $this->county->id,
             ]);
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->getJson('/api/admin/events?status=published');
 
         $response->assertOk()
@@ -386,6 +399,7 @@ class AdminEventControllerTest extends TestCase
      * Test: List Events with Search
      * Expects: 200 OK with matching events
      */
+    #[Test]
     public function test_list_events_search(): void
     {
         Event::factory()
@@ -402,7 +416,7 @@ class AdminEventControllerTest extends TestCase
                 'county_id' => $this->county->id,
             ]);
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->getJson('/api/admin/events?search=Tech');
 
         $response->assertOk()
@@ -414,6 +428,7 @@ class AdminEventControllerTest extends TestCase
      * Test: List Registrations for Event
      * Expects: 200 OK with registrations
      */
+    #[Test]
     public function test_list_event_registrations(): void
     {
         $event = Event::factory()
@@ -437,7 +452,7 @@ class AdminEventControllerTest extends TestCase
             'confirmation_code' => 'ABC123',
         ]);
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAs($this->admin)
             ->getJson("/api/admin/events/{$event->id}/registrations");
 
         $response->assertOk()
@@ -449,6 +464,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Unauthorized Access (No Permission)
      * Expects: 403 Forbidden
      */
+    #[Test]
     public function test_create_event_without_permission(): void
     {
         $user = User::factory()->create();
@@ -460,7 +476,7 @@ class AdminEventControllerTest extends TestCase
             'starts_at' => now()->addMonth()->toDateTimeString(),
         ];
 
-        $response = $this->actingAs($user, 'sanctum')
+        $response = $this->actingAs($user)
             ->postJson('/api/admin/events', $eventData);
 
         $response->assertForbidden();
@@ -470,6 +486,7 @@ class AdminEventControllerTest extends TestCase
      * Test: Unauthenticated Access
      * Expects: 401 Unauthorized
      */
+    #[Test]
     public function test_create_event_unauthenticated(): void
     {
         $eventData = [

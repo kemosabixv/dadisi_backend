@@ -32,13 +32,19 @@ class UserRoleService implements UserRoleServiceContract
     public function assignRole(Authenticatable $actor, User $user, string $role): User
     {
         try {
-            // Check if user already has role
-            if ($user->hasRole($role)) {
-                Log::info("User {$user->id} already has role {$role}");
-                return $user->fresh();
+            // Mutual Exclusivity Guard:
+            // If assigning a staff/specialized role, remove 'member'.
+            // If assigning 'member', remove all staff-related roles.
+            if ($role === 'member') {
+                // Strip all other roles when becoming a member
+                $user->syncRoles(['member']);
+            } else {
+                // Strip 'member' when becoming staff
+                if ($user->hasRole('member')) {
+                    $user->removeRole('member');
+                }
+                $user->assignRole($role);
             }
-
-            $user->assignRole($role);
 
             // Log audit trail
             $this->logAudit($actor, "assign_role:{$role}", $user);
@@ -102,6 +108,15 @@ class UserRoleService implements UserRoleServiceContract
     public function syncRoles(Authenticatable $actor, User $user, array $roles): User
     {
         try {
+            // Mutual Exclusivity Guard for sync
+            $hasMember = in_array('member', $roles);
+            $hasStaffRelated = count(array_diff($roles, ['member'])) > 0;
+
+            if ($hasMember && $hasStaffRelated) {
+                // If both are present, prioritize staff-related roles and strip member
+                $roles = array_diff($roles, ['member']);
+            }
+
             $user->syncRoles($roles);
 
             // Log audit trail

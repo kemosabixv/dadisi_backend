@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\DTOs\CreateDonationDTO;
+use App\DTOs\UpdateDonationDTO;
 use App\Exceptions\DonationException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DonationResource;
@@ -20,7 +22,7 @@ class DonationAdminController extends Controller
     public function __construct(DonationServiceContract $donationService)
     {
         $this->donationService = $donationService;
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**

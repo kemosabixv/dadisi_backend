@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\DTOs\CreateRoleDTO;
+use App\DTOs\UpdateRoleDTO;
 use App\Services\Contracts\RoleServiceContract;
 use App\Services\AuditLogService;
 use Spatie\Permission\Models\Role;
@@ -26,7 +28,10 @@ class RoleService implements RoleServiceContract
     public function listRoles(array $filters = []): LengthAwarePaginator
     {
         try {
-            $query = Role::query();
+            $query = Role::query()
+                ->select('roles.*')
+                ->where('guard_name', 'web')
+                ->where('name', '!=', 'member'); // Hide built-in 'member' role
 
             if (!empty($filters['search'])) {
                 $query->where('name', 'like', '%' . $filters['search'] . '%');
@@ -35,6 +40,19 @@ class RoleService implements RoleServiceContract
             if (!empty($filters['include_permissions'])) {
                 $query->with('permissions');
             }
+
+            // Use the morph alias if defined in AppServiceProvider
+            $userModel = \App\Models\User::class;
+            $modelType = \Illuminate\Database\Eloquent\Relations\Relation::getMorphAlias($userModel) ?? $userModel;
+
+            // Use a raw subquery for user counts instead of withCount('users')
+            // This avoids the Spatie Permission package's users() relationship issue
+            $query->addSelect(\Illuminate\Support\Facades\DB::raw('(
+                SELECT COUNT(*)
+                FROM model_has_roles
+                WHERE model_has_roles.role_id = roles.id
+                AND model_has_roles.model_type = \'' . addslashes($modelType) . '\'
+            ) as users_count'));
 
             return $query->latest()->paginate($filters['per_page'] ?? 50);
         } catch (\Exception $e) {
@@ -46,9 +64,10 @@ class RoleService implements RoleServiceContract
     /**
      * Create a new role
      */
-    public function createRole(array $data): Role
+    public function createRole(CreateRoleDTO $dto): Role
     {
         try {
+            $data = $dto->toArray();
             $role = Role::create([
                 'name' => $data['name'],
             ]);
@@ -57,7 +76,7 @@ class RoleService implements RoleServiceContract
 
             return $role;
         } catch (\Exception $e) {
-            Log::error('Failed to create role', ['error' => $e->getMessage(), 'data' => $data]);
+            Log::error('Failed to create role', ['error' => $e->getMessage(), 'data' => $dto->toArray()]);
             throw $e;
         }
     }
@@ -68,7 +87,14 @@ class RoleService implements RoleServiceContract
     public function getRoleDetails(Role $role): array
     {
         try {
-            $usersCount = $role->users()->count();
+            $userModel = \App\Models\User::class;
+            $modelType = \Illuminate\Database\Eloquent\Relations\Relation::getMorphAlias($userModel) ?? $userModel;
+
+            $usersCount = \Illuminate\Support\Facades\DB::table('model_has_roles')
+                ->where('role_id', $role->id)
+                ->where('model_type', $modelType)
+                ->count();
+
             return array_merge($role->load('permissions')->toArray(), ['users_count' => $usersCount]);
         } catch (\Exception $e) {
             Log::error('Failed to fetch role details', ['error' => $e->getMessage(), 'role_id' => $role->id]);
@@ -79,9 +105,14 @@ class RoleService implements RoleServiceContract
     /**
      * Update role
      */
-    public function updateRole(Role $role, array $data): Role
+    public function updateRole(Role $role, UpdateRoleDTO $dto): Role
     {
         try {
+            if ($role->is_immutable) {
+                throw new \Exception("The '{$role->name}' role is a protected system role and cannot be modified.");
+            }
+
+            $data = $dto->toArray();
             $oldValues = $role->only(array_keys($data));
             $role->update($data);
 
@@ -100,6 +131,10 @@ class RoleService implements RoleServiceContract
     public function deleteRole(Role $role): bool
     {
         try {
+            if ($role->is_immutable) {
+                throw new \Exception("The '{$role->name}' role is a protected system role and cannot be deleted.");
+            }
+
             if ($role->users()->exists()) {
                 throw new \Exception('Cannot delete role that has assigned users');
             }
@@ -158,6 +193,11 @@ class RoleService implements RoleServiceContract
     public function removePermissionsFromRole(Role $role, array $permissionNames): array
     {
         try {
+            // Enforcement: staff role MUST have access_admin_panel
+            if ($role->name === 'staff' && in_array('access_admin_panel', $permissionNames)) {
+                throw new \Exception("The 'access_admin_panel' permission is mandatory for the 'staff' role.");
+            }
+
             $oldPermissions = $role->permissions->pluck('name')->toArray();
 
             $role->revokePermissionTo($permissionNames);

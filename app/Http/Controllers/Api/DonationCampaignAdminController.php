@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateDonationCampaignDTO;
+use App\DTOs\UpdateDonationCampaignDTO;
 use App\Exceptions\DonationCampaignException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDonationCampaignRequest;
@@ -9,6 +11,7 @@ use App\Http\Requests\UpdateDonationCampaignRequest;
 use App\Http\Resources\DonationCampaignResource;
 use App\Models\DonationCampaign;
 use App\Services\Contracts\DonationCampaignServiceContract;
+use App\Services\Contracts\MediaServiceContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -19,11 +22,13 @@ use Illuminate\Support\Facades\Log;
 class DonationCampaignAdminController extends Controller
 {
     protected DonationCampaignServiceContract $campaignService;
+    protected MediaServiceContract $mediaService;
 
-    public function __construct(DonationCampaignServiceContract $campaignService)
+    public function __construct(DonationCampaignServiceContract $campaignService, MediaServiceContract $mediaService)
     {
         $this->campaignService = $campaignService;
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->mediaService = $mediaService;
+        $this->middleware(['auth', 'admin']);
     }
 
     /**
@@ -95,13 +100,19 @@ class DonationCampaignAdminController extends Controller
     {
         try {
             $data = $request->validated();
-            
+
             if ($request->hasFile('hero_image')) {
-                $path = $request->file('hero_image')->store('campaigns', 'public');
-                $data['hero_image_path'] = $path;
+                $media = $this->mediaService->uploadMedia(
+                    $request->user(),
+                    $request->file('hero_image'),
+                    ['visibility' => 'private']
+                );
+                $data['featured_media_id'] = $media->id;
+                $data['hero_image_path'] = $media->file_path;
             }
 
-            $campaign = $this->campaignService->createCampaign($request->user(), $data);
+            $dto = CreateDonationCampaignDTO::fromArray(array_merge($data, ['created_by' => $request->user()->id]));
+            $campaign = $this->campaignService->createCampaign($request->user(), $dto);
 
             return response()->json([
                 'success' => true,
@@ -179,15 +190,22 @@ class DonationCampaignAdminController extends Controller
     public function update(UpdateDonationCampaignRequest $request, string $campaign): JsonResponse
     {
         try {
-            $campaign = DonationCampaign::withTrashed()->where('slug', $campaign)->firstOrFail();
+            $campaignModel = DonationCampaign::withTrashed()->where('slug', $campaign)->firstOrFail();
+            // ...existing code...
             $data = $request->validated();
 
             if ($request->hasFile('hero_image')) {
-                $path = $request->file('hero_image')->store('campaigns', 'public');
-                $data['hero_image_path'] = $path;
+                $media = $this->mediaService->uploadMedia(
+                    $request->user(),
+                    $request->file('hero_image'),
+                    ['visibility' => 'private']
+                );
+                $data['featured_media_id'] = $media->id;
+                $data['hero_image_path'] = $media->file_path;
             }
 
-            $updatedCampaign = $this->campaignService->updateCampaign($request->user(), $campaign, $data);
+            $dto = UpdateDonationCampaignDTO::fromArray($data);
+            $updatedCampaign = $this->campaignService->updateCampaign($request->user(), $campaignModel, $dto);
 
             return response()->json([
                 'success' => true,

@@ -15,7 +15,7 @@ class AdminSupportTicketController extends Controller
 {
     public function __construct(private SupportTicketServiceContract $supportService)
     {
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**

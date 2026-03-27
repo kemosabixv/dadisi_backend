@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateCountyDTO;
+use App\DTOs\UpdateCountyDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreCountyRequest;
+use App\Http\Requests\UpdateCountyRequest;
+use App\Http\Resources\CountyResource;
 use App\Models\County;
 use App\Services\Contracts\CountyServiceContract;
 use Illuminate\Http\JsonResponse;
@@ -83,22 +88,15 @@ class CountyController extends Controller
      *   "message": "County created successfully"
      * }
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreCountyRequest $request): JsonResponse
     {
         try {
-            $this->authorize('create', County::class);
-            
-            $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:counties,name',
-            ]);
-            
-            $county = $this->countyService->createCounty($validated);
-            
-            return response()->json([
-                'success' => true,
-                'data' => $county,
-                'message' => 'County created successfully',
-            ], 201);
+            $dto = CreateCountyDTO::fromArray($request->validated());
+            $county = $this->countyService->createCounty($dto);
+
+            return (new CountyResource($county))
+                ->response()
+                ->setStatusCode(201);
         } catch (\Exception $e) {
             Log::error('Failed to create county', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Failed to create county'], 500);
@@ -121,22 +119,13 @@ class CountyController extends Controller
      *   "message": "County updated successfully"
      * }
      */
-    public function update(Request $request, County $county): JsonResponse
+    public function update(UpdateCountyRequest $request, County $county): JsonResponse
     {
         try {
-            $this->authorize('update', $county);
-            
-            $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:counties,name,' . $county->id,
-            ]);
-            
-            $updated = $this->countyService->updateCounty($county, $validated);
-            
-            return response()->json([
-                'success' => true,
-                'data' => $updated,
-                'message' => 'County updated successfully',
-            ]);
+            $dto = UpdateCountyDTO::fromArray($request->validated());
+            $updated = $this->countyService->updateCounty($county, $dto);
+
+            return (new CountyResource($updated))->response();
         } catch (\Exception $e) {
             Log::error('Failed to update county', ['error' => $e->getMessage(), 'county_id' => $county->id]);
             return response()->json(['success' => false, 'message' => 'Failed to update county'], 500);

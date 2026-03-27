@@ -39,7 +39,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -47,7 +46,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
 
         PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -61,7 +59,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         $activeSubscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -70,7 +67,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
 
         $expiredSubscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now()->subMonth(),
             'ends_at' => now()->subDay(),
@@ -119,7 +115,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         $subscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -133,7 +128,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         $subscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -147,7 +141,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         $subscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -171,7 +164,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         $activeSubscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now()->subDay(),
             'ends_at' => now()->addMonth(),
@@ -180,7 +172,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
 
         $expiredSubscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now()->subMonth(),
             'ends_at' => now()->subDay(),
@@ -196,7 +187,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         $expiredSubscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now()->subMonth(),
             'ends_at' => now()->subDay(),
@@ -205,7 +195,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
 
         $activeSubscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -238,7 +227,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         $subscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -259,7 +247,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -369,7 +356,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         $subscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -391,7 +377,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         $subscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -436,7 +421,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
         $enhancement = SubscriptionEnhancement::create([
             'subscription_id' => PlanSubscription::create([
                 'subscriber_id' => $this->user->id,
-                'subscriber_type' => User::class,
                 'plan_id' => $this->plan->id,
                 'starts_at' => now(),
                 'ends_at' => now()->addMonth(),
@@ -468,7 +452,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
 
         $subscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $freePlan->id,
             'starts_at' => now(),
             'ends_at' => now()->addYear(),
@@ -483,7 +466,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
     {
         $oldSubscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now()->subMonth(),
             'ends_at' => now()->subDay(),
@@ -492,7 +474,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
 
         $newSubscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => now(),
             'ends_at' => now()->addMonth(),
@@ -511,7 +492,6 @@ class SubscriptionCoreUnitTest extends BaseTestCase
         $now = now();
         $subscription = PlanSubscription::create([
             'subscriber_id' => $this->user->id,
-            'subscriber_type' => User::class,
             'plan_id' => $this->plan->id,
             'starts_at' => $now,
             'ends_at' => $now->copy()->addMonth(),

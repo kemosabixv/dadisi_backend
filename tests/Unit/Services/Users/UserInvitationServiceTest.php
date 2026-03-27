@@ -133,10 +133,11 @@ class UserInvitationServiceTest extends TestCase
         ];
 
         // Act
-        $count = $this->invitationService->bulkInvite($this->actor, $invitationsData);
+        $results = $this->invitationService->bulkInvite($this->actor, $invitationsData);
 
         // Assert
-        $this->assertEquals(3, $count);
+        $this->assertIsArray($results);
+        $this->assertCount(3, $results['success'] ?? []);
         $this->assertDatabaseHas('user_invitations', ['email' => 'bulk1@example.com']);
         $this->assertDatabaseHas('user_invitations', ['email' => 'bulk2@example.com']);
         $this->assertDatabaseHas('user_invitations', ['email' => 'bulk3@example.com']);

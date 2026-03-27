@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\PostException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
 use App\Services\Contracts\PostServiceContract;
-use App\Exceptions\PostException;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -22,13 +22,14 @@ class PostAdminController extends Controller
     public function __construct(PostServiceContract $postService)
     {
         $this->postService = $postService;
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**
      * List all posts
-     * 
+     *
      * @group Admin - Blog Posts
+     *
      * @authenticated
      */
     public function index(Request $request): JsonResponse
@@ -50,20 +51,22 @@ class PostAdminController extends Controller
                     'current_page' => $posts->currentPage(),
                     'last_page' => $posts->lastPage(),
                 ],
-                'message' => 'Posts retrieved successfully'
+                'message' => 'Posts retrieved successfully',
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         } catch (\Exception $e) {
             Log::error('PostAdminController index failed', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to retrieve posts'], 500);
         }
     }
 
     /**
      * Get post metadata for forms
-     * 
+     *
      * @group Admin - Blog Posts
+     *
      * @authenticated
      */
     public function create(): JsonResponse
@@ -71,34 +74,43 @@ class PostAdminController extends Controller
         try {
             $this->authorize('create', Post::class);
             $metadata = $this->postService->getPostMetadata();
+
             return response()->json([
                 'success' => true,
-                'data' => $metadata
+                'data' => $metadata,
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         } catch (\Exception $e) {
             Log::error('PostAdminController create failed', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to retrieve metadata'], 500);
         }
     }
 
     /**
      * Store post
-     * 
+     *
      * @group Admin - Blog Posts
+     *
      * @authenticated
      */
     public function store(StorePostRequest $request): JsonResponse
     {
         try {
             $this->authorize('create', Post::class);
-            $post = $this->postService->createPost($request->user(), $request->validated());
+            $data = $request->validated();
+            $data['user_id'] = auth()->id();
+            $data['county_id'] = $data['county_id'] ?? auth()->user()->member_profile?->county_id ?? 1;
+            $data['body'] = $data['content'] ?? $data['body'] ?? '';
+
+            $dto = \App\DTOs\CreatePostDTO::fromArray($data);
+            $post = $this->postService->createPost($request->user(), $dto);
 
             return response()->json([
                 'success' => true,
                 'data' => $post,
-                'message' => 'Post created successfully'
+                'message' => 'Post created successfully',
             ], 201);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
@@ -106,14 +118,16 @@ class PostAdminController extends Controller
             return $e->render();
         } catch (\Exception $e) {
             Log::error('PostAdminController store failed', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to create post'], 500);
         }
     }
 
     /**
      * Show post
-     * 
+     *
      * @group Admin - Blog Posts
+     *
      * @authenticated
      */
     public function show(Post $post): JsonResponse
@@ -124,52 +138,58 @@ class PostAdminController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $post
+                'data' => $post,
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         } catch (\Exception $e) {
             Log::error('PostAdminController show failed', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to retrieve post'], 500);
         }
     }
 
     /**
      * Get Edit Data
-     * 
+     *
      * @group Admin - Blog Posts
+     *
      * @authenticated
      */
     public function edit(Post $post): JsonResponse
     {
         try {
             $this->authorize('update', $post);
-            
+
             $metadata = $this->postService->getPostMetadata();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'post' => $post->load(['categories', 'tags', 'media']),
-                    'metadata' => $metadata
-                ]
+                    'metadata' => $metadata,
+                ],
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         } catch (\Exception $e) {
             Log::error('PostAdminController edit failed', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to retrieve metadata'], 500);
         }
     }
 
     /**
      * Update post
-     * 
+     *
      * Update an existing blog post.
      *
      * @group Admin - Blog Posts
+     *
      * @authenticated
+     *
      * @urlParam post string required The post slug. Example: my-first-blog-post
+     *
      * @responseFile status=200 storage/responses/post-update.json
      */
     public function update(UpdatePostRequest $request, Post $post): JsonResponse
@@ -177,12 +197,13 @@ class PostAdminController extends Controller
         try {
             $this->authorize('update', $post);
 
-            $updatedPost = $this->postService->updatePost($request->user(), $post, $request->validated());
+            $dto = \App\DTOs\UpdatePostDTO::fromArray($request->validated());
+            $updatedPost = $this->postService->updatePost($request->user(), $post, $dto);
 
             return response()->json([
                 'success' => true,
                 'data' => $updatedPost,
-                'message' => 'Post updated successfully'
+                'message' => 'Post updated successfully',
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
@@ -190,14 +211,16 @@ class PostAdminController extends Controller
             return $e->render();
         } catch (\Exception $e) {
             Log::error('PostAdminController update failed', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to update post'], 500);
         }
     }
 
     /**
      * Delete post
-     * 
+     *
      * @group Admin - Blog Posts
+     *
      * @authenticated
      */
     public function destroy(Post $post): JsonResponse
@@ -209,7 +232,7 @@ class PostAdminController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Post moved to trash'
+                'message' => 'Post moved to trash',
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
@@ -217,14 +240,16 @@ class PostAdminController extends Controller
             return $e->render();
         } catch (\Exception $e) {
             Log::error('PostAdminController destroy failed', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to delete post'], 500);
         }
     }
 
     /**
      * Restore post
-     * 
+     *
      * @group Admin - Blog Posts
+     *
      * @authenticated
      */
     public function restore(Post $post): JsonResponse
@@ -237,7 +262,7 @@ class PostAdminController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $restoredPost,
-                'message' => 'Post restored successfully'
+                'message' => 'Post restored successfully',
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
@@ -245,14 +270,16 @@ class PostAdminController extends Controller
             return $e->render();
         } catch (\Exception $e) {
             Log::error('PostAdminController restore failed', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to restore post'], 500);
         }
     }
 
     /**
      * Force delete post
-     * 
+     *
      * @group Admin - Blog Posts
+     *
      * @authenticated
      */
     public function forceDelete(Post $post): JsonResponse
@@ -264,7 +291,7 @@ class PostAdminController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Post permanently deleted'
+                'message' => 'Post permanently deleted',
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
@@ -272,14 +299,16 @@ class PostAdminController extends Controller
             return $e->render();
         } catch (\Exception $e) {
             Log::error('PostAdminController forceDelete failed', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to permanently delete post'], 500);
         }
     }
 
     /**
      * Publish post
-     * 
+     *
      * @group Admin - Blog Posts
+     *
      * @authenticated
      */
     public function publish(Post $post): JsonResponse
@@ -292,7 +321,7 @@ class PostAdminController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $publishedPost,
-                'message' => 'Post published successfully'
+                'message' => 'Post published successfully',
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
@@ -300,14 +329,16 @@ class PostAdminController extends Controller
             return $e->render();
         } catch (\Exception $e) {
             Log::error('PostAdminController publish failed', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to publish post'], 500);
         }
     }
 
     /**
      * Unpublish post
-     * 
+     *
      * @group Admin - Blog Posts
+     *
      * @authenticated
      */
     public function unpublish(Post $post): JsonResponse
@@ -320,7 +351,7 @@ class PostAdminController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $unpublishedPost,
-                'message' => 'Post reverted to draft'
+                'message' => 'Post reverted to draft',
             ]);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
@@ -328,6 +359,7 @@ class PostAdminController extends Controller
             return $e->render();
         } catch (\Exception $e) {
             Log::error('PostAdminController unpublish failed', ['error' => $e->getMessage()]);
+
             return response()->json(['success' => false, 'message' => 'Failed to unpublish post'], 500);
         }
     }

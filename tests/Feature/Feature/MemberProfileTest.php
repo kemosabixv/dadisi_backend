@@ -48,7 +48,7 @@ class MemberProfileTest extends TestCase
         ];
 
         // Authenticate user
-        $this->actingAs($user, 'sanctum');
+        $this->actingAs($user);
 
         // Update profile using PUT endpoint
         $response = $this->putJson('/api/member-profiles/' . $profile->id, $updateData);
@@ -106,7 +106,7 @@ class MemberProfileTest extends TestCase
         ]);
 
         // Authenticate as admin
-        $this->actingAs($admin, 'sanctum');
+        $this->actingAs($admin);
 
         // List all profiles (admin permission)
         $response = $this->getJson('/api/member-profiles');
@@ -143,7 +143,7 @@ class MemberProfileTest extends TestCase
         $user = User::factory()->create();
 
         // Authenticate as regular user
-        $this->actingAs($user, 'sanctum');
+        $this->actingAs($user);
 
         // Try to list all profiles (should fail)
         $response = $this->getJson('/api/member-profiles');
@@ -159,7 +159,7 @@ class MemberProfileTest extends TestCase
         $user = User::factory()->create();
 
         // Authenticate user
-        $this->actingAs($user, 'sanctum');
+        $this->actingAs($user);
 
         // Try to create profile without required county
         $response = $this->postJson('/api/member-profiles', [
@@ -179,7 +179,7 @@ class MemberProfileTest extends TestCase
         $user = User::factory()->create();
 
         // Authenticate user
-        $this->actingAs($user, 'sanctum');
+        $this->actingAs($user);
 
         // Get counties
         $response = $this->getJson('/api/counties');
@@ -218,7 +218,7 @@ class MemberProfileTest extends TestCase
         ]);
 
         // Authenticate as admin
-        $this->actingAs($admin, 'sanctum');
+        $this->actingAs($admin);
 
         // Update the profile as admin
         $response = $this->putJson("/api/member-profiles/{$profile->id}", [
@@ -258,7 +258,7 @@ class MemberProfileTest extends TestCase
         ]);
 
         // Authenticate as admin
-        $this->actingAs($admin, 'sanctum');
+        $this->actingAs($admin);
 
         // Delete the user (should cascade to profile)
         $response = $this->deleteJson("/api/admin/users/{$user->id}");

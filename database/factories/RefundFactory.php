@@ -13,7 +13,7 @@ class RefundFactory extends Factory
     public function definition(): array
     {
         return [
-            'refundable_type' => 'App\\Models\\EventOrder',
+            'refundable_type' => 'event_order',
             'refundable_id' => 1,
             'payment_id' => Payment::factory(),
             'amount' => $this->faker->randomFloat(2, 100, 1000),

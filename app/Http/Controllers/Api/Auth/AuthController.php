@@ -14,9 +14,9 @@ use App\Models\MemberProfile;
 use App\Models\Plan;
 use App\Models\PlanSubscription;
 use App\Models\SubscriptionEnhancement;
-use Laravel\Sanctum\PersonalAccessToken;
 use App\Notifications\ResetPasswordNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 /**
@@ -55,7 +55,6 @@ class AuthController extends Controller
      *          "menu": []
      *      },
      *      "member_profile": {
-     *          "is_staff": false,
      *          "first_name": "Jane",
      *          "last_name": "Doe"
      *      }
@@ -74,6 +73,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => ['required', 'min:8', 'confirmed', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d\S]{8,}$/'],
             'password_confirmation' => 'required|string',
+            'terms_accepted' => 'required|accepted',
         ], [
             'username.required' => 'The username field is required.',
             'username.unique' => 'This username is already taken.',
@@ -81,6 +81,8 @@ class AuthController extends Controller
             'password.min' => 'The password field must be at least 8 characters.',
             'password.confirmed' => 'The password confirmation does not match.',
             'password.regex' => 'The password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.',
+            'terms_accepted.required' => 'You must accept the Terms & Conditions.',
+            'terms_accepted.accepted' => 'You must accept the Terms & Conditions.',
         ]);
 
         $validatedData['password'] = Hash::make($validatedData['password']);
@@ -107,7 +109,7 @@ class AuthController extends Controller
                 'last_name' => '',
                 'county_id' => null,
                 'plan_id' => $freePlan?->id,
-                'terms_accepted' => false,
+                'terms_accepted' => true,
                 'marketing_consent' => false,
             ]);
 
@@ -121,7 +123,6 @@ class AuthController extends Controller
                     'slug' => $freePlan->slug . '-' . $user->id . '-' . time(),
                     'starts_at' => now(),
                     'ends_at' => null, // Free plan never expires
-                    'trial_ends_at' => null,
                 ]);
 
                 \Log::info('[Signup] Subscription created', [
@@ -169,24 +170,16 @@ class AuthController extends Controller
     }
 
     /**
-     * Login
-     *
-     * Authenticates a user using their email and password, returning a new API access token.
-     * Supports a "remember me" option to extend the token's expiration time (e.g., to 30 days).
-     *
      * @bodyParam email string required The registered email address. Example: curluser@example.com
      * @bodyParam password string required The user's password. Example: Pass123!@#
-     * @bodyParam remember_me boolean Optional. If true, extends token validity. Example: true
+     * @bodyParam remember_me boolean Optional. If true, extends session validity. Example: true
      *
      * @response 200 {
      *  "user": {
      *      "id": 2,
      *      "username": "jane_doe",
-     *      "email": "jane.doe@example.com",
-     *      "created_at": "2025-01-15T12:00:00.000000Z",
-     *      "updated_at": "2025-01-15T12:00:00.000000Z"
+     *      "email": "jane.doe@example.com"
      *  },
-     *  "access_token": "2|zIF5K7csJqxfM9...",
      *  "email_verified": true
      * }
      * @response 200 {
@@ -207,23 +200,20 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        //remember me functionality
-        if ($request->filled('remember_me')) {
-            $rememberMe = $request->input('remember_me');
-        } else {
-            $rememberMe = false;
-        }
+        $rememberMe = $request->boolean('remember_me', false);
 
-        $user = User::where('email', $request->email)->first();
-
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (!Auth::attempt($request->only('email', 'password'), $rememberMe)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        // Check if 2FA is enabled - require TOTP verification before issuing token
+        $user = Auth::user();
+
+        // Check if 2FA is enabled
         if ($user->two_factor_enabled) {
+            // Logout immediately if 2FA is required, session will be established after TOTP
+            Auth::logout();
             return response()->json([
                 'requires_2fa' => true,
                 'email' => $user->email,
@@ -231,26 +221,15 @@ class AuthController extends Controller
             ], 200);
         }
 
-        // Create token and optionally set per-token expiration when remember_me is true.
-        $tokenResult = $user->createToken($request->email);
-        $plainText = $tokenResult->plainTextToken;
-
-        // If remember_me was requested, set expires_at on the PersonalAccessToken model.
-        if ($rememberMe) {
-            try {
-                $accessTokenModel = $tokenResult->accessToken ?? $tokenResult->accessToken ?? null;
-                if ($accessTokenModel) {
-                    $accessTokenModel->expires_at = now()->addDays(30);
-                    $accessTokenModel->save();
-                }
-            } catch (\Throwable $e) {
-                // Don't fail login if we can't persist expires_at; token will still work with default expiration.
-            }
+        if ($request->hasSession()) {
+            $request->session()->regenerate();
         }
+
+        // Eager load relations for UI hydration
+        $user->load(['memberProfile', 'roles']);
 
         return response()->json([
             'user' => new \App\Http\Resources\SecureUserResource($user),
-            'access_token' => $plainText,
             'email_verified' => !is_null($user->email_verified_at)
         ], 200);
     }
@@ -258,59 +237,27 @@ class AuthController extends Controller
     /**
      * Logout
      *
-     * Revokes the authenticated user's current API token.
-     * This effectively invalidates the current session. The endpoint attempts to cleanup other tokens for the user as well where possible.
+     * Invalidate the authenticated user's session.
      *
-    * @authenticated
+     * @authenticated
     * @response 200 {
     *   // No content returned on successful logout. HTTP 200 OK with empty body.
     * }
      */
     public function logout(Request $request) {
-        // Revoke the token used in this request (logout single device/session).
-        // Use multiple deletion strategies to ensure the token is removed in tests and in all environments.
-        try {
-            $bearer = $request->bearerToken();
-
-            // 1) If we have an authenticated user and a current access token, delete it.
-            if ($request->user()) {
-                $current = $request->user()->currentAccessToken();
-                if ($current) {
-                    $current->delete();
-                }
-            }
-
-            // 2) Try to find and delete the token model using the bearer token plaintext.
-            if (!empty($bearer)) {
-                try {
-                    $tokenModel = PersonalAccessToken::findToken($bearer);
-                    if ($tokenModel) {
-                        $tokenModel->delete();
-                    }
-                } catch (\Throwable $_) {
-                    // ignore lookup failures
-                }
-
-                // 3) As a further fallback, parse the id portion ("{id}|{token}") and delete by id.
-                if (str_contains($bearer, '|')) {
-                    [$id] = explode('|', $bearer, 2);
-                    $id = (int) $id;
-                    if ($id > 0) {
-                        try { PersonalAccessToken::where('id', $id)->delete(); } catch (\Throwable $_) {}
-                    }
-                }
-            }
-
-            // 4) Final safeguard: delete any remaining tokens for the user to avoid leaving an active token.
-            if ($request->user()) {
-                try { $request->user()->tokens()->delete(); } catch (\Throwable $_) {}
-            }
-        } catch (\Throwable $e) {
-            // best-effort cleanup: attempt to delete tokens for the user if possible
-            try { if ($request->user()) { $request->user()->tokens()->delete(); } } catch (\Throwable $_) {}
+        if (Auth::user()) {
+            Auth::guard('web')->logout();
         }
 
-        return response()->json(null, 200);
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully logged out'
+        ], 200);
     }
 
     /**
@@ -333,16 +280,6 @@ class AuthController extends Controller
      * }
      */
     public function getAuthenticatedUser(Request $request) {
-        // Additional check: ensure the bearer token used in this request still maps to a token model.
-        // This makes token revocation deterministic in tests where tokens are deleted directly.
-        $bearer = $request->bearerToken();
-        if ($bearer) {
-            $tokenModel = PersonalAccessToken::findToken($bearer);
-            if (! $tokenModel) {
-                return response()->json(null, 401);
-            }
-        }
-
         return $request->user();
     }
 
@@ -373,9 +310,9 @@ class AuthController extends Controller
             return response()->json(['message' => 'We have emailed your password reset link!'], 200);
         }
 
-        $token = Password::createToken($user);
+        $resetToken = Password::createToken($user);
 
-        $user->notify(new ResetPasswordNotification($token));
+        $user->notify(new ResetPasswordNotification($resetToken));
 
         return response()->json(['message' => 'We have emailed your password reset link!'], 200);
     }
@@ -544,6 +481,9 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
-        return new \App\Http\Resources\SecureUserResource($request->user());
+        $user = $request->user();
+        $user->load(['memberProfile', 'roles']);
+        
+        return new \App\Http\Resources\SecureUserResource($user);
     }
 }

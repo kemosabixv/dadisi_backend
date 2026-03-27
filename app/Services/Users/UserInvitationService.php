@@ -52,19 +52,30 @@ class UserInvitationService implements UserInvitationServiceContract
      *
      * @param Authenticatable $actor The user performing the action
      * @param array $invitations Array of invitation data
-     * @return int Count of invited users
+     * @return array Results summary
      *
      * @throws \App\Exceptions\UserException
      */
-    public function bulkInvite(Authenticatable $actor, array $invitations): int
+    public function bulkInvite(Authenticatable $actor, array $invitations): array
     {
-        $count = 0;
+        $results = [
+            'success' => [],
+            'failed' => []
+        ];
+
         foreach ($invitations as $data) {
-            $this->invite($actor, $data);
-            $count++;
+            try {
+                $invitation = $this->invite($actor, $data);
+                $results['success'][] = $invitation['email'];
+            } catch (\Exception $e) {
+                $results['failed'][] = [
+                    'email' => $data['email'] ?? 'unknown',
+                    'reason' => $e->getMessage()
+                ];
+            }
         }
 
-        return $count;
+        return $results;
     }
 
     /**
@@ -72,7 +83,7 @@ class UserInvitationService implements UserInvitationServiceContract
      *
      * @param Authenticatable $actor The user performing the action
      * @param string $email User's email
-     * @param array $roles Optional array of role names to assign
+     * @param array $roles Optional array of role names to assign (ignored, forced to member)
      * @return Invitation The created invitation
      *
      * @throws \App\Exceptions\UserException
@@ -84,27 +95,29 @@ class UserInvitationService implements UserInvitationServiceContract
             throw new \App\Exceptions\UserException("User with this email already exists", 422);
         }
 
-        return DB::transaction(function () use ($actor, $email, $roles) {
+        // Force role to 'member' as per requirements
+        $assignedRoles = ['member'];
+
+        return DB::transaction(function () use ($assignedRoles, $actor, $email) {
             try {
                 // Check for existing pending invitation
                 Invitation::where('email', $email)
                     ->whereNull('accepted_at')
-                    ->where('expires_at', '>', now())
                     ->delete();
 
                 // Create invitation
                 $invitation = Invitation::create([
                     'email' => $email,
                     'token' => Str::random(64),
-                    'roles' => $roles,
+                    'roles' => $assignedRoles,
                     'inviter_id' => $actor->getAuthIdentifier(),
-                    'expires_at' => now()->addDays(2),
+                    'expires_at' => now()->addHours(72),
                 ]);
 
                 // Log audit trail
                 $this->logAudit($actor, 'create_invitation', $invitation);
 
-                Log::info("Invitation created for {$email} by {$actor->getAuthIdentifier()} with roles: " . implode(',', $roles));
+                Log::info("Invitation created for {$email} by {$actor->getAuthIdentifier()} with roles: " . implode(',', $assignedRoles));
 
                 // Send invitation email
                 try {
@@ -134,8 +147,8 @@ class UserInvitationService implements UserInvitationServiceContract
     public function sendInvitationEmail(Invitation $invitation): bool
     {
         try {
-            // TODO: Implement email sending via Mailable with signed URL or token link
-            Log::info("Invitation email would be sent to {$invitation->email} with token {$invitation->token}");
+            \Illuminate\Support\Facades\Mail::to($invitation->email)
+                ->queue(new \App\Mail\UserInvitationMail($invitation->token));
 
             return true;
         } catch (\Exception $e) {

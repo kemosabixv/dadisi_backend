@@ -36,6 +36,9 @@ class StoreMediaRequest extends FormRequest
             'attached_to' => ['nullable', 'string', 'max:50'],
             'attached_to_id' => ['nullable', 'integer'],
             'temporary' => ['sometimes', 'boolean'],
+            'root_type' => ['nullable', 'string', 'in:personal,public'],
+            'path' => ['nullable', 'array'],
+            'visibility' => ['nullable', 'string', 'in:public,private,shared'],
         ];
     }
 

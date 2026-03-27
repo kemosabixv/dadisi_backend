@@ -34,8 +34,6 @@ class SamplePromoCodesSeeder extends Seeder
                     'discount_value' => 15,
                     'usage_limit' => 20,
                     'used_count' => rand(0, 5),
-                    'valid_from' => $now->copy()->subWeek(),
-                    'valid_until' => $event->starts_at->copy()->subDays(3),
                     'is_active' => true,
                 ],
                 [
@@ -44,8 +42,6 @@ class SamplePromoCodesSeeder extends Seeder
                     'discount_value' => 200,
                     'usage_limit' => 10,
                     'used_count' => rand(0, 3),
-                    'valid_from' => $now->copy()->subWeek(),
-                    'valid_until' => $event->starts_at,
                     'is_active' => true,
                 ],
             ];
@@ -58,8 +54,6 @@ class SamplePromoCodesSeeder extends Seeder
                         'discount_value' => $codeData['discount_value'],
                         'usage_limit' => $codeData['usage_limit'],
                         'used_count' => $codeData['used_count'],
-                        'valid_from' => $codeData['valid_from'],
-                        'valid_until' => $codeData['valid_until'],
                         'is_active' => $codeData['is_active'],
                     ]
                 );

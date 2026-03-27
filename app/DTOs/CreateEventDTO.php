@@ -24,13 +24,13 @@ class CreateEventDTO
         public ?float $price = null,
         public string $currency = 'KES',
         public bool $waitlist_enabled = false,
-        public ?int $waitlist_capacity = null,
         public ?string $status = null,
         public ?array $tag_ids = null,
         public ?array $tickets = null,
         public ?array $speakers = null,
         public ?int $featured_media_id = null,
         public ?array $gallery_media_ids = null,
+        public ?array $promo_codes = null,
     ) {}
 
     /**
@@ -55,13 +55,13 @@ class CreateEventDTO
             price: isset($data['price']) ? (float)$data['price'] : null,
             currency: $data['currency'] ?? 'KES',
             waitlist_enabled: $data['waitlist_enabled'] ?? false,
-            waitlist_capacity: $data['waitlist_capacity'] ?? null,
             status: $data['status'] ?? null,
             tag_ids: $data['tag_ids'] ?? null,
             tickets: $data['tickets'] ?? null,
             speakers: $data['speakers'] ?? null,
             featured_media_id: $data['featured_media_id'] ?? null,
             gallery_media_ids: $data['gallery_media_ids'] ?? null,
+            promo_codes: $data['promo_codes'] ?? null,
         );
     }
 
@@ -87,13 +87,13 @@ class CreateEventDTO
             'price' => $this->price,
             'currency' => $this->currency,
             'waitlist_enabled' => $this->waitlist_enabled,
-            'waitlist_capacity' => $this->waitlist_capacity,
             'status' => $this->status,
             'tag_ids' => $this->tag_ids,
             'tickets' => $this->tickets,
             'speakers' => $this->speakers,
             'featured_media_id' => $this->featured_media_id,
             'gallery_media_ids' => $this->gallery_media_ids,
+            'promo_codes' => $this->promo_codes,
         ];
     }
 }

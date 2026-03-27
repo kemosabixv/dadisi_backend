@@ -17,7 +17,7 @@ class ForumStatsController extends Controller
     public function __construct(
         private ForumServiceContract $forumService
     ) {
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**

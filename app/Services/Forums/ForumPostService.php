@@ -2,6 +2,8 @@
 
 namespace App\Services\Forums;
 
+use App\DTOs\CreateForumPostDTO;
+use App\DTOs\UpdateForumPostDTO;
 use App\Exceptions\ForumException;
 use App\Models\AuditLog;
 use App\Models\ForumPost;
@@ -28,7 +30,7 @@ class ForumPostService implements ForumPostServiceContract
     public function getPost(int $id): ForumPost
     {
         try {
-            return ForumPost::with(['user', 'thread'])->findOrFail($id);
+            return ForumPost::with(['user.memberProfile', 'thread'])->findOrFail($id);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             throw ForumException::postNotFound((string)$id);
         }
@@ -37,7 +39,7 @@ class ForumPostService implements ForumPostServiceContract
     /**
      * @inheritDoc
      */
-    public function createPost(Authenticatable $author, ForumThread $thread, array $data): ForumPost
+    public function createPost(Authenticatable $author, ForumThread $thread, CreateForumPostDTO $dto): ForumPost
     {
         // Check feature-gating quota for non-staff users
         if ($author instanceof User && !$author->isStaffMember()) {
@@ -49,7 +51,8 @@ class ForumPostService implements ForumPostServiceContract
         }
 
         try {
-            return DB::transaction(function () use ($author, $thread, $data) {
+            return DB::transaction(function () use ($author, $thread, $dto) {
+                $data = $dto->toArray();
                 $post = $thread->posts()->create([
                     'user_id' => $author->getAuthIdentifier(),
                     'content' => $data['content'],
@@ -68,7 +71,7 @@ class ForumPostService implements ForumPostServiceContract
                     'author_id' => $author->getAuthIdentifier(),
                 ]);
 
-                return $post->load('user');
+                return $post->load('user.memberProfile');
             });
         } catch (ForumException $e) {
             throw $e;
@@ -86,24 +89,22 @@ class ForumPostService implements ForumPostServiceContract
     /**
      * @inheritDoc
      */
-    public function updatePost(Authenticatable $actor, ForumPost $post, array $data): ForumPost
+    public function updatePost(Authenticatable $actor, ForumPost $post, UpdateForumPostDTO $dto): ForumPost
     {
         try {
-            $post->update([
-                'content' => $data['content'],
-                'is_edited' => true,
-            ]);
+            $data = $dto->toArray();
+            $data['is_edited'] = true;
+            
+            $post->update($data);
 
-            $this->logAudit($actor, 'updated_post', ForumPost::class, $post->id, [
-                'content' => $data['content'],
-            ]);
+            $this->logAudit($actor, 'updated_post', ForumPost::class, $post->id, $data);
 
             Log::info('Forum post updated', [
                 'post_id' => $post->id,
                 'updated_by' => $actor->getAuthIdentifier(),
             ]);
 
-            return $post->fresh('user');
+            return $post->fresh('user.memberProfile');
         } catch (\Exception $e) {
             throw ForumException::postUpdateFailed($e->getMessage());
         }
@@ -142,7 +143,7 @@ class ForumPostService implements ForumPostServiceContract
     public function getThreadPosts(ForumThread $thread, int $perPage = 20): LengthAwarePaginator
     {
         return $thread->posts()
-            ->with('user:id,username,profile_picture_path')
+            ->with('user.memberProfile')
             ->oldest()
             ->paginate($perPage);
     }

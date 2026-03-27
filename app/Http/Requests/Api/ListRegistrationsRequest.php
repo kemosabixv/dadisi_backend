@@ -18,7 +18,7 @@ class ListRegistrationsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('admin');
+        return auth()->check() && \App\Support\AdminAccessResolver::canAccessAdmin(auth()->user());
     }
 
     /**

@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateForumThreadDTO;
+use App\DTOs\UpdateForumThreadDTO;
 use App\Exceptions\ForumException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreForumThreadRequest;
 use App\Http\Requests\Api\UpdateForumThreadRequest;
+use App\Http\Resources\ForumThreadResource;
 use App\Models\ForumThread;
 use App\Services\Contracts\ForumServiceContract;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -19,7 +22,7 @@ class ForumThreadController extends Controller
     public function __construct(
         private ForumServiceContract $threadService
     ) {
-        $this->middleware('auth:sanctum')->except(['index', 'show']);
+        $this->middleware('auth')->except(['index', 'show']);
     }
 
     /**
@@ -128,14 +131,10 @@ class ForumThreadController extends Controller
         try {
             $this->authorize('create', ForumThread::class);
      
-            $validated = $request->validated();
-            $thread = $this->threadService->createThread(auth()->user(), $validated);
+            $dto = CreateForumThreadDTO::fromArray($request->validated());
+            $thread = $this->threadService->createThread(auth()->user(), $dto);
      
-            return response()->json([
-                'success' => true,
-                'data' => $thread,
-                'message' => 'Thread created successfully.',
-            ], 201);
+            return (new ForumThreadResource($thread))->response()->setStatusCode(201);
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'You are not authorized to create threads.'], 403);
         } catch (ForumException $e) {
@@ -176,13 +175,10 @@ class ForumThreadController extends Controller
                 }
             }
      
-            $updatedThread = $this->threadService->updateThread(auth()->user(), $thread, $validated);
+            $dto = UpdateForumThreadDTO::fromArray($validated);
+            $updatedThread = $this->threadService->updateThread(auth()->user(), $thread, $dto);
      
-            return response()->json([
-                'success' => true,
-                'data' => $updatedThread,
-                'message' => 'Thread updated successfully.',
-            ]);
+            return (new ForumThreadResource($updatedThread))->response();
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'You are not authorized to update this thread.'], 403);
         } catch (ForumException $e) {

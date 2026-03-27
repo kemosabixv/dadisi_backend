@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateForumPostDTO;
+use App\DTOs\UpdateForumPostDTO;
 use App\Exceptions\ForumException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreForumPostRequest;
 use App\Http\Requests\Api\UpdateForumPostRequest;
+use App\Http\Resources\ForumPostResource;
 use App\Models\ForumPost;
 use App\Models\ForumThread;
 use App\Services\Contracts\ForumPostServiceContract;
@@ -20,7 +23,7 @@ class ForumPostController extends Controller
         private ForumPostServiceContract $postService
     ) {
         // Only require auth for store, update, destroy - allow public access to index (viewing posts)
-        $this->middleware('auth:sanctum')->except(['index']);
+        $this->middleware('auth')->except(['index']);
     }
 
     /**
@@ -95,14 +98,10 @@ class ForumPostController extends Controller
         try {
             $this->authorize('create', [ForumPost::class, $thread]);
 
-            $validated = $request->validated();
-            $post = $this->postService->createPost(auth()->user(), $thread, $validated);
+            $dto = CreateForumPostDTO::fromArray($request->validated());
+            $post = $this->postService->createPost(auth()->user(), $thread, $dto);
 
-            return response()->json([
-                'success' => true,
-                'data' => $post,
-                'message' => 'Reply posted successfully.',
-            ], 201);
+            return (new ForumPostResource($post))->response()->setStatusCode(201);
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'You are not authorized to post in this thread.'], 403);
         } catch (ForumException $e) {
@@ -136,14 +135,10 @@ class ForumPostController extends Controller
         try {
             $this->authorize('update', $post);
 
-            $validated = $request->validated();
-            $updatedPost = $this->postService->updatePost(auth()->user(), $post, $validated);
+            $dto = UpdateForumPostDTO::fromArray($request->validated());
+            $updatedPost = $this->postService->updatePost(auth()->user(), $post, $dto);
 
-            return response()->json([
-                'success' => true,
-                'data' => $updatedPost,
-                'message' => 'Post updated successfully.',
-            ]);
+            return (new ForumPostResource($updatedPost))->response();
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'You are not authorized to update this post.'], 403);
         } catch (ForumException $e) {

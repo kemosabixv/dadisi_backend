@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\LabSpace;
+use App\Models\User;
+use App\Services\Media\MediaService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -20,6 +22,7 @@ class LabSpaceSeeder extends Seeder
                 'type' => 'wet_lab',
                 'description' => 'A fully equipped wet laboratory designed for biological, chemical, and biochemical research. Features include fume hoods, biosafety cabinets, PCR machines, centrifuges, and specialized workbenches for handling liquids, chemicals, and biological samples safely.',
                 'capacity' => 6,
+                'hourly_rate' => 500.00,
                 'equipment_list' => [
                     'Fume hoods (3)',
                     'Biosafety cabinet (Class II)',
@@ -42,6 +45,12 @@ class LabSpaceSeeder extends Seeder
                 'county' => 'Nairobi',
                 'location' => 'Main Campus, Block B',
                 'is_available' => true,
+                'available_from' => '08:00',
+                'available_until' => '18:00',
+                'opens_at' => '09:00',
+                'closes_at' => '17:00',
+                'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+                'slots_per_hour' => 1,
             ],
             [
                 'name' => 'Dry Lab',
@@ -49,6 +58,7 @@ class LabSpaceSeeder extends Seeder
                 'type' => 'dry_lab',
                 'description' => 'A computational and analytical laboratory focused on data analysis, bioinformatics, software development, and theoretical research. Equipped with high-performance computing workstations, large displays for data visualization, and collaborative workspace areas.',
                 'capacity' => 10,
+                'hourly_rate' => 300.00,
                 'equipment_list' => [
                     'High-performance computing workstations (10)',
                     'Large 4K displays for data visualization',
@@ -69,6 +79,12 @@ class LabSpaceSeeder extends Seeder
                 'county' => 'Nairobi',
                 'location' => 'Innovation Hub, Floor 4',
                 'is_available' => true,
+                'available_from' => '08:00',
+                'available_until' => '20:00',
+                'opens_at' => '09:00',
+                'closes_at' => '20:00',
+                'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+                'slots_per_hour' => 2,
             ],
             [
                 'name' => 'Greenhouse',
@@ -76,6 +92,7 @@ class LabSpaceSeeder extends Seeder
                 'type' => 'greenhouse',
                 'description' => 'A controlled environment greenhouse for plant science, agricultural research, and sustainability projects. Features automated climate control, irrigation systems, and dedicated areas for seedling propagation, growth experiments, and vertical farming research.',
                 'capacity' => 4,
+                'hourly_rate' => 400.00,
                 'equipment_list' => [
                     'Automated climate control system',
                     'Drip irrigation system',
@@ -98,6 +115,12 @@ class LabSpaceSeeder extends Seeder
                 'county' => 'Kiambu',
                 'location' => 'Agricultural Research Plot C',
                 'is_available' => true,
+                'available_from' => '06:00',
+                'available_until' => '18:00',
+                'opens_at' => '06:00',
+                'closes_at' => '18:00',
+                'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+                'slots_per_hour' => 1,
             ],
             [
                 'name' => 'Mobile Lab Unit',
@@ -105,6 +128,7 @@ class LabSpaceSeeder extends Seeder
                 'type' => 'mobile_lab',
                 'description' => 'A fully equipped mobile laboratory unit designed for field research, community outreach, and off-site experiments. Can be deployed to remote locations for environmental sampling, field testing, and educational demonstrations. Booking includes the vehicle and basic equipment setup.',
                 'capacity' => 4,
+                'hourly_rate' => 450.00,
                 'equipment_list' => [
                     'Mobile lab vehicle',
                     'Portable PCR machine',
@@ -127,14 +151,59 @@ class LabSpaceSeeder extends Seeder
                 'county' => 'Mobile',
                 'location' => 'Various Locations',
                 'is_available' => true,
+                'available_from' => '07:00',
+                'available_until' => '19:00',
+                'opens_at' => '07:00',
+                'closes_at' => '19:00',
+                'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+                'slots_per_hour' => 1,
             ],
         ];
 
-        foreach ($labSpaces as $spaceData) {
-            LabSpace::updateOrCreate(
+        $admin = User::first();
+
+        foreach ($labSpaces as $index => $spaceData) {
+            $lab = LabSpace::updateOrCreate(
                 ['slug' => $spaceData['slug']],
                 $spaceData
             );
+
+            // Assign seed images (CAS / R2)
+            if (app()->environment('local', 'testing', 'staging')) {
+                $labImages = [
+                    'seed-images/biotech-lab.png',
+                    'seed-images/tech-hub.png',
+                    'seed-images/robotics-camp.png',
+                    'seed-images/nature-conservation.png',
+                ];
+
+                $imagePath = $labImages[$index % count($labImages)];
+                $absolutePath = storage_path('app/public/' . $imagePath);
+
+                if (file_exists($absolutePath)) {
+                    try {
+                        /** @var MediaService $mediaService */
+                        $mediaService = app(MediaService::class);
+                        $media = $mediaService->registerFile(
+                            $admin,
+                            $absolutePath,
+                            basename($imagePath),
+                            [
+                                'visibility' => 'public',
+                                'root_type' => 'public',
+                                'path' => ['lab-spaces', $lab->slug],
+                            ]
+                        );
+
+                        $lab->setFeaturedMedia($media->id);
+                        
+                        // Add some gallery images too
+                        $lab->addGalleryMedia([$media->id]);
+                    } catch (\Exception $e) {
+                        $this->command->warn('Failed to register CAS media for lab: ' . $lab->name);
+                    }
+                }
+            }
         }
 
         $this->command->info('Lab spaces seeded successfully.');

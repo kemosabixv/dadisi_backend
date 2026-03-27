@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use App\Models\User;
@@ -45,8 +46,8 @@ class AuthorBlogControllerTest extends TestCase
         // Create categories owned by other user (should also appear - authors see all)
         Category::factory()->count(2)->create(['created_by' => $this->otherUser->id]);
 
-        $response = $this->actingAs($this->author)
-            ->getJson('/api/user/blog/categories');
+        $this->actingAs($this->author);
+        $response = $this->getJson('/api/user/blog/categories');
 
         $response->assertStatus(200);
         // Authors see ALL categories (3 + 2 = 5) for selection when tagging posts
@@ -56,11 +57,11 @@ class AuthorBlogControllerTest extends TestCase
     #[Test]
     public function author_can_create_category(): void
     {
-        $response = $this->actingAs($this->author)
-            ->postJson('/api/user/blog/categories', [
-                'name' => 'My New Category',
-                'description' => 'A category I created',
-            ]);
+        $this->actingAs($this->author);
+        $response = $this->postJson('/api/user/blog/categories', [
+            'name' => 'My New Category',
+            'description' => 'A category I created',
+        ]);
 
         $response->assertStatus(201);
         $response->assertJsonFragment(['name' => 'My New Category']);
@@ -76,10 +77,10 @@ class AuthorBlogControllerTest extends TestCase
     {
         Category::factory()->create(['name' => 'Existing Category']);
 
-        $response = $this->actingAs($this->author)
-            ->postJson('/api/user/blog/categories', [
-                'name' => 'Existing Category',
-            ]);
+        $this->actingAs($this->author);
+        $response = $this->postJson('/api/user/blog/categories', [
+            'name' => 'Existing Category',
+        ]);
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['name']);
@@ -93,11 +94,11 @@ class AuthorBlogControllerTest extends TestCase
             'name' => 'Original Name',
         ]);
 
-        $response = $this->actingAs($this->author)
-            ->putJson("/api/user/blog/categories/{$category->id}", [
-                'name' => 'Updated Name',
-                'description' => 'Updated description',
-            ]);
+        $this->actingAs($this->author);
+        $response = $this->putJson("/api/user/blog/categories/{$category->id}", [
+            'name' => 'Updated Name',
+            'description' => 'Updated description',
+        ]);
 
         $response->assertStatus(200);
         $response->assertJsonFragment(['name' => 'Updated Name']);
@@ -110,10 +111,10 @@ class AuthorBlogControllerTest extends TestCase
             'created_by' => $this->otherUser->id,
         ]);
 
-        $response = $this->actingAs($this->author)
-            ->putJson("/api/user/blog/categories/{$category->id}", [
-                'name' => 'Hacked Name',
-            ]);
+        $this->actingAs($this->author);
+        $response = $this->putJson("/api/user/blog/categories/{$category->id}", [
+            'name' => 'Hacked Name',
+        ]);
 
         $response->assertStatus(403);
     }
@@ -126,10 +127,10 @@ class AuthorBlogControllerTest extends TestCase
             'requested_deletion_at' => now(),
         ]);
 
-        $response = $this->actingAs($this->author)
-            ->putJson("/api/user/blog/categories/{$category->id}", [
-                'name' => 'New Name',
-            ]);
+        $this->actingAs($this->author);
+        $response = $this->putJson("/api/user/blog/categories/{$category->id}", [
+            'name' => 'New Name',
+        ]);
 
         $response->assertStatus(403);
     }
@@ -142,8 +143,8 @@ class AuthorBlogControllerTest extends TestCase
             'requested_deletion_at' => null,
         ]);
 
-        $response = $this->actingAs($this->author)
-            ->postJson("/api/user/blog/categories/{$category->id}/request-delete");
+        $this->actingAs($this->author);
+        $response = $this->postJson("/api/user/blog/categories/{$category->id}/request-delete");
 
         $response->assertStatus(200);
         $response->assertJson(['message' => 'Deletion request submitted for staff review.']);
@@ -159,8 +160,8 @@ class AuthorBlogControllerTest extends TestCase
             'created_by' => $this->otherUser->id,
         ]);
 
-        $response = $this->actingAs($this->author)
-            ->postJson("/api/user/blog/categories/{$category->id}/request-delete");
+        $this->actingAs($this->author);
+        $response = $this->postJson("/api/user/blog/categories/{$category->id}/request-delete");
 
         $response->assertStatus(403);
     }
@@ -173,8 +174,8 @@ class AuthorBlogControllerTest extends TestCase
             'requested_deletion_at' => now(),
         ]);
 
-        $response = $this->actingAs($this->author)
-            ->postJson("/api/user/blog/categories/{$category->id}/request-delete");
+        $this->actingAs($this->author);
+        $response = $this->postJson("/api/user/blog/categories/{$category->id}/request-delete");
 
         $response->assertStatus(400);
     }
@@ -189,8 +190,8 @@ class AuthorBlogControllerTest extends TestCase
         Tag::factory()->count(4)->create(['created_by' => $this->author->id]);
         Tag::factory()->count(2)->create(['created_by' => $this->otherUser->id]);
 
-        $response = $this->actingAs($this->author)
-            ->getJson('/api/user/blog/tags');
+        $this->actingAs($this->author);
+        $response = $this->getJson('/api/user/blog/tags');
 
         $response->assertStatus(200);
         // Authors see ALL tags (4 + 2 = 6) for selection when tagging posts
@@ -200,10 +201,10 @@ class AuthorBlogControllerTest extends TestCase
     #[Test]
     public function author_can_create_tag(): void
     {
-        $response = $this->actingAs($this->author)
-            ->postJson('/api/user/blog/tags', [
-                'name' => 'My New Tag',
-            ]);
+        $this->actingAs($this->author);
+        $response = $this->postJson('/api/user/blog/tags', [
+            'name' => 'My New Tag',
+        ]);
 
         $response->assertStatus(201);
         $response->assertJsonFragment(['name' => 'My New Tag']);
@@ -222,10 +223,10 @@ class AuthorBlogControllerTest extends TestCase
             'name' => 'Original Tag',
         ]);
 
-        $response = $this->actingAs($this->author)
-            ->putJson("/api/user/blog/tags/{$tag->id}", [
-                'name' => 'Updated Tag',
-            ]);
+        $this->actingAs($this->author);
+        $response = $this->putJson("/api/user/blog/tags/{$tag->id}", [
+            'name' => 'Updated Tag',
+        ]);
 
         $response->assertStatus(200);
         $response->assertJsonFragment(['name' => 'Updated Tag']);
@@ -238,10 +239,10 @@ class AuthorBlogControllerTest extends TestCase
             'created_by' => $this->otherUser->id,
         ]);
 
-        $response = $this->actingAs($this->author)
-            ->putJson("/api/user/blog/tags/{$tag->id}", [
-                'name' => 'Hacked Tag',
-            ]);
+        $this->actingAs($this->author);
+        $response = $this->putJson("/api/user/blog/tags/{$tag->id}", [
+            'name' => 'Hacked Tag',
+        ]);
 
         $response->assertStatus(403);
     }
@@ -254,8 +255,8 @@ class AuthorBlogControllerTest extends TestCase
             'requested_deletion_at' => null,
         ]);
 
-        $response = $this->actingAs($this->author)
-            ->postJson("/api/user/blog/tags/{$tag->id}/request-delete");
+        $this->actingAs($this->author);
+        $response = $this->postJson("/api/user/blog/tags/{$tag->id}/request-delete");
 
         $response->assertStatus(200);
         $response->assertJson(['message' => 'Deletion request submitted for staff review.']);

@@ -2,6 +2,8 @@
 
 namespace App\Services\PromoCodes;
 
+use App\DTOs\CreatePromoCodeDTO;
+use App\DTOs\UpdatePromoCodeDTO;
 use App\Exceptions\PromoCodeException;
 use App\Models\AuditLog;
 use App\Models\PromoCode;
@@ -24,16 +26,22 @@ class PromoCodeService implements PromoCodeServiceContract
      * Create a new promo code
      *
      * @param Authenticatable $creator
-     * @param array $data
+     * @param CreatePromoCodeDTO $dto
      * @return PromoCode
      *
      * @throws PromoCodeException
      */
-    public function createPromoCode(Authenticatable $creator, array $data): PromoCode
+    public function createPromoCode(Authenticatable $creator, CreatePromoCodeDTO $dto): PromoCode
     {
         try {
-            return DB::transaction(function () use ($creator, $data) {
-                $code = $data['code'] ?? Str::upper(Str::random(8));
+            return DB::transaction(function () use ($creator, $dto) {
+                $data = $dto->toArray();
+                // Validate length if manual code provided
+                if (isset($data['code']) && (strlen($data['code']) < 3 || strlen($data['code']) > 20)) {
+                    throw PromoCodeException::creationFailed('Promo code must be between 3 and 20 characters.');
+                }
+
+                $code = isset($data['code']) ? strtoupper($data['code']) : Str::upper(Str::random(8));
 
                 // Check if code already exists
                 if (PromoCode::where('code', $code)->exists()) {
@@ -42,14 +50,12 @@ class PromoCodeService implements PromoCodeServiceContract
 
                 $promoCode = PromoCode::create([
                     'event_id' => $data['event_id'],
+                    'ticket_id' => $data['ticket_id'] ?? null,
                     'code' => $code,
-                    'description' => $data['description'] ?? null,
                     'discount_type' => $data['discount_type'], // 'percentage' or 'fixed'
                     'discount_value' => $data['discount_value'],
                     'usage_limit' => $data['usage_limit'] ?? null,
                     'used_count' => 0,
-                    'valid_from' => $data['valid_from'] ?? now(),
-                    'valid_until' => $data['valid_until'] ?? null,
                     'is_active' => true,
                 ]);
 
@@ -91,14 +97,15 @@ class PromoCodeService implements PromoCodeServiceContract
      *
      * @param Authenticatable $actor
      * @param PromoCode $promoCode
-     * @param array $data
+     * @param UpdatePromoCodeDTO $dto
      * @return PromoCode
      *
      * @throws PromoCodeException
      */
-    public function updatePromoCode(Authenticatable $actor, PromoCode $promoCode, array $data): PromoCode
+    public function updatePromoCode(Authenticatable $actor, PromoCode $promoCode, UpdatePromoCodeDTO $dto): PromoCode
     {
         try {
+            $data = array_filter($dto->toArray(), fn($v) => $v !== null);
             $updateData = [];
 
             if (isset($data['description'])) {
@@ -109,12 +116,12 @@ class PromoCodeService implements PromoCodeServiceContract
                 $updateData['discount_value'] = $data['discount_value'];
             }
 
-            if (isset($data['usage_limit'])) {
-                $updateData['usage_limit'] = $data['usage_limit'];
+            if (isset($data['ticket_id'])) {
+                $updateData['ticket_id'] = $data['ticket_id'];
             }
 
-            if (isset($data['valid_until'])) {
-                $updateData['valid_until'] = $data['valid_until'];
+            if (isset($data['usage_limit'])) {
+                $updateData['usage_limit'] = $data['usage_limit'];
             }
 
             $promoCode->update($updateData);
@@ -158,27 +165,19 @@ class PromoCodeService implements PromoCodeServiceContract
                     throw PromoCodeException::codeInactive();
                 }
 
-                if ($promoCode->valid_from && now()->isBefore($promoCode->valid_from)) {
-                    throw PromoCodeException::codeNotYetValid();
-                }
-
-                if ($promoCode->valid_until && now()->isAfter($promoCode->valid_until)) {
-                    throw PromoCodeException::codeExpired();
-                }
-
-                if ($promoCode->usage_limit && $promoCode->usage_count >= $promoCode->usage_limit) {
+                if ($promoCode->usage_limit && $promoCode->used_count >= $promoCode->usage_limit) {
                     throw PromoCodeException::usageLimitReached();
                 }
 
                 // Increment usage count
-                $promoCode->increment('usage_count');
+                $promoCode->increment('used_count');
 
                 AuditLog::create([
                     'actor_id' => $user->getAuthIdentifier(),
                     'action' => 'redeemed_promo_code',
                     'model_type' => PromoCode::class,
                     'model_id' => $promoCode->id,
-                    'new_values' => ['usage_count' => $promoCode->usage_count],
+                    'new_values' => ['used_count' => $promoCode->used_count],
                 ]);
 
                 Log::info('Promo code redeemed', [
@@ -275,8 +274,6 @@ class PromoCodeService implements PromoCodeServiceContract
             'usage_limit' => $promoCode->usage_limit,
             'remaining_uses' => $promoCode->usage_limit ? $promoCode->usage_limit - $promoCode->used_count : null,
             'is_active' => $promoCode->is_active,
-            'valid_from' => $promoCode->valid_from,
-            'valid_until' => $promoCode->valid_until,
         ];
     }
 
@@ -292,6 +289,11 @@ class PromoCodeService implements PromoCodeServiceContract
     public function generatePromoCode(Authenticatable $creator, array $data): PromoCode
     {
         $length = $data['length'] ?? 8;
+
+        // Enforce length logic
+        if ($length < 3) $length = 3;
+        if ($length > 20) $length = 20;
+
         $data['code'] = Str::upper(Str::random($length));
 
         // Ensure uniqueness
@@ -303,14 +305,12 @@ class PromoCodeService implements PromoCodeServiceContract
             return DB::transaction(function () use ($creator, $data) {
                 $promoCode = PromoCode::create([
                     'event_id' => $data['event_id'],
+                    'ticket_id' => $data['ticket_id'] ?? null,
                     'code' => $data['code'],
-                    'description' => $data['description'] ?? null,
                     'discount_type' => $data['discount_type'],
                     'discount_value' => $data['discount_value'],
                     'usage_limit' => $data['usage_limit'] ?? null,
                     'used_count' => 0,
-                    'valid_from' => $data['valid_from'] ?? now(),
-                    'valid_until' => $data['valid_until'] ?? null,
                     'is_active' => true,
                 ]);
 
@@ -361,14 +361,6 @@ class PromoCodeService implements PromoCodeServiceContract
 
         if (!$promoCode->is_active) {
             throw PromoCodeException::codeInactive();
-        }
-
-        if ($promoCode->valid_from && now()->isBefore($promoCode->valid_from)) {
-            throw PromoCodeException::codeNotYetValid();
-        }
-
-        if ($promoCode->valid_until && now()->isAfter($promoCode->valid_until)) {
-            throw PromoCodeException::codeExpired();
         }
 
         if ($promoCode->usage_limit && $promoCode->used_count >= $promoCode->usage_limit) {
@@ -469,6 +461,33 @@ class PromoCodeService implements PromoCodeServiceContract
 
         if (!$promoCode) {
             throw PromoCodeException::codeNotFound((string) $idOrCode);
+        }
+
+        return $promoCode;
+    }
+
+    /**
+     * Validate a promo code for a specific event and ticket tier
+     *
+     * @param string $code
+     * @param int $eventId
+     * @param int|null $ticketId
+     * @return PromoCode
+     *
+     * @throws PromoCodeException
+     */
+    public function validateForEvent(string $code, int $eventId, ?int $ticketId = null): PromoCode
+    {
+        $promoCode = $this->validateCode($code);
+
+        // Check event restriction
+        if ($promoCode->event_id && $promoCode->event_id !== $eventId) {
+            throw new PromoCodeException("This promo code is not valid for this event.");
+        }
+
+        // Check ticket tier restriction
+        if ($promoCode->ticket_id && $ticketId && $promoCode->ticket_id !== $ticketId) {
+            throw new PromoCodeException("This promo code is not valid for the selected ticket tier.");
         }
 
         return $promoCode;

@@ -14,7 +14,7 @@ return new class extends Migration {
             }
 
             if (!Schema::hasColumn('posts', 'meta_title')) {
-                $table->string('meta_title', 60)->nullable()->after('hero_image_path');
+                $table->string('meta_title', 60)->nullable()->after('published_at');
             }
 
             if (!Schema::hasColumn('posts', 'meta_description')) {

@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 /**
@@ -109,14 +110,13 @@ class EmailVerificationController extends Controller
      * Verify Email Address
      *
      * Consumes a verification code to confirm the user's email address.
-     * Upon success, marks the email as verified and returns an authentication token for immediate login.
+     * Upon success, marks the email as verified and logs the user in.
      * The code is one-time use and expires in 24 hours.
      *
      * @bodyParam code string required The 6-character verification code from the email. Example: ABC123
      *
      * @response 200 {
      *   "message": "Email verified",
-     *   "token": "2|zIF5K7csJqxfM9...",
      *   "user": {
      *     "id": 2,
      *     "username": "jane_doe",
@@ -159,12 +159,11 @@ class EmailVerificationController extends Controller
         $user->email_verified_at = now();
         $user->save();
 
-        // Create a new token for auto-login
-        $token = $user->createToken('email-verification')->plainTextToken;
+        // Login the user via session
+        Auth::login($user);
 
         return response()->json([
             'message' => 'Email verified',
-            'token' => $token,
             'user' => $user,
         ]);
     }

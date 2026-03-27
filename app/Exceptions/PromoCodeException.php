@@ -46,7 +46,7 @@ class PromoCodeException extends \Exception
 
     public static function usageLimitReached(): static
     {
-        return new static('Promo code usage limit has been reached');
+        return new static('This promo code has reached its usage limit.');
     }
 
     public static function redemptionFailed(string $message = 'Promo code redemption failed'): static

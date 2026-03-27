@@ -2,6 +2,8 @@
 
 namespace App\Services\Events;
 
+use App\DTOs\CreateTicketDTO;
+use App\DTOs\UpdateTicketDTO;
 use App\Exceptions\EventTicketException;
 use App\Models\AuditLog;
 use App\Models\Event;
@@ -22,11 +24,11 @@ class EventTicketService implements EventTicketServiceContract
     /**
      * Create a new ticket tier for an event
      */
-    public function createTicket(Authenticatable $actor, Event $event, array $data): Ticket
+    public function createTicket(Authenticatable $actor, Event $event, CreateTicketDTO $dto): Ticket
     {
         try {
-            return DB::transaction(function () use ($actor, $event, $data) {
-                $data['event_id'] = $event->id;
+            return DB::transaction(function () use ($actor, $event, $dto) {
+                $data = array_merge($dto->toArray(), ['event_id' => $event->id]);
                 
                 // If quantity is set, initialize available to same value
                 if (isset($data['quantity'])) {
@@ -71,14 +73,24 @@ class EventTicketService implements EventTicketServiceContract
     /**
      * Update an existing ticket tier
      */
-    public function updateTicket(Authenticatable $actor, Ticket $ticket, array $data): Ticket
+    public function updateTicket(Authenticatable $actor, Ticket $ticket, UpdateTicketDTO $dto): Ticket
     {
         try {
-            return DB::transaction(function () use ($actor, $ticket, $data) {
+            return DB::transaction(function () use ($actor, $ticket, $dto) {
+                $data = array_filter($dto->toArray(), fn($v) => $v !== null);
                 $oldValues = $ticket->toArray();
 
                 // If quantity is increased, increase available as well
                 if (isset($data['quantity']) && $data['quantity'] != $ticket->quantity) {
+                    // Guard: Cannot reduce quantity below sold count
+                    $confirmedCount = $ticket->registrations()->where('status', 'confirmed')->count();
+                    $paidOrders = $ticket->event->orders()->where('ticket_id', $ticket->id)->where('status', 'paid')->sum('quantity');
+                    $totalSold = $confirmedCount + $paidOrders;
+                    
+                    if ($data['quantity'] < $totalSold) {
+                        throw \App\Exceptions\EventTicketException::updateFailed("Cannot reduce ticket quantity effectively below current confirmed count ({$totalSold}).");
+                    }
+
                     $difference = $data['quantity'] - $ticket->quantity;
                     $data['available'] = max(0, $ticket->available + $difference);
                     
@@ -108,6 +120,12 @@ class EventTicketService implements EventTicketServiceContract
                         'ip_address' => request()->ip(),
                         'user_agent' => request()->userAgent(),
                     ]);
+                }
+
+                // Trigger Promotion if quantity increased
+                if (isset($data['quantity']) && $data['quantity'] > $oldValues['quantity']) {
+                    $registrationService = app(\App\Services\Contracts\EventRegistrationServiceContract::class);
+                    $registrationService->promoteWaitlistEntries($ticket->event);
                 }
 
                 return $ticket->fresh();

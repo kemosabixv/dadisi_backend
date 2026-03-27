@@ -2,6 +2,8 @@
 
 namespace App\Services\Contracts;
 
+use App\DTOs\CreateSpeakerDTO;
+use App\DTOs\UpdateSpeakerDTO;
 use App\Models\Event;
 use App\Models\Speaker;
 use Illuminate\Support\Collection;
@@ -16,12 +18,12 @@ interface SpeakerServiceContract
     /**
      * Add speaker to event.
      */
-    public function addSpeaker(Event $event, array $data): Speaker;
+    public function addSpeaker(Event $event, CreateSpeakerDTO $dto): Speaker;
 
     /**
      * Update speaker.
      */
-    public function updateSpeaker(Speaker $speaker, array $data): Speaker;
+    public function updateSpeaker(Speaker $speaker, UpdateSpeakerDTO $dto): Speaker;
 
     /**
      * Remove speaker.

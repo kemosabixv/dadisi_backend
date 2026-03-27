@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Channels\SupabaseChannel;
 use App\Models\Refund;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -15,58 +16,47 @@ class RefundProcessed extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
+            return ['mail'];
+        }
+
+        return ['mail', 'database', SupabaseChannel::class];
     }
 
     public function toMail(object $notifiable): MailMessage
     {
-        $status = $this->refund->status;
-        $isCompleted = $status === Refund::STATUS_COMPLETED;
-        
-        $mail = (new MailMessage)
-            ->subject($isCompleted ? 'Refund Processed' : 'Refund Update')
-            ->greeting("Hello!");
+        $title = $this->refund->refundable_title;
 
-        if ($isCompleted) {
-            $mail->line('Your refund has been successfully processed.')
-                ->line("**Amount:** {$this->refund->currency} " . number_format((float) $this->refund->amount, 2))
-                ->line('The refund will be credited to your original payment method within 5-10 business days.');
-        } elseif ($status === Refund::STATUS_REJECTED) {
-            $mail->line('Unfortunately, your refund request has been declined.')
-                ->when($this->refund->admin_notes, fn($m) => $m->line("**Reason:** {$this->refund->admin_notes}"));
-        } else {
-            $mail->line("Your refund request status has been updated to: {$status}");
-        }
-
-        return $mail
-            ->line("**Reference:** #{$this->refund->id}")
-            ->line('If you have any questions, please contact our support team.');
+        return (new MailMessage)
+            ->subject('Refund Processed: '.$title)
+            ->greeting('Hello!')
+            ->line('Your refund request has been processed and completed.')
+            ->line('Amount: '.$this->refund->currency.' '.number_format($this->refund->amount, 2))
+            ->line('Reason: '.($this->refund->reason_display ?? $this->refund->reason))
+            ->line('The funds should appear in your account within 3-5 business days depending on your payment method.')
+            ->action('View My Dashboard', $this->refund->tracking_url)
+            ->line('Thank you for your patience.');
     }
 
     public function toArray(object $notifiable): array
     {
+        $title = $this->refund->refundable_title;
+
         return [
             'type' => 'refund_processed',
-            'title' => $this->refund->status === Refund::STATUS_COMPLETED 
-                ? 'Refund Completed' 
-                : 'Refund Update',
-            'message' => $this->getStatusMessage(),
+            'title' => 'Refund Processed',
+            'message' => "Your refund of {$this->refund->currency} ".number_format($this->refund->amount, 2)." for {$title} has been processed.",
             'refund_id' => $this->refund->id,
-            'amount' => $this->refund->amount,
+            'amount' => (float) $this->refund->amount,
             'currency' => $this->refund->currency,
-            'status' => $this->refund->status,
-            'link' => '/dashboard',
+            'link' => $this->refund->tracking_url,
         ];
     }
 
-    protected function getStatusMessage(): string
+    public function toSupabase(object $notifiable): array
     {
-        return match ($this->refund->status) {
-            Refund::STATUS_COMPLETED => "Your refund of {$this->refund->currency} " . 
-                number_format((float) $this->refund->amount, 2) . " has been processed.",
-            Refund::STATUS_REJECTED => "Your refund request has been declined.",
-            Refund::STATUS_APPROVED => "Your refund request has been approved and is being processed.",
-            default => "Your refund status has been updated to {$this->refund->status}.",
-        };
+        $data = $this->toArray($notifiable);
+        $data['recipient_type'] = 'user';
+        return $data;
     }
 }

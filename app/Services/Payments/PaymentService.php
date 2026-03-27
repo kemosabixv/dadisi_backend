@@ -4,12 +4,11 @@ namespace App\Services\Payments;
 
 use App\DTOs\Payments\PaymentFilterDTO;
 use App\DTOs\Payments\PaymentRequestDTO;
-use App\DTOs\Payments\PaymentStatusDTO;
-use App\DTOs\Payments\TransactionResultDTO;
 use App\Exceptions\PaymentException;
 use App\Models\AuditLog;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\Contracts\NotificationServiceContract;
 use App\Services\Contracts\PaymentServiceContract;
 use App\Services\PaymentGateway\GatewayManager;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -17,7 +16,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 
 /**
  * PaymentService
@@ -30,9 +28,12 @@ class PaymentService implements PaymentServiceContract
     /**
      * Create a new PaymentService instance.
      *
-     * @param GatewayManager $gatewayManager The payment gateway manager
+     * @param  GatewayManager  $gatewayManager  The payment gateway manager
      */
-    public function __construct(protected GatewayManager $gatewayManager) {}
+    public function __construct(
+        protected GatewayManager $gatewayManager,
+        protected NotificationServiceContract $notificationService
+    ) {}
 
     /**
      * Get payment form metadata.
@@ -55,8 +56,8 @@ class PaymentService implements PaymentServiceContract
     /**
      * List payments with filtering.
      *
-     * @param array $filters Filter criteria (status, date_from, date_to, amount_from, amount_to)
-     * @param int $perPage Number of results per page
+     * @param  array  $filters  Filter criteria (status, date_from, date_to, amount_from, amount_to)
+     * @param  int  $perPage  Number of results per page
      * @return LengthAwarePaginator Paginated payment results
      */
     public function listPayments(array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -84,14 +85,19 @@ class PaymentService implements PaymentServiceContract
     /**
      * Get payment history for a user.
      *
-     * @param Authenticatable $user The authenticated user
-     * @param int $perPage Number of results per page
+     * @param  Authenticatable  $user  The authenticated user
+     * @param  int  $perPage  Number of results per page
      * @return LengthAwarePaginator Paginated payment history
      */
-    public function getPaymentHistory(Authenticatable $user, int $perPage = 15): LengthAwarePaginator
+    public function getPaymentHistory(Authenticatable $user, int $perPage = 15, ?string $payableType = null): LengthAwarePaginator
     {
-        return Payment::where('payer_id', $user->getAuthIdentifier())
-            ->orderBy('created_at', 'desc')
+        $query = Payment::where('payer_id', $user->getAuthIdentifier());
+
+        if ($payableType) {
+            $query->where('payable_type', $payableType);
+        }
+
+        return $query->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }
 
@@ -100,30 +106,37 @@ class PaymentService implements PaymentServiceContract
      *
      * Creates a local payment record and initiates the payment with the gateway.
      *
-     * @param Authenticatable $user The authenticated user making the payment
-     * @param array $data Payment data (amount, currency, description, etc.)
+     * @param  Authenticatable|null  $user  The authenticated user making the payment (null for guests)
+     * @param  array  $data  Payment data (amount, currency, description, etc.)
      * @return array{payment_id: int, transaction_id: string, redirect_url: string, status: string}
      *
      * @throws \App\Exceptions\PaymentException When payment initiation fails
      */
-    public function processPayment(Authenticatable $user, array $data): array
+    public function processPayment(?Authenticatable $user, array $data): array
     {
         try {
             $request = PaymentRequestDTO::fromArray($data);
-            
+
             return DB::transaction(function () use ($user, $request) {
+                // Normalize payable_type if it is a class name
+                $payableType = $request->payable_type;
+                if (class_exists($payableType)) {
+                    $payableType = (new $payableType)->getMorphClass();
+                }
+
                 // 1. Create the local payment record
                 $payment = Payment::create([
-                    'payer_id' => $user->getAuthIdentifier(),
+                    'payer_id' => $user?->getAuthIdentifier(),
                     'amount' => $request->amount,
                     'currency' => $request->currency,
-                    'payment_method' => $request->payment_method,
+                    'gateway' => GatewayManager::getActiveGateway(),
+                    'method' => $request->payment_method,
                     'description' => $request->description,
-                    'reference' => $request->reference ?? ('REF_' . uniqid()),
-                    'order_reference' => 'ORDER_' . strtoupper(uniqid()),
+                    'reference' => $request->reference ?? ('REF_'.uniqid()),
+                    'order_reference' => 'ORDER_'.strtoupper(uniqid()),
                     'county' => $request->county,
                     'status' => 'pending',
-                    'payable_type' => $request->payable_type,
+                    'payable_type' => $payableType,
                     'payable_id' => $request->payable_id,
                     'metadata' => $request->metadata,
                 ]);
@@ -131,7 +144,7 @@ class PaymentService implements PaymentServiceContract
                 // 2. Initiate with gateway
                 $result = $this->gatewayManager->initiatePayment($request, $payment);
 
-                if (!$result->success) {
+                if (! $result->success) {
                     throw PaymentException::processingFailed($result->message);
                 }
 
@@ -143,7 +156,7 @@ class PaymentService implements PaymentServiceContract
                 ]);
 
                 AuditLog::create([
-                    'actor_id' => $user->getAuthIdentifier(),
+                    'actor_id' => $user?->getAuthIdentifier() ?? 0,
                     'action' => 'payment_initiated',
                     'model' => Payment::class,
                     'model_id' => $payment->id,
@@ -159,15 +172,17 @@ class PaymentService implements PaymentServiceContract
             });
         } catch (\Exception $e) {
             Log::error('Payment initiation failed', ['error' => $e->getMessage()]);
-            
+
             if (app()->bound('sentry')) {
                 \Sentry\configureScope(function (\Sentry\State\Scope $scope) use ($user, $data) {
-                    $scope->setUser(['id' => $user->getAuthIdentifier()]);
+                    if ($user) {
+                        $scope->setUser(['id' => $user->getAuthIdentifier()]);
+                    }
                     $scope->setContext('payment_initiation', $data);
                 });
                 \Sentry\captureException($e);
             }
-            
+
             throw PaymentException::processingFailed($e->getMessage());
         }
     }
@@ -178,8 +193,8 @@ class PaymentService implements PaymentServiceContract
      * Queries the payment gateway to verify current status and updates
      * the local payment record if payment is confirmed.
      *
-     * @param Authenticatable $user The authenticated user
-     * @param string $transactionId The transaction or external reference ID
+     * @param  Authenticatable  $user  The authenticated user
+     * @param  string  $transactionId  The transaction or external reference ID
      * @return array{transaction_id: string, status: string, is_paid: bool, gateway_status: string}
      *
      * @throws \App\Exceptions\PaymentException When verification fails
@@ -193,48 +208,133 @@ class PaymentService implements PaymentServiceContract
 
             $statusToken = $this->gatewayManager->queryStatus($transactionId);
 
-            if ($statusToken->isPaid() && $payment->status !== 'paid') {
+            if ($statusToken->isPaid()) {
+                $updates = [];
+
+                if ($payment->status !== 'paid') {
+                    Log::info('PaymentService: Payment marked as paid', [
+                        'payment_id' => $payment->id,
+                        'payable_type' => $payment->payable_type,
+                        'payable_id' => $payment->payable_id,
+                    ]);
+
+                    $updates['status'] = 'paid';
+                    $updates['paid_at'] = now();
+                    $updates['method'] = $payment->method ?: ($statusToken->rawDetails['payment_method'] ?? ($statusToken->rawDetails['method'] ?? $payment->method));
+                }
+
+                if (empty($payment->confirmation_code) && ! empty($statusToken->rawDetails['confirmation_code'])) {
+                    $updates['confirmation_code'] = $statusToken->rawDetails['confirmation_code'];
+                }
+
+                if (! empty($updates)) {
+                    $payment->update($updates);
+                }
+
+                // Sync status with payable (only if we transitioned to paid)
+                if (($updates['status'] ?? null) === 'paid') {
+                    $payable = $payment->payable;
+                    if ($payable instanceof \App\Models\Donation) {
+                        $payable->update([
+                            'status' => 'paid',
+                            'payment_id' => $payment->id,
+                            'receipt_number' => \App\Models\Donation::generateReceiptNumber(),
+                        ]);
+                    } elseif ($payable instanceof \App\Models\EventOrder) {
+                        $payable->update([
+                            'status' => 'paid',
+                            'purchased_at' => now(),
+                            'waitlist_position' => null,
+                            'receipt_number' => $payable->receipt_number ?? \App\Models\EventOrder::generateReceiptNumber(),
+                        ]);
+
+                        // Sync registrations to confirmed
+                        \App\Models\EventRegistration::where('order_id', $payable->id)
+                            ->update([
+                                'status' => 'confirmed',
+                                'waitlist_position' => null,
+                            ]);
+
+                        // Decrement ticket availability
+                        if ($payable->ticket) {
+                            $payable->ticket->decrement('available', $payable->quantity);
+                        }
+
+                        // Increment promo code usage
+                        if ($payable->promo_code_id) {
+                            \App\Models\PromoCode::where('id', $payable->promo_code_id)->increment('times_used');
+                        }
+                    } elseif ($payable instanceof \App\Models\LabBooking) {
+                        // RE-VALIDATE: Ensure no maintenance or other conflict was created during payment
+                        $labService = app(\App\Services\LabBookingService::class);
+                        if (!$labService->checkAvailability($payable->lab_space_id, $payable->starts_at, $payable->ends_at, $payable->id)) {
+                            Log::warning('PaymentService: Lab booking conflict detected during verification', [
+                                'booking_id' => $payable->id,
+                                'starts_at' => $payable->starts_at
+                            ]);
+                            throw new \Exception('One or more of your selected slots are no longer available due to a scheduled maintenance or conflict.');
+                        }
+
+                        $payable->update([
+                            'status' => \App\Models\LabBooking::STATUS_CONFIRMED,
+                            'receipt_number' => \App\Models\LabBooking::generateReceiptNumber(),
+                            'quota_consumed' => true,
+                        ]);
+                    } else {
+                        Log::warning('PaymentService: Payable type not handled', [
+                            'type' => get_class($payable),
+                        ]);
+                    }
+
+                    // Dispatch centralized notifications
+                    if ($payable instanceof \App\Models\Donation) {
+                        $this->notificationService->sendDonationReceived($payable);
+                    } elseif ($payable instanceof \App\Models\LabBooking) {
+                        try {
+                            $this->notificationService->sendLabBookingConfirmation($payable);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send lab booking confirmation notification', [
+                                'payment_id' => $payment->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    } elseif ($payable instanceof \App\Models\PlanSubscription) {
+                        $payer = $payment->payer;
+                        if ($payer) {
+                            try {
+                                $this->notificationService->sendSubscriptionActivated($payable);
+                            } catch (\Exception $e) {
+                                Log::error('Failed to send subscription notification', [
+                                    'payment_id' => $payment->id,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
+                        }
+                    }
+
+                    AuditLog::log('payment.verified', $payment, null, ['status' => 'paid'], 'Payment verified via gateway');
+                }
+            } elseif ($statusToken->isFailed() && $payment->status !== 'failed') {
                 $payment->update([
-                    'status' => 'paid',
-                    'paid_at' => now(),
+                    'status' => 'failed',
                 ]);
 
-                // Sync status with payable
                 $payable = $payment->payable;
-                if ($payable instanceof \App\Models\Donation) {
-                    $payable->update([
-                        'status' => 'paid',
-                        'payment_id' => $payment->id,
-                        'receipt_number' => \App\Models\Donation::generateReceiptNumber(),
-                    ]);
-                }
-
-                // Dispatch polymorphic notifications
-                $payer = $payment->payer;
-                $payable = $payment->payable;
-
-                try {
+                if ($payable instanceof \App\Models\PlanSubscription) {
+                    $payer = $payment->payer;
                     if ($payer) {
-                        if ($payable instanceof \App\Models\Donation) {
-                            $payer->notify(new \App\Notifications\DonationReceived($payable));
-                        } elseif ($payment->payable_type === 'event_order') {
-                            // Handled by EventOrderService, but good as fallback
-                        } elseif ($payable instanceof \App\Models\PlanSubscription) {
-                            $payer->notify(new \App\Notifications\SubscriptionActivated($payable));
+                        try {
+                            $this->notificationService->sendSubscriptionPaymentFailed($payable, $statusToken->status);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send subscription failure notification', [
+                                'payment_id' => $payment->id,
+                                'error' => $e->getMessage(),
+                            ]);
                         }
-                    } elseif ($payable instanceof \App\Models\Donation && !empty($payable->donor_email)) {
-                        // Guest Donation Notification
-                        Notification::route('mail', $payable->donor_email)
-                            ->notify(new \App\Notifications\DonationReceived($payable));
                     }
-                } catch (\Exception $e) {
-                    Log::error('Failed to dispatch payment notification', [
-                        'payment_id' => $payment->id,
-                        'error' => $e->getMessage()
-                    ]);
                 }
-                
-                AuditLog::log('payment.verified', $payment, null, ['status' => 'paid'], 'Payment verified via gateway');
+
+                AuditLog::log('payment.failed', $payment, null, ['status' => 'failed'], 'Payment failed at gateway: '.$statusToken->status);
             }
 
             return [
@@ -246,14 +346,14 @@ class PaymentService implements PaymentServiceContract
 
         } catch (\Exception $e) {
             Log::error('Payment verification failed', ['error' => $e->getMessage(), 'id' => $transactionId]);
-            
+
             if (app()->bound('sentry')) {
                 \Sentry\configureScope(function (\Sentry\State\Scope $scope) use ($transactionId) {
                     $scope->setContext('payment_verification', ['transaction_id' => $transactionId]);
                 });
                 \Sentry\captureException($e);
             }
-            
+
             throw PaymentException::verificationFailed($transactionId, $e->getMessage());
         }
     }
@@ -263,7 +363,7 @@ class PaymentService implements PaymentServiceContract
      *
      * Simple status lookup without gateway verification.
      *
-     * @param string $transactionId The transaction or external reference ID
+     * @param  string  $transactionId  The transaction or external reference ID
      * @return array{transaction_id: string, status: string, amount: float}
      *
      * @throws \App\Exceptions\PaymentException When payment is not found
@@ -274,8 +374,8 @@ class PaymentService implements PaymentServiceContract
         $payment = Payment::where('transaction_id', $idValue)
             ->orWhere('external_reference', $idValue)
             ->first();
-            
-        if (!$payment) {
+
+        if (! $payment) {
             throw PaymentException::notFound($idValue);
         }
 
@@ -292,37 +392,37 @@ class PaymentService implements PaymentServiceContract
      * Processes incoming webhook notifications from the payment gateway
      * and updates payment status accordingly.
      *
-     * @param array $data Webhook payload containing OrderTrackingId or transaction_id
+     * @param  array  $data  Webhook payload containing OrderTrackingId or transaction_id
      * @return array{status: string, message?: string, transaction_id?: string}
      */
     public function handleWebhook(array $data): array
     {
         $transactionId = $data['OrderTrackingId'] ?? $data['transaction_id'] ?? null;
         $notificationType = $data['OrderNotificationType'] ?? 'IPNCHANGE';
-        
-        if (!$transactionId) {
+
+        if (! $transactionId) {
             return ['status' => 'error', 'message' => 'No transaction reference found'];
         }
 
         try {
             // Use a system user or the currently authenticated user for the verification context
-            $actor = Auth::user() ?? User::where('email', 'admin@dadisilab.com')->first() ?? new User();
-            
+            $actor = Auth::user() ?? User::where('email', 'admin@dadisilab.com')->first() ?? new User;
+
             if ($notificationType === 'RECURRING') {
                 return $this->verifyRecurringPayment($actor, $transactionId);
             }
-            
+
             return $this->verifyPayment($actor, $transactionId);
         } catch (\Exception $e) {
             Log::error('Webhook processing failed', ['error' => $e->getMessage()]);
-            
+
             if (app()->bound('sentry')) {
                 \Sentry\configureScope(function (\Sentry\State\Scope $scope) use ($data) {
                     $scope->setContext('webhook_payload', $data);
                 });
                 \Sentry\captureException($e);
             }
-            
+
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
@@ -336,14 +436,42 @@ class PaymentService implements PaymentServiceContract
             // 1. Query gateway for full status and metadata
             $statusToken = $this->gatewayManager->queryStatus($transactionId);
             $raw = $statusToken->rawDetails;
-            
+
             $accountNumber = $raw['account_number'] ?? null;
             $merchantRef = $statusToken->merchantReference;
             $paymentMethod = $raw['payment_method'] ?? 'Unknown';
             $isPaid = $statusToken->isPaid();
 
-            if (!$isPaid) {
+            if ($statusToken->isFailed()) {
+                Log::warning('Recurring transaction failed at gateway', ['id' => $transactionId]);
+
+                // Try to resolve subscription to notify user
+                $subscription = null;
+                if ($accountNumber && preg_match('/USER-(\d+)-PLAN-(\d+)$/', $accountNumber, $matches)) {
+                    $subscription = \App\Models\PlanSubscription::where('subscriber_id', $matches[1])
+                        ->where('plan_id', $matches[2])
+                        ->where('status', 'active')
+                        ->first();
+                }
+
+                if (! $subscription && $merchantRef && preg_match('/SUB_(\d+)/', $merchantRef, $matches)) {
+                    $subscription = \App\Models\PlanSubscription::find($matches[1]);
+                }
+
+                if ($subscription && $subscription->subscriber) {
+                    try {
+                        $this->notificationService->sendSubscriptionPaymentFailed($subscription, $statusToken->status);
+                    } catch (\Exception $ne) {
+                        Log::error('Failed to send recurring failure notification', ['error' => $ne->getMessage()]);
+                    }
+                }
+
+                return ['status' => 'failed', 'is_paid' => false];
+            }
+
+            if (! $isPaid) {
                 Log::warning('Recurring transaction requested but not paid', ['id' => $transactionId]);
+
                 return ['status' => 'pending', 'is_paid' => false];
             }
 
@@ -353,27 +481,27 @@ class PaymentService implements PaymentServiceContract
             if ($accountNumber && preg_match('/USER-(\d+)-PLAN-(\d+)$/', $accountNumber, $matches)) {
                 $userId = $matches[1];
                 $planId = $matches[2];
-                
+
                 $sub = \App\Models\PlanSubscription::where('subscriber_id', $userId)
                     ->where('plan_id', $planId)
                     ->where('status', 'active')
                     ->first();
-                
+
                 if ($sub) {
                     $subscriptionId = $sub->id;
                     $subscription = $sub;
                 }
             }
-            
+
             // Try to find by merchant_reference if not found yet
-            if (!$subscriptionId && $merchantRef && preg_match('/SUB_(\d+)/', $merchantRef, $matches)) {
+            if (! $subscriptionId && $merchantRef && preg_match('/SUB_(\d+)/', $merchantRef, $matches)) {
                 $subscriptionId = $matches[1];
-                if (!isset($subscription)) { // Only fetch if not already set by account_number
+                if (! isset($subscription)) { // Only fetch if not already set by account_number
                     $subscription = \App\Models\PlanSubscription::find($subscriptionId);
                 }
             }
 
-            if (!$subscriptionId || !isset($subscription)) {
+            if (! $subscriptionId || ! isset($subscription)) {
                 Log::error('Could not resolve subscription for recurring payment', ['transaction_id' => $transactionId, 'ref' => $merchantRef, 'account_number' => $accountNumber]);
                 throw new \Exception('Subscription resolution failed');
             }
@@ -388,34 +516,38 @@ class PaymentService implements PaymentServiceContract
                 // 4. Create NEW Payment record for this recurring charge
                 $newPayment = Payment::create([
                     'payer_id' => $subscription->subscriber_id,
-                    'amount' => $raw['amount'] ?? $subscription->plan->price ?? 0,
+                    'amount' => $raw['amount'] ?? ($subscription->plan->invoice_interval === 'year' 
+                        ? $subscription->plan->getEffectiveYearlyPrice() 
+                        : $subscription->plan->getEffectiveMonthlyPrice()),
                     'currency' => $raw['currency'] ?? 'KES',
-                    'payment_method' => $paymentMethod,
+                    'gateway' => GatewayManager::getActiveGateway(),
+                    'method' => $paymentMethod,
                     'status' => 'paid',
                     'paid_at' => now(),
                     'transaction_id' => $transactionId,
+                    'confirmation_code' => $raw['confirmation_code'] ?? null,
                     'external_reference' => $statusToken->merchantReference,
                     'order_reference' => $statusToken->merchantReference, // Required field
                     'payable_type' => 'App\\Models\\PlanSubscription',
                     'payable_id' => $subscription->id,
-                    'description' => "Recurring Renewal: " . ($subscription->plan->name ?? 'Subscription'),
+                    'description' => 'Recurring Renewal: '.($subscription->plan->name ?? 'Subscription'),
                     'meta' => array_merge($raw, ['recurring' => true]),
                 ]);
 
                 // 5. Extend Subscription
                 $interval = $subscription->plan->invoice_period ?? 'month';
                 $count = (int) ($subscription->plan->invoice_interval ?? 1);
-                
+
                 // Carbon::add() with string interval needs proper syntax
                 $newEndsAt = $subscription->ends_at->copy();
-                match($interval) {
+                match ($interval) {
                     'month' => $newEndsAt->addMonths($count),
                     'year' => $newEndsAt->addYears($count),
                     'week' => $newEndsAt->addWeeks($count),
                     'day' => $newEndsAt->addDays($count),
                     default => $newEndsAt->addMonths($count),
                 };
-                
+
                 $subscription->update([
                     'ends_at' => $newEndsAt,
                     'status' => 'active',
@@ -439,11 +571,11 @@ class PaymentService implements PaymentServiceContract
 
                 // Notify user about subscription renewal
                 try {
-                    $subscription->subscriber->notify(new \App\Notifications\SubscriptionActivated($subscription));
+                    $this->notificationService->sendSubscriptionActivated($subscription);
                 } catch (\Exception $e) {
                     Log::error('Failed to send recurring subscription notification', [
                         'subscription_id' => $subscription->id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
 
@@ -466,8 +598,8 @@ class PaymentService implements PaymentServiceContract
      * Processes a refund for a previously paid payment.
      * Only payments with 'paid' status can be refunded.
      *
-     * @param Authenticatable $user The admin user processing the refund
-     * @param array $data Refund data containing transaction_id and optional reason
+     * @param  Authenticatable  $user  The admin user processing the refund
+     * @param  array  $data  Refund data containing transaction_id and optional reason
      * @return array{success: bool, payment_id: int, status: string}
      *
      * @throws \App\Exceptions\PaymentException When refund fails or payment state is invalid
@@ -492,7 +624,7 @@ class PaymentService implements PaymentServiceContract
                 $data['reason'] ?? 'Customer request'
             );
 
-            if (!$result->success) {
+            if (! $result->success) {
                 throw PaymentException::refundFailed($result->message ?? 'Gateway refund failed');
             }
 
@@ -505,17 +637,17 @@ class PaymentService implements PaymentServiceContract
                     'refund_reason' => $data['reason'] ?? 'Customer request',
                     'metadata' => array_merge($payment->metadata ?? [], [
                         'refund_transaction_id' => $result->transactionId,
-                        'refund_gateway_response' => $result->rawResponse
+                        'refund_gateway_response' => $result->rawResponse,
                     ]),
                 ]);
 
-                AuditLog::log('payment.refunded', $payment, null, ['status' => 'refunded'], 'Refund processed via Gateway: ' . ($result->message ?? 'Success'));
+                AuditLog::log('payment.refunded', $payment, null, ['status' => 'refunded'], 'Refund processed via Gateway: '.($result->message ?? 'Success'));
 
                 return [
                     'success' => true,
                     'payment_id' => $payment->id,
                     'status' => 'refunded',
-                    'refund_transaction_id' => $result->transactionId
+                    'refund_transaction_id' => $result->transactionId,
                 ];
             });
         } catch (\Exception $e) {

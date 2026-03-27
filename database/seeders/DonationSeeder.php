@@ -15,6 +15,11 @@ class DonationSeeder extends Seeder
      */
     public function run(): void
     {
+        // Truncate before re-seeding (idempotent) — sample donations have no
+        // natural uniqueness key (random names/amounts/dates), so truncate-then-
+        // recreate is the correct strategy, consistent with BlogInteractionsSeeder.
+        Donation::truncate();
+
         // Get counties for random assignment
         $counties = County::pluck('id')->toArray();
         if (empty($counties)) {

@@ -8,7 +8,7 @@ use Illuminate\Notifications\Notification;
 class StorageQuotaExceeded extends Notification
 {
 
-    private $limitMB;
+    public $limitMB;
 
     /**
      * Create a new notification instance.
@@ -25,7 +25,15 @@ class StorageQuotaExceeded extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
+    }
+
+    /**
+     * Get the Supabase representation of the notification.
+     */
+    public function toSupabase(object $notifiable): array
+    {
+        return $this->toArray($notifiable);
     }
 
     /**

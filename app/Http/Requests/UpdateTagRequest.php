@@ -14,9 +14,11 @@ class UpdateTagRequest extends FormRequest
     public function rules(): array
     {
         $tag = $this->route('tag');
+        $tagId = is_object($tag) ? $tag->id : $tag;
+
         return [
-            'name' => 'string|max:100|unique:tags,name,' . $tag->id,
-            'slug' => 'string|max:120|unique:tags,slug,' . $tag->id,
+            'name' => 'string|max:100|unique:tags,name,' . $tagId,
+            'slug' => 'string|max:120|unique:tags,slug,' . $tagId,
         ];
     }
 

@@ -31,6 +31,8 @@ class PermissionServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        app()['config']->set('auth.defaults.guard', 'web');
+        
         $this->service = app(PermissionService::class);
         $this->admin = User::factory()->create();
         $this->user = User::factory()->create();

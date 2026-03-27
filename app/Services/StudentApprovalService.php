@@ -2,16 +2,18 @@
 
 namespace App\Services;
 
-use App\Services\Contracts\StudentApprovalServiceContract;
-use App\Models\StudentApprovalRequest;
 use App\Models\Plan;
+use App\Models\StudentApprovalRequest;
 use App\Models\SubscriptionEnhancement;
+use App\Models\User;
+use App\Notifications\StudentApprovalApproved;
+use App\Notifications\StudentApprovalRejected;
+use App\Notifications\StudentApprovalSubmitted;
+use App\Services\Contracts\StudentApprovalServiceContract;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-use App\Models\User;
-use App\Notifications\StudentApprovalSubmitted;
 
 /**
  * Student Approval Service
@@ -45,7 +47,7 @@ class StudentApprovalService implements StudentApprovalServiceContract
                     'student_birth_date' => $data['birth_date'],
                     'county' => $data['county'],
                     'additional_notes' => $data['additional_notes'] ?? null,
-                    'submitted_at' => now(),
+                    'requested_at' => now(),
                     'expires_at' => now()->addDays(30),
                 ]);
 
@@ -128,20 +130,19 @@ class StudentApprovalService implements StudentApprovalServiceContract
         try {
             $query = StudentApprovalRequest::with('user.memberProfile');
 
-            if (isset($filters['status']) && $filters['status'] !== '') {
+            if (isset($filters['status']) && $filters['status'] !== '' && $filters['status'] !== 'all') {
                 $query->where('status', $filters['status']);
-            } elseif (!array_key_exists('status', $filters)) {
+            } elseif (! array_key_exists('status', $filters)) {
                 // Default to pending ONLY if status is not provided at all in the array
                 $query->where('status', 'pending');
             }
-            // If status is in the array but is '', we skip filtering (All Statuses)
-            // If status is empty string, we don't apply where('status') filter, showing all
+            // If status is 'all' or empty string, we don't apply where('status') filter, showing all
 
-            if (!empty($filters['county'])) {
-                $query->where('county', 'LIKE', '%' . $filters['county'] . '%');
+            if (! empty($filters['county'])) {
+                $query->where('county', 'LIKE', '%'.$filters['county'].'%');
             }
 
-            return $query->orderBy('submitted_at', 'asc')
+            return $query->orderBy('requested_at', 'asc')
                 ->paginate($filters['per_page'] ?? 15);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve approval requests', ['error' => $e->getMessage()]);
@@ -155,7 +156,7 @@ class StudentApprovalService implements StudentApprovalServiceContract
     public function approveRequest($requestId, int $adminId, ?string $adminNotes = null): StudentApprovalRequest
     {
         try {
-            return DB::transaction(function () use ($requestId, $adminId, $adminNotes) {
+            $approvalRequest = DB::transaction(function () use ($requestId, $adminId, $adminNotes) {
                 $approvalRequest = StudentApprovalRequest::findOrFail($requestId);
 
                 if ($approvalRequest->status !== 'pending') {
@@ -173,7 +174,7 @@ class StudentApprovalService implements StudentApprovalServiceContract
 
                 if ($subscription) {
                     $plan = $subscription->plan;
-                    $amount = $plan->price; // This might need adjustment for billing cycle, but plan->price is a good base check
+                    $amount = $plan->price;
 
                     Log::info('Approving pending subscription', [
                         'subscription_id' => $subscription->id,
@@ -184,37 +185,46 @@ class StudentApprovalService implements StudentApprovalServiceContract
                     if ($amount == 0) {
                         // Free plan - activate immediately
                         $subscription->update(['status' => 'active']);
-                        
+
                         // Update enhancement
                         SubscriptionEnhancement::where('subscription_id', $subscription->id)
                             ->update(['status' => 'active']);
                     } else {
                         // Paid plan - move to pending so user can pay
                         $subscription->update(['status' => 'pending']);
-                        
+
                         // Update enhancement
                         SubscriptionEnhancement::where('subscription_id', $subscription->id)
                             ->update(['status' => 'payment_pending']);
                     }
                 } else {
-                    // Fallback for case where no pending subscription exists yet (legacy or manual approval)
                     Log::warning('No pending_approval subscription found for approved request', [
                         'user_id' => $approvalRequest->user_id,
                         'request_id' => $requestId,
                     ]);
-                    
-                    // Optional: Create a subscription if one doesn't exist? 
-                    // For now, we expect the subscription to have been created via initiatePayment.
                 }
-
-                Log::info('Student approval request approved', [
-                    'admin_id' => $adminId,
-                    'request_id' => $requestId,
-                    'user_id' => $approvalRequest->user_id,
-                ]);
 
                 return $approvalRequest;
             });
+
+            // Notify user of approval (OUTSIDE transaction to ensure it runs)
+            try {
+                $user = User::find($approvalRequest->user_id);
+                if ($user) {
+                    $user->notify(new StudentApprovalApproved($approvalRequest));
+                    Log::info('Student approval approved notification sent', [
+                        'user_id' => $user->id,
+                        'request_id' => $approvalRequest->id,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to notify user of student approval', [
+                    'error' => $e->getMessage(),
+                    'request_id' => $approvalRequest->id,
+                ]);
+            }
+
+            return $approvalRequest;
         } catch (\Exception $e) {
             Log::error('Student approval request approval failed', [
                 'admin_id' => $adminId,
@@ -231,7 +241,7 @@ class StudentApprovalService implements StudentApprovalServiceContract
     public function rejectRequest($requestId, int $adminId, string $rejectionReason, ?string $adminNotes = null): StudentApprovalRequest
     {
         try {
-            return DB::transaction(function () use ($requestId, $adminId, $rejectionReason, $adminNotes) {
+            $approvalRequest = DB::transaction(function () use ($requestId, $adminId, $rejectionReason, $adminNotes) {
                 $approvalRequest = StudentApprovalRequest::findOrFail($requestId);
 
                 if ($approvalRequest->status !== 'pending') {
@@ -246,17 +256,95 @@ class StudentApprovalService implements StudentApprovalServiceContract
                     ->where('status', 'pending_approval')
                     ->update(['status' => 'cancelled', 'canceled_at' => now()]);
 
-                Log::info('Student approval request rejected', [
-                    'admin_id' => $adminId,
-                    'request_id' => $requestId,
-                    'user_id' => $approvalRequest->user_id,
-                    'reason' => $rejectionReason,
+                return $approvalRequest;
+            });
+
+            // Notify user of rejection (OUTSIDE transaction to ensure it runs)
+            try {
+                $user = User::find($approvalRequest->user_id);
+                if ($user) {
+                    $user->notify(new StudentApprovalRejected($approvalRequest, $rejectionReason));
+                    Log::info('Student approval rejected notification sent', [
+                        'user_id' => $user->id,
+                        'request_id' => $approvalRequest->id,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to notify user of student rejection', [
+                    'error' => $e->getMessage(),
+                    'request_id' => $approvalRequest->id,
                 ]);
+            }
+
+            return $approvalRequest;
+        } catch (\Exception $e) {
+            Log::error('Student approval request rejection failed', [
+                'admin_id' => $adminId,
+                'request_id' => $requestId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Overturn a rejection and approve the request.
+     * This does NOT send automatic notifications - staff will contact user manually.
+     */
+    public function overturnRejection($requestId, int $adminId, ?string $adminNotes = null): StudentApprovalRequest
+    {
+        try {
+            return DB::transaction(function () use ($requestId, $adminId, $adminNotes) {
+                $approvalRequest = StudentApprovalRequest::findOrFail($requestId);
+
+                if ($approvalRequest->status !== 'rejected') {
+                    throw new \Exception('Request is not in rejected status');
+                }
+
+                // Approve the request (overturning the rejection)
+                $approvalRequest->approve($adminId, $adminNotes . ' [Overturned from rejection]');
+
+                Log::info('Student approval rejection overturned', [
+                    'request_id' => $approvalRequest->id,
+                    'admin_id' => $adminId,
+                    'user_id' => $approvalRequest->user_id,
+                ]);
+
+                // Find any cancelled subscription and reactivate/set to pending
+                $subscription = \App\Models\PlanSubscription::where('subscriber_id', $approvalRequest->user_id)
+                    ->where('status', 'cancelled')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($subscription) {
+                    $plan = $subscription->plan;
+                    $amount = $plan->price;
+
+                    if ($amount == 0) {
+                        // Free plan - activate immediately
+                        $subscription->update(['status' => 'active', 'canceled_at' => null]);
+                        
+                        SubscriptionEnhancement::where('subscription_id', $subscription->id)
+                            ->update(['status' => 'active']);
+                    } else {
+                        // Paid plan - move to pending so user can pay
+                        $subscription->update(['status' => 'pending', 'canceled_at' => null]);
+                        
+                        SubscriptionEnhancement::where('subscription_id', $subscription->id)
+                            ->update(['status' => 'payment_pending']);
+                    }
+
+                    Log::info('Subscription reactivated after rejection overturn', [
+                        'subscription_id' => $subscription->id,
+                        'new_status' => $subscription->status,
+                    ]);
+                }
 
                 return $approvalRequest;
             });
+            // NO automatic notifications - staff will contact user manually
         } catch (\Exception $e) {
-            Log::error('Student approval request rejection failed', [
+            Log::error('Student approval rejection overturn failed', [
                 'admin_id' => $adminId,
                 'request_id' => $requestId,
                 'error' => $e->getMessage(),

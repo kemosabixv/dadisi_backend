@@ -77,6 +77,13 @@ class AuditLogController extends Controller
                 $query->where('user_id', $request->input('user_id'));
             }
 
+            // Filter by username (searches for partial matches)
+            if ($request->filled('username')) {
+                $query->whereHas('user', function($q) use ($request) {
+                    $q->where('username', 'like', '%' . $request->input('username') . '%');
+                });
+            }
+
             // Filter by affected model ID
             if ($request->filled('model_id')) {
                 $query->where('model_id', $request->input('model_id'));

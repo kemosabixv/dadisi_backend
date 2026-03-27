@@ -8,7 +8,10 @@ use App\DTOs\UpdateEventDTO;
 use App\Exceptions\EventException;
 use App\Models\AuditLog;
 use App\Models\Event;
+use App\Models\Media;
+use App\Models\PromoCode;
 use App\Services\Contracts\EventServiceContract;
+use App\Services\Media\MediaService;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
@@ -52,7 +55,12 @@ class EventService implements EventServiceContract
                 foreach ($data['speakers'] as $speakerData) {
                     $speaker = $event->speakers()->create($speakerData);
                     if (! empty($speakerData['photo_media_id'])) {
-                        $speaker->setPhotoMedia($speakerData['photo_media_id']);
+                        $media = Media::find($speakerData['photo_media_id']);
+                        if ($media) {
+                            $speakerSlug = Str::slug($speaker->name);
+                            app(MediaService::class)->promoteToPublic($media, 'speakers', $speakerSlug);
+                            $speaker->setPhotoMedia($media->id);
+                        }
                     }
                 }
             }
@@ -64,10 +72,33 @@ class EventService implements EventServiceContract
 
             // Handle Media
             if (! empty($data['featured_media_id'])) {
-                $event->setFeaturedMedia($data['featured_media_id']);
+                $media = Media::find($data['featured_media_id']);
+                if ($media) {
+                    app(MediaService::class)->promoteToPublic($media, 'events', $event->slug);
+                    $event->setFeaturedMedia($media->id);
+                }
             }
             if (! empty($data['gallery_media_ids'])) {
+                foreach ($data['gallery_media_ids'] as $mediaId) {
+                    $media = Media::find($mediaId);
+                    if ($media) {
+                        app(MediaService::class)->promoteToPublic($media, 'events', $event->slug);
+                    }
+                }
                 $event->addGalleryMedia($data['gallery_media_ids']);
+            }
+
+            // Handle Promo Codes
+            if (! empty($data['promo_codes'])) {
+                $providedCodes = [];
+                foreach ($data['promo_codes'] as $promoData) {
+                    $code = strtoupper($promoData['code']);
+                    if (in_array($code, $providedCodes) || PromoCode::withTrashed()->where('code', $code)->exists()) {
+                        throw EventException::duplicatePromoCode($code);
+                    }
+                    $providedCodes[] = $code;
+                    $event->promoCodes()->create($promoData);
+                }
             }
 
             AuditLog::create([
@@ -89,7 +120,7 @@ class EventService implements EventServiceContract
                 'event_id' => $event->id,
             ]);
 
-            return $event->load(['organizer', 'category', 'county', 'tickets', 'speakers', 'tags']);
+            return $event->load(['organizer', 'category', 'county', 'tickets', 'speakers', 'tags', 'promoCodes']);
         } catch (\Exception $e) {
             Log::error('Event creation failed', [
                 'actor_id' => $actor->getAuthIdentifier(),
@@ -116,6 +147,16 @@ class EventService implements EventServiceContract
             $data = $dto->toArray();
 
             if (! empty($data)) {
+                // Guard: Capacity Reduction
+                if (array_key_exists('capacity', $data)) {
+                    $registrationService = app(\App\Services\Contracts\EventRegistrationServiceContract::class);
+                    $confirmedCount = $registrationService->getGlobalConfirmedCount($event);
+
+                    if ($data['capacity'] !== null && $data['capacity'] < $confirmedCount) {
+                        throw EventException::updateFailed("Cannot reduce event capacity effectively below current confirmed count ({$confirmedCount}).");
+                    }
+                }
+
                 $oldValues = $event->toArray();
 
                 $event->update($data);
@@ -148,6 +189,14 @@ class EventService implements EventServiceContract
                     ]);
                 }
 
+                // Trigger Promotion if capacity increased or removed (null means unlimited)
+                $oldCapacity = $oldValues['capacity'] ?? 0;
+                $newCapacity = $data['capacity'] ?? null;
+                if (array_key_exists('capacity', $data) && ($newCapacity === null || $newCapacity > $oldCapacity)) {
+                    $registrationService = app(\App\Services\Contracts\EventRegistrationServiceContract::class);
+                    $registrationService->promoteWaitlistEntries($event);
+                }
+
                 // Handle Tickets (simple sync-like logic or just append? Usually update means sync)
                 if (isset($data['tickets'])) {
                     $event->tickets()->delete();
@@ -162,7 +211,68 @@ class EventService implements EventServiceContract
                     foreach ($data['speakers'] as $speakerData) {
                         $speaker = $event->speakers()->create($speakerData);
                         if (! empty($speakerData['photo_media_id'])) {
-                            $speaker->setPhotoMedia($speakerData['photo_media_id']);
+                            $media = Media::find($speakerData['photo_media_id']);
+                            if ($media) {
+                                $speakerSlug = Str::slug($speaker->name);
+                                app(MediaService::class)->promoteToPublic($media, 'speakers', $speakerSlug);
+                                $speaker->setPhotoMedia($media->id);
+                            }
+                        }
+                    }
+                }
+
+                // Handle Promo Codes
+                if (isset($data['promo_codes'])) {
+                    $incomingCodes = collect($data['promo_codes'])->map(function ($p) {
+                        $p['code'] = strtoupper($p['code']);
+
+                        return $p;
+                    });
+
+                    $incomingStrings = $incomingCodes->pluck('code')->toArray();
+                    $existingCodes = $event->promoCodes()->get();
+
+                    // 1. Handle Removals
+                    foreach ($existingCodes as $existing) {
+                        if (! in_array($existing->code, $incomingStrings)) {
+                            if (($existing->used_count ?? 0) === 0) {
+                                $existing->forceDelete();
+                            }
+                            // If used_count > 0, we preserve it in DB for history/integrity
+                        }
+                    }
+
+                    // 2. Update or Create
+                    $processed = [];
+                    foreach ($incomingCodes as $promoData) {
+                        $code = $promoData['code'];
+
+                        if (in_array($code, $processed)) {
+                            throw EventException::duplicatePromoCode($code);
+                        }
+                        $processed[] = $code;
+
+                        // Check global uniqueness (excluding this event's existing codes)
+                        $conflict = PromoCode::withTrashed()
+                            ->where('code', $code)
+                            ->where('event_id', '!=', $event->id)
+                            ->exists();
+
+                        if ($conflict) {
+                            throw EventException::duplicatePromoCode($code);
+                        }
+
+                        $existing = $existingCodes->where('code', $code)->first();
+
+                        if ($existing) {
+                            $existing->update([
+                                'discount_type' => $promoData['discount_type'],
+                                'discount_value' => $promoData['discount_value'],
+                                'usage_limit' => $promoData['usage_limit'] ?? null,
+                                'ticket_id' => $promoData['ticket_id'] ?? null,
+                            ]);
+                        } else {
+                            $event->promoCodes()->create($promoData);
                         }
                     }
                 }
@@ -174,15 +284,31 @@ class EventService implements EventServiceContract
 
                 // Handle Media
                 if (isset($data['featured_media_id'])) {
-                    $event->setFeaturedMedia($data['featured_media_id']);
+                    if ($data['featured_media_id']) {
+                        $media = Media::find($data['featured_media_id']);
+                        if ($media) {
+                            app(MediaService::class)->promoteToPublic($media, 'events', $event->slug);
+                            $event->setFeaturedMedia($media->id);
+                        }
+                    } else {
+                        $event->setFeaturedMedia(null);
+                    }
                 }
                 if (isset($data['gallery_media_ids'])) {
                     $event->media()->wherePivot('role', 'gallery')->detach();
+                    if (! empty($data['gallery_media_ids'])) {
+                        foreach ($data['gallery_media_ids'] as $mediaId) {
+                            $media = Media::find($mediaId);
+                            if ($media) {
+                                app(MediaService::class)->promoteToPublic($media, 'events', $event->slug);
+                            }
+                        }
+                    }
                     $event->addGalleryMedia($data['gallery_media_ids']);
                 }
             }
 
-            return $event->load(['organizer', 'category', 'county', 'tickets', 'speakers', 'tags']);
+            return $event->load(['organizer', 'category', 'county', 'tickets', 'speakers', 'tags', 'promoCodes']);
         } catch (\Exception $e) {
             Log::error('Event update failed', [
                 'actor_id' => $actor->getAuthIdentifier(),
@@ -205,7 +331,24 @@ class EventService implements EventServiceContract
     public function getById(string $id): Event
     {
         try {
-            return Event::with(['organizer', 'registrations', 'media'])->findOrFail($id);
+            return Event::with([
+                'organizer',
+                'creator',
+                'category',
+                'county',
+                'tickets',
+                'speakers',
+                'tags',
+                'media',
+                'promoCodes',
+            ])
+                ->withCount(['registrations as registrations_count' => function ($query) {
+                    $query->whereNotIn('status', ['cancelled', 'waitlisted']);
+                }])
+                ->withCount(['registrations as waitlist_count' => function ($query) {
+                    $query->where('status', 'waitlisted');
+                }])
+                ->findOrFail($id);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             throw EventException::notFound($id);
         }
@@ -284,7 +427,9 @@ class EventService implements EventServiceContract
             $query->where('ends_at', '<=', $filters->end_date);
         }
 
-        return $query->withCount('registrations')
+        return $query->withCount(['registrations as registrations_count' => function ($query) {
+            $query->whereNotIn('status', ['cancelled', 'waitlisted']);
+        }])
             ->orderBy($filters->sort_by ?? 'starts_at', $filters->sort_dir ?? 'asc')
             ->paginate($perPage);
     }
@@ -398,17 +543,16 @@ class EventService implements EventServiceContract
      */
     public function getStatistics(Event $event): array
     {
-        $event->loadCount(['registrations as confirmed_count' => function ($query) {
-            $query->where('status', 'confirmed');
-        }]);
+        $registrationService = app(\App\Services\Contracts\EventRegistrationServiceContract::class);
+        $confirmedCount = $registrationService->getGlobalConfirmedCount($event);
 
         return [
             'event_id' => $event->id,
             'title' => $event->title,
             'total_capacity' => $event->capacity,
-            'confirmed_registrations' => $event->confirmed_count,
-            'available_capacity' => max(0, $event->capacity - $event->confirmed_count),
-            'utilization_percentage' => $event->capacity > 0 ? ($event->confirmed_count / $event->capacity) * 100 : 0,
+            'confirmed_registrations' => $confirmedCount,
+            'available_capacity' => max(0, $event->capacity - $confirmedCount),
+            'utilization_percentage' => $event->capacity > 0 ? ($confirmedCount / $event->capacity) * 100 : 0,
             'is_featured' => (bool) $event->featured,
             'status' => $event->status,
             'created_at' => $event->created_at,
@@ -563,10 +707,14 @@ class EventService implements EventServiceContract
      */
     public function listRegistrations(Event $event, array $filters = [], int $perPage = 50): \Illuminate\Pagination\LengthAwarePaginator
     {
-        $query = $event->registrations()->with(['user', 'ticket', 'order']);
+        $query = $event->registrations()->with(['user', 'ticket', 'order.promoCode']);
 
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
+        } elseif (! empty($filters['waitlist'])) {
+            $query->where('status', 'waitlisted');
+        } else {
+            $query->whereNotIn('status', ['cancelled', 'waitlisted']);
         }
 
         if (isset($filters['waitlist']) && $filters['waitlist']) {

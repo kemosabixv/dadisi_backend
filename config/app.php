@@ -15,6 +15,9 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'initial_admin_email' => env('INITIAL_ADMIN_EMAIL', 'superadmin@dadisilab.com'),
+    'initial_admin_password' => env('INITIAL_ADMIN_PASSWORD', 'password'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

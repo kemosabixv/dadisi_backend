@@ -14,24 +14,46 @@ class TicketPurchaseConfirmation extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
+    }
+
+    /**
+     * Get the Supabase representation of the notification.
+     */
+    public function toSupabase(object $notifiable): array
+    {
+        $data = $this->toArray($notifiable);
+        $data['recipient_type'] = 'user';
+        return $data;
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         $event = $this->order->event;
+        $qrCodeData = null;
+
+        if ($this->order->qr_code_media_id) {
+            try {
+                $media = $this->order->qrCodeMedia()->with('file')->first();
+                if ($media && $media->file) {
+                    $qrCodeData = \Illuminate\Support\Facades\Storage::disk($media->file->disk)->get($media->file->path);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to fetch QR code from CAS for ticket purchase notification', [
+                    'order_id' => $this->order->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
 
         return (new MailMessage)
             ->subject("Ticket Confirmed: {$event->title}")
-            ->greeting("Hello {$this->order->attendee_name}!")
-            ->line('Your ticket purchase has been confirmed.')
-            ->line("**Event:** {$event->title}")
-            ->line('**Date:** '.$event->starts_at->format('F j, Y \a\t g:i A'))
-            ->line("**Tickets:** {$this->order->quantity}")
-            ->line("**Total:** {$this->order->currency} ".number_format((float) $this->order->total_amount, 2))
-            ->action('View Your Ticket', url("/dashboard/tickets/{$this->order->id}"))
-            ->line('Show your QR code at the venue for check-in.')
-            ->line('Thank you for your purchase!');
+            ->markdown('emails.events.ticket-confirmed', [
+                'order' => $this->order,
+                'event' => $event,
+                'name' => $this->order->attendee_name,
+                'qrCodeData' => $qrCodeData,
+            ]);
     }
 
     public function toArray(object $notifiable): array
@@ -47,9 +69,9 @@ class TicketPurchaseConfirmation extends Notification
             'event_title' => $event->title,
             'event_date' => $event->starts_at->toISOString(),
             'quantity' => $this->order->quantity,
-            'total' => $this->order->total_amount,
+            'total' => (float) $this->order->total_amount,
             'currency' => $this->order->currency,
-            'link' => "/dashboard/tickets/{$this->order->id}",
+            'link' => "/events/tickets/{$this->order->qr_code_token}",
         ];
     }
 }

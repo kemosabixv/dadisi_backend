@@ -36,7 +36,13 @@ class UpdateAuthorPostRequest extends FormRequest
 
     public function rules()
     {
-        $postId = $this->route('post')?->id;
+        $post = $this->route('post') ?? $this->route('slug') ?? $this->route('id');
+        
+        if (is_string($post) || is_numeric($post)) {
+            $post = \App\Models\Post::where('id', $post)->orWhere('slug', $post)->first();
+        }
+        
+        $postId = $post?->id;
         
         return [
             'title' => 'sometimes|string|max:255',

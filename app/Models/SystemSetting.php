@@ -47,7 +47,7 @@ class SystemSetting extends Model
      */
     public function setValueAttribute($value)
     {
-        if ($this->type === 'json' && is_array($value)) {
+        if (is_array($value) || is_object($value)) {
             $this->attributes['value'] = json_encode($value);
         } else {
             $this->attributes['value'] = (string) $value;

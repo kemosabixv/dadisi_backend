@@ -23,7 +23,8 @@ interface EventOrderServiceContract
         int $quantity,
         array $purchaserData,
         ?string $promoCode = null,
-        ?User $user = null
+        ?User $user = null,
+        bool $isWaitlistAction = false
     ): array;
 
     /**
@@ -50,4 +51,9 @@ interface EventOrderServiceContract
      * Get user's orders with filters.
      */
     public function getUserOrders(User $user, array $filters, int $perPage): array;
+
+    /**
+     * Resume a pending event order.
+     */
+    public function resumeOrder(EventOrder $order): array;
 }

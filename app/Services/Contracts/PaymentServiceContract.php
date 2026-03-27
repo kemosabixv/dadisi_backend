@@ -45,13 +45,13 @@ interface PaymentServiceContract
     /**
      * Process payment through gateway
      *
-     * @param Authenticatable $user The user
+     * @param Authenticatable|null $user The user (null for guests)
      * @param array $data Payment data
      * @return array Processing result
      *
      * @throws \App\Exceptions\PaymentException
      */
-    public function processPayment(Authenticatable $user, array $data): array;
+    public function processPayment(?Authenticatable $user, array $data): array;
 
     /**
      * Get payment history for user
@@ -60,7 +60,7 @@ interface PaymentServiceContract
      * @param int $perPage Results per page
      * @return LengthAwarePaginator History data with pagination
      */
-    public function getPaymentHistory(Authenticatable $user, int $perPage = 15): LengthAwarePaginator;
+    public function getPaymentHistory(Authenticatable $user, int $perPage = 15, ?string $payableType = null): LengthAwarePaginator;
 
     /**
      * List payments with filtering

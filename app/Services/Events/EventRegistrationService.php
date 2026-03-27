@@ -7,12 +7,16 @@ use App\Exceptions\EventException;
 use App\Models\AuditLog;
 use App\Models\Event;
 use App\Models\EventRegistration;
+use App\Models\EventOrder;
 use App\Services\Contracts\EventRegistrationServiceContract;
 use App\Services\QrCodeService;
+use App\Notifications\EventWaitlistPromoted;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
+use App\Services\SystemSettingService;
 
 /**
  * EventRegistrationService
@@ -23,72 +27,185 @@ use Illuminate\Support\Facades\Log;
 class EventRegistrationService implements EventRegistrationServiceContract
 {
     public function __construct(
-        private QrCodeService $qrCodeService
+        private QrCodeService $qrCodeService,
+        private \App\Services\Contracts\RefundServiceContract $refundService
     ) {}
 
     /**
-     * Register a user for an event
+     * Remove a user (or guest) from an event waitlist
+     */
+    public function leaveWaitlist(string $identifier, Event $event): bool
+    {
+        $registration = EventRegistration::where('event_id', $event->id)
+            ->where('status', 'waitlisted')
+            ->where(function ($q) use ($identifier) {
+                $q->where('user_id', $identifier)
+                  ->orWhere('guest_email', $identifier)
+                  ->orWhere('confirmation_code', $identifier)
+                  ->orWhere('qr_code_token', $identifier);
+            })
+            ->first();
+
+        if (!$registration) {
+            return false;
+        }
+
+        return $registration->update(['status' => 'cancelled', 'cancellation_reason' => 'Left waitlist']);
+    }
+
+    /**
+     * Check if user has waitlist priority
+     */
+    protected function hasWaitlistPriority(?Authenticatable $user): bool
+    {
+        if (!$user instanceof \App\Models\User) {
+            return false;
+        }
+
+        $subscription = $user->activeSubscription()->first();
+        if (!$subscription || !$subscription->plan) {
+            return false;
+        }
+
+        return (bool) $subscription->plan->getFeatureValue('waitlist_priority', false);
+    }
+
+    /**
+     * Register a user (or guest) for an event
      *
-     * @param Authenticatable $user The user registering
+     * @param Authenticatable|null $user The user registering
      * @param Event $event The event
-     * @param array $data Additional data
+     * @param array $data Additional data (e.g., ticket_id, guest_name, guest_email)
      * @return EventRegistration The registration
      *
      * @throws EventException|EventCapacityExceededException
      */
-    public function registerUser(Authenticatable $user, Event $event, array $data = []): EventRegistration
+    public function registerUser(?Authenticatable $user, Event $event, array $data = [], bool $isWaitlistAction = false): EventRegistration
     {
+        $isRaceCondition = false;
         try {
             DB::beginTransaction();
 
-            // Check if already registered
-            $existing = EventRegistration::where('user_id', $user->getAuthIdentifier())
-                ->where('event_id', $event->id)
-                ->first();
+            $userId = $user?->getAuthIdentifier();
+            $guestEmail = $data['guest_email'] ?? $data['email'] ?? null;
+            $guestName = $data['guest_name'] ?? $data['name'] ?? null;
 
-            if ($existing && $existing->status === 'confirmed') {
-                DB::rollBack();
-                throw EventException::alreadyRegistered();
+            // Check if already registered
+            if ($userId) {
+                $existing = EventRegistration::where('user_id', $userId)
+                    ->where('event_id', $event->id)
+                    ->first();
+
+                if ($existing && $existing->status === 'confirmed') {
+                    DB::rollBack();
+                    throw EventException::alreadyRegistered();
+                }
+            } elseif ($guestEmail) {
+                $existing = EventRegistration::where('guest_email', $guestEmail)
+                    ->where('event_id', $event->id)
+                    ->first();
+
+                if ($existing && $existing->status === 'confirmed') {
+                    DB::rollBack();
+                    throw EventException::alreadyRegistered();
+                }
             }
 
-            // Check capacity
-            $confirmedCount = EventRegistration::where('event_id', $event->id)
-                ->where('status', 'confirmed')
-                ->count();
+            // Capacity check and waitlist handling
+            $isFull = false;
+            
+            // 1. Check Ticket Tier Capacity
+            if (isset($data['ticket_id'])) {
+                $ticket = \App\Models\Ticket::find($data['ticket_id']);
+                if ($ticket && $ticket->quantity !== null && $ticket->available <= 0) {
+                    $isFull = true;
+                }
+            }
 
-            if ($event->capacity !== null && $confirmedCount >= $event->capacity) {
-                DB::rollBack();
-                throw EventCapacityExceededException::eventAtCapacity();
+            // 2. Check Global Event Capacity
+            if (!$isFull && $event->capacity !== null) {
+                $confirmedCount = $this->getGlobalConfirmedCount($event);
+                
+                if ($confirmedCount >= $event->capacity) {
+                    $isFull = true;
+                }
+            }
+
+            $status = 'confirmed';
+            $waitlistPosition = null;
+
+            if ($isFull) {
+                if (!$event->waitlist_enabled) {
+                    DB::rollBack();
+                    throw EventCapacityExceededException::eventAtCapacity();
+                }
+
+                $status = 'waitlisted';
+                $isRaceCondition = !$isWaitlistAction;
+
+                // FIFO Position Calculation with Priority:
+                // Priority users: Range 1 - 999,999
+                // Normal users: Range 1,000,000+
+                $hasPriority = $this->hasWaitlistPriority($user);
+
+                if ($hasPriority) {
+                    $maxPriority = EventRegistration::where('event_id', $event->id)
+                        ->where('waitlist_position', '<', 1000000)
+                        ->max('waitlist_position') ?: 0;
+                    $waitlistPosition = min($maxPriority + 1, 999999);
+                } else {
+                    $maxNormal = EventRegistration::where('event_id', $event->id)
+                        ->where('waitlist_position', '>=', 1000000)
+                        ->max('waitlist_position') ?: 999999;
+                    $waitlistPosition = $maxNormal + 1;
+                }
             }
 
             $registration = EventRegistration::create([
-                'user_id' => $user->getAuthIdentifier(),
+                'user_id' => $userId,
+                'guest_name' => $guestName,
+                'guest_email' => $guestEmail,
                 'event_id' => $event->id,
                 'ticket_id' => $data['ticket_id'] ?? 1, // Default ticket
                 'confirmation_code' => 'CONF-' . strtoupper(\Illuminate\Support\Str::random(10)),
-                'status' => 'confirmed',
+                'status' => $status,
+                'waitlist_position' => $waitlistPosition,
                 'qr_code_token' => \Illuminate\Support\Str::random(32),
             ]);
 
-            AuditLog::create([
-                'actor_id' => $user->getAuthIdentifier(),
-                'action' => 'registered_for_event',
-                'model' => EventRegistration::class,
-                'model_id' => $registration->id,
-                'changes' => ['event_id' => $event->id],
-            ]);
+            // If confirmed, decrement ticket availability
+            if ($status === 'confirmed') {
+                $ticket = $registration->ticket;
+                if ($ticket && $ticket->quantity !== null) {
+                    $ticket->decrement('available');
+                }
+            }
 
-            Log::info("User registered for event", [
-                'user_id' => $user->getAuthIdentifier(),
+            if ($userId) {
+                AuditLog::create([
+                    'actor_id' => $userId,
+                    'action' => $status === 'waitlisted' ? 'joined_waitlist' : 'registered_for_event',
+                    'model' => EventRegistration::class,
+                    'model_id' => $registration->id,
+                    'changes' => ['event_id' => $event->id, 'status' => $status, 'position' => $waitlistPosition],
+                ]);
+            }
+
+            Log::info("User/Guest registration processed", [
+                'user_id' => $userId,
+                'guest_email' => $guestEmail,
                 'event_id' => $event->id,
                 'registration_id' => $registration->id,
+                'status' => $status,
+                'position' => $waitlistPosition,
             ]);
 
-            // Dispatch confirmation notification
+            // Generate QR code image immediately BEFORE notification
             try {
-                $user->notify(new \App\Notifications\EventRegistrationConfirmation($registration));
+                $this->qrCodeService->generateQrCode($registration);
+                $registration->refresh(); // Ensure we have the qr_code_path
             } catch (\Exception $e) {
-                Log::error('Failed to send event registration notification', [
+                Log::warning('QR code generation failed after registration', [
                     'registration_id' => $registration->id,
                     'error' => $e->getMessage()
                 ]);
@@ -96,17 +213,34 @@ class EventRegistrationService implements EventRegistrationServiceContract
 
             DB::commit();
 
-            // Generate QR code image immediately for the user
+            // Dispatch confirmation notification
             try {
-                $this->qrCodeService->generateQrCode($registration);
+                if ($status === 'confirmed') {
+                    if ($user) {
+                        $user->notify(new \App\Notifications\EventRegistrationConfirmation($registration));
+                    } elseif ($guestEmail) {
+                        \Illuminate\Support\Facades\Mail::to($guestEmail)->send(
+                            new \App\Mail\GuestEventTicket($registration)
+                        );
+                    }
+                } else {
+                    // Waitlist notification
+                    if ($user) {
+                        $user->notify(new \App\Notifications\EventWaitlistJoined($registration));
+                    } elseif ($guestEmail) {
+                        \Illuminate\Support\Facades\Notification::route('mail', $guestEmail)
+                            ->notify(new \App\Notifications\EventWaitlistJoined($registration));
+                    }
+                }
             } catch (\Exception $e) {
-                // Log but don't fail registration if QR generation fails
-                Log::warning('QR code generation failed after registration', [
+                Log::error('Failed to send event notification', [
                     'registration_id' => $registration->id,
                     'error' => $e->getMessage()
                 ]);
             }
 
+
+            $registration->is_race_condition = $isRaceCondition;
             return $registration;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -131,17 +265,29 @@ class EventRegistrationService implements EventRegistrationServiceContract
      * @param Authenticatable $user The user
      * @param Event $event The event
      * @param string|null $reason Cancellation reason
+     * @param EventRegistration|null $registration Specific registration instance (optional)
+     * @param string|null $customerNotes Customer notes for refund request (optional)
      * @return bool True if successful
      *
      * @throws EventException
      */
-    public function cancelRegistration(Authenticatable $user, Event $event, ?string $reason = null): bool
+    public function cancelRegistration(?Authenticatable $user, Event $event, ?string $reason = null, ?EventRegistration $registration = null, ?string $customerNotes = null): bool
     {
         try {
-            return DB::transaction(function () use ($user, $event, $reason) {
-                $registration = EventRegistration::where('user_id', $user->getAuthIdentifier())
-                    ->where('event_id', $event->id)
-                    ->first();
+            return DB::transaction(function () use ($user, $event, $reason, $registration, $customerNotes) {
+                if ($registration) {
+                    if ($registration->event_id !== $event->id) {
+                        throw EventException::registrationNotFound();
+                    }
+                } else {
+                    if (!$user) {
+                        throw EventException::registrationNotFound();
+                    }
+                    $registration = EventRegistration::where('event_id', $event->id)
+                        ->where('user_id', $user->getAuthIdentifier())
+                        ->where('status', '!=', 'cancelled')
+                        ->first();
+                }
 
                 if (!$registration) {
                     throw EventException::registrationNotFound();
@@ -151,23 +297,95 @@ class EventRegistrationService implements EventRegistrationServiceContract
                     throw EventException::cancellationFailed("Cannot cancel an attended event");
                 }
 
+                // Deadline check for non-staff
+                $isStaff = $user && \App\Support\AdminAccessResolver::canAccessAdmin($user);
+                if (!$isStaff) {
+                    $deadlineDays = (int) app(SystemSettingService::class)->get('event_cancellation_deadline_days', 7);
+                    if ($event->starts_at && now()->addDays($deadlineDays)->isAfter($event->starts_at)) {
+                        throw EventException::cancellationFailed("Cancellations for refunds/transfers are only allowed up to {$deadlineDays} days before the event starts.");
+                    }
+                }
+
+                $oldStatus = $registration->status;
                 $registration->update([
                     'status' => 'cancelled',
                     'cancellation_reason' => $reason
                 ]);
 
+                // If it was confirmed OR pending-promoted, increment ticket availability
+                $isPromoted = $registration->waitlist_position === -1 || ($registration->order && $registration->order->waitlist_position === -1);
+                if ($oldStatus === 'confirmed' || ($oldStatus === 'pending' && $isPromoted)) {
+                    $ticket = $registration->ticket;
+                    if ($ticket && $ticket->quantity !== null) {
+                        $ticket->increment('available');
+                    }
+                }
+
+                // If it was confirmed and paid, trigger refund request
+                if ($oldStatus === 'confirmed' && $registration->order && $registration->order->isPaid()) {
+                    try {
+                        $refund = $this->refundService->requestEventOrderRefund(
+                            $registration->order,
+                            $reason ?: 'Account cancellation',
+                            $customerNotes
+                        );
+
+                        // Mark the order as cancelled immediately to free up global capacity
+                        $registration->order->update(['status' => 'cancelled']);
+                        
+                        // Notify staff of new request
+                        $staff = \App\Models\User::permission('manage_refunds')->get();
+                        \Illuminate\Support\Facades\Notification::send(
+                            $staff, 
+                            new \App\Notifications\RefundRequestSubmitted($refund)
+                        );
+
+                        // Notify payer of new request (User or Guest) acknowledgement
+                        if ($registration->user) {
+                            $registration->user->notify(new \App\Notifications\RefundRequestSubmittedToPayer($refund));
+                        } elseif ($registration->guest_email) {
+                            \Illuminate\Support\Facades\Notification::route('mail', $registration->guest_email)
+                                ->notify(new \App\Notifications\RefundRequestSubmittedToPayer($refund));
+                        }
+                    } catch (\Exception $re) {
+                        Log::warning('Automatic refund request failed during cancellation', [
+                            'registration_id' => $registration->id,
+                            'error' => $re->getMessage()
+                        ]);
+                    }
+                }
+
                 AuditLog::create([
-                    'actor_id' => $user->getAuthIdentifier(),
+                    'actor_id' => $user?->getAuthIdentifier(),
                     'action' => 'cancelled_registration',
-                    'model' => EventRegistration::class,
+                    'model_type' => EventRegistration::class,
                     'model_id' => $registration->id,
-                    'changes' => ['reason' => $reason],
+                    'changes' => ['reason' => $reason, 'old_status' => $oldStatus],
                 ]);
 
-                Log::info('User registration cancelled', [
+                Log::info('Registration cancelled', [
                     'registration_id' => $registration->id,
-                    'user_id' => $user->getAuthIdentifier(),
+                    'user_id' => $user?->getAuthIdentifier(),
+                    'guest_email' => $registration->guest_email,
                 ]);
+
+                // Promotion Logic: A spot opened up!
+                $this->promoteWaitlistEntries($event);
+
+                // Send Notification to User/Guest
+                try {
+                    if ($registration->user) {
+                        $registration->user->notify(new \App\Notifications\EventRegistrationCancelled($registration, $reason));
+                    } elseif ($registration->guest_email) {
+                        \Illuminate\Support\Facades\Notification::route('mail', $registration->guest_email)
+                            ->notify(new \App\Notifications\EventRegistrationCancelled($registration, $reason));
+                    }
+                } catch (\Exception $ne) {
+                    Log::warning('Failed to send cancellation notification', [
+                        'registration_id' => $registration->id,
+                        'error' => $ne->getMessage()
+                    ]);
+                }
 
                 return true;
             });
@@ -177,7 +395,7 @@ class EventRegistrationService implements EventRegistrationServiceContract
             }
 
             Log::error('Registration cancellation failed', [
-                'user_id' => $user->getAuthIdentifier(),
+                'user_id' => $user?->getAuthIdentifier(),
                 'event_id' => $event->id,
                 'error' => $e->getMessage()
             ]);
@@ -249,7 +467,7 @@ class EventRegistrationService implements EventRegistrationServiceContract
     public function getConfirmedCount(Event $event): int
     {
         return EventRegistration::where('event_id', $event->id)
-            ->where('status', 'confirmed')
+            ->whereIn('status', ['confirmed', 'attended'])
             ->count();
     }
 
@@ -271,16 +489,6 @@ class EventRegistrationService implements EventRegistrationServiceContract
 
         try {
             DB::beginTransaction();
-
-            $currentCount = $this->getConfirmedCount($event);
-            
-            if ($event->capacity !== null) {
-                $availableSlots = $event->capacity - $currentCount;
-                if (count($userIds) > $availableSlots) {
-                    DB::rollBack();
-                    throw EventCapacityExceededException::insufficientCapacity($availableSlots);
-                }
-            }
 
             $count = 0;
             foreach ($userIds as $userId) {
@@ -323,42 +531,74 @@ class EventRegistrationService implements EventRegistrationServiceContract
      * Bulk cancel registrations (max 50)
      *
      * @param Event $event The event
-     * @param array $userIds User IDs
+     * @param array $registrationIds Registration IDs
      * @param Authenticatable|null $actor The user performing the action
+     * @param string|null $reason Optional reason for cancellation
      * @return int Cancellations
      *
      * @throws EventException
      */
-    public function bulkCancel(Event $event, array $userIds, ?Authenticatable $actor = null): int
+    public function bulkCancel(Event $event, array $registrationIds, ?Authenticatable $actor = null, ?string $reason = null): int
     {
-        if (count($userIds) > 50) {
+        if (count($registrationIds) > 50) {
             throw EventException::bulkOperationLimitExceeded(50);
         }
 
         try {
-            DB::beginTransaction();
+            return DB::transaction(function () use ($event, $registrationIds, $actor, $reason) {
+                $registrations = EventRegistration::where('event_id', $event->id)
+                    ->whereIn('id', $registrationIds)
+                    ->where('status', '!=', 'cancelled')
+                    ->get();
 
-            $count = EventRegistration::where('event_id', $event->id)
-                ->whereIn('user_id', $userIds)
-                ->where('status', 'confirmed')
-                ->update([
-                    'status' => 'cancelled',
-                    'cancelled_at' => now(),
-                ]);
+                $count = 0;
+                foreach ($registrations as $reg) {
+                    $oldStatus = $reg->status;
+                    $reg->update([
+                        'status' => 'cancelled',
+                        'cancellation_reason' => $reason ?? ($actor ? "Staff generated by " . $actor->username : "Bulk cancellation")
+                    ]);
 
-            AuditLog::create([
-                'actor_id' => $actor?->getAuthIdentifier(),
-                'action' => 'bulk_cancelled',
-                'model' => Event::class,
-                'model_id' => $event->id,
-                'changes' => ['count' => $count],
-            ]);
+                    // Trigger refund if needed (consistent with single cancel)
+                    if ($oldStatus === 'confirmed' && $reg->order && $reg->order->isPaid()) {
+                        try {
+                            $this->refundService->requestEventOrderRefund($reg->order, $reason ?? 'Bulk cancellation');
+                        } catch (\Exception $re) {
+                            Log::warning('Bulk refund request failed', ['registration_id' => $reg->id]);
+                        }
+                    }
 
-            DB::commit();
+                    AuditLog::create([
+                        'actor_id' => $actor?->getAuthIdentifier(),
+                        'action' => 'cancelled_registration',
+                        'model_type' => EventRegistration::class,
+                        'model_id' => $reg->id,
+                        'changes' => ['reason' => $reason, 'old_status' => $oldStatus],
+                    ]);
 
-            return $count;
+                    $count++;
+                }
+
+                if ($count > 0) {
+                    AuditLog::create([
+                        'actor_id' => $actor?->getAuthIdentifier(),
+                        'action' => 'bulk_cancelled_registrations',
+                        'model_type' => Event::class,
+                        'model_id' => $event->id,
+                        'changes' => ['count' => $count],
+                    ]);
+
+                    // Promotion Logic: Spots opened up!
+                    $this->promoteWaitlistEntries($event);
+                }
+
+                return $count;
+            });
         } catch (\Exception $e) {
-            DB::rollBack();
+            Log::error('Bulk cancellation failed', [
+                'event_id' => $event->id,
+                'error' => $e->getMessage()
+            ]);
 
             throw EventException::bulkCancellationFailed($e->getMessage());
         }
@@ -399,5 +639,142 @@ class EventRegistrationService implements EventRegistrationServiceContract
         ]);
 
         return $registration;
+    }
+
+    /**
+     * Promote waitlisted entries for a given event if capacity allows.
+     * This considers both RSVPs (EventRegistration) and Paid Orders (EventOrder).
+     *
+     * @param Event $event
+     * @return int Number of promoted entries
+     */
+    public function promoteWaitlistEntries(Event $event): int
+    {
+        $promotedCount = 0;
+
+        try {
+            return DB::transaction(function () use ($event, &$promotedCount) {
+                // Fetch all waitlisted registrations (independent RSVPs only) and orders
+                $registrations = EventRegistration::where('event_id', $event->id)
+                    ->where('status', 'waitlisted')
+                    ->whereNull('order_id')
+                    ->get();
+                
+                $orders = EventOrder::where('event_id', $event->id)
+                    ->where('status', 'waitlisted')
+                    ->get();
+
+                // Unify and sort by position, then by creation time
+                $allEntries = $registrations->map(fn($item) => [
+                        'type' => 'registration', 
+                        'model' => $item, 
+                        'position' => $item->waitlist_position, 
+                        'created_at' => $item->created_at
+                    ])
+                    ->concat($orders->map(fn($item) => [
+                        'type' => 'order', 
+                        'model' => $item, 
+                        'position' => $item->waitlist_position, 
+                        'created_at' => $item->created_at
+                    ]))
+                    ->sortBy(['position', 'created_at']);
+
+                foreach ($allEntries as $entry) {
+                    $model = $entry['model'];
+                    $ticket = $model->ticket;
+                    $qtyNeeded = ($entry['type'] === 'order') ? $model->quantity : 1;
+
+                    // 1. Check Global Capacity
+                    $currentConfirmed = $this->getGlobalConfirmedCount($event);
+
+                    if ($event->capacity !== null && ($currentConfirmed + $qtyNeeded) > $event->capacity) {
+                        // Skip if this would exceed global capacity
+                        continue;
+                    }
+
+                    // 2. Check Ticket Tier Availability
+                    $ticket->refresh();
+                    if ($ticket->quantity !== null && $ticket->available < $qtyNeeded) {
+                        continue; // Skip if this specific tier is full
+                    }
+
+                    // 3. Promote
+                    if ($entry['type'] === 'registration') {
+                        $model->update([
+                            'status' => 'confirmed',
+                            'waitlist_position' => null, // Mark as promoted
+                        ]);
+                        
+                        if ($model->user) {
+                            $model->user->notify(new EventWaitlistPromoted($model));
+                        } elseif ($model->guest_email) {
+                            Notification::route('mail', $model->guest_email)
+                                ->notify(new EventWaitlistPromoted($model));
+                        }
+                    } else {
+                        // Paid Order Promotion
+                        // Note: Promotion changes status to 'pending' to allow payment
+                        $model->update([
+                            'status' => 'pending',
+                            'waitlist_position' => -1, // Mark as promoted (-1 is the special flag for "promoted but pending payment")
+                        ]);
+
+                        $model->registrations()->update([
+                            'status' => 'pending',
+                            'waitlist_position' => -1, // Mark as promoted
+                        ]);
+
+                        if ($model->user) {
+                            $model->user->notify(new EventWaitlistPromoted($model));
+                        } elseif ($model->guest_email) {
+                            Notification::route('mail', $model->guest_email)
+                                ->notify(new EventWaitlistPromoted($model));
+                        }
+                    }
+
+                    // 4. Update ticket availability
+                    if ($ticket->quantity !== null) {
+                        $ticket->decrement('available', $qtyNeeded);
+                    }
+
+                    AuditLog::create([
+                        'actor_id' => null, // System action
+                        'action' => 'promoted_from_waitlist',
+                        'model' => $entry['type'] === 'registration' ? EventRegistration::class : EventOrder::class,
+                        'model_id' => $model->id,
+                        'changes' => ['old_status' => 'waitlisted', 'new_status' => $model->status],
+                    ]);
+
+                    $promotedCount++;
+                }
+
+                return $promotedCount;
+            });
+        } catch (\Exception $e) {
+            Log::error('Waitlist promotion failed', [
+                'event_id' => $event->id,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+    }
+
+    /**
+     * Get global confirmed count for an event (confirmed RSVPs + paid Orders)
+     */
+    public function getGlobalConfirmedCount(Event $event): int
+    {
+        // Count confirmed and attended registrations that ARE NOT linked to an order (RSVPs/Free)
+        $registrations = EventRegistration::where('event_id', $event->id)
+            ->whereNull('order_id')
+            ->whereIn('status', ['confirmed', 'attended'])
+            ->count();
+        
+        // Count paid and pending orders (Paid tickets)
+        $orders = EventOrder::where('event_id', $event->id)
+            ->whereIn('status', ['paid', 'pending'])
+            ->sum('quantity');
+            
+        return (int) ($registrations + $orders);
     }
 }

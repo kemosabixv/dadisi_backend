@@ -33,7 +33,17 @@ class NewLikeNotification extends Notification implements ShouldQueue
     public function via(object $notifiable): array
     {
         // Only send database notification for likes to avoid spamming email
-        return ['database'];
+        return ['database', \App\Channels\SupabaseChannel::class];
+    }
+
+    /**
+     * Get the Supabase representation of the notification.
+     */
+    public function toSupabase(object $notifiable): array
+    {
+        $data = $this->toArray($notifiable);
+        $data['link'] = '/blog/' . $this->post->slug;
+        return $data;
     }
 
     /**

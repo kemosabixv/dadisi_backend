@@ -19,7 +19,7 @@ class AdminGroupController extends Controller
     public function __construct(
         private GroupServiceContract $groupService
     ) {
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**

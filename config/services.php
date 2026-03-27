@@ -56,4 +56,10 @@ return [
         'base_url' => env('EXCHANGE_RATE_API_BASE_URL', 'https://v6.exchangerate-api.com/v6/'),
     ],
 
+    'supabase' => [
+        'url' => env('SUPABASE_URL'),
+        'service_key' => env('SUPABASE_SERVICE_KEY'),
+        'table' => env('SUPABASE_NOTIFICATIONS_TABLE', 'realtime_notifications_dev'),
+    ],
+
 ];

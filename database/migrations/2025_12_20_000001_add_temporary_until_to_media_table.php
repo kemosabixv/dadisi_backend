@@ -11,7 +11,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('media', function (Blueprint $table) {
-            $table->timestamp('temporary_until')->nullable()->after('is_public');
+            if (!Schema::hasColumn('media', 'temporary_until')) {
+                $table->timestamp('temporary_until')->nullable();
+            }
         });
     }
 

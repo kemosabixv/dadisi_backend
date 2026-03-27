@@ -2,7 +2,9 @@
 
 namespace App\Services\Users;
 
+use App\DTOs\CreateMemberProfileDTO;
 use App\DTOs\CreateUserDTO;
+use App\DTOs\UpdateMemberProfileDTO;
 use App\DTOs\UpdateUserDTO;
 use App\Exceptions\UserException;
 use App\Models\AuditLog;
@@ -10,30 +12,35 @@ use App\Models\County;
 use App\Models\MemberProfile;
 use App\Models\User;
 use App\Services\Contracts\UserServiceContract;
+use App\Services\Media\MediaService;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 /**
  * User Service
  *
  * Handles user management operations including CRUD operations,
  * profile management, and account lifecycle.
- *
- * @package App\Services\Users
  */
 class UserService implements UserServiceContract
 {
     /**
-     * Create a new user with optional member profile
-     *
-     * @param Authenticatable $actor The user performing the action
-     * @param CreateUserDTO $dto User creation data
-     * @param array $profileData Optional member profile data
+     * @param  Authenticatable  $actor  The user performing the action
+     * @param  CreateUserDTO  $dto  User creation data
+     * @param  array  $profileData  Optional member profile data
+     */
+    public function __construct(
+        private MediaService $mediaService
+    ) {}
+
+    /**
+     * @param  Authenticatable  $actor  The user performing the action
+     * @param  CreateUserDTO  $dto  User creation data
+     * @param  array  $profileData  Optional member profile data
      * @return User The created user
      *
      * @throws UserException
@@ -46,9 +53,8 @@ class UserService implements UserServiceContract
             // Create member profile automatically
             MemberProfile::create([
                 'user_id' => $user->id,
-                'first_name' => $profileData['first_name'] ?? null,
-                'last_name' => $profileData['last_name'] ?? null,
-                'is_staff' => $profileData['is_staff'] ?? false,
+                'first_name' => $profileData['first_name'] ?? '',
+                'last_name' => $profileData['last_name'] ?? '',
             ]);
 
             // Load relationships
@@ -69,9 +75,9 @@ class UserService implements UserServiceContract
     /**
      * Update an existing user
      *
-     * @param Authenticatable $actor The user performing the action
-     * @param User $user The user to update
-     * @param UpdateUserDTO $dto Updated user data
+     * @param  Authenticatable  $actor  The user performing the action
+     * @param  User  $user  The user to update
+     * @param  UpdateUserDTO  $dto  Updated user data
      * @return User The updated user
      *
      * @throws UserException
@@ -81,7 +87,7 @@ class UserService implements UserServiceContract
         try {
             $updateData = $dto->toArray();
 
-            if (!empty($updateData)) {
+            if (! empty($updateData)) {
                 $user->update($updateData);
             }
 
@@ -100,7 +106,7 @@ class UserService implements UserServiceContract
     /**
      * Get a user by ID
      *
-     * @param string $id The user ID
+     * @param  string  $id  The user ID
      * @return User The user
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
@@ -110,14 +116,14 @@ class UserService implements UserServiceContract
         $user = User::with(['roles', 'memberProfile.county'])->findOrFail($id);
 
         // For non-staff members, load the full activity history
-        if (!$user->isStaffMember()) {
+        if (! $user->isStaffMember()) {
             $user->load([
                 'subscriptions',
                 'donations',
                 'eventOrders.event',
                 'labBookings',
                 'forumThreads',
-                'forumPosts.thread'
+                'forumPosts.thread',
             ]);
         }
 
@@ -127,8 +133,8 @@ class UserService implements UserServiceContract
     /**
      * Delete a user (soft delete)
      *
-     * @param Authenticatable $actor The user performing the action
-     * @param User $user The user to delete
+     * @param  Authenticatable  $actor  The user performing the action
+     * @param  User  $user  The user to delete
      * @return bool Success status
      *
      * @throws UserException
@@ -153,8 +159,8 @@ class UserService implements UserServiceContract
     /**
      * Restore a soft-deleted user
      *
-     * @param Authenticatable $actor The user performing the action
-     * @param User $user The user to restore
+     * @param  Authenticatable  $actor  The user performing the action
+     * @param  User  $user  The user to restore
      * @return User The restored user
      *
      * @throws UserException
@@ -179,9 +185,9 @@ class UserService implements UserServiceContract
     /**
      * Delete a user account (self-service)
      *
-     * @param User $user The user deleting their account
-     * @param string $password Their password for verification
-     * @param string|null $reason Optional reason for deletion
+     * @param  User  $user  The user deleting their account
+     * @param  string  $password  Their password for verification
+     * @param  string|null  $reason  Optional reason for deletion
      * @return bool Success status
      *
      * @throws UserException
@@ -190,7 +196,7 @@ class UserService implements UserServiceContract
     {
         try {
             // Verify password
-            if (!Hash::check($password, $user->password)) {
+            if (! Hash::check($password, $user->password)) {
                 throw UserException::invalidPassword();
             }
 
@@ -200,7 +206,7 @@ class UserService implements UserServiceContract
             // Log audit trail
             $this->logAudit($user, 'self_delete_user', $user);
 
-            Log::info("User self-deleted: {$user->id}" . ($reason ? " - Reason: {$reason}" : ''));
+            Log::info("User self-deleted: {$user->id}".($reason ? " - Reason: {$reason}" : ''));
 
             return true;
         } catch (UserException $e) {
@@ -214,8 +220,8 @@ class UserService implements UserServiceContract
     /**
      * List users with filtering and pagination
      *
-     * @param array $filters Filters (search, role, status, etc.)
-     * @param int $perPage Results per page
+     * @param  array  $filters  Filters (search, role, status, etc.)
+     * @param  int  $perPage  Results per page
      * @return LengthAwarePaginator Paginated users
      */
     public function listUsers(array $filters = [], int $perPage = 20): LengthAwarePaginator
@@ -223,12 +229,12 @@ class UserService implements UserServiceContract
         $query = User::query()->with(['memberProfile.county', 'roles']);
 
         // Include trashed if requested
-        if (!empty($filters['include_deleted'])) {
+        if (! empty($filters['include_deleted'])) {
             $query->withTrashed();
         }
 
         // Search by username or email
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('username', 'like', "%{$search}%")
@@ -237,7 +243,7 @@ class UserService implements UserServiceContract
         }
 
         // Filter by role
-        if (!empty($filters['role'])) {
+        if (! empty($filters['role'])) {
             $query->role($filters['role']);
         }
 
@@ -256,8 +262,8 @@ class UserService implements UserServiceContract
     /**
      * Force delete a user (permanent deletion)
      *
-     * @param Authenticatable $actor The user performing the action
-     * @param User $user The user to permanently delete
+     * @param  Authenticatable  $actor  The user performing the action
+     * @param  User  $user  The user to permanently delete
      * @return bool Success status
      *
      * @throws UserException
@@ -288,8 +294,8 @@ class UserService implements UserServiceContract
     /**
      * Get user's audit log
      *
-     * @param User $user The user
-     * @param int $limit Maximum records
+     * @param  User  $user  The user
+     * @param  int  $limit  Maximum records
      * @return \Illuminate\Database\Eloquent\Collection Audit logs
      */
     public function getAuditLog(User $user, int $limit = 50): \Illuminate\Database\Eloquent\Collection
@@ -309,7 +315,7 @@ class UserService implements UserServiceContract
     /**
      * Export user data for GDPR compliance
      *
-     * @param User $user The user whose data to export
+     * @param  User  $user  The user whose data to export
      * @return array Exported data
      */
     public function exportData(User $user): array
@@ -348,8 +354,8 @@ class UserService implements UserServiceContract
     /**
      * Upload user profile picture
      *
-     * @param User $user The user
-     * @param UploadedFile $file The image file
+     * @param  User  $user  The user
+     * @param  UploadedFile  $file  The image file
      * @return string The new profile picture URL
      *
      * @throws UserException
@@ -357,63 +363,50 @@ class UserService implements UserServiceContract
     public function uploadProfilePicture(User $user, UploadedFile $file): string
     {
         try {
-            // Validate file type
-            $allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-            if (!in_array($file->getMimeType(), $allowedMimes)) {
-                throw UserException::updateFailed('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.');
-            }
+            // Validate through MediaService
+            $this->mediaService->validateFile($file, $user);
 
-            // Validate file size (max 5MB)
-            if ($file->getSize() > 5 * 1024 * 1024) {
-                throw UserException::updateFailed('File size exceeds 5MB limit.');
-            }
+            // Upload via MediaService (into public profile-pictures folder)
+            $media = $this->mediaService->uploadMedia($user, $file, [
+                'root_type' => 'public',
+                'path' => ['profile-pictures'],
+                'visibility' => 'public', // Profile pictures are usually public
+            ]);
 
-            // Delete old profile picture if exists
-            if ($user->profile_picture_path) {
-                Storage::disk('public')->delete($user->profile_picture_path);
-            }
+            // Update user with virtual path for backward compatibility or future use
+            $user->update(['profile_picture_path' => $media->file_path]);
 
-            // Store new profile picture
-            $directory = 'profile-pictures';
-            $filename = Str::slug($user->username) . '-' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-            $path = Storage::disk('public')->putFileAs($directory, $file, $filename);
+            Log::info("Profile picture uploaded via MediaService for user {$user->id}");
 
-            // Update user with correct column name
-            $user->update(['profile_picture_path' => $path]);
-
-            Log::info("Profile picture uploaded for user {$user->id}");
-
-            return url('/storage/' . $path);
-        } catch (UserException $e) {
-            throw $e;
+            return $media->getMediaUrl();
         } catch (\Exception $e) {
             Log::error("Failed to upload profile picture: {$e->getMessage()}");
-            throw UserException::updateFailed('Failed to upload profile picture');
+            throw UserException::updateFailed($e->getMessage());
         }
     }
 
     /**
      * List all member profiles with filtering
      *
-     * @param array $filters Filters (county_id, membership_type, search, page)
+     * @param  array  $filters  Filters (county_id, membership_type, search, page)
      * @return array Paginated member profiles
      */
     public function listMemberProfiles(array $filters = []): array
     {
         $user = auth()->user();
-        
+
         // Check authorization - only admins can list all profiles
-        if (!$user || !$user->hasAnyRole(['super_admin', 'admin'])) {
+        if (! $user || ! $user->hasAnyRole(['super_admin', 'admin'])) {
             throw new UserException('Unauthorized to view all profiles', 403);
         }
 
         $query = MemberProfile::with(['user', 'county']);
 
-        if (!empty($filters['county_id'])) {
+        if (! empty($filters['county_id'])) {
             $query->where('county_id', $filters['county_id']);
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
@@ -436,38 +429,40 @@ class UserService implements UserServiceContract
      *
      * @return array User profile data
      */
-    public function getCurrentUserProfile(): array
+    public function getCurrentUserProfile(): \App\Models\MemberProfile
     {
         $user = auth()->user();
-        
-        if (!$user) {
+
+        if (! $user) {
             throw new UserException('User not authenticated', 401);
         }
 
-        $profile = MemberProfile::with(['user', 'county'])
+        $profile = \App\Models\MemberProfile::with(['user.subscriptions.plan', 'county'])
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$profile) {
+        if (! $profile) {
             throw new UserException('Profile not found', 404);
         }
 
-        return $profile->toArray();
+        return $profile;
     }
 
     /**
      * Create or update member profile for authenticated user
      *
-     * @param array $data Profile data
-     * @return array Created or updated profile
+     * @param  CreateMemberProfileDTO  $dto  Profile data
+     * @return MemberProfile Created or updated profile
      */
-    public function createOrUpdateMemberProfile(array $data): array
+    public function createOrUpdateMemberProfile(CreateMemberProfileDTO $dto): MemberProfile
     {
         $user = auth()->user();
-        
-        if (!$user) {
+
+        if (! $user) {
             throw new UserException('User not authenticated', 401);
         }
+
+        $data = $dto->toArray();
 
         // Parse first/last name from user's name if not provided
         if (empty($data['first_name']) && empty($data['last_name']) && $user->name) {
@@ -481,23 +476,21 @@ class UserService implements UserServiceContract
             array_merge($data, ['user_id' => $user->id])
         );
 
-        $profile->load(['user', 'county']);
-
-        return $profile->toArray();
+        return $profile->load(['user', 'county']);
     }
 
     /**
      * Delete a member profile
      *
-     * @param string $id Profile ID
+     * @param  string  $id  Profile ID
      * @return bool Success status
      */
     public function deleteMemberProfile(string $id): bool
     {
         $user = auth()->user();
-        
+
         // Check authorization - only admins can delete profiles
-        if (!$user || !$user->hasAnyRole(['super_admin', 'admin'])) {
+        if (! $user || ! $user->hasAnyRole(['super_admin', 'admin'])) {
             throw new UserException('Unauthorized to delete profile', 403);
         }
 
@@ -516,21 +509,21 @@ class UserService implements UserServiceContract
     /**
      * Get a specific member profile
      *
-     * @param string|null $id Profile ID (null for current user)
+     * @param  string|null  $id  Profile ID (null for current user)
      * @return array Profile data
      */
     public function getMemberProfile(?string $id = null): array
     {
         $user = auth()->user();
-        
-        if (!$user) {
+
+        if (! $user) {
             throw new UserException('User not authenticated', 401);
         }
 
         $profile = MemberProfile::with(['user', 'county'])->findOrFail($id);
 
         // Check authorization - users can view their own profile, admins can view any
-        if ($profile->user_id !== $user->id && !$user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($profile->user_id !== $user->id && ! $user->hasAnyRole(['super_admin', 'admin'])) {
             throw new UserException('Unauthorized to view this profile', 403);
         }
 
@@ -540,29 +533,32 @@ class UserService implements UserServiceContract
     /**
      * Update a member profile
      *
-     * @param string $id Profile ID
-     * @param array $data Profile data to update
-     * @return array Updated profile
+     * @param  string  $id  Profile ID
+     * @param  UpdateMemberProfileDTO  $dto  Profile data to update
+     * @return MemberProfile Updated profile
      */
-    public function updateMemberProfile(string $id, array $data): array
+    public function updateMemberProfile(string $id, UpdateMemberProfileDTO $dto): MemberProfile
     {
         $user = auth()->user();
-        
-        if (!$user) {
+
+        if (! $user) {
             throw new UserException('User not authenticated', 401);
         }
 
         $profile = MemberProfile::findOrFail($id);
 
         // Check authorization - users can update their own profile, admins can update any
-        if ($profile->user_id !== $user->id && !$user->hasAnyRole(['super_admin', 'admin'])) {
+        if ($profile->user_id !== $user->id && ! $user->hasAnyRole(['super_admin', 'admin'])) {
             throw new UserException('Unauthorized to update this profile', 403);
         }
 
-        $profile->update($data);
-        $profile->load(['user', 'county']);
+        $data = $dto->toArray();
 
-        return $profile->toArray();
+        if (! empty($data)) {
+            $profile->update($data);
+        }
+
+        return $profile->fresh(['user', 'county']);
     }
 
     /**
@@ -578,10 +574,9 @@ class UserService implements UserServiceContract
     /**
      * Log audit trail
      *
-     * @param User|Authenticatable $actor The user performing the action
-     * @param string $action The action performed
-     * @param User $user The affected user
-     * @return void
+     * @param  User|Authenticatable  $actor  The user performing the action
+     * @param  string  $action  The action performed
+     * @param  User  $user  The affected user
      */
     private function logAudit(User|Authenticatable $actor, string $action, User $user): void
     {

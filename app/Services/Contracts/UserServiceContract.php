@@ -4,7 +4,10 @@ namespace App\Services\Contracts;
 
 use App\DTOs\CreateUserDTO;
 use App\DTOs\UpdateUserDTO;
+use App\DTOs\CreateMemberProfileDTO;
+use App\DTOs\UpdateMemberProfileDTO;
 use App\Models\User;
+use App\Models\MemberProfile;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -144,17 +147,17 @@ interface UserServiceContract
     /**
      * Get current authenticated user's profile
      *
-     * @return array User profile data
+     * @return MemberProfile User profile model
      */
-    public function getCurrentUserProfile(): array;
+    public function getCurrentUserProfile(): MemberProfile;
 
     /**
      * Create or update member profile for authenticated user
      *
-     * @param array $data Profile data
-     * @return array Created or updated profile
+     * @param CreateMemberProfileDTO $dto Profile data
+     * @return MemberProfile Created or updated profile
      */
-    public function createOrUpdateMemberProfile(array $data): array;
+    public function createOrUpdateMemberProfile(CreateMemberProfileDTO $dto): MemberProfile;
 
     /**
      * Delete a member profile
@@ -176,10 +179,10 @@ interface UserServiceContract
      * Update a member profile
      *
      * @param string $id Profile ID
-     * @param array $data Profile data to update
-     * @return array Updated profile
+     * @param UpdateMemberProfileDTO $dto Profile data to update
+     * @return MemberProfile Updated profile
      */
-    public function updateMemberProfile(string $id, array $data): array;
+    public function updateMemberProfile(string $id, UpdateMemberProfileDTO $dto): MemberProfile;
 
     /**
      * List all counties

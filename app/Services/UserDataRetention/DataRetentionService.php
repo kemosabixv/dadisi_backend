@@ -300,9 +300,6 @@ class DataRetentionService implements UserDataRetentionServiceContract
                     ]);
                 }
 
-                // Revoke all tokens
-                $user->tokens()->delete();
-
                 // Log the anonymization
                 AuditLog::create([
                     'actor_id' => $user->id,

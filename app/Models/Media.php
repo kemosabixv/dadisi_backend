@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Storage;
 
 class Media extends Model
 {
@@ -16,41 +16,37 @@ class Media extends Model
 
     protected $fillable = [
         'user_id',
+        'media_file_id',
+        'folder_id',
         'file_name',
-        'file_path',
         'mime_type',
         'file_size',
-        'type',
+        'usage_count',
+        'root_type', // 'personal', 'public'
         'visibility', // 'public', 'private', 'shared'
         'share_token',
+        'expires_at',
         'allow_download',
         'temporary_until',
-        
-        // DEPRECATED
-        'is_public',
-        'attached_to',
-        'attached_to_id',
     ];
 
     protected $appends = [
         'url',
-        'original_url',
     ];
 
     protected $casts = [
         'file_size' => 'integer',
+        'usage_count' => 'integer',
         'allow_download' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'expires_at' => 'datetime',
         'temporary_until' => 'datetime',
-        
-        // DEPRECATED
-        'is_public' => 'boolean',
     ];
 
     /**
-     * Owner (user) relationship
+     * Owner relationship
      */
     public function owner(): BelongsTo
     {
@@ -58,7 +54,7 @@ class Media extends Model
     }
 
     /**
-     * Alias for owner() relationship for backward compatibility
+     * Backwards compatibility for older callsites.
      */
     public function user(): BelongsTo
     {
@@ -66,43 +62,19 @@ class Media extends Model
     }
 
     /**
-     * Posts that use this media (polymorphic many-to-many via pivot table)
+     * Physical file relationship (CAS)
      */
-    public function posts(): \Illuminate\Database\Eloquent\Relations\MorphToMany
+    public function file(): BelongsTo
     {
-        return $this->morphedByMany(Post::class, 'attachable', 'media_attachments')
-            ->withPivot('role')
-            ->withTimestamps();
+        return $this->belongsTo(MediaFile::class, 'media_file_id');
     }
 
     /**
-     * Events that use this media (polymorphic many-to-many via pivot table)
+     * Folder relationship (Virtual FS)
      */
-    public function events(): \Illuminate\Database\Eloquent\Relations\MorphToMany
+    public function folder(): BelongsTo
     {
-        return $this->morphedByMany(Event::class, 'attachable', 'media_attachments')
-            ->withPivot('role')
-            ->withTimestamps();
-    }
-
-    /**
-     * Donation campaigns that use this media (polymorphic many-to-many via pivot table)
-     */
-    public function campaigns(): \Illuminate\Database\Eloquent\Relations\MorphToMany
-    {
-        return $this->morphedByMany(DonationCampaign::class, 'attachable', 'media_attachments')
-            ->withPivot('role')
-            ->withTimestamps();
-    }
-
-    /**
-     * Speakers that use this media (polymorphic many-to-many via pivot table)
-     */
-    public function speakers(): \Illuminate\Database\Eloquent\Relations\MorphToMany
-    {
-        return $this->morphedByMany(Speaker::class, 'attachable', 'media_attachments')
-            ->withPivot('role')
-            ->withTimestamps();
+        return $this->belongsTo(Folder::class, 'folder_id');
     }
 
     /**
@@ -110,7 +82,7 @@ class Media extends Model
      */
     public function isAttached(): bool
     {
-        return \DB::table('media_attachments')
+        return $this->usage_count > 0 || \DB::table('media_attachments')
             ->where('media_id', $this->id)
             ->exists();
     }
@@ -142,14 +114,6 @@ class Media extends Model
     }
 
     /**
-     * Scope: public media only
-     */
-    public function scopePublic($query)
-    {
-        return $query->where('visibility', 'public');
-    }
-
-    /**
      * Scope: by visibility
      */
     public function scopeVisibility($query, $visibility)
@@ -157,13 +121,9 @@ class Media extends Model
         return $query->where('visibility', $visibility);
     }
 
-    /**
-     * Scope: orphaned (unattached) media
-     */
-    public function scopeOrphaned($query)
+    public function scopePersonal($query)
     {
-        return $query->whereNull('attached_to_id')
-            ->orWhere('attached_to', null);
+        return $query->where('root_type', 'personal');
     }
 
     /**
@@ -174,48 +134,8 @@ class Media extends Model
         return $query->where('type', $type);
     }
 
-    /**
-     * Check if media is accessible to a user or public
-     */
-    public function isAccessibleTo($userId = null): bool
-    {
-        // 1. Owner can access
-        if ($userId && $this->user_id === $userId) {
-            return true;
-        }
-
-        // 2. Public media is accessible to anyone
-        if ($this->visibility === 'public') {
-            return true;
-        }
-
-        // 3. Shared media is accessible via token (this check is for general access)
-        if ($this->visibility === 'shared') {
-            return true;
-        }
-
-        // DEPRECATED backward compatibility:
-        // Public media attached to published post
-        if ($this->is_public && $this->attached_to === 'blog_post' && $this->post && $this->post->status === 'published') {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Get the public URL for the media file.
-     */
     public function getUrlAttribute(): string
     {
-        return url('/storage' . $this->file_path);
-    }
-
-    /**
-     * Get the original URL (same as url for now).
-     */
-    public function getOriginalUrlAttribute(): string
-    {
-        return $this->url;
+        return $this->file?->getUrl() ?? '';
     }
 }

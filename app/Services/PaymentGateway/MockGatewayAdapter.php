@@ -26,24 +26,31 @@ class MockGatewayAdapter implements PaymentGatewayInterface
             'amount' => $request->amount,
             'currency' => $request->currency,
             // If it's a subscription, use the numerical ID as order_id for controller lookup compat
-            'order_id' => ($request->payable_type === 'App\\Models\\PlanSubscription') 
+            'order_id' => (in_array($request->payable_type, ['subscription', 'App\\Models\\PlanSubscription'])) 
                 ? $request->payable_id 
                 : ($request->reference ?? $request->metadata['payment_id'] ?? null),
             'user_id' => $request->metadata['user_id'] ?? null,
             'plan_id' => $request->metadata['plan_id'] ?? null,
             'billing_period' => $request->metadata['billing_period'] ?? 'month',
             'description' => $request->description,
+            'type' => match(true) {
+                str_contains(strtolower($request->payable_type ?? ''), 'donation') => 'DON',
+                str_contains(strtolower($request->payable_type ?? ''), 'event') => 'EVT',
+                default => 'SUB',
+            },
         ];
 
         $res = MockPaymentService::initiatePayment($data);
 
         return TransactionResultDTO::success(
-            transactionId: $res['transaction_id'] ?? '',
+            transactionId: $res['payment_id'] ?? $res['transaction_id'] ?? '',
             merchantReference: $request->reference ?? '',
             redirectUrl: $res['redirect_url'] ?? null,
             status: 'PENDING',
             message: 'Mock payment initiated',
-            rawResponse: $res
+            rawResponse: array_merge($res, [
+                'confirmation_code' => 'MOCK-' . strtoupper(bin2hex(random_bytes(4)))
+            ])
         );
     }
 
@@ -74,6 +81,11 @@ class MockGatewayAdapter implements PaymentGatewayInterface
     public function queryStatus(string $transactionId): PaymentStatusDTO
     {
         $res = MockPaymentService::queryPaymentStatus($transactionId);
+
+        // For mock gateway, ensure a confirmation code is always available when the payment is considered paid.
+        if (! empty($res['status']) && strtoupper($res['status']) === 'PAID') {
+            $res['confirmation_code'] = $res['confirmation_code'] ?? ('MOCK_CONF_' . strtoupper(bin2hex(random_bytes(5))));
+        }
 
         return new PaymentStatusDTO(
             transactionId: $transactionId,

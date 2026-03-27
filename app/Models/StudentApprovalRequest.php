@@ -19,7 +19,7 @@ class StudentApprovalRequest extends Model
         'reviewed_by',
         'admin_notes',
         'rejection_reason',
-        'submitted_at',
+        'requested_at',
         'student_email',
         'student_birth_date',
         'county',
@@ -29,7 +29,7 @@ class StudentApprovalRequest extends Model
     ];
 
     protected $casts = [
-        'submitted_at' => 'datetime',
+        'requested_at' => 'datetime',
         'student_birth_date' => 'date',
         'reviewed_at' => 'datetime',
         'expires_at' => 'datetime',

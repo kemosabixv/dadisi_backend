@@ -11,17 +11,15 @@ use Illuminate\Pagination\LengthAwarePaginator;
  *
  * Defines the contract for media management operations including
  * file uploads, retrieval, and deletion with proper validation.
- *
- * @package App\Services\Contracts
  */
 interface MediaServiceContract
 {
     /**
      * Upload a new media file
      *
-     * @param Authenticatable $user The user uploading the file
-     * @param \Illuminate\Http\UploadedFile $file The uploaded file
-     * @param array $metadata Optional metadata (attached_to, attached_to_id, temporary)
+     * @param  Authenticatable  $user  The user uploading the file
+     * @param  \Illuminate\Http\UploadedFile  $file  The uploaded file
+     * @param  array  $metadata  Optional metadata (attached_to, attached_to_id, temporary)
      * @return Media The created media record
      *
      * @throws \App\Exceptions\MediaException If upload fails or file type unsupported
@@ -31,7 +29,7 @@ interface MediaServiceContract
     /**
      * Get media by ID
      *
-     * @param string|int $id Media ID
+     * @param  string|int  $id  Media ID
      * @return Media The media record
      *
      * @throws \App\Exceptions\MediaException If not found
@@ -41,9 +39,9 @@ interface MediaServiceContract
     /**
      * List media files for a user
      *
-     * @param Authenticatable $user The user whose media to list
-     * @param array $filters Filters (type, search)
-     * @param int $perPage Items per page
+     * @param  Authenticatable  $user  The user whose media to list
+     * @param  array  $filters  Filters (type, search)
+     * @param  int  $perPage  Items per page
      * @return LengthAwarePaginator Paginated media
      */
     public function listMedia(Authenticatable $user, array $filters = [], int $perPage = 30): LengthAwarePaginator;
@@ -51,80 +49,75 @@ interface MediaServiceContract
     /**
      * Delete a media file
      *
-     * @param Authenticatable $user The user performing deletion
-     * @param Media $media The media to delete
+     * @param  Authenticatable  $user  The user performing deletion
+     * @param  Media  $media  The media to delete
      * @return bool Success status
      *
      * @throws \App\Exceptions\MediaException If unauthorized or deletion fails
      */
-    public function deleteMedia(Authenticatable $user, Media $media, bool $force = false): bool;
+    public function deleteMedia(Authenticatable $user, Media $media): bool;
 
     /**
      * Rename a media file
-     *
-     * @param Authenticatable $user
-     * @param Media $media
-     * @param string $newName
-     * @return Media
      */
     public function renameMedia(Authenticatable $user, Media $media, string $newName): Media;
 
     /**
      * Update media visibility
-     *
-     * @param Authenticatable $user
-     * @param Media $media
-     * @param string $visibility
-     * @param bool $allowDownload
-     * @return Media
      */
     public function updateVisibility(Authenticatable $user, Media $media, string $visibility, bool $allowDownload = true): Media;
+    
+    /**
+     * Move media to a new folder or root
+     */
+    public function moveMedia(Authenticatable $user, Media $media, ?int $folderId, ?string $rootType = null): Media;
 
     /**
      * Initialize a multipart upload
      *
-     * @param Authenticatable $user
-     * @param string $fileName
-     * @param int $totalSize
-     * @param string $mimeType
-     * @return array
+     * @param  array  $metadata  Optional metadata (root_type, path, visibility)
      */
-    public function initMultipartUpload(Authenticatable $user, string $fileName, int $totalSize, string $mimeType): array;
+    public function initMultipartUpload(Authenticatable $user, string $fileName, int $totalSize, string $mimeType, array $metadata = []): array;
 
     /**
      * Upload a chunk for a multipart upload
-     *
-     * @param string $uploadId
-     * @param int $chunkIndex
-     * @param \Illuminate\Http\UploadedFile $chunk
-     * @return bool
      */
     public function uploadChunk(string $uploadId, int $chunkIndex, \Illuminate\Http\UploadedFile $chunk): bool;
 
     /**
      * Complete a multipart upload
      *
-     * @param Authenticatable $user
-     * @param string $uploadId
-     * @param string $fileName
-     * @param string $mimeType
-     * @return Media
+     * @param  array  $metadata  Optional metadata (root_type, path, visibility, skip_quota)
      */
-    public function completeMultipartUpload(Authenticatable $user, string $uploadId, string $fileName, string $mimeType): Media;
+    public function completeMultipartUpload(Authenticatable $user, string $uploadId, string $fileName, string $mimeType, array $metadata = []): Media;
+
+    /**
+     * Rename a folder in the tiered hierarchy
+     *
+     * @param  string  $rootType  e.g., 'public'
+     * @param  array  $oldPath  e.g., ['events', 'old-slug']
+     * @param  string  $newSegment  e.g., 'new-slug'
+     */
+    public function renameFolder(Authenticatable $user, string $rootType, array $oldPath, string $newSegment): bool;
 
     /**
      * Get the public URL for a media file
      *
-     * @param Media $media The media record
+     * @param  Media  $media  The media record
      * @return string The public URL
      */
     public function getMediaUrl(Media $media): string;
 
     /**
+     * Stream media content
+     */
+    public function streamMedia(Media $media): \Symfony\Component\HttpFoundation\StreamedResponse;
+
+    /**
      * Validate file type and size
      *
-     * @param \Illuminate\Http\UploadedFile $file The file to validate
-     * @param Authenticatable|null $user The user to check quotas for
+     * @param  \Illuminate\Http\UploadedFile  $file  The file to validate
+     * @param  Authenticatable|null  $user  The user to check quotas for
      * @return array ['valid' => bool, 'type' => string|null, 'error' => string|null]
      */
     public function validateFile(\Illuminate\Http\UploadedFile $file, ?Authenticatable $user = null): array;
@@ -142,4 +135,19 @@ interface MediaServiceContract
      * @return array Associative array of type => bytes
      */
     public function getFileSizeLimits(): array;
+
+    /**
+     * Register an existing file on disk into the CAS system
+     */
+    public function registerFile(Authenticatable $user, string $absolutePath, string $originalName, array $metadata = []): Media;
+
+    /**
+     * Get storage quota details for a user
+     */
+    public function getStorageQuota(Authenticatable $user): array;
+
+    /**
+     * Get real storage usage sum for a user
+     */
+    public function getStorageUsage(Authenticatable $user): int;
 }

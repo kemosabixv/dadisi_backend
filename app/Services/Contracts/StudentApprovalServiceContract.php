@@ -19,5 +19,7 @@ interface StudentApprovalServiceContract
 
     public function rejectRequest($requestId, int $adminId, string $rejectionReason, ?string $adminNotes = null): StudentApprovalRequest;
 
+    public function overturnRejection($requestId, int $adminId, ?string $adminNotes = null): StudentApprovalRequest;
+
     public function canRequestStudentPlan(int $userId): array;
 }

@@ -15,7 +15,7 @@ class PlanController extends Controller
     public function __construct(
         private PlanServiceContract $planService
     ) {
-        $this->middleware('auth:sanctum')->except(['index', 'show']);
+        $this->middleware('auth')->except(['index', 'show']);
     }
 
     /**
@@ -134,10 +134,10 @@ class PlanController extends Controller
      * @bodyParam monthly_price_kes numeric required Base price per month in KES. Must be a positive number. Example: 2500.00
      * @bodyParam currency string required The currency code (currently supports 'KES'). Example: KES
      * @bodyParam monthly_promotion object optional Configuration for monthly billing discounts. Example: {"discount_percent": 20, "expires_at": "2025-12-31T23:59:59Z"}
-     * @bodyParam monthly_promotion.discount_percent numeric optional Percentage discount (0-50). Required if monthly_promotion is set. Example: 20
+     * @bodyParam monthly_promotion.discount_percent numeric optional Percentage discount (0-100). Required if monthly_promotion is set. Example: 20
      * @bodyParam monthly_promotion.expires_at string optional ISO 8601 data string for promotion expiry. Example: 2025-12-31T23:59:59Z
      * @bodyParam yearly_promotion object optional Configuration for yearly billing discounts. Example: {"discount_percent": 25, "expires_at": "2026-06-30T23:59:59Z"}
-     * @bodyParam yearly_promotion.discount_percent numeric optional Percentage discount (0-50). Required if yearly_promotion is set. Example: 25
+     * @bodyParam yearly_promotion.discount_percent numeric optional Percentage discount (0-100). Required if yearly_promotion is set. Example: 25
      * @bodyParam yearly_promotion.expires_at string optional ISO 8601 date string for promotion expiry. Example: 2026-06-30T23:59:59Z
      * @bodyParam features array optional List of features to include in this plan.
      * @bodyParam features[].id integer required The ID of the feature (from plan_features table). Example: 1
@@ -167,10 +167,10 @@ class PlanController extends Controller
                 'monthly_price_kes' => 'required|numeric|min:' . ((app()->isLocal() || app()->environment('staging')) ? 1 : 100) . '|max:100000',
                 'currency' => 'required|string|in:KES',
                 'monthly_promotion' => 'nullable|array',
-                'monthly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
+                'monthly_promotion.discount_percent' => 'nullable|numeric|min:0|max:100',
                 'monthly_promotion.expires_at' => 'nullable|date|after:now',
                 'yearly_promotion' => 'nullable|array',
-                'yearly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
+                'yearly_promotion.discount_percent' => 'nullable|numeric|min:0|max:100',
                 'yearly_promotion.expires_at' => 'nullable|date|after:now',
                 'features' => 'nullable|array',
                 'features.*.name' => 'required_with:features|string|max:255',
@@ -218,10 +218,10 @@ class PlanController extends Controller
      * @bodyParam name string optional New plan display name. Example: Premium Pro
      * @bodyParam monthly_price_kes numeric optional Updated base monthly price in KES. Must be 100-100,000. Example: 3000
      * @bodyParam monthly_promotion object optional Monthly promotion config (use null to remove). Example: {"discount_percent": 10, "expires_at": "2026-06-04T00:53:33.000000Z"}
-     * @bodyParam monthly_promotion.discount_percent numeric optional 0-50% discount percentage. Required when monthly_promotion provided. Example: 10
+     * @bodyParam monthly_promotion.discount_percent numeric optional 0-100% discount percentage. Required when monthly_promotion provided. Example: 10
      * @bodyParam monthly_promotion.expires_at string optional ISO datetime for promo expiry. Required when monthly_promotion provided. Example: 2026-06-04T00:53:33.000000Z
      * @bodyParam yearly_promotion object optional Yearly promotion config (use null to remove). Example: {"discount_percent": 15, "expires_at": "2026-06-04T00:53:33.000000Z"}
-     * @bodyParam yearly_promotion.discount_percent numeric optional 0-50% discount percentage. Required when yearly_promotion provided. Example: 15
+     * @bodyParam yearly_promotion.discount_percent numeric optional 0-100% discount percentage. Required when yearly_promotion provided. Example: 15
      * @bodyParam yearly_promotion.expires_at string optional ISO datetime for promo expiry. Required when yearly_promotion provided. Example: 2026-06-04T00:53:33.000000Z
      * @bodyParam is_active boolean optional Activate/deactivate the plan. Example: true
      * @bodyParam features array optional Feature attachments array. Each feature must have a valid ID. No-example
@@ -251,10 +251,10 @@ class PlanController extends Controller
                 'name' => 'nullable|string|max:255',
                 'monthly_price_kes' => 'nullable|numeric|min:' . ((app()->isLocal() || app()->environment('staging')) ? 1 : 100) . '|max:100000',
                 'monthly_promotion' => 'nullable|array',
-                'monthly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
+                'monthly_promotion.discount_percent' => 'nullable|numeric|min:0|max:100',
                 'monthly_promotion.expires_at' => 'nullable|date|after:now',
                 'yearly_promotion' => 'nullable|array',
-                'yearly_promotion.discount_percent' => 'nullable|numeric|min:0|max:50',
+                'yearly_promotion.discount_percent' => 'nullable|numeric|min:0|max:100',
                 'yearly_promotion.expires_at' => 'nullable|date|after:now',
                 'is_active' => 'nullable|boolean',
                 'requires_student_approval' => 'nullable|boolean',

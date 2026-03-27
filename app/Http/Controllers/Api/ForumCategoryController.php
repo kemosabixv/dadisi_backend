@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateForumCategoryDTO;
+use App\DTOs\UpdateForumCategoryDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreForumCategoryRequest;
 use App\Http\Requests\Api\UpdateForumCategoryRequest;
+use App\Http\Resources\ForumCategoryResource;
 use App\Models\ForumCategory;
 use App\Services\Contracts\ForumTaxonomyServiceContract;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -118,15 +121,10 @@ class ForumCategoryController extends Controller
         try {
             $this->authorize('create', ForumCategory::class);
 
-            $validated = $request->validated();
+            $dto = CreateForumCategoryDTO::fromArray($request->validated());
+            $category = $this->taxonomyService->createCategory($dto, auth()->user());
 
-            $category = ForumCategory::create($validated);
-
-            return response()->json([
-                'success' => true,
-                'data' => $category,
-                'message' => 'Category created successfully.',
-            ], 201);
+            return (new ForumCategoryResource($category))->response()->setStatusCode(201);
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'You are not authorized to create categories.'], 403);
         } catch (\Exception $e) {
@@ -157,15 +155,10 @@ class ForumCategoryController extends Controller
         try {
             $this->authorize('update', $category);
 
-            $validated = $request->validated();
+            $dto = UpdateForumCategoryDTO::fromArray($request->validated());
+            $updated = $this->taxonomyService->updateCategory($category, $dto);
 
-            $category->update($validated);
-
-            return response()->json([
-                'success' => true,
-                'data' => $category,
-                'message' => 'Category updated successfully.',
-            ]);
+            return (new ForumCategoryResource($updated))->response();
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'You are not authorized to update this category.'], 403);
         } catch (\Exception $e) {

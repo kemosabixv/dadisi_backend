@@ -33,6 +33,7 @@ class PostServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
         $this->service = app(PostService::class);
         $this->author = User::factory()->create();
         $this->admin = User::factory()->create();
@@ -43,13 +44,42 @@ class PostServiceTest extends TestCase
             'first_name' => 'Author',
             'last_name' => 'Test',
             'county_id' => $county->id,
-            'is_staff' => true,
         ]);
+
+        $this->author->assignRole('admin'); // Authorize to bypass quota checks
 
         // Create common categories used in tests
         foreach (['technology', 'general', 'news', 'events', 'test'] as $slug) {
             \App\Models\Category::factory()->create(['slug' => $slug, 'name' => ucfirst($slug)]);
         }
+    }
+
+    private function createPostDto(array $data): \App\DTOs\CreatePostDTO
+    {
+        $merged = array_merge([
+            'title' => 'Dummy Title',
+            'body' => 'Dummy content',
+            'user_id' => $this->author->id,
+            'county_id' => $this->author->memberProfile->county_id ?? 1,
+        ], $data);
+        if (isset($data['content'])) {
+            $merged['body'] = $data['content'];
+        }
+        if (isset($data['category'])) {
+            $merged['category_ids'] = [\App\Models\Category::where('slug', $data['category'])->first()->id];
+        }
+        return \App\DTOs\CreatePostDTO::fromArray($merged);
+    }
+
+    private function updatePostDto(array $data): \App\DTOs\UpdatePostDTO
+    {
+        if (isset($data['content'])) {
+            $data['body'] = $data['content'];
+        }
+        if (isset($data['category'])) {
+            $data['category_ids'] = [\App\Models\Category::where('slug', $data['category'])->first()->id];
+        }
+        return \App\DTOs\UpdatePostDTO::fromArray($data);
     }
 
     // ============ Creation Tests ============
@@ -67,7 +97,7 @@ class PostServiceTest extends TestCase
             'category' => 'technology',
         ];
 
-        $post = $this->service->createPost($this->author, $data);
+        $post = $this->service->createPost($this->author, $this->createPostDto($data));
 
         $this->assertNotNull($post->id);
         $this->assertEquals('My First Blog Post', $post->title);
@@ -88,7 +118,7 @@ class PostServiceTest extends TestCase
             'category' => 'general',
         ];
 
-        $post = $this->service->createPost($this->author, $data);
+        $post = $this->service->createPost($this->author, $this->createPostDto($data));
 
         $this->assertEquals('complex-title-with-special-characters', $post->slug);
     }
@@ -106,7 +136,7 @@ class PostServiceTest extends TestCase
             'category' => 'general',
         ];
 
-        $post = $this->service->createPost($this->author, $data);
+        $post = $this->service->createPost($this->author, $this->createPostDto($data));
 
         $this->assertNotNull($post->excerpt);
         $this->assertLessThanOrEqual(200, strlen($post->excerpt));
@@ -124,7 +154,7 @@ class PostServiceTest extends TestCase
             'category' => 'news',
         ];
 
-        $post = $this->service->createPost($this->author, $data);
+        $post = $this->service->createPost($this->author, $this->createPostDto($data));
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $this->author->id,
@@ -144,10 +174,10 @@ class PostServiceTest extends TestCase
     {
         $post = Post::factory()->for($this->author)->create();
 
-        $updated = $this->service->updatePost($this->admin, $post, [
+        $updated = $this->service->updatePost($this->admin, $post, $this->updatePostDto([
             'title' => 'Updated Title',
             'content' => 'Updated content',
-        ]);
+        ]));
 
         $this->assertEquals('Updated Title', $updated->title);
         $this->assertEquals('updated-title', $updated->slug);
@@ -164,7 +194,7 @@ class PostServiceTest extends TestCase
         $post = Post::factory()->for($this->author)->create();
         $post->categories()->attach($categoryNews);
 
-        $updated = $this->service->updatePost($this->admin, $post, ['category' => 'events']);
+        $updated = $this->service->updatePost($this->admin, $post, $this->updatePostDto(['category' => 'events']));
 
         $this->assertEquals('events', $updated->category);
     }
@@ -177,9 +207,9 @@ class PostServiceTest extends TestCase
     {
         $post = Post::factory()->for($this->author)->create(['content' => 'Original']);
 
-        $updated = $this->service->updatePost($this->admin, $post, [
+        $updated = $this->service->updatePost($this->admin, $post, $this->updatePostDto([
             'title' => 'New Title',
-        ]);
+        ]));
 
         $this->assertEquals('New Title', $updated->title);
         $this->assertEquals('Original', $updated->content);
@@ -193,7 +223,7 @@ class PostServiceTest extends TestCase
     {
         $post = Post::factory()->for($this->author)->create();
 
-        $this->service->updatePost($this->admin, $post, ['title' => 'Changed']);
+        $this->service->updatePost($this->admin, $post, $this->updatePostDto(['title' => 'Changed']));
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $this->admin->id,
@@ -492,7 +522,7 @@ class PostServiceTest extends TestCase
             'category' => 'test',
         ];
 
-        $post = $this->service->createPost($this->author, $data);
+        $post = $this->service->createPost($this->author, $this->createPostDto($data));
 
         $this->assertNotNull($post->excerpt);
     }
@@ -509,8 +539,8 @@ class PostServiceTest extends TestCase
             'category' => 'test',
         ];
 
-        $post1 = $this->service->createPost($this->author, $data);
-        $post2 = $this->service->createPost($this->author, $data);
+        $post1 = $this->service->createPost($this->author, $this->createPostDto($data));
+        $post2 = $this->service->createPost($this->author, $this->createPostDto($data));
 
         $this->assertNotEquals($post1->slug, $post2->slug);
     }

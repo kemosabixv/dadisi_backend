@@ -2,16 +2,14 @@
 
 namespace Tests\Feature\Notifications;
 
+use App\Models\County;
 use App\Models\Donation;
 use App\Models\Event;
-use App\Models\EventRegistration;
 use App\Models\Payment;
-use App\Models\PlanSubscription;
-use App\Models\StudentApprovalRequest;
-use App\Models\User;
 use App\Models\Plan;
-use App\Models\County;
+use App\Models\PlanSubscription;
 use App\Models\Refund;
+use App\Models\User;
 use App\Notifications\DonationReceived;
 use App\Notifications\EventRegistrationConfirmation;
 use App\Notifications\RefundProcessed;
@@ -23,10 +21,9 @@ use App\Services\RefundService;
 use App\Services\StudentApprovalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\DB;
-use Tests\TestCase;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class NotificationRoutingTest extends TestCase
 {
@@ -37,6 +34,7 @@ class NotificationRoutingTest extends TestCase
     /**
      * Test EventRegistrationConfirmation is routed to the correct user.
      */
+    #[Test]
     public function test_event_registration_confirmation_is_routed_to_user()
     {
         Notification::fake();
@@ -45,7 +43,7 @@ class NotificationRoutingTest extends TestCase
         $county = County::factory()->create();
         $event = Event::factory()->create([
             'capacity' => 10,
-            'county_id' => $county->id
+            'county_id' => $county->id,
         ]);
 
         $service = app(EventRegistrationService::class);
@@ -60,6 +58,7 @@ class NotificationRoutingTest extends TestCase
     /**
      * Test DonationReceived is routed to the donor on payment verification.
      */
+    #[Test]
     public function test_donation_received_is_routed_to_donor()
     {
         Notification::fake();
@@ -73,7 +72,7 @@ class NotificationRoutingTest extends TestCase
             'county_id' => $county->id,
         ]);
 
-        $payment = new Payment();
+        $payment = new Payment;
         $payment->payable_id = $donation->id;
         $payment->payable_type = Donation::class;
         $payment->payer_id = $user->id;
@@ -103,12 +102,13 @@ class NotificationRoutingTest extends TestCase
     /**
      * Test SubscriptionActivated is routed to the subscriber on payment verification.
      */
+    #[Test]
     public function test_subscription_activated_is_routed_to_subscriber()
     {
         Notification::fake();
 
         $user = User::factory()->create();
-        
+
         $plan = Plan::create([
             'name' => 'Premium Plan',
             'slug' => 'premium',
@@ -125,10 +125,10 @@ class NotificationRoutingTest extends TestCase
             'plan_id' => $plan->id,
             'name' => 'Premium Plan',
             'slug' => 'premium',
-            'status' => 'pending'
+            'status' => 'pending',
         ]);
 
-        $payment = new Payment();
+        $payment = new Payment;
         $payment->payable_id = $subscription->id;
         $payment->payable_type = PlanSubscription::class;
         $payment->payer_id = $user->id;
@@ -158,6 +158,7 @@ class NotificationRoutingTest extends TestCase
     /**
      * Test RefundProcessed is routed to the payer.
      */
+    #[Test]
     public function test_refund_processed_is_routed_to_payer()
     {
         Notification::fake();
@@ -169,7 +170,7 @@ class NotificationRoutingTest extends TestCase
             'amount' => 1000,
             'transaction_id' => 'TX_TO_REFUND',
             'order_reference' => 'ORDER_REFUND_123',
-            'gateway' => 'mock'
+            'gateway' => 'mock',
         ]);
 
         $refund = Refund::create([
@@ -182,7 +183,7 @@ class NotificationRoutingTest extends TestCase
             'reason' => 'Test',
             'requested_at' => now(),
             'currency' => 'KES',
-            'gateway' => 'mock'
+            'gateway' => 'mock',
         ]);
 
         // Mock gateway for refund
@@ -203,12 +204,13 @@ class NotificationRoutingTest extends TestCase
     /**
      * Test StudentApprovalSubmitted is routed to staff with permission.
      */
+    #[Test]
     public function test_student_approval_submitted_is_routed_to_relevant_staff()
     {
         Notification::fake();
 
         $student = User::factory()->create();
-        
+
         // Create staff with permission - explicitly use guards since seeder does
         $staff = User::factory()->create();
         $permission = Permission::firstOrCreate(['name' => 'approve_student_approvals', 'guard_name' => 'web']);
@@ -223,7 +225,7 @@ class NotificationRoutingTest extends TestCase
             'student_email' => 'student@test.com',
             'documentation_url' => 'https://dadisi.org/docs/123',
             'birth_date' => '2000-01-01',
-            'county' => 'Nairobi'
+            'county' => 'Nairobi',
         ]);
 
         // Should be sent to staff
@@ -242,6 +244,7 @@ class NotificationRoutingTest extends TestCase
     /**
      * Test DonationReceived is routed to guest email on verification.
      */
+    #[Test]
     public function test_guest_donation_received_is_routed_to_email()
     {
         Notification::fake();
@@ -264,7 +267,7 @@ class NotificationRoutingTest extends TestCase
             'status' => 'pending',
             'transaction_id' => 'GUEST_TX_123',
             'order_reference' => 'GUEST_ORDER_123',
-            'gateway' => 'mock'
+            'gateway' => 'mock',
         ]);
 
         // Mock gateway

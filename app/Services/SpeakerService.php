@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\DTOs\CreateSpeakerDTO;
+use App\DTOs\UpdateSpeakerDTO;
 use App\Models\Event;
 use App\Models\Speaker;
 use App\Services\Contracts\SpeakerServiceContract;
@@ -22,15 +24,12 @@ class SpeakerService implements SpeakerServiceContract
     /**
      * Add speaker to event.
      */
-    public function addSpeaker(Event $event, array $data): Speaker
+    public function addSpeaker(Event $event, CreateSpeakerDTO $dto): Speaker
     {
+        $data = $dto->toArray();
         $speaker = $event->speakers()->create($data);
 
-        if (!empty($data['photo_file'])) {
-            $path = $data['photo_file']->store('events/speakers', 'public');
-            $speaker->update(['photo_path' => $path]);
-        }
-
+        // Only use CAS media_id for photo
         if (!empty($data['photo_media_id'])) {
             $speaker->setPhotoMedia($data['photo_media_id']);
         }
@@ -41,18 +40,12 @@ class SpeakerService implements SpeakerServiceContract
     /**
      * Update speaker.
      */
-    public function updateSpeaker(Speaker $speaker, array $data): Speaker
+    public function updateSpeaker(Speaker $speaker, UpdateSpeakerDTO $dto): Speaker
     {
+        $data = array_filter($dto->toArray(), fn($v) => $v !== null);
         $speaker->update($data);
 
-        if (!empty($data['photo_file'])) {
-            if ($speaker->photo_path) {
-                Storage::disk('public')->delete($speaker->photo_path);
-            }
-            $path = $data['photo_file']->store('events/speakers', 'public');
-            $speaker->update(['photo_path' => $path]);
-        }
-
+        // Only use CAS media_id for photo
         if (!empty($data['photo_media_id'])) {
             $speaker->setPhotoMedia($data['photo_media_id']);
         }
@@ -66,9 +59,7 @@ class SpeakerService implements SpeakerServiceContract
     public function removeSpeaker(Speaker $speaker): bool
     {
         try {
-            if ($speaker->photo_path) {
-                Storage::disk('public')->delete($speaker->photo_path);
-            }
+            // Only detach CAS media if needed (handled by model hooks if implemented)
             return $speaker->delete();
         } catch (\Exception $e) {
             Log::error('Failed to remove speaker', ['error' => $e->getMessage(), 'speaker_id' => $speaker->id]);

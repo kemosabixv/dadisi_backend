@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateForumTagDTO;
+use App\DTOs\UpdateForumTagDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreForumTagRequest;
 use App\Http\Requests\Api\UpdateForumTagRequest;
+use App\Http\Resources\ForumTagResource;
 use App\Models\ForumTag;
 use App\Models\ForumThread;
 use App\Services\Contracts\ForumTaxonomyServiceContract;
@@ -104,20 +107,10 @@ class ForumTagController extends Controller
         try {
             $this->authorize('create', ForumTag::class);
 
-            $validated = $request->validated();
+            $dto = CreateForumTagDTO::fromArray($request->validated());
+            $tag = $this->taxonomyService->createTag($dto, auth()->user());
 
-            $tag = ForumTag::create([
-                'name' => $validated['name'],
-                'slug' => Str::slug($validated['name']),
-                'color' => $validated['color'] ?? '#6366f1',
-                'description' => $validated['description'] ?? null,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'data' => $tag,
-                'message' => 'Tag created successfully.',
-            ], 201);
+            return (new ForumTagResource($tag))->response()->setStatusCode(201);
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'You are not authorized to create tags.'], 403);
         } catch (\Exception $e) {
@@ -142,19 +135,10 @@ class ForumTagController extends Controller
         try {
             $this->authorize('update', $tag);
 
-            $validated = $request->validated();
+            $dto = UpdateForumTagDTO::fromArray($request->validated());
+            $updated = $this->taxonomyService->updateTag($tag, $dto);
 
-            if (isset($validated['name'])) {
-                $validated['slug'] = Str::slug($validated['name']);
-            }
-
-            $tag->update($validated);
-
-            return response()->json([
-                'success' => true,
-                'data' => $tag,
-                'message' => 'Tag updated successfully.',
-            ]);
+            return (new ForumTagResource($updated))->response();
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'You are not authorized to update this tag.'], 403);
         } catch (\Exception $e) {

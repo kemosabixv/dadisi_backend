@@ -2,6 +2,8 @@
 
 namespace App\Services\Forums;
 
+use App\DTOs\CreateForumThreadDTO;
+use App\DTOs\UpdateForumThreadDTO;
 use App\Exceptions\ForumException;
 use App\Models\AuditLog;
 use App\Models\ForumThread;
@@ -32,7 +34,7 @@ class ThreadService implements ForumServiceContract
     public function getThread(int $id): ForumThread
     {
         try {
-            return ForumThread::with(['user', 'category', 'county', 'tags'])->findOrFail($id);
+            return ForumThread::with(['user.memberProfile', 'category', 'county', 'tags'])->findOrFail($id);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             throw ForumException::threadNotFound((string)$id);
         }
@@ -50,12 +52,12 @@ class ThreadService implements ForumServiceContract
      * Create a new thread with initial post
      *
      * @param Authenticatable $author
-     * @param array $data
+     * @param CreateForumThreadDTO $dto
      * @return ForumThread
      *
      * @throws ForumException
      */
-    public function createThread(Authenticatable $author, array $data): ForumThread
+    public function createThread(Authenticatable $author, CreateForumThreadDTO $dto): ForumThread
     {
         // Check feature-gating quota for non-staff users
         if ($author instanceof User && !$author->isStaffMember()) {
@@ -63,11 +65,9 @@ class ThreadService implements ForumServiceContract
         }
 
         try {
-            return DB::transaction(function () use ($author, $data) {
+            return DB::transaction(function () use ($author, $dto) {
+                $data = $dto->toArray();
                 $categoryId = $data['category_id'] ?? null;
-                if (!$categoryId && isset($data['category'])) {
-                    $categoryId = ForumCategory::where('slug', $data['category'])->value('id');
-                }
 
                 $thread = ForumThread::create([
                     'user_id' => $author->getAuthIdentifier(),
@@ -75,24 +75,11 @@ class ThreadService implements ForumServiceContract
                     'county_id' => $data['county_id'] ?? null,
                     'title' => $data['title'],
                     'slug' => Str::slug($data['title']) . '-' . Str::random(6),
-                    'is_pinned' => $data['is_pinned'] ?? false,
+                    'is_pinned' => false,
                     'is_locked' => false,
                     'views_count' => 0,
                     'posts_count' => 0,
                 ]);
-
-                // Create initial post (thread body)
-                if (!empty($data['content'])) {
-                    $post = $thread->posts()->create([
-                        'user_id' => $author->getAuthIdentifier(),
-                        'content' => $data['content'],
-                    ]);
-
-                    $thread->update([
-                        'last_post_id' => $post->id,
-                        'posts_count' => 1,
-                    ]);
-                }
 
                 // Sync tags if provided
                 if (!empty($data['tag_ids'])) {
@@ -109,7 +96,7 @@ class ThreadService implements ForumServiceContract
                     'author_id' => $author->getAuthIdentifier(),
                 ]);
 
-                return $thread->load(['user', 'category', 'county']);
+                return $thread->load(['user.memberProfile', 'category', 'county']);
             });
         } catch (\Exception $e) {
             Log::error('Thread creation failed', [
@@ -126,57 +113,33 @@ class ThreadService implements ForumServiceContract
      *
      * @param Authenticatable $actor
      * @param ForumThread $thread
-     * @param array $data
+     * @param UpdateForumThreadDTO $dto
      * @return ForumThread
      *
      * @throws ForumException
      */
-    public function updateThread(Authenticatable $actor, ForumThread $thread, array $data): ForumThread
+    public function updateThread(Authenticatable $actor, ForumThread $thread, UpdateForumThreadDTO $dto): ForumThread
     {
         try {
-            $updateData = [];
-
-            if (isset($data['title'])) {
-                $updateData['title'] = $data['title'];
-                // Only update slug if title changed significantly
-            }
-
-            if (isset($data['category_id'])) {
-                $updateData['category_id'] = $data['category_id'];
-            } elseif (isset($data['category'])) {
-                $updateData['category_id'] = ForumCategory::where('slug', $data['category'])->value('id');
-            }
-
-            if (isset($data['county_id'])) {
-                $updateData['county_id'] = $data['county_id'];
-            }
-
-            // Moderation fields - only for authorized users
-            if (isset($data['is_pinned'])) {
-                $updateData['is_pinned'] = $data['is_pinned'];
-            }
-
-            if (isset($data['is_locked'])) {
-                $updateData['is_locked'] = $data['is_locked'];
-            }
-
-            if (!empty($updateData)) {
-                $thread->update($updateData);
+            $data = $dto->toArray();
+            
+            if (!empty($data)) {
+                $thread->update($data);
             }
 
             // Sync tags if provided
-            if (isset($data['tag_ids'])) {
+            if (!empty($data['tag_ids'])) {
                 $thread->syncTags($data['tag_ids']);
             }
 
-            $this->logAudit($actor, 'updated_thread', ForumThread::class, $thread->id, $updateData);
+            $this->logAudit($actor, 'updated_thread', ForumThread::class, $thread->id, $data);
 
             Log::info('Thread updated', [
                 'thread_id' => $thread->id,
                 'updated_by' => $actor->getAuthIdentifier(),
             ]);
 
-            return $thread->fresh(['user', 'category', 'county', 'tags']);
+            return $thread->fresh(['user.memberProfile', 'category', 'county', 'tags']);
         } catch (\Exception $e) {
             throw ForumException::threadUpdateFailed($e->getMessage());
         }
@@ -332,7 +295,7 @@ class ThreadService implements ForumServiceContract
     public function listThreads(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = ForumThread::query()
-            ->with(['user:id,username,profile_picture_path', 'category:id,name,slug', 'lastPost.user:id,username'])
+            ->with(['user.memberProfile', 'category:id,name,slug', 'lastPost.user:id,username'])
             ->pinnedFirst();
 
         // Filter by category
@@ -383,7 +346,7 @@ class ThreadService implements ForumServiceContract
     {
         try {
             $thread = ForumThread::where('slug', $slug)
-                ->with(['user:id,username,profile_picture_path', 'category:id,name,slug', 'county:id,name', 'tags'])
+                ->with(['user.memberProfile', 'category:id,name,slug', 'county:id,name', 'tags'])
                 ->firstOrFail();
 
             // Increment view count
@@ -406,7 +369,7 @@ class ThreadService implements ForumServiceContract
     {
         $thread->incrementViews();
 
-        $thread->load(['user:id,username,profile_picture_path', 'category:id,name,slug', 'county:id,name', 'tags']);
+        $thread->load(['user.memberProfile', 'category:id,name,slug', 'county:id,name', 'tags']);
 
         $posts = $thread->posts()
             ->with('user:id,username,profile_picture_path')
@@ -457,7 +420,7 @@ class ThreadService implements ForumServiceContract
      */
     private function getRecentActivity(): array
     {
-        return ForumThread::with(['user:id,username', 'category:id,name'])
+        return ForumThread::with(['user.memberProfile', 'category:id,name'])
             ->latest()
             ->take(5)
             ->get()

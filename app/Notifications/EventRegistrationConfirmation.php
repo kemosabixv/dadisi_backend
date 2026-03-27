@@ -15,23 +15,46 @@ class EventRegistrationConfirmation extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
+    }
+
+    /**
+     * Get the Supabase representation of the notification.
+     */
+    public function toSupabase(object $notifiable): array
+    {
+        $data = $this->toArray($notifiable);
+        $data['recipient_type'] = 'user';
+        return $data;
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         $event = $this->registration->event;
+        $qrCodeData = null;
+
+        if ($this->registration->qr_code_media_id) {
+            try {
+                $media = $this->registration->qrCodeMedia()->with('file')->first();
+                if ($media && $media->file) {
+                    $qrCodeData = \Illuminate\Support\Facades\Storage::disk($media->file->disk)->get($media->file->path);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to fetch QR code from CAS for event registration notification', [
+                    'registration_id' => $this->registration->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
         
         return (new MailMessage)
             ->subject("RSVP Confirmed: {$event->title}")
-            ->greeting("Hello {$this->registration->user->name}!")
-            ->line("Your RSVP for **{$event->title}** has been confirmed.")
-            ->line("**Date:** " . $event->starts_at->format('F j, Y \a\t g:i A'))
-            ->line("**Ticket Type:** {$this->registration->ticket->name}")
-            ->line("**Confirmation Code:** {$this->registration->confirmation_code}")
-            ->action('View Your Ticket', url("/dashboard/events"))
-            ->line('Show your QR code at the venue for check-in.')
-            ->line('We look forward to seeing you there!');
+            ->markdown('emails.events.registration-confirmed', [
+                'registration' => $this->registration,
+                'event' => $event,
+                'user' => $notifiable,
+                'qrCodeData' => $qrCodeData,
+            ]);
     }
 
     public function toArray(object $notifiable): array

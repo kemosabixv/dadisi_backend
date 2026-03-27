@@ -57,6 +57,23 @@ full_test_output.txt
 composer.lock
 test_output.txt
 .env.dev
-.env.dev
 .env.prod
 .env.prod current
+.gitignore
+/storage
+.scribe/*
+.scribe/endpoints/00.yaml
+.scribe/endpoints/01.yaml
+.scribe/endpoints/02.yaml
+.scribe/endpoints/03.yaml
+.scribe/endpoints/04.yaml
+.scribe/endpoints.cache/00.yaml
+.scribe/endpoints.cache/01.yaml
+.scribe/endpoints.cache/02.yaml
+.scribe/endpoints.cache/03.yaml
+.scribe/endpoints.cache/04.yaml
+.scribe/.filehashes
+bootstrap/cache/
+tests/tmp/
+.scribe/intro.md
+resources/views/scribe/index.blade.php

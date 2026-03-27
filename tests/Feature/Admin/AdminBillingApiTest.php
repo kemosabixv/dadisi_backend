@@ -4,11 +4,11 @@ namespace Tests\Feature\Admin;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use App\Models\User;
 use App\Models\Donation;
 use App\Models\EventOrder;
 use App\Models\Event;
-use Spatie\Permission\Models\Role;
 
 class AdminBillingApiTest extends TestCase
 {
@@ -20,20 +20,11 @@ class AdminBillingApiTest extends TestCase
     {
         parent::setUp();
 
-        // Seed roles/permissions and create an admin user with finances role
+        // Seed roles/permissions
         $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
 
         $this->adminUser = User::factory()->create(['email' => 'admin-billing@example.com']);
-
-        $adminRole = Role::findByName('admin');
-        $financeRole = Role::findByName('finance');
-
-        // Give the user the finance role if available, otherwise admin
-        if ($financeRole) {
-            $this->adminUser->assignRole($financeRole);
-        } else {
-            $this->adminUser->assignRole($adminRole);
-        }
+        $this->adminUser->assignRole('finance');
     }
 
     public function test_billing_dashboard_returns_expected_structure()
@@ -61,8 +52,8 @@ class AdminBillingApiTest extends TestCase
         EventOrder::create(['event_id' => $event->id, 'total_amount' => 200, 'status' => 'paid', 'currency' => 'KES', 'quantity' => 1, 'unit_price' => 200]);
         EventOrder::create(['event_id' => $event->id, 'total_amount' => 75, 'status' => 'pending', 'currency' => 'KES', 'quantity' => 1, 'unit_price' => 75]);
 
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/admin/billing/dashboard');
+        $this->actingAs($this->adminUser);
+        $response = $this->getJson('/api/admin/billing/dashboard');
 
         $response->assertStatus(200);
 

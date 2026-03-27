@@ -31,19 +31,20 @@ class SchedulerSettingsSeeder extends Seeder
                 'enabled' => true,
                 'description' => 'Send renewal reminders to members with expiring subscriptions',
             ],
-            [
-                'command_name' => 'renewals:enqueue-due',
-                'run_time' => '00:00',
-                'frequency' => 'hourly',
-                'enabled' => true,
-                'description' => 'Enqueue auto-renewals that are due for processing',
-            ],
+
             [
                 'command_name' => 'reconciliation:run',
                 'run_time' => '02:00',
                 'frequency' => 'daily',
                 'enabled' => true,
                 'description' => 'Run payment reconciliation against external payment providers',
+            ],
+            [
+                'command_name' => 'donations:send-reminders',
+                'run_time' => '10:00',
+                'frequency' => 'hourly',
+                'enabled' => true,
+                'description' => 'Send reminder emails for pending donations that haven\'t been completed',
             ],
         ];
 

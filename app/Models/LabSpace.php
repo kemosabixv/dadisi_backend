@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Media;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,22 +21,35 @@ class LabSpace extends Model
         'county',
         'location',
         'type',
-        'image_path',
+        // Migration: legacy image_path removed, now using CAS media_id
         'safety_requirements',
         'is_available',
         'available_from',
         'available_until',
         'equipment_list',
         'rules',
+        'hourly_rate',
+        'opens_at',
+        'closes_at',
+        'operating_days',
+        'slots_per_hour',
+        'bookings_enabled',
+        'checkin_token',
     ];
 
     protected $casts = [
         'capacity' => 'integer',
         'is_available' => 'boolean',
+        'bookings_enabled' => 'boolean',
         'equipment_list' => 'array',
         'safety_requirements' => 'array',
         'available_from' => 'datetime:H:i',
         'available_until' => 'datetime:H:i',
+        'hourly_rate' => 'float',
+        'opens_at' => 'datetime:H:i',
+        'closes_at' => 'datetime:H:i',
+        'operating_days' => 'array',
+        'slots_per_hour' => 'integer',
     ];
 
     protected $appends = [
@@ -44,7 +58,18 @@ class LabSpace extends Model
         'is_active',
         'amenities',
         'gallery_media',
+        'computed_status',
     ];
+
+    /**
+     * Get the supervisors assigned to this lab space.
+     */
+    public function supervisors(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'lab_assignments', 'lab_space_id', 'user_id')
+            ->withPivot('assigned_at')
+            ->withTimestamps();
+    }
 
     // ==================== Constants ====================
 
@@ -60,11 +85,34 @@ class LabSpace extends Model
     // ==================== Relationships ====================
 
     /**
+     * Get all maintenance blocks for this lab space.
+     */
+    public function maintenanceBlocks(): HasMany
+    {
+        return $this->hasMany(LabMaintenanceBlock::class);
+    }
+
+    /**
      * Get all bookings for this lab space.
      */
     public function bookings(): HasMany
     {
         return $this->hasMany(LabBooking::class);
+    }
+
+    public function series(): HasMany
+    {
+        return $this->hasMany(BookingSeries::class);
+    }
+
+    public function holds(): HasMany
+    {
+        return $this->hasMany(SlotHold::class);
+    }
+
+    public function closures(): HasMany
+    {
+        return $this->hasMany(LabClosure::class);
     }
 
     /**
@@ -80,9 +128,9 @@ class LabSpace extends Model
     /**
      * Get featured media.
      */
-    public function featuredMedia()
+    public function featuredMedia(): ?Media
     {
-        return $this->media->firstWhere('pivot.role', 'featured');
+        return $this->media()->wherePivot('role', 'featured')->first();
     }
 
     /**
@@ -90,7 +138,7 @@ class LabSpace extends Model
      */
     public function galleryMedia()
     {
-        return $this->media->where('pivot.role', 'gallery');
+        return $this->media()->wherePivot('role', 'gallery');
     }
 
     /**
@@ -98,9 +146,15 @@ class LabSpace extends Model
      */
     public function setFeaturedMedia(?int $mediaId): void
     {
+        $old = $this->featuredMedia();
+        if ($old) {
+            $old->decrement('usage_count');
+        }
+
         $this->media()->wherePivot('role', 'featured')->detach();
         if ($mediaId) {
             $this->media()->attach($mediaId, ['role' => 'featured']);
+            Media::find($mediaId)?->increment('usage_count');
         }
     }
 
@@ -110,8 +164,44 @@ class LabSpace extends Model
     public function addGalleryMedia(array $mediaIds): void
     {
         foreach ($mediaIds as $id) {
-            $this->media()->attach($id, ['role' => 'gallery']);
+            if (!$this->media()->wherePivot('role', 'gallery')->where('media_id', $id)->exists()) {
+                $this->media()->attach($id, ['role' => 'gallery']);
+                Media::find($id)?->increment('usage_count');
+            }
         }
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function (self $model) {
+            if (empty($model->checkin_token)) {
+                $model->checkin_token = 'LAB-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(12));
+            }
+        });
+
+        static::updating(function (self $lab) {
+            if ($lab->isDirty('slug')) {
+                $oldSlug = $lab->getOriginal('slug');
+                $newSlug = $lab->slug;
+                if ($oldSlug && $newSlug) {
+                    app(\App\Services\Contracts\MediaServiceContract::class)->renameFolder(
+                        auth()->user() ?? User::role('admin')->first(), // LabSpace might not have explicit creator ref in $fillable
+                        'public', 
+                        ['lab-spaces', $oldSlug], 
+                        $newSlug
+                    );
+                }
+            }
+        });
+
+        static::deleting(function (self $lab) {
+            foreach ($lab->media as $media) {
+                $media->decrement('usage_count');
+            }
+            $lab->media()->detach();
+        });
     }
 
     // ==================== Scopes ====================
@@ -159,30 +249,13 @@ class LabSpace extends Model
     // ==================== Accessors & Mutators ====================
 
     /**
-     * Get the image URL for the lab space.
-     * Prioritizes polymorphic featured media, falls back to legacy image_path.
+     * Get the image URL for the lab space (CAS/R2 only).
      */
     public function getImageUrlAttribute(): ?string
     {
-        // Check polymorphic featured media first
-        $featured = $this->featuredMedia();
-        if ($featured) {
-            return $featured->url;
-        }
-
-        // Fallback to legacy image_path
-        if (!$this->image_path) {
-            return null;
-        }
-
-        // If it's already a full URL, return as-is
-        if (filter_var($this->image_path, FILTER_VALIDATE_URL)) {
-            return $this->image_path;
-        }
-
-    // Otherwise, generate storage URL
-    return asset('storage/' . $this->image_path);
-}
+        $featuredMedia = $this->featuredMedia();
+        return $featuredMedia ? $featuredMedia->url : null;
+    }
 
 /**
  * Get gallery media (for frontend compatibility).
@@ -220,6 +293,41 @@ public function getGalleryMediaAttribute()
     }
 
     /**
+     * Computed status derived from currently-active maintenance blocks.
+     * Priority (highest first): closure > maintenance > holiday > open
+     *
+     * Values:
+     *   'open'               – no active block
+     *   'under_maintenance'  – maintenance block is active right now
+     *   'holiday'            – holiday block is active right now
+     *   'temporarily_closed' – closure block is active right now
+     */
+    public function getComputedStatusAttribute(): string
+    {
+        $activeBlock = $this->maintenanceBlocks()
+            ->whereNotIn('status', ['cancelled', 'completed'])
+            ->where('starts_at', '<=', now())
+            ->where('ends_at', '>=', now())
+            ->orderByRaw("CASE 
+                WHEN block_type = 'closure' THEN 1 
+                WHEN block_type = 'maintenance' THEN 2 
+                WHEN block_type = 'holiday' THEN 3 
+                ELSE 4 
+            END")
+            ->first();
+
+        if (!$activeBlock) {
+            return 'open';
+        }
+
+        return match ($activeBlock->block_type) {
+            'holiday'     => 'holiday',
+            'closure'     => 'temporarily_closed',
+            default       => 'under_maintenance',
+        };
+    }
+
+    /**
      * Legacy compatibility: Allow setting is_available via status attribute.
      * Accepts 'active', 'inactive', or boolean values.
      */
@@ -247,4 +355,65 @@ public function getGalleryMediaAttribute()
     {
         return $this->equipment_list ?? [];
     }
+
+    // ==================== OPERATING HOURS COMPUTED PROPERTIES ====================
+
+    /**
+     * Calculate the available hours per month based on operating days and operating hours.
+     * Example: 5 days/week × 8 hours/day × 4.33 weeks/month ≈ 173 hours/month
+     *
+     * @return int The average available hours per month
+     */
+    public function monthlyAvailableHours(): int
+    {
+        if (!$this->operating_days || empty($this->operating_days) || !$this->opens_at || !$this->closes_at) {
+            return 0;
+        }
+
+        try {
+            $operatingDaysPerWeek = is_array($this->operating_days) ? count($this->operating_days) : 0;
+
+            if ($operatingDaysPerWeek === 0) {
+                return 0;
+            }
+
+            $opensAt = $this->opens_at instanceof \Carbon\Carbon 
+                ? $this->opens_at 
+                : \Carbon\Carbon::createFromFormat('H:i', $this->opens_at);
+            
+            $closesAt = $this->closes_at instanceof \Carbon\Carbon 
+                ? $this->closes_at 
+                : \Carbon\Carbon::createFromFormat('H:i', $this->closes_at);
+
+            $hoursPerDay = $closesAt->diffInHours($opensAt);
+
+            if ($hoursPerDay <= 0) {
+                return 0;
+            }
+
+            $weeksPerMonth = 4.33;
+            $totalHours = (int) round($operatingDaysPerWeek * $weeksPerMonth * $hoursPerDay);
+
+            return max(0, $totalHours);
+        } catch (\Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Calculate the maximum monthly slots offered.
+     * Example: 173 available hours × 2 slots/hour = 346 slots/month
+     *
+     * @return int The maximum number of slots offered per month
+     */
+    public function maxMonthlySlotsOffered(): int
+    {
+        if (!$this->slots_per_hour || $this->slots_per_hour <= 0) {
+            return 0;
+        }
+
+        return $this->monthlyAvailableHours() * $this->slots_per_hour;
+    }
+
+    // ============================================================================
 }

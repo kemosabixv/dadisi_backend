@@ -29,6 +29,7 @@ class CreateLabBookingRequest extends FormRequest
             'purpose' => ['required', 'string', 'min:10', 'max:1000'],
             'title' => ['nullable', 'string', 'max:255'],
             'slot_type' => ['nullable', Rule::in(['hourly', 'half_day', 'full_day'])],
+            'payment_method' => ['nullable', Rule::in(['card', 'mpesa', 'quota'])],
         ];
     }
 
@@ -41,6 +42,7 @@ class CreateLabBookingRequest extends FormRequest
             'purpose' => ['description' => 'Purpose of the booking (10-1000 chars)', 'example' => 'Working on a 3D printing project for community event decorations.'],
             'title' => ['description' => 'Optional booking title', 'example' => 'Community Event Prep'],
             'slot_type' => ['description' => 'Slot type: hourly, half_day, or full_day', 'example' => 'half_day'],
+            'payment_method' => ['description' => 'Payment method: card, mpesa, or quota', 'example' => 'quota'],
         ];
     }
 }

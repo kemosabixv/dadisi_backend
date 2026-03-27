@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -13,9 +13,22 @@ class EventOrder extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public $is_race_condition = false;
+
+    const STATUS_PENDING = 'pending';
+
+    const STATUS_PAID = 'paid';
+
+    const STATUS_FAILED = 'failed';
+
+    const STATUS_REFUNDED = 'refunded';
+
+    const STATUS_WAITLISTED = 'waitlisted';
+
     protected $fillable = [
         'user_id',
         'event_id',
+        'ticket_id',
         'quantity',
         'unit_price',
         'total_amount',
@@ -38,6 +51,10 @@ class EventOrder extends Model
         'checked_in_at',
         'reminded_24h_at',
         'reminded_1h_at',
+        'waitlist_position',
+        'qr_code_token',
+        'qr_code_path',
+        'qr_code_media_id',
     ];
 
     protected $casts = [
@@ -50,6 +67,7 @@ class EventOrder extends Model
         'checked_in_at' => 'datetime',
         'reminded_24h_at' => 'datetime',
         'reminded_1h_at' => 'datetime',
+        'purchased_at' => 'datetime',
     ];
 
     /**
@@ -69,6 +87,14 @@ class EventOrder extends Model
     }
 
     /**
+     * Get the ticket tier for this order
+     */
+    public function ticket(): BelongsTo
+    {
+        return $this->belongsTo(Ticket::class);
+    }
+
+    /**
      * Get the promo code used for this order
      */
     public function promoCode(): BelongsTo
@@ -79,10 +105,17 @@ class EventOrder extends Model
     /**
      * Get the payment associated with this order
      */
-    public function payment(): HasOne
+    public function payment(): MorphOne
     {
-        return $this->hasOne(Payment::class, 'payable_id')
-            ->where('payable_type', 'event_order');
+        return $this->morphOne(Payment::class, 'payable');
+    }
+
+    /**
+     * Get the refunds associated with this order
+     */
+    public function refunds(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Refund::class, 'refundable');
     }
 
     /**
@@ -90,7 +123,7 @@ class EventOrder extends Model
      */
     public function scopePending($query)
     {
-        return $query->where('status', 'pending');
+        return $query->where('status', self::STATUS_PENDING);
     }
 
     /**
@@ -98,7 +131,7 @@ class EventOrder extends Model
      */
     public function scopePaid($query)
     {
-        return $query->where('status', 'paid');
+        return $query->where('status', self::STATUS_PAID);
     }
 
     /**
@@ -106,7 +139,7 @@ class EventOrder extends Model
      */
     public function scopeFailed($query)
     {
-        return $query->where('status', 'failed');
+        return $query->where('status', self::STATUS_FAILED);
     }
 
     /**
@@ -114,7 +147,7 @@ class EventOrder extends Model
      */
     public function scopeRefunded($query)
     {
-        return $query->where('status', 'refunded');
+        return $query->where('status', self::STATUS_REFUNDED);
     }
 
     /**
@@ -126,11 +159,19 @@ class EventOrder extends Model
     }
 
     /**
+     * Get all registrations for this order
+     */
+    public function registrations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(EventRegistration::class, 'order_id');
+    }
+
+    /**
      * Check if order is paid
      */
     public function isPaid(): bool
     {
-        return $this->status === 'paid';
+        return $this->status === self::STATUS_PAID;
     }
 
     /**
@@ -165,6 +206,7 @@ class EventOrder extends Model
         if ($this->user) {
             return $this->user->name ?? $this->user->username ?? 'User';
         }
+
         return $this->guest_name ?? 'Guest';
     }
 
@@ -176,6 +218,7 @@ class EventOrder extends Model
         if ($this->user) {
             return $this->user->email;
         }
+
         return $this->guest_email;
     }
 
@@ -192,7 +235,7 @@ class EventOrder extends Model
      */
     public static function generateReceiptNumber(): string
     {
-        return 'TKT-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6));
+        return 'TKT-'.now()->format('Ymd').'-'.Str::upper(Str::random(6));
     }
 
     /**
@@ -200,7 +243,7 @@ class EventOrder extends Model
      */
     public static function generateReference(): string
     {
-        return 'ORD-' . Str::upper(Str::random(12));
+        return 'ORD-'.Str::upper(Str::random(12));
     }
 
     /**
@@ -208,7 +251,7 @@ class EventOrder extends Model
      */
     public static function generateQrToken(): string
     {
-        return 'TKT-' . Str::upper(Str::random(16));
+        return 'TKT-'.Str::upper(Str::random(16));
     }
 
     /**
@@ -227,6 +270,12 @@ class EventOrder extends Model
             }
         });
     }
+
+    /**
+     * Get the CAS-stored QR Code media
+     */
+    public function qrCodeMedia(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'qr_code_media_id');
+    }
 }
-
-

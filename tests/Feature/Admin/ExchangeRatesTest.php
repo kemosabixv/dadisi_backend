@@ -2,15 +2,17 @@
 
 namespace Tests\Feature\Admin;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class ExchangeRatesTest extends TestCase
 {
     use RefreshDatabase;
 
     private User $superAdmin;
+
     private User $regularUser;
 
     protected $shouldSeedRoles = true;
@@ -19,7 +21,7 @@ class ExchangeRatesTest extends TestCase
     {
         parent::setUp();
         $this->superAdmin = User::factory()->create();
-        $role = \Spatie\Permission\Models\Role::where('name', 'super_admin')->where('guard_name', 'api')->first();
+        $role = \Spatie\Permission\Models\Role::where('name', 'super_admin')->where('guard_name', 'web')->first();
         $this->superAdmin->assignRole($role);
 
         $this->regularUser = User::factory()->create();
@@ -37,8 +39,8 @@ class ExchangeRatesTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function super_admin_can_access_exchange_rates()
     {
-        $response = $this->actingAs($this->superAdmin)
-            ->getJson('/api/admin/exchange-rates');
+        $this->actingAs($this->superAdmin);
+        $response = $this->getJson('/api/admin/exchange-rates');
 
         $this->assertThat($response->status(), $this->logicalOr(
             $this->equalTo(200),
@@ -57,8 +59,8 @@ class ExchangeRatesTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function super_admin_can_get_exchange_rates_info()
     {
-        $response = $this->actingAs($this->superAdmin)
-            ->getJson('/api/admin/exchange-rates/info');
+        $this->actingAs($this->superAdmin);
+        $response = $this->getJson('/api/admin/exchange-rates/info');
 
         $this->assertThat($response->status(), $this->logicalOr(
             $this->equalTo(200),
@@ -77,8 +79,8 @@ class ExchangeRatesTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function super_admin_can_refresh_exchange_rate()
     {
-        $response = $this->actingAs($this->superAdmin)
-            ->postJson('/api/admin/exchange-rates/refresh');
+        $this->actingAs($this->superAdmin);
+        $response = $this->postJson('/api/admin/exchange-rates/refresh');
 
         $this->assertThat($response->status(), $this->logicalOr(
             $this->equalTo(200),
@@ -100,10 +102,10 @@ class ExchangeRatesTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function super_admin_can_update_cache_settings()
     {
-        $response = $this->actingAs($this->superAdmin)
-            ->putJson('/api/admin/exchange-rates/settings', [
-                'cache_minutes' => 120,
-            ]);
+        $this->actingAs($this->superAdmin);
+        $response = $this->putJson('/api/admin/exchange-rates/settings', [
+            'cache_minutes' => 120,
+        ]);
 
         $this->assertThat($response->status(), $this->logicalOr(
             $this->equalTo(200),
@@ -114,10 +116,10 @@ class ExchangeRatesTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function update_cache_settings_validates_input()
     {
-        $response = $this->actingAs($this->superAdmin)
-            ->putJson('/api/admin/exchange-rates/settings', [
-                'cache_minutes' => 'invalid',
-            ]);
+        $this->actingAs($this->superAdmin);
+        $response = $this->putJson('/api/admin/exchange-rates/settings', [
+            'cache_minutes' => 'invalid',
+        ]);
 
         $response->assertStatus(422);
     }
@@ -135,10 +137,10 @@ class ExchangeRatesTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function super_admin_can_update_manual_rate()
     {
-        $response = $this->actingAs($this->superAdmin)
-            ->putJson('/api/admin/exchange-rates/rate', [
-                'rate' => 145.75,
-            ]);
+        $this->actingAs($this->superAdmin);
+        $response = $this->putJson('/api/admin/exchange-rates/rate', [
+            'rate' => 145.75,
+        ]);
 
         $this->assertThat($response->status(), $this->logicalOr(
             $this->equalTo(200),
@@ -149,10 +151,10 @@ class ExchangeRatesTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function update_manual_rate_validates_rate_value()
     {
-        $response = $this->actingAs($this->superAdmin)
-            ->putJson('/api/admin/exchange-rates/rate', [
-                'rate' => 'invalid',
-            ]);
+        $this->actingAs($this->superAdmin);
+        $response = $this->putJson('/api/admin/exchange-rates/rate', [
+            'rate' => 'invalid',
+        ]);
 
         $response->assertStatus(422);
     }
@@ -160,10 +162,10 @@ class ExchangeRatesTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function update_manual_rate_must_be_positive()
     {
-        $response = $this->actingAs($this->superAdmin)
-            ->putJson('/api/admin/exchange-rates/rate', [
-                'rate' => -100,
-            ]);
+        $this->actingAs($this->superAdmin);
+        $response = $this->putJson('/api/admin/exchange-rates/rate', [
+            'rate' => -100,
+        ]);
 
         $response->assertStatus(422);
     }
@@ -171,8 +173,8 @@ class ExchangeRatesTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function non_admin_cannot_access_exchange_rates()
     {
-        $response = $this->actingAs($this->regularUser)
-            ->getJson('/api/admin/exchange-rates');
+        $this->actingAs($this->regularUser);
+        $response = $this->getJson('/api/admin/exchange-rates');
 
         $response->assertStatus(403);
     }
@@ -180,10 +182,10 @@ class ExchangeRatesTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Test]
     public function non_admin_cannot_update_exchange_rates()
     {
-        $response = $this->actingAs($this->regularUser)
-            ->putJson('/api/admin/exchange-rates/rate', [
-                'rate' => 150,
-            ]);
+        $this->actingAs($this->regularUser);
+        $response = $this->putJson('/api/admin/exchange-rates/rate', [
+            'rate' => 150,
+        ]);
 
         $response->assertStatus(403);
     }

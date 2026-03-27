@@ -7,7 +7,6 @@ use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -26,19 +25,16 @@ class DeletionReviewControllerTest extends TestCase
 
     private User $regularUser;
 
-    private Role $contentEditorRole;
-
     protected function setUp(): void
     {
         parent::setUp();
-
-        // Get or create content_editor role
-        $this->contentEditorRole = Role::firstOrCreate(['name' => 'content_editor', 'guard_name' => 'web']);
+        $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Create test users
         $this->author = User::factory()->create();
         $this->staff = User::factory()->create();
-        $this->staff->assignRole($this->contentEditorRole);
+        $this->staff->assignRole('editor');
         $this->regularUser = User::factory()->create();
     }
 

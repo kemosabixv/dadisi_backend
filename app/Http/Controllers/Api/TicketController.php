@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateTicketDTO;
+use App\DTOs\UpdateTicketDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreEventTicketRequest;
 use App\Http\Requests\Api\UpdateEventTicketRequest;
@@ -22,7 +24,7 @@ class TicketController extends Controller
 {
     public function __construct(private EventTicketServiceContract $ticketService)
     {
-        $this->middleware('auth:sanctum')->except(['index']);
+        $this->middleware('auth')->except(['index']);
     }
 
     /**
@@ -65,10 +67,11 @@ class TicketController extends Controller
         try {
             $this->authorize('update', $event);
             
+            $dto = CreateTicketDTO::fromArray($request->validated() + ['event_id' => $event->id]);
             $ticket = $this->ticketService->createTicket(
                 auth()->user(),
                 $event,
-                $request->validated()
+                $dto
             );
 
             return response()->json([
@@ -97,10 +100,11 @@ class TicketController extends Controller
         try {
             $this->authorize('update', $ticket->event);
             
+            $dto = UpdateTicketDTO::fromArray($request->validated());
             $updatedTicket = $this->ticketService->updateTicket(
                 auth()->user(),
                 $ticket,
-                $request->validated()
+                $dto
             );
 
             return response()->json([

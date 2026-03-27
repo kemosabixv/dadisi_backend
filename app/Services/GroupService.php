@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\DTOs\CreateGroupDTO;
+use App\DTOs\UpdateGroupDTO;
 use App\Models\Group;
 use App\Services\Contracts\GroupServiceContract;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -56,8 +58,9 @@ class GroupService implements GroupServiceContract
     /**
      * @inheritDoc
      */
-    public function createGroup(array $data): Group
+    public function createGroup(CreateGroupDTO $dto): Group
     {
+        $data = $dto->toArray();
         if (isset($data['name'])) {
             $data['slug'] = Str::slug($data['name']);
         }
@@ -68,8 +71,9 @@ class GroupService implements GroupServiceContract
     /**
      * @inheritDoc
      */
-    public function updateGroup(Group $group, array $data): Group
+    public function updateGroup(Group $group, UpdateGroupDTO $dto): Group
     {
+        $data = $dto->toArray();
         if (isset($data['name'])) {
             $data['slug'] = Str::slug($data['name']);
         }

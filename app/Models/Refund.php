@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\EventOrder;
+use App\Models\LabBooking;
+use App\Models\PlanSubscription;
 
 class Refund extends Model
 {
@@ -31,6 +34,7 @@ class Refund extends Model
         'approved_at',
         'processed_at',
         'completed_at',
+        'metadata',
     ];
 
     protected $casts = [
@@ -41,6 +45,7 @@ class Refund extends Model
         'approved_at' => 'datetime',
         'processed_at' => 'datetime',
         'completed_at' => 'datetime',
+        'metadata' => 'array',
     ];
 
     /**
@@ -152,7 +157,7 @@ class Refund extends Model
     public function getReasonDisplayAttribute(): string
     {
         $reasons = [
-            self::REASON_CANCELLATION => 'Event Cancellation',
+            self::REASON_CANCELLATION => 'Cancellation',
             self::REASON_DUPLICATE => 'Duplicate Payment',
             self::REASON_CUSTOMER_REQUEST => 'Customer Request',
             self::REASON_FRAUD => 'Fraudulent Transaction',
@@ -160,6 +165,82 @@ class Refund extends Model
         ];
 
         return $reasons[$this->reason] ?? ucfirst($this->reason);
+    }
+
+    /**
+     * Get a human-readable title for the refundable entity.
+     * Used by notifications to avoid hardcoding event-specific references.
+     */
+    public function getRefundableTitleAttribute(): string
+    {
+        $refundable = $this->refundable;
+
+        if (!$refundable) {
+            return 'Order';
+        }
+
+        if ($refundable instanceof EventOrder) {
+            return $refundable->event?->title ?? 'Event Order';
+        }
+
+        if ($refundable instanceof LabBooking) {
+            return 'Lab Booking: ' . ($refundable->labSpace?->name ?? 'Unknown Space');
+        }
+
+        if ($refundable instanceof PlanSubscription) {
+            return 'Subscription: ' . ($refundable->plan?->name ?? 'Plan');
+        }
+
+        return 'Order';
+    }
+
+    /**
+     * Get the appropriate tracking URL for the refundable entity.
+     * Used by notifications instead of hardcoding '/dashboard/events'.
+     */
+    public function getTrackingUrlAttribute(): string
+    {
+        $refundable = $this->refundable;
+        $frontendUrl = config('app.frontend_url', '');
+
+        if ($refundable instanceof EventOrder) {
+            return $frontendUrl . '/dashboard/events';
+        }
+
+        if ($refundable instanceof LabBooking) {
+            return $frontendUrl . '/dashboard/bookings';
+        }
+
+        if ($refundable instanceof PlanSubscription) {
+            return $frontendUrl . '/dashboard/subscriptions';
+        }
+
+        return $frontendUrl . '/dashboard';
+    }
+
+    /**
+     * Get the guest tracking URL for anonymous notifiables (e.g. guest ticket URL).
+     */
+    public function getGuestTrackingUrl(): string
+    {
+        $refundable = $this->refundable;
+        $frontendUrl = config('app.frontend_url', '');
+
+        // EventOrder guests have ticket-specific URLs
+        if ($refundable instanceof EventOrder) {
+            $registration = $refundable->registrations->first();
+            if ($registration) {
+                return $frontendUrl . '/events/tickets/' . $registration->qr_code_token;
+            }
+            return $frontendUrl . '/dashboard/events';
+        }
+
+        // Lab booking guests get a generic confirmation — their info is in email
+        if ($refundable instanceof LabBooking) {
+            return $frontendUrl . '/spaces';
+        }
+
+        return $frontendUrl . '/dashboard';
     }
 
     /**

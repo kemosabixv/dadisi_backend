@@ -2,6 +2,8 @@
 
 namespace App\Services\Contracts;
 
+use App\DTOs\CreateTicketDTO;
+use App\DTOs\UpdateTicketDTO;
 use App\Models\Event;
 use App\Models\Ticket;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -19,20 +21,20 @@ interface EventTicketServiceContract
      *
      * @param Authenticatable $actor The user creating the ticket
      * @param Event $event The event the ticket belongs to
-     * @param array $data Ticket data
+     * @param CreateTicketDTO $dto Ticket data
      * @return Ticket The created ticket tier
      */
-    public function createTicket(Authenticatable $actor, Event $event, array $data): Ticket;
+    public function createTicket(Authenticatable $actor, Event $event, CreateTicketDTO $dto): Ticket;
 
     /**
      * Update an existing ticket tier
      *
      * @param Authenticatable $actor The user updating the ticket
      * @param Ticket $ticket The ticket tier to update
-     * @param array $data Update data
+     * @param UpdateTicketDTO $dto Update data
      * @return Ticket The updated ticket tier
      */
-    public function updateTicket(Authenticatable $actor, Ticket $ticket, array $data): Ticket;
+    public function updateTicket(Authenticatable $actor, Ticket $ticket, UpdateTicketDTO $dto): Ticket;
 
     /**
      * Delete a ticket tier

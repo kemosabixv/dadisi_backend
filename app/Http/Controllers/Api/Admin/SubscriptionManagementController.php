@@ -20,7 +20,7 @@ class SubscriptionManagementController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**
@@ -37,77 +37,83 @@ class SubscriptionManagementController extends Controller
         abort_unless(auth()->user()->can('view_subscriptions'), 403, 'Unauthorized');
 
         try {
-            $query = PlanSubscription::query()
-                ->with('plan')
-                ->with('enhancements')
-                ->with('subscriber.memberProfile')
-                ->latest('starts_at');
+            // We want unique subscribers who have at least one subscription
+            $query = \App\Models\User::query()
+                ->whereHas('subscriptions')
+                ->with([
+                    'memberProfile',
+                    'activeSubscription.plan',
+                    'subscriptions' => function($q) {
+                        $q->latest('starts_at')->with('plan');
+                    }
+                ]);
 
-            // Search by User (subscriber) or Plan Name
+            // Search by User Name or Email
             if ($request->filled('search')) {
                 $search = $request->input('search');
                 $query->where(function ($q) use ($search) {
-                    $q->whereHas('subscriber', function ($uq) use ($search) {
-                        $uq->where('username', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%")
-                            ->orWhereHas('memberProfile', function ($pq) use ($search) {
-                                $pq->where('first_name', 'like', "%{$search}%")
-                                    ->orWhere('last_name', 'like', "%{$search}%");
-                            });
-                    })
-                    ->orWhereHas('plan', function ($pq) use ($search) {
-                        $pq->where('name', 'like', "%{$search}%");
-                    });
+                    $q->where('username', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhereHas('memberProfile', function ($pq) use ($search) {
+                            $pq->where('first_name', 'like', "%{$search}%")
+                                ->orWhere('last_name', 'like', "%{$search}%");
+                        });
                 });
             }
 
-            // Filter by Status
+            // Filter by Plan ID (Active or Latest)
+            if ($request->filled('plan_id')) {
+                $planId = $request->input('plan_id');
+                $query->whereHas('subscriptions', function($q) use ($planId) {
+                    $q->where('plan_id', $planId);
+                });
+            }
+
+            // Filter by Status (Active or Latest)
             if ($request->filled('status')) {
                 $status = $request->input('status');
-                if ($status === 'active') {
-                    $query->where(function($q) {
-                        $q->whereNull('ends_at')->orWhere('ends_at', '>', now());
-                    });
-                } elseif ($status === 'expired') {
-                    $query->where('ends_at', '<=', now());
-                } elseif ($status === 'cancelled') {
-                    $query->whereNotNull('canceled_at');
-                }
+                $query->whereHas('subscriptions', function($q) use ($status) {
+                    if ($status === 'active') {
+                        $q->where(function($sq) {
+                            $sq->whereNull('ends_at')->orWhere('ends_at', '>', now());
+                        })->whereNull('canceled_at');
+                    } elseif ($status === 'expired') {
+                        $q->where('ends_at', '<=', now());
+                    } elseif ($status === 'cancelled') {
+                        $q->whereNotNull('canceled_at');
+                    }
+                });
             }
 
-            // Filter by Plan
-            if ($request->filled('plan_id')) {
-                $query->where('plan_id', $request->input('plan_id'));
-            }
-
-            $paginated = $query->paginate($request->get('per_page', 15));
+            $paginated = $query->latest()->paginate($request->get('per_page', 15));
             
-            $data = collect($paginated->items())->map(function($sub) {
+            $data = collect($paginated->items())->map(function($user) {
+                // Get the latest subscription from the sorted collection
+                // This is safer than activeSubscription->first() because subscriptions is already latest()
+                $latestSub = $user->subscriptions->first();
+
                 // Determine Plan Name
-                $planDisplayName = 'Subscription';
-                if (is_array($sub->name)) {
-                    $planDisplayName = $sub->name['en'] ?? $sub->name['default'] ?? 'Subscription';
-                } else if (is_string($sub->name)) {
-                    $decoded = json_decode($sub->name, true);
-                    $planDisplayName = $decoded['en'] ?? $decoded['default'] ?? $sub->name;
+                $planDisplayName = 'N/A';
+                if ($latestSub) {
+                    $planDisplayName = $latestSub->plan?->name ?? 'Subscription';
                 }
 
                 return [
-                    'id' => $sub->id,
-                    'user_id' => $sub->subscriber_id,
-                    'user_name' => $sub->subscriber?->memberProfile?->full_name ?? $sub->subscriber?->username ?? 'Unknown',
-                    'user_email' => $sub->subscriber?->email,
-                    'plan_id' => $sub->plan_id,
-                    'plan_name' => $sub->plan?->name,
+                    'id' => $latestSub?->id, // Keep ID for compatibility if needed, but we focus on user_id
+                    'user_id' => $user->id,
+                    'user_name' => $user->memberProfile?->full_name ?? $user->username ?? 'Unknown',
+                    'user_email' => $user->email,
+                    'plan_id' => $latestSub?->plan_id,
+                    'plan_name' => $latestSub?->plan?->name,
                     'plan_display_name' => $planDisplayName,
-                    'plan_price' => (float)($sub->plan?->price ?? 0),
-                    'status' => $sub->status,
-                    'starts_at' => $sub->starts_at,
-                    'ends_at' => $sub->ends_at,
-                    'expires_at' => $sub->expires_at,
-                    'canceled_at' => $sub->canceled_at,
-                    'auto_renew' => (bool)$sub->subscriber?->renewalPreferences?->renewal_type === 'automatic',
-                    'enhancements_count' => $sub->enhancements->count(),
+                    'plan_price' => (float)($latestSub?->plan?->price ?? 0),
+                    'status' => $latestSub?->status ?? 'none',
+                    'starts_at' => $latestSub?->starts_at,
+                    'ends_at' => $latestSub?->ends_at,
+                    'expires_at' => $latestSub?->expires_at,
+                    'canceled_at' => $latestSub?->canceled_at,
+                    'auto_renew' => (bool)$user->renewalPreferences?->renewal_type === 'automatic',
+                    'enhancements_count' => $latestSub ? $latestSub->enhancements->count() : 0,
                 ];
             });
 
@@ -125,7 +131,7 @@ class SubscriptionManagementController extends Controller
             Log::error('Admin Subscription List Error', ['error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve subscriptions',
+                'message' => 'Failed to retrieve subscribers',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -140,6 +146,7 @@ class SubscriptionManagementController extends Controller
     {
         abort_unless(auth()->user()->can('view_subscriptions'), 403, 'Unauthorized');
 
+        // Load the specific subscription with its direct relations
         $subscription->load([
             'plan',
             'enhancements',
@@ -148,9 +155,23 @@ class SubscriptionManagementController extends Controller
             'auditLogs' => function($q) { $q->latest(); }
         ]);
 
+        // Also load the subscriber's full subscription history
+        $subscriber = $subscription->subscriber;
+        if ($subscriber) {
+            $subscriber->load([
+                'subscriptions' => function($q) {
+                    $q->latest('starts_at')->with(['plan', 'payments', 'auditLogs']);
+                }
+            ]);
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $subscription
+            'data' => [
+                'current' => $subscription,
+                'history' => $subscriber ? $subscriber->subscriptions : [],
+                'subscriber' => $subscriber
+            ]
         ]);
     }
 

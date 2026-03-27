@@ -18,7 +18,7 @@ class AdminEventAttendanceController extends Controller
     public function __construct(
         private EventAttendanceServiceContract $attendanceService
     ) {
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**

@@ -62,4 +62,74 @@ interface NotificationServiceContract
      * @return int Count of deleted notifications
      */
     public function clearAll(Authenticatable $user): int;
+
+    /**
+     * Dispatch donation initiated notification (for guests)
+     */
+    public function sendDonationInitiated(\App\Models\Donation $donation): void;
+
+    /**
+     * Dispatch donation received notification
+     */
+    public function sendDonationReceived(\App\Models\Donation $donation): void;
+
+    /**
+     * Dispatch donation cancelled notification
+     */
+    public function sendDonationCancelled(\App\Models\Donation $donation): void;
+
+    /**
+     * Dispatch donation refunded notification
+     */
+    public function sendDonationRefunded(\App\Models\Donation $donation): void;
+
+    /**
+     * Send donation reminder notification
+     */
+    public function sendDonationReminder(\App\Models\Donation $donation): void;
+
+    /**
+     * Send donation payment failed notification
+     */
+    public function sendDonationPaymentFailed(\App\Models\Donation $donation): void;
+
+    /**
+     * Dispatch subscription activated notification
+     */
+    public function sendSubscriptionActivated(\App\Models\PlanSubscription $subscription): void;
+
+    /**
+     * Dispatch subscription cancelled notification
+     */
+    public function sendSubscriptionCancelled(\App\Models\PlanSubscription $subscription, ?string $reason = null): void;
+
+    /**
+     * Dispatch subscription payment failed notification
+     */
+    public function sendSubscriptionPaymentFailed(\App\Models\PlanSubscription $subscription, string $error): void;
+
+    /**
+     * Dispatch subscription renewal reminder
+     */
+    public function sendSubscriptionReminder(\App\Models\PlanSubscription $subscription, int $daysRemaining): void;
+
+    /**
+     * Dispatch lab booking initiated notification (payment session started)
+     */
+    public function sendLabBookingInitiated(\App\Models\LabBooking $booking, string $paymentUrl): void;
+
+    /**
+     * Dispatch lab booking confirmation notification
+     */
+    public function sendLabBookingConfirmation(\App\Models\LabBooking $booking): void;
+
+    /**
+     * Dispatch lab booking cancelled notification
+     */
+    public function sendLabBookingCancelled(\App\Models\LabBooking $booking): void;
+
+    /**
+     * Dispatch lab booking reminder notification
+     */
+    public function sendLabBookingReminder(\App\Models\LabBooking $booking): void;
 }

@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\DTOs\UpdateSystemFeatureDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateSystemFeatureRequest;
+use App\Http\Resources\SystemFeatureResource;
 use App\Models\SystemFeature;
 use App\Services\Contracts\SystemFeatureServiceContract;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +21,7 @@ class SystemFeatureController extends Controller
     public function __construct(
         private SystemFeatureServiceContract $featureService
     ) {
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**
@@ -98,24 +101,13 @@ class SystemFeatureController extends Controller
      *   "data": { ... }
      * }
      */
-    public function update(Request $request, SystemFeature $feature): JsonResponse
+    public function update(UpdateSystemFeatureRequest $request, SystemFeature $feature): JsonResponse
     {
         try {
-            $validated = $request->validate([
-                'name' => 'sometimes|string|max:255',
-                'description' => 'sometimes|nullable|string',
-                'default_value' => 'sometimes|string',
-                'is_active' => 'sometimes|boolean',
-                'sort_order' => 'sometimes|integer|min:0',
-            ]);
+            $dto = UpdateSystemFeatureDTO::fromArray($request->validated());
+            $updatedFeature = $this->featureService->updateFeature($feature, $dto->toArray());
 
-            $updatedFeature = $this->featureService->updateFeature($feature, $validated);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Feature updated successfully',
-                'data' => $updatedFeature,
-            ]);
+            return (new SystemFeatureResource($updatedFeature))->response();
         } catch (\Exception $e) {
             Log::error('Failed to update system feature', ['error' => $e->getMessage(), 'feature_id' => $feature->id]);
             return response()->json(['success' => false, 'message' => 'Failed to update feature'], 500);

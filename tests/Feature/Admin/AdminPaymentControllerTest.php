@@ -2,93 +2,74 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\User;
 use App\Models\Payment;
-use App\Models\Donation;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class AdminPaymentControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $admin;
+
     protected $financeStaff;
+
     protected $regularUser;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        // Ensure web guard is used for permissions checks in tests
+        config(['auth.defaults.guard' => 'web']);
+        \Illuminate\Support\Facades\Auth::shouldUse('web');
+
         // Clear permission cache
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create roles and permissions with BOTH 'web' and 'api' guards
-        // Sanctum uses 'api' guard when authenticating via tokens
-        $superAdminRoleWeb = Role::findOrCreate('super_admin', 'web');
-        $financeRoleWeb = Role::findOrCreate('finance', 'web');
-        $superAdminRoleApi = Role::findOrCreate('super_admin', 'api');
-        $financeRoleApi = Role::findOrCreate('finance', 'api');
-        
-        // Create permissions for both guards
-        $managePaymentsWeb = Permission::findOrCreate('manage_payments', 'web');
-        $refundPaymentsWeb = Permission::findOrCreate('refund_payments', 'web');
-        $managePaymentsApi = Permission::findOrCreate('manage_payments', 'api');
-        $refundPaymentsApi = Permission::findOrCreate('refund_payments', 'api');
-        
-        $adminRoleWeb = Role::findOrCreate('admin', 'web');
-        $adminRoleApi = Role::findOrCreate('admin', 'api');
-        
-        // Assign permissions to web roles
-        $financeRoleWeb->givePermissionTo([$managePaymentsWeb, $refundPaymentsWeb]);
-        $superAdminRoleWeb->givePermissionTo([$managePaymentsWeb, $refundPaymentsWeb]);
-        $adminRoleWeb->givePermissionTo([$managePaymentsWeb, $refundPaymentsWeb]);
-        
-        // Assign permissions to api roles
-        $financeRoleApi->givePermissionTo([$managePaymentsApi, $refundPaymentsApi]);
-        $superAdminRoleApi->givePermissionTo([$managePaymentsApi, $refundPaymentsApi]);
-        $adminRoleApi->givePermissionTo([$managePaymentsApi, $refundPaymentsApi]);
+        // Seed roles and permissions (web guard)
+        $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
 
-        // Create users and assign BOTH web and api roles
+        // Create users
         $this->superAdmin = User::factory()->create();
-        $this->superAdmin->assignRole([$superAdminRoleWeb, $superAdminRoleApi]);
-
         $this->admin = User::factory()->create();
-        $this->admin->assignRole([$adminRoleWeb, $adminRoleApi]);
-
         $this->financeStaff = User::factory()->create();
-        $this->financeStaff->assignRole([$financeRoleWeb, $financeRoleApi]);
-
         $this->regularUser = User::factory()->create();
-    }
 
+        // Assign roles retrieved from database (web guard)
+        $superAdminRole = \Spatie\Permission\Models\Role::findByName('super_admin', 'web');
+        $adminRole = \Spatie\Permission\Models\Role::findByName('admin', 'web');
+        $financeRole = \Spatie\Permission\Models\Role::findByName('finance', 'web');
+
+        $this->superAdmin->assignRole($superAdminRole);
+        $this->admin->assignRole($adminRole);
+        $this->financeStaff->assignRole($financeRole);
+    }
 
     #[Test]
     public function finance_staff_can_list_payments()
     {
         Payment::factory()->count(5)->create();
 
-        $response = $this->actingAs($this->financeStaff)
-            ->getJson('/api/admin/finance/payments');
+        $this->actingAs($this->financeStaff);
+        $response = $this->getJson('/api/admin/finance/payments');
 
         $response->assertStatus(200)
             ->assertJsonCount(5, 'data')
             ->assertJsonStructure([
                 'success',
                 'data',
-                'meta'
+                'meta',
             ]);
     }
-
 
     #[Test]
     public function regular_user_cannot_list_payments()
     {
-        $response = $this->actingAs($this->regularUser)
-            ->getJson('/api/admin/finance/payments');
+        $this->actingAs($this->regularUser);
+        $response = $this->getJson('/api/admin/finance/payments');
 
         $response->assertStatus(403);
     }
@@ -98,8 +79,8 @@ class AdminPaymentControllerTest extends TestCase
     {
         Payment::factory()->count(2)->create();
 
-        $response = $this->actingAs($this->superAdmin)
-            ->getJson('/api/admin/finance/payments');
+        $this->actingAs($this->superAdmin);
+        $response = $this->getJson('/api/admin/finance/payments');
 
         $response->assertStatus(200)
             ->assertJsonCount(2, 'data');
@@ -110,8 +91,8 @@ class AdminPaymentControllerTest extends TestCase
     {
         Payment::factory()->count(2)->create();
 
-        $response = $this->actingAs($this->admin)
-            ->getJson('/api/admin/finance/payments');
+        $this->actingAs($this->admin);
+        $response = $this->getJson('/api/admin/finance/payments');
 
         $response->assertStatus(200)
             ->assertJsonCount(2, 'data');
@@ -123,8 +104,8 @@ class AdminPaymentControllerTest extends TestCase
         Payment::factory()->create(['status' => 'paid']);
         Payment::factory()->create(['status' => 'pending']);
 
-        $response = $this->actingAs($this->financeStaff)
-            ->getJson('/api/admin/finance/payments?status=paid');
+        $this->actingAs($this->financeStaff);
+        $response = $this->getJson('/api/admin/finance/payments?status=paid');
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
@@ -137,8 +118,8 @@ class AdminPaymentControllerTest extends TestCase
         $payment = Payment::factory()->create(['reference' => 'TEST-REF-123']);
         Payment::factory()->create(['reference' => 'OTHER-REF-456']);
 
-        $response = $this->actingAs($this->financeStaff)
-            ->getJson('/api/admin/finance/payments?search=TEST-REF');
+        $this->actingAs($this->financeStaff);
+        $response = $this->getJson('/api/admin/finance/payments?search=TEST-REF');
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
@@ -150,28 +131,58 @@ class AdminPaymentControllerTest extends TestCase
     {
         $payment = Payment::factory()->create();
 
-        $response = $this->actingAs($this->financeStaff)
-            ->getJson("/api/admin/finance/payments/{$payment->id}");
+        $this->actingAs($this->financeStaff);
+        $response = $this->getJson("/api/admin/finance/payments/{$payment->id}");
 
         $response->assertStatus(200)
             ->assertJsonPath('data.id', $payment->id);
     }
 
     #[Test]
-    public function finance_staff_can_initiate_refund()
+    public function finance_staff_cannot_initiate_refund()
     {
-        // Mocking the PaymentService would be better, but for feature test we can check the request reach
         $payment = Payment::factory()->create(['status' => 'paid', 'transaction_id' => 'TRANS_123']);
 
-        // We need to mock the service or ensure it's handled. 
-        // For now, let's verify authorization and validation.
-        $response = $this->actingAs($this->financeStaff)
-            ->postJson("/api/admin/finance/payments/{$payment->id}/refund", [
-                'reason' => 'Customer requested refund'
-            ]);
+        $this->actingAs($this->financeStaff);
+        $response = $this->postJson("/api/admin/finance/payments/{$payment->id}/refund", [
+            'reason' => 'Customer requested refund',
+        ]);
 
-        // Note: Success will depend on the mocked gateway in PaymentService.
-        // If it fails because of gateway errors, it should still be a 400 with a message.
-        $this->assertContains($response->status(), [200, 400]);
+        // Finance staff cannot initiate refunds (only approve/reject/process)
+        $response->assertStatus(403);
+    }
+
+    #[Test]
+    public function finance_staff_can_approve_reject_and_process_refunds()
+    {
+        // Create a refund request (simulating user-initiated)
+        $payment = Payment::factory()->create(['status' => 'paid', 'transaction_id' => 'TRANS_123']);
+        $refund = \App\Models\Refund::create([
+            'refundable_type' => \App\Models\EventOrder::class,
+            'refundable_id' => 1, // Mock
+            'payment_id' => $payment->id,
+            'amount' => 100.00,
+            'currency' => 'KES',
+            'original_amount' => $payment->amount,
+            'status' => 'pending',
+            'reason' => 'cancellation',
+            'customer_notes' => 'Test refund',
+        ]);
+
+        $this->actingAs($this->financeStaff);
+
+        // Test approval
+        $response = $this->postJson("/api/admin/refunds/{$refund->id}/approve", [
+            'admin_notes' => 'Approved for testing',
+        ]);
+        $response->assertStatus(200);
+
+        // Refresh refund and test processing
+        $refund->refresh();
+        $this->assertEquals('approved', $refund->status);
+
+        $response = $this->postJson("/api/admin/refunds/{$refund->id}/process");
+        // Processing may succeed or fail depending on gateway mock, but should not be 403
+        $this->assertNotEquals(403, $response->status());
     }
 }

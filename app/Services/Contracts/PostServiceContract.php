@@ -2,6 +2,8 @@
 
 namespace App\Services\Contracts;
 
+use App\DTOs\CreatePostDTO;
+use App\DTOs\UpdatePostDTO;
 use App\Models\Post;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Pagination\Paginator;
@@ -61,30 +63,30 @@ interface PostServiceContract
      * Create a new post
      *
      * @param Authenticatable $author The post author
-     * @param array $data Post data
+     * @param CreatePostDTO $dto Post data
      * @return Post The created post
      */
-    public function createPost(Authenticatable $author, array $data): Post;
+    public function createPost(Authenticatable $author, CreatePostDTO $dto): Post;
 
     /**
      * Update a post
      *
      * @param Authenticatable $actor User updating
      * @param Post $post The post
-     * @param array $data Update data
+     * @param UpdatePostDTO $dto Update data
      * @return Post Updated post
      */
-    public function updatePost(Authenticatable $actor, Post $post, array $data): Post;
+    public function updatePost(Authenticatable $actor, Post $post, UpdatePostDTO $dto): Post;
 
     /**
      * Update author's post
      *
      * @param Authenticatable $author
      * @param int $postId
-     * @param array $data
+     * @param UpdatePostDTO $dto
      * @return Post
      */
-    public function updateAuthorPost(Authenticatable $author, int $postId, array $data): Post;
+    public function updateAuthorPost(Authenticatable $author, int $postId, UpdatePostDTO $dto): Post;
 
     /**
      * Delete a post (soft)

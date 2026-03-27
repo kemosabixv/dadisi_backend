@@ -5,7 +5,10 @@ namespace Database\Seeders;
 use App\Models\DonationCampaign;
 use App\Models\County;
 use App\Models\User;
+use App\Models\Media;
+use App\Services\Media\MediaService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DonationCampaignSeeder extends Seeder
 {
@@ -174,9 +177,39 @@ class DonationCampaignSeeder extends Seeder
             // Assign seed image
             $imagePath = $campaignImages[$campaignData['title']] ?? null;
             
+            // We'll handle hero_image_path via Media relationship now, but keep field for compat
             $campaignData['hero_image_path'] = $imagePath;
             
-            DonationCampaign::create($campaignData);
+            $campaign = DonationCampaign::updateOrCreate(
+                ['title' => $campaignData['title']],
+                $campaignData
+            );
+
+            // Register in CAS and attach
+            if ($imagePath && app()->environment('local', 'testing', 'staging')) {
+                $absolutePath = storage_path('app/public/' . $imagePath);
+                if (file_exists($absolutePath)) {
+                    try {
+                        /** @var MediaService $mediaService */
+                        $mediaService = app(MediaService::class);
+                        $media = $mediaService->registerFile(
+                            $creator,
+                            $absolutePath,
+                            basename($imagePath),
+                            [
+                                'visibility' => 'public',
+                                'root_type' => 'public',
+                                'path' => ['campaigns', Str::slug($campaign->title)],
+                            ]
+                        );
+
+                        // Attach as featured media
+                        $campaign->setFeaturedMedia($media->id);
+                    } catch (\Exception $e) {
+                        $this->command->warn('Failed to register CAS media for campaign: ' . $campaign->title . ' - ' . $e->getMessage());
+                    }
+                }
+            }
         }
 
         $this->command->info('Created ' . count($campaigns) . ' donation campaigns.');

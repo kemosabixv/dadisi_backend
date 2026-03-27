@@ -2,7 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\UpdateRenewalPreferencesDTO;
+use App\DTOs\InitiateSubscriptionPaymentDTO;
+use App\DTOs\ProcessMockPaymentDTO;
+use App\DTOs\CancelSubscriptionDTO;
+use App\DTOs\CancelSubscriptionPaymentDTO;
+use App\DTOs\ApiResponseDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateRenewalPreferencesRequest;
+use App\Http\Requests\InitiateSubscriptionPaymentRequest;
+use App\Http\Requests\ProcessMockPaymentRequest;
+use App\Http\Requests\CancelSubscriptionRequest;
+use App\Http\Requests\CancelSubscriptionPaymentRequest;
 use App\Services\Contracts\SubscriptionCoreServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +28,7 @@ class SubscriptionCoreController extends Controller
     public function __construct(
         private SubscriptionCoreServiceContract $subscriptionCoreService
     ) {
-        $this->middleware('auth:sanctum');
+        $this->middleware('auth');
     }
 
     /**
@@ -43,19 +54,17 @@ class SubscriptionCoreController extends Controller
     {
         try {
             $data = $this->subscriptionCoreService->getCurrentSubscription($request->user()->id);
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'user_id' => $request->user()->id,
-                    'plan' => $data['plan'] ?? null,
-                    'subscription' => $data['subscription'] ?? null,
-                    'enhancement' => $data['enhancement'] ?? null,
-                ]
-            ], 200);
+            $response = ApiResponseDTO::success([
+                'user_id' => $request->user()->id,
+                'plan' => $data['plan'] ?? null,
+                'subscription' => $data['subscription'] ?? null,
+                'enhancement' => $data['enhancement'] ?? null,
+            ]);
+            return response()->json($response->toArray(), 200);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve subscription', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to retrieve subscription'], 500);
+            $response = ApiResponseDTO::failure('Failed to retrieve subscription');
+            return response()->json($response->toArray(), 500);
         }
     }
 
@@ -81,10 +90,12 @@ class SubscriptionCoreController extends Controller
     {
         try {
             $data = $this->subscriptionCoreService->getSubscriptionStatus($request->user()->id);
-            return response()->json(['success' => true, 'data' => $data]);
+            $response = ApiResponseDTO::success($data);
+            return response()->json($response->toArray(), 200);
         } catch (\Exception $e) {
             Log::error('Failed to get status', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to retrieve status'], 500);
+            $response = ApiResponseDTO::failure('Failed to retrieve status');
+            return response()->json($response->toArray(), 500);
         }
     }
 
@@ -108,10 +119,12 @@ class SubscriptionCoreController extends Controller
     {
         try {
             $plans = $this->subscriptionCoreService->getAvailablePlans();
-            return response()->json(['success' => true, 'data' => $plans]);
+            $response = ApiResponseDTO::success($plans);
+            return response()->json($response->toArray(), 200);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve plans', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to retrieve plans'], 500);
+            $response = ApiResponseDTO::failure('Failed to retrieve plans');
+            return response()->json($response->toArray(), 500);
         }
     }
 
@@ -138,10 +151,12 @@ class SubscriptionCoreController extends Controller
     {
         try {
             $preferences = $this->subscriptionCoreService->getRenewalPreferences($request->user()->id);
-            return response()->json(['success' => true, 'data' => $preferences]);
+            $response = ApiResponseDTO::success($preferences);
+            return response()->json($response->toArray(), 200);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve preferences', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to retrieve preferences'], 500);
+            $response = ApiResponseDTO::failure('Failed to retrieve preferences');
+            return response()->json($response->toArray(), 500);
         }
     }
 
@@ -166,27 +181,17 @@ class SubscriptionCoreController extends Controller
      *   "data": {"renewal_type": "automatic"}
      * }
      */
-    public function updateRenewalPreferences(Request $request): JsonResponse
+    public function updateRenewalPreferences(UpdateRenewalPreferencesRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'renewal_type' => 'nullable|in:automatic,manual',
-            'send_renewal_reminders' => 'nullable|boolean',
-            'reminder_days_before' => 'nullable|integer|min:1|max:30',
-            'preferred_payment_method' => 'nullable|string|max:50',
-            'auto_switch_to_free_on_expiry' => 'nullable|boolean',
-            'notes' => 'nullable|string|max:500',
-        ]);
-
         try {
-            $preferences = $this->subscriptionCoreService->updateRenewalPreferences($request->user()->id, $validated);
-            return response()->json([
-                'success' => true,
-                'message' => 'Renewal preferences updated successfully',
-                'data' => $preferences,
-            ]);
+            $dto = UpdateRenewalPreferencesDTO::fromArray($request->validated());
+            $preferences = $this->subscriptionCoreService->updateRenewalPreferences($request->user()->id, $dto->toArray());
+            $response = ApiResponseDTO::success($preferences, 'Renewal preferences updated successfully');
+            return response()->json($response->toArray(), 200);
         } catch (\Exception $e) {
             Log::error('Failed to update preferences', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to update preferences'], 500);
+            $response = ApiResponseDTO::failure('Failed to update preferences');
+            return response()->json($response->toArray(), 500);
         }
     }
 
@@ -211,21 +216,17 @@ class SubscriptionCoreController extends Controller
      *   }
      * }
      */
-    public function initiatePayment(Request $request): JsonResponse
+    public function initiatePayment(InitiateSubscriptionPaymentRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'plan_id' => 'required|exists:plans,id',
-            'billing_period' => 'nullable|in:month,year',
-            'phone' => 'nullable|string|regex:/^254\d{9}$/',
-            'payment_method' => 'nullable|string|in:pesapal,mock',
-        ]);
-
         try {
-            $result = $this->subscriptionCoreService->initiatePayment($request->user()->id, $validated);
-            return response()->json(['success' => true, 'data' => $result], 201);
+            $dto = InitiateSubscriptionPaymentDTO::fromArray($request->validated());
+            $result = $this->subscriptionCoreService->initiatePayment($request->user()->id, $dto->toArray());
+            $response = ApiResponseDTO::success($result);
+            return response()->json($response->toArray(), 201);
         } catch (\Exception $e) {
             Log::error('Payment initiation failed', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Payment initiation failed'], 500);
+            $response = ApiResponseDTO::failure('Payment initiation failed');
+            return response()->json($response->toArray(), 500);
         }
     }
 
@@ -247,23 +248,18 @@ class SubscriptionCoreController extends Controller
      *   "data": {"status": "completed"}
      * }
      */
-    public function processMockPayment(Request $request): JsonResponse
+    public function processMockPayment(ProcessMockPaymentRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'transaction_id' => 'required|string',
-            'phone' => 'required|string|regex:/^254\d{9}$/',
-        ]);
-
         try {
-            $result = $this->subscriptionCoreService->processMockPayment($request->user()->id, $validated);
-            return response()->json([
-                'success' => $result['success'] ?? false,
-                'message' => $result['message'] ?? 'Payment processed',
-                'data' => $result,
-            ]);
+            $dto = ProcessMockPaymentDTO::fromArray($request->validated());
+            $result = $this->subscriptionCoreService->processMockPayment($request->user()->id, $dto->toArray());
+            $message = $result['message'] ?? 'Payment processed';
+            $response = ApiResponseDTO::success($result, $message);
+            return response()->json($response->toArray(), 200);
         } catch (\Exception $e) {
             Log::error('Mock payment failed', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Payment processing failed'], 500);
+            $response = ApiResponseDTO::failure('Payment processing failed');
+            return response()->json($response->toArray(), 500);
         }
     }
 
@@ -287,24 +283,28 @@ class SubscriptionCoreController extends Controller
      *   "message": "No active subscription found"
      * }
      */
-    public function cancelSubscription(Request $request): JsonResponse
+    public function cancelSubscription(CancelSubscriptionRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'reason' => 'nullable|string|max:500',
-            'immediate' => 'nullable|boolean',
-        ]);
-
         try {
+            $dto = CancelSubscriptionDTO::fromArray($request->validated());
             $result = $this->subscriptionCoreService->cancelSubscription(
                 $request->user()->id,
-                $validated['reason'] ?? null
+                $dto->reason
             );
-
-            $statusCode = $result['success'] ? 200 : 404;
-            return response()->json($result, $statusCode);
+            if ($result['success']) {
+                $response = ApiResponseDTO::success(
+                    data: null,
+                    message: $result['message'] ?? 'Subscription cancelled successfully'
+                );
+                return response()->json($response->toArray(), 200);
+            } else {
+                $response = ApiResponseDTO::failure($result['message'] ?? 'No active subscription found');
+                return response()->json($response->toArray(), 404);
+            }
         } catch (\Exception $e) {
             Log::error('Cancellation failed', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to cancel subscription'], 500);
+            $response = ApiResponseDTO::failure('Failed to cancel subscription');
+            return response()->json($response->toArray(), 500);
         }
     }
 
@@ -323,18 +323,57 @@ class SubscriptionCoreController extends Controller
      *   "message": "No pending payment found to cancel."
      * }
      */
-    public function cancelSubscriptionPayment(Request $request): JsonResponse
+    public function cancelSubscriptionPayment(CancelSubscriptionPaymentRequest $request): JsonResponse
     {
         try {
+            $dto = CancelSubscriptionPaymentDTO::fromArray($request->validated());
             $result = $this->subscriptionCoreService->cancelSubscriptionPayment(
-                $request->input('subscription_id'),
-                $request->input('reason')
+                $dto->subscriptionId,
+                $dto->reason
             );
-            return response()->json($result);
+            $response = ApiResponseDTO::success(
+                data: null,
+                message: $result['message'] ?? 'Payment session cancelled successfully'
+            );
+            return response()->json($response->toArray(), 200);
         } catch (\Exception $e) {
             Log::error('Payment cancellation failed', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to cancel payment'], 500);
+            $response = ApiResponseDTO::failure('Failed to cancel payment');
+            return response()->json($response->toArray(), 500);
         }
     }
-}
 
+    /**
+     * Get Subscription Payment by Reference
+     * 
+     * Retrieves detailed information about a specific subscription payment using its reference.
+     * This follows the same pattern as the donation receipt system.
+     * 
+     * @group Subscription Lifecycle
+     * @authenticated
+     */
+    public function getPaymentByReference(string $reference): JsonResponse
+    {
+        $user = auth()->user();
+
+        $payment = \App\Models\Payment::where('reference', $reference)
+            ->where('payer_id', $user->id)
+            ->where(function($query) {
+                $query->where('payable_type', 'subscription')
+                      ->orWhere('payable_type', 'App\Models\PlanSubscription');
+            })
+            ->first();
+
+        if (!$payment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Subscription payment not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => new \App\Http\Resources\PaymentResource($payment),
+        ]);
+    }
+}

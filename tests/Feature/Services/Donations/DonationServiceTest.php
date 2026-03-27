@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Services\Donations;
 
+use App\DTOs\CreateDonationDTO;
 use App\Exceptions\DonationException;
 use App\Models\County;
 use App\Models\Donation;
@@ -59,7 +60,8 @@ class DonationServiceTest extends TestCase
             'county_id' => \App\Models\County::first()->id,
         ];
 
-        $donation = $this->service->createDonation($this->donor, $data);
+        $dto = CreateDonationDTO::fromArray($data);
+        $donation = $this->service->createDonation($this->donor, $dto);
 
         $this->assertNotNull($donation->id);
         $this->assertEquals(5000, $donation->amount);
@@ -85,7 +87,8 @@ class DonationServiceTest extends TestCase
             'county_id' => \App\Models\County::first()->id,
         ];
 
-        $donation = $this->service->createDonation(null, $data);
+        $dto = CreateDonationDTO::fromArray($data);
+        $donation = $this->service->createDonation(null, $dto);
 
         $this->assertNull($donation->user_id);
     }
@@ -104,7 +107,8 @@ class DonationServiceTest extends TestCase
             'county_id' => County::where('name', 'Kisumu')->first()->id,
         ];
 
-        $donation = $this->service->createDonation($this->user, $data);
+        $dto = CreateDonationDTO::fromArray($data);
+        $donation = $this->service->createDonation($this->user, $dto);
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $this->user->id,
@@ -434,7 +438,8 @@ class DonationServiceTest extends TestCase
             'county_id' => \App\Models\County::first()->id,
         ];
 
-        $donation = $this->service->createDonation($this->user, $data);
+        $dto = CreateDonationDTO::fromArray($data);
+        $donation = $this->service->createDonation($this->user, $dto);
 
         $this->assertEquals(999999999, $donation->amount);
     }

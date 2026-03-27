@@ -21,7 +21,7 @@ class AdminMenuController extends Controller
     public function __construct(
         private MenuServiceContract $menuService
     ) {
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**

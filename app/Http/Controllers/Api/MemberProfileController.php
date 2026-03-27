@@ -2,14 +2,20 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateMemberProfileDTO;
+use App\DTOs\UpdateMemberProfileDTO;
+use App\DTOs\ApiResponseDTO;
 use App\Http\Controllers\Controller;
 use App\Exceptions\UserException;
+use App\Http\Requests\Api\StoreMemberProfileRequest;
+use App\Http\Requests\Api\UpdateMemberProfileRequest;
+use App\Http\Requests\Api\ListMemberProfilesRequest;
+use App\Http\Requests\Api\UploadProfilePictureRequest;
+use App\Http\Resources\MemberProfileResource;
 use App\Services\Contracts\UserServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class MemberProfileController extends Controller
 {
@@ -58,7 +64,7 @@ class MemberProfileController extends Controller
      *   "message": "Unauthorized to view all profiles"
      * }
      */
-    public function index(Request $request): JsonResponse
+    public function index(ListMemberProfilesRequest $request): JsonResponse
     {
         try {
             $filters = [
@@ -68,12 +74,15 @@ class MemberProfileController extends Controller
                 'page' => $request->input('page', 1),
             ];
             $result = $this->userService->listMemberProfiles($filters);
-            return response()->json(['success' => true, 'data' => $result]);
+            $response = ApiResponseDTO::success($result);
+            return response()->json($response->toArray(), 200);
         } catch (UserException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 403);
+            $response = ApiResponseDTO::failure($e->getMessage());
+            return response()->json($response->toArray(), $e->getCode() ?: 403);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve member profiles', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to retrieve member profiles'], 500);
+            $response = ApiResponseDTO::failure('Failed to retrieve member profiles');
+            return response()->json($response->toArray(), 500);
         }
     }
 
@@ -109,10 +118,12 @@ class MemberProfileController extends Controller
     {
         try {
             $profile = $this->userService->getCurrentUserProfile();
-            return response()->json(['success' => true, 'data' => $profile]);
+            $response = ApiResponseDTO::success($profile);
+            return response()->json($response->toArray(), 200);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve current user profile', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Profile not found. Please create a profile first.'], 404);
+            $response = ApiResponseDTO::failure('Profile not found. Please create a profile first.');
+            return response()->json($response->toArray(), 404);
         }
     }
 
@@ -156,33 +167,23 @@ class MemberProfileController extends Controller
      *   "errors": {"county_id": ["The county_id field is required."]}
      * }
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreMemberProfileRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'county_id' => ['required', 'integer', Rule::exists('counties', 'id')],
-            'first_name' => 'nullable|string|max:100',
-            'last_name' => 'nullable|string|max:100',
-            'phone' => 'nullable|string|max:30',
-            'gender' => 'nullable|in:male,female,other',
-            'date_of_birth' => 'nullable|date|before:today',
-            'occupation' => 'nullable|string|max:255',
-            'membership_type' => 'nullable|string',
-            'emergency_contact_name' => 'nullable|string|max:255',
-            'emergency_contact_phone' => 'nullable|string|max:15',
-            'terms_accepted' => 'required|boolean',
-            'marketing_consent' => 'sometimes|boolean',
-            'interests' => 'nullable|array',
-            'bio' => 'nullable|string|max:1000',
-        ]);
-        
         try {
-            $profile = $this->userService->createOrUpdateMemberProfile($validated);
-            return response()->json(['success' => true, 'message' => 'Profile updated successfully', 'data' => $profile]);
+            $dto = CreateMemberProfileDTO::fromArray($request->validated());
+            $profile = $this->userService->createOrUpdateMemberProfile($dto);
+            $response = ApiResponseDTO::success(
+                data: new MemberProfileResource($profile),
+                message: 'Profile updated successfully'
+            );
+            return response()->json($response->toArray(), 201);
         } catch (UserException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 400);
+            $response = ApiResponseDTO::failure($e->getMessage());
+            return response()->json($response->toArray(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
             Log::error('Failed to update profile', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to update profile'], 500);
+            $response = ApiResponseDTO::failure('Failed to update profile');
+            return response()->json($response->toArray(), 500);
         }
     }
 
@@ -226,23 +227,64 @@ class MemberProfileController extends Controller
      *   "message": "Cannot delete profile"
      * }
      */
-    public function destroy(Request $request, string $id): JsonResponse
+    public function destroy(string $id): JsonResponse
     {
         try {
             $this->userService->deleteMemberProfile($id);
-            return response()->json(['success' => true, 'message' => 'Profile deleted successfully']);
+            $response = ApiResponseDTO::success(message: 'Profile deleted successfully');
+            return response()->json($response->toArray(), 200);
         } catch (UserException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 403);
+            $response = ApiResponseDTO::failure($e->getMessage());
+            return response()->json($response->toArray(), $e->getCode() ?: 403);
         } catch (\Exception $e) {
             Log::error('Failed to delete profile', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Cannot delete profile'], 403);
+            $response = ApiResponseDTO::failure('Cannot delete profile');
+            return response()->json($response->toArray(), 403);
         }
     }
+
+    /**
+     * Update a profile
+     *
+     * Updated member profile details.
+     *
+     * @group Member Profiles
+     * @authenticated
+     * @urlParam id integer required The profile ID. Example: 123
+     *
+     * @bodyParam county_id integer County ID. Example: 47
+     * @bodyParam first_name string First name. Example: John
+     * @bodyParam last_name string Last name. Example: Doe
+     * @bodyParam phone_number string Phone number. Example: +254712345678
+     * @bodyParam bio string Bio. Example: Updated bio
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": {...profile_data...}
+     * }
+     */
+    public function update(UpdateMemberProfileRequest $request, string $id): JsonResponse
+    {
+        try {
+            $dto = UpdateMemberProfileDTO::fromArray($request->validated());
+            $profile = $this->userService->updateMemberProfile($id, $dto);
+            $response = ApiResponseDTO::success(new MemberProfileResource($profile), 'Profile updated successfully');
+            return response()->json($response->toArray(), 200);
+        } catch (UserException $e) {
+            $response = ApiResponseDTO::failure($e->getMessage());
+            return response()->json($response->toArray(), $e->getCode() ?: 400);
+        } catch (\Exception $e) {
+            Log::error('Failed to update profile', ['error' => $e->getMessage()]);
+            $response = ApiResponseDTO::failure('Failed to update profile');
+            return response()->json($response->toArray(), 500);
+        }
+    }
+
     /**
      * Get specific profile details
      *
      * Retrieves details for a specific profile by ID.
-     * - Users can always view their own profile (if ID matches or if ID is omitted, though `me` endpoint is preferred for that).
+     * - Users can always view their own profile (if ID matches).
      * - Admins can view any user's profile.
      * - Access is denied if a regular user tries to view another user's profile.
      *
@@ -274,14 +316,20 @@ class MemberProfileController extends Controller
      *   "message": "Profile not found"
      * }
      */
-    public function show(Request $request, $id = null): JsonResponse
+    public function show(string $id = null): JsonResponse
     {
         try {
-            $profile = $this->userService->getMemberProfile($id);
-            return response()->json(['success' => true, 'data' => $profile]);
+            // If id is provided, fetch specific profile, else current user's
+            $profile = $id 
+                ? \App\Models\MemberProfile::with(['user', 'county'])->findOrFail($id)
+                : $this->userService->getCurrentUserProfile();
+                
+            $response = ApiResponseDTO::success(new MemberProfileResource($profile));
+            return response()->json($response->toArray(), 200);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve profile', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Profile not found'], 404);
+            $response = ApiResponseDTO::failure('Profile not found');
+            return response()->json($response->toArray(), 404);
         }
     }
 
@@ -326,65 +374,6 @@ class MemberProfileController extends Controller
      */
 
 
-    /**
-     * Update specific profile
-     *
-     * Updates an existing profile by ID.
-     * - Regular users can only update their own profile.
-     * - Admins ('super_admin', 'admin') can update any profile.
-     *
-     * @group Member Profiles
-     * @authenticated
-     *
-     * @urlParam id integer required The ID of the profile to update. Example: 1
-     * @bodyParam county_id integer optional County ID. Example: 1
-     * @bodyParam phone string optional Phone number. Example: +254712345678
-     * @bodyParam gender string optional Gender. Example: female
-     * @bodyParam occupation string optional New occupation. Example: Project Manager
-     * @bodyParam bio string optional Biography. Example: Updated bio text.
-     *
-     * @response 200 {
-     *   "success": true,
-     *   "message": "Profile updated successfully",
-     *   "data": {
-     *     "id": 1,
-     *     "user": {"name": "John Doe"},
-     *     "county": {"name": "Nairobi"},
-     *     "occupation": "Project Manager"
-     *   }
-     * }
-     *
-     * @response 403 {
-     *   "success": false,
-     *   "message": "Unauthorized to update this profile"
-     * }
-     */
-    public function update(Request $request, string $id): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'county_id' => ['sometimes', 'required', 'integer', Rule::exists('counties', 'id')],
-                'phone_number' => 'nullable|string|max:15',
-                'gender' => 'nullable|in:male,female',
-                'date_of_birth' => 'nullable|date|before:today',
-                'sub_county' => 'nullable|string|max:50',
-                'ward' => 'nullable|string|max:50',
-                'occupation' => 'nullable|string|max:255',
-                'membership_type' => ['nullable', 'integer', Rule::exists('subscription_plans', 'id')],
-                'emergency_contact_name' => 'nullable|string|max:255',
-                'emergency_contact_phone' => 'nullable|string|max:15',
-                'terms_accepted' => 'sometimes|boolean',
-                'marketing_consent' => 'sometimes|boolean',
-                'interests' => 'nullable|array',
-                'bio' => 'nullable|string|max:1000',
-            ]);
-            $profile = $this->userService->updateMemberProfile($id, $validated);
-            return response()->json(['success' => true, 'message' => 'Profile updated successfully', 'data' => $profile]);
-        } catch (\Exception $e) {
-            Log::error('Failed to update profile', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Unauthorized to update this profile'], 403);
-        }
-    }
 
 
     /**
@@ -409,10 +398,12 @@ class MemberProfileController extends Controller
     {
         try {
             $counties = $this->userService->listCounties();
-            return response()->json(['success' => true, 'data' => $counties]);
+            $response = ApiResponseDTO::success($counties);
+            return response()->json($response->toArray(), 200);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve counties', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to retrieve counties'], 500);
+            $response = ApiResponseDTO::failure('Failed to retrieve counties');
+            return response()->json($response->toArray(), 500);
         }
     }
 
@@ -435,19 +426,19 @@ class MemberProfileController extends Controller
      *   }
      * }
      */
-    public function uploadProfilePicture(Request $request): JsonResponse
+    public function uploadProfilePicture(UploadProfilePictureRequest $request): JsonResponse
     {
         try {
-            $request->validate(['profile_picture' => ['required', 'image', 'max:5120']]);
             $url = $this->userService->uploadProfilePicture($request->user(), $request->file('profile_picture'));
-            return response()->json([
-                'success' => true,
-                'message' => 'Profile picture updated successfully',
-                'data' => ['profile_picture_url' => $url]
-            ]);
+            $response = ApiResponseDTO::success(
+                data: ['profile_picture_url' => $url],
+                message: 'Profile picture updated successfully'
+            );
+            return response()->json($response->toArray(), 200);
         } catch (\Exception $e) {
             Log::error('Failed to upload profile picture', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Failed to upload profile picture'], 500);
+            $response = ApiResponseDTO::failure('Failed to upload profile picture');
+            return response()->json($response->toArray(), 500);
         }
     }
 }

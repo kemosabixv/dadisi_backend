@@ -28,7 +28,7 @@ class AdminEventController extends Controller
     public function __construct(
         private EventServiceContract $eventService
     ) {
-        $this->middleware(['auth:sanctum', 'admin']);
+        $this->middleware(['auth', 'admin']);
     }
 
     /**
@@ -93,7 +93,9 @@ class AdminEventController extends Controller
                 (int)($filters['per_page'] ?? 50)
             );
 
-            return response()->json($registrations);
+            return \App\Http\Resources\RegistrationResource::collection($registrations)
+                ->response()
+                ->setStatusCode(200);
         } catch (EventException $e) {
             return $e->render();
         } catch (\Exception $e) {

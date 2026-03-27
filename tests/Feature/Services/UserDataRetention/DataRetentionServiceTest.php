@@ -98,21 +98,7 @@ class DataRetentionServiceTest extends TestCase
         ]);
     }
 
-    #[Test]
-    public function it_revokes_user_tokens_on_anonymization(): void
-    {
-        // Create a token for the user
-        $this->targetUser->createToken('test-token');
-        $this->assertDatabaseHas('personal_access_tokens', [
-            'tokenable_id' => $this->targetUser->id,
-        ]);
 
-        $this->service->anonymizeUserData($this->targetUser);
-
-        $this->assertDatabaseMissing('personal_access_tokens', [
-            'tokenable_id' => $this->targetUser->id,
-        ]);
-    }
 
     // ============ Data Export Tests ============
 

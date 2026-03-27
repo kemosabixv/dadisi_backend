@@ -11,14 +11,29 @@ class LabMaintenanceBlock extends Model
 {
     use HasFactory;
 
+    // Block type constants
+    const BLOCK_TYPE_MAINTENANCE = 'maintenance';
+    const BLOCK_TYPE_HOLIDAY = 'holiday';
+    const BLOCK_TYPE_CLOSURE = 'closure';
+
+    // Status constants
+    const STATUS_SCHEDULED = 'scheduled';
+    const STATUS_IN_PROGRESS = 'in_progress';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_CANCELLED = 'cancelled';
+
     protected $fillable = [
         'lab_space_id',
         'title',
         'reason',
+        'completion_report',
+        'block_type',
+        'status',
         'starts_at',
         'ends_at',
         'recurring',
         'recurrence_rule',
+        'recurrence_parent_id',
         'created_by',
     ];
 
@@ -26,6 +41,8 @@ class LabMaintenanceBlock extends Model
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'recurring' => 'boolean',
+        'recurrence_rule' => 'array',
+        'block_type' => 'string',
     ];
 
     // ==================== Relationships ====================
@@ -44,6 +61,22 @@ class LabMaintenanceBlock extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the master series block for this instance.
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(LabMaintenanceBlock::class, 'recurrence_parent_id');
+    }
+
+    /**
+     * Get all instances generated from this master series block.
+     */
+    public function instances()
+    {
+        return $this->hasMany(LabMaintenanceBlock::class, 'recurrence_parent_id');
     }
 
     // ==================== Scopes ====================

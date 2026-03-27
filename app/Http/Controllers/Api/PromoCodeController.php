@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreatePromoCodeDTO;
+use App\DTOs\UpdatePromoCodeDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PromoCodeResource;
 use App\Models\Event;
@@ -16,7 +18,7 @@ class PromoCodeController extends Controller
 {
     public function __construct(private PromoCodeServiceContract $promoCodeService)
     {
-        $this->middleware('auth:sanctum');
+        $this->middleware('auth');
     }
 
     /**
@@ -62,8 +64,8 @@ class PromoCodeController extends Controller
     {
         try {
             $this->authorize('create', PromoCode::class);
-            $validated = $request->validated();
-            $promo = $this->promoCodeService->createPromoCode(auth()->user(), $validated);
+            $dto = CreatePromoCodeDTO::fromArray($request->validated());
+            $promo = $this->promoCodeService->createPromoCode(auth()->user(), $dto);
             return response()->json(['success' => true, 'data' => new PromoCodeResource($promo)], 201);
         } catch (PromoCodeException $e) {
             Log::error('Failed to create promo code', ['error' => $e->getMessage()]);

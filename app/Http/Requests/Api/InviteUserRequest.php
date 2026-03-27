@@ -15,7 +15,6 @@ class InviteUserRequest extends FormRequest
     {
         return [
             'email' => 'required|email|unique:users,email',
-            'username' => 'required|string|max:255|unique:users,username',
             'roles' => 'sometimes|array',
             'roles.*' => 'string|exists:roles,name',
         ];
