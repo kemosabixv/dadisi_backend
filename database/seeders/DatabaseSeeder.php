@@ -18,10 +18,12 @@ class DatabaseSeeder extends Seeder
     {
         $this->seedMandatory();
 
-        // Only seed demo content in non-production environments
-        if (!app()->isProduction() && !app()->environment('production')) {
+        // Only seed demo content in designated non-production environments
+        if (app()->environment('local', 'dev', 'development', 'staging', 'testing')) {
             $this->command->info('Non-production environment detected. Seeding demo content...');
             $this->seedDemoContent();
+        } else {
+            $this->command->warn('Production-like environment detected. Skipping demo content.');
         }
     }
 
