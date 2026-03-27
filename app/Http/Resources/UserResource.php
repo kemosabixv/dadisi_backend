@@ -70,7 +70,7 @@ class UserResource extends JsonResource
                     'interests' => $profile->interests,
                     'emergency_contact_name' => $this->when($canViewPII, $profile->emergency_contact_name),
                     'emergency_contact_phone' => $this->when($canViewPII, $profile->emergency_contact_phone),
-                    'is_staff' => (bool) $profile->is_staff,
+                    'can_access_admin' => $this->canAccessAdminPanel(),
                     
                     // Public settings
                     'public_profile_enabled' => (bool) $profile->public_profile_enabled,

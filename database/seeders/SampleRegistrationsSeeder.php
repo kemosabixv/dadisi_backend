@@ -120,7 +120,6 @@ class SampleRegistrationsSeeder extends Seeder
                 'phone_number' => '+2547' . rand(10000000, 99999999),
                 'county_id' => rand(1, 47),
                 'terms_accepted' => true,
-                'is_staff' => false,
             ]);
 
             $newUsers->push($user);

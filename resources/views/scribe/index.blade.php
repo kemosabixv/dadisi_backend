@@ -26,7 +26,7 @@
             </style>
 
     <script>
-        var tryItOutBaseUrl = "http://192.168.3.127:8000";
+        var tryItOutBaseUrl = "http://192.168.55.127:8000";
         var useCsrf = Boolean();
         var csrfUrl = "/sanctum/csrf-cookie";
     </script>
@@ -719,6 +719,9 @@ Requires the laragear/webauthn package to be installed.</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="admin-lab-spaces-GETapi-admin-lab-supervisors">
                                 <a href="#admin-lab-spaces-GETapi-admin-lab-supervisors">Get all lab supervisor assignments (paginated).</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="admin-lab-spaces-POSTapi-admin-lab-supervisors-bulk-assign">
+                                <a href="#admin-lab-spaces-POSTapi-admin-lab-supervisors-bulk-assign">Bulk assign supervisor to multiple labs</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="admin-lab-spaces-POSTapi-admin-lab-supervisors">
                                 <a href="#admin-lab-spaces-POSTapi-admin-lab-supervisors">Assign a supervisor to a lab space.</a>
@@ -1900,7 +1903,7 @@ Requires the laragear/webauthn package to be installed.</a>
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: March 24, 2026</li>
+        <li>Last updated: March 27, 2026</li>
     </ul>
 </div>
 
@@ -1909,7 +1912,7 @@ Requires the laragear/webauthn package to be installed.</a>
     <div class="content">
         <h1 id="introduction">Introduction</h1>
 <aside>
-    <strong>Base URL</strong>: <code>http://192.168.3.127:8000</code>
+    <strong>Base URL</strong>: <code>http://192.168.55.127:8000</code>
 </aside>
 <pre><code>This documentation aims to provide all the information you need to work with our API.
 
@@ -1939,7 +1942,7 @@ This is the entry point for new users to access the platform.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/signup" \
+    "http://192.168.55.127:8000/api/auth/signup" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -1954,7 +1957,7 @@ This is the entry point for new users to access the platform.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/signup"
+    "http://192.168.55.127:8000/api/auth/signup"
 );
 
 const headers = {
@@ -2000,7 +2003,6 @@ fetch(url, {
             &quot;menu&quot;: []
         },
         &quot;member_profile&quot;: {
-            &quot;is_staff&quot;: false,
             &quot;first_name&quot;: &quot;Jane&quot;,
             &quot;last_name&quot;: &quot;Doe&quot;
         }
@@ -2172,7 +2174,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/login" \
+    "http://192.168.55.127:8000/api/auth/login" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -2185,7 +2187,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/login"
+    "http://192.168.55.127:8000/api/auth/login"
 );
 
 const headers = {
@@ -2377,7 +2379,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/logout" \
+    "http://192.168.55.127:8000/api/auth/logout" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -2385,7 +2387,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/logout"
+    "http://192.168.55.127:8000/api/auth/logout"
 );
 
 const headers = {
@@ -2509,7 +2511,7 @@ Useful for frontend applications to fetch user state on page load.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/auth/user" \
+    --get "http://192.168.55.127:8000/api/auth/user" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -2517,7 +2519,7 @@ Useful for frontend applications to fetch user state on page load.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/user"
+    "http://192.168.55.127:8000/api/auth/user"
 );
 
 const headers = {
@@ -2655,7 +2657,7 @@ Use this endpoint for initial session hydration and authorization checks.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/auth/me" \
+    --get "http://192.168.55.127:8000/api/auth/me" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -2663,7 +2665,7 @@ Use this endpoint for initial session hydration and authorization checks.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/me"
+    "http://192.168.55.127:8000/api/auth/me"
 );
 
 const headers = {
@@ -2793,7 +2795,7 @@ To prevent email enumeration, this endpoint returns a success message even if th
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/password/email" \
+    "http://192.168.55.127:8000/api/auth/password/email" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -2804,7 +2806,7 @@ To prevent email enumeration, this endpoint returns a success message even if th
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/password/email"
+    "http://192.168.55.127:8000/api/auth/password/email"
 );
 
 const headers = {
@@ -2945,7 +2947,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/password/reset" \
+    "http://192.168.55.127:8000/api/auth/password/reset" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -2959,7 +2961,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/password/reset"
+    "http://192.168.55.127:8000/api/auth/password/reset"
 );
 
 const headers = {
@@ -3151,7 +3153,7 @@ Requires the current password for security verification.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/password/change" \
+    "http://192.168.55.127:8000/api/auth/password/change" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -3165,7 +3167,7 @@ Requires the current password for security verification.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/password/change"
+    "http://192.168.55.127:8000/api/auth/password/change"
 );
 
 const headers = {
@@ -3349,7 +3351,7 @@ Use this if the initial registration email was missed or expired.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/send-verification" \
+    "http://192.168.55.127:8000/api/auth/send-verification" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -3357,7 +3359,7 @@ Use this if the initial registration email was missed or expired.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/send-verification"
+    "http://192.168.55.127:8000/api/auth/send-verification"
 );
 
 const headers = {
@@ -3499,7 +3501,7 @@ The code is one-time use and expires in 24 hours.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/verify-email" \
+    "http://192.168.55.127:8000/api/auth/verify-email" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -3510,7 +3512,7 @@ The code is one-time use and expires in 24 hours.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/verify-email"
+    "http://192.168.55.127:8000/api/auth/verify-email"
 );
 
 const headers = {
@@ -3664,7 +3666,7 @@ The secret is stored temporarily in session until verified.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/2fa/totp/enable" \
+    "http://192.168.55.127:8000/api/auth/2fa/totp/enable" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -3672,7 +3674,7 @@ The secret is stored temporarily in session until verified.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/2fa/totp/enable"
+    "http://192.168.55.127:8000/api/auth/2fa/totp/enable"
 );
 
 const headers = {
@@ -3797,7 +3799,7 @@ Returns recovery codes that the user should save securely.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/2fa/totp/verify" \
+    "http://192.168.55.127:8000/api/auth/2fa/totp/verify" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -3809,7 +3811,7 @@ Returns recovery codes that the user should save securely.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/2fa/totp/verify"
+    "http://192.168.55.127:8000/api/auth/2fa/totp/verify"
 );
 
 const headers = {
@@ -3964,7 +3966,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/2fa/totp/disable" \
+    "http://192.168.55.127:8000/api/auth/2fa/totp/disable" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -3976,7 +3978,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/2fa/totp/disable"
+    "http://192.168.55.127:8000/api/auth/2fa/totp/disable"
 );
 
 const headers = {
@@ -4116,7 +4118,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/2fa/totp/recovery-codes" \
+    "http://192.168.55.127:8000/api/auth/2fa/totp/recovery-codes" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -4128,7 +4130,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/2fa/totp/recovery-codes"
+    "http://192.168.55.127:8000/api/auth/2fa/totp/recovery-codes"
 );
 
 const headers = {
@@ -4259,7 +4261,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/2fa/totp/regenerate-recovery-codes" \
+    "http://192.168.55.127:8000/api/auth/2fa/totp/regenerate-recovery-codes" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -4271,7 +4273,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/2fa/totp/regenerate-recovery-codes"
+    "http://192.168.55.127:8000/api/auth/2fa/totp/regenerate-recovery-codes"
 );
 
 const headers = {
@@ -4402,7 +4404,7 @@ Call this after successful password authentication.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/2fa/totp/validate" \
+    "http://192.168.55.127:8000/api/auth/2fa/totp/validate" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -4414,7 +4416,7 @@ Call this after successful password authentication.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/2fa/totp/validate"
+    "http://192.168.55.127:8000/api/auth/2fa/totp/validate"
 );
 
 const headers = {
@@ -4572,7 +4574,7 @@ The frontend uses these options with the WebAuthn API.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/passkeys/register/options" \
+    "http://192.168.55.127:8000/api/auth/passkeys/register/options" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -4580,7 +4582,7 @@ The frontend uses these options with the WebAuthn API.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/passkeys/register/options"
+    "http://192.168.55.127:8000/api/auth/passkeys/register/options"
 );
 
 const headers = {
@@ -4709,7 +4711,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/passkeys/register" \
+    "http://192.168.55.127:8000/api/auth/passkeys/register" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -4725,7 +4727,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/passkeys/register"
+    "http://192.168.55.127:8000/api/auth/passkeys/register"
 );
 
 const headers = {
@@ -4918,7 +4920,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/auth/passkeys" \
+    --get "http://192.168.55.127:8000/api/auth/passkeys" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -4926,7 +4928,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/passkeys"
+    "http://192.168.55.127:8000/api/auth/passkeys"
 );
 
 const headers = {
@@ -5062,7 +5064,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/auth/passkeys/1" \
+    "http://192.168.55.127:8000/api/auth/passkeys/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -5070,7 +5072,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/passkeys/1"
+    "http://192.168.55.127:8000/api/auth/passkeys/1"
 );
 
 const headers = {
@@ -5214,7 +5216,7 @@ Used on the login page when the user wants to sign in with a passkey.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/passkeys/authenticate/options" \
+    "http://192.168.55.127:8000/api/auth/passkeys/authenticate/options" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -5225,7 +5227,7 @@ Used on the login page when the user wants to sign in with a passkey.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/passkeys/authenticate/options"
+    "http://192.168.55.127:8000/api/auth/passkeys/authenticate/options"
 );
 
 const headers = {
@@ -5364,7 +5366,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/auth/passkeys/authenticate" \
+    "http://192.168.55.127:8000/api/auth/passkeys/authenticate" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -5378,7 +5380,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/auth/passkeys/authenticate"
+    "http://192.168.55.127:8000/api/auth/passkeys/authenticate"
 );
 
 const headers = {
@@ -5560,7 +5562,7 @@ This is the primary endpoint for fetching user details for the dashboard/profile
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/member-profiles/me" \
+    --get "http://192.168.55.127:8000/api/member-profiles/me" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -5568,7 +5570,7 @@ This is the primary endpoint for fetching user details for the dashboard/profile
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/member-profiles/me"
+    "http://192.168.55.127:8000/api/member-profiles/me"
 );
 
 const headers = {
@@ -5722,7 +5724,7 @@ This ensures the user has a linked profile record with necessary details like co
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/member-profiles" \
+    "http://192.168.55.127:8000/api/member-profiles" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -5750,7 +5752,7 @@ This ensures the user has a linked profile record with necessary details like co
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/member-profiles"
+    "http://192.168.55.127:8000/api/member-profiles"
 );
 
 const headers = {
@@ -6094,7 +6096,7 @@ Supports filtering by county, membership type, and search by name/email.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/member-profiles?county_id=1&amp;membership_type=premium&amp;search=john&amp;page=1" \
+    --get "http://192.168.55.127:8000/api/member-profiles?county_id=1&amp;membership_type=premium&amp;search=john&amp;page=1" \
     --header "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -6102,7 +6104,7 @@ Supports filtering by county, membership type, and search by name/email.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/member-profiles"
+    "http://192.168.55.127:8000/api/member-profiles"
 );
 
 const params = {
@@ -6317,7 +6319,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/member-profiles/123" \
+    --get "http://192.168.55.127:8000/api/member-profiles/123" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -6325,7 +6327,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/member-profiles/123"
+    "http://192.168.55.127:8000/api/member-profiles/123"
 );
 
 const headers = {
@@ -6494,7 +6496,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/member-profiles/123" \
+    "http://192.168.55.127:8000/api/member-profiles/123" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -6520,13 +6522,13 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"public_bio\": \"Bio-technologist and community leader.\",
     \"show_email\": false,
     \"show_location\": false,
-    \"show_join_date\": true,
-    \"show_post_count\": false,
-    \"show_interests\": true,
-    \"show_occupation\": true,
+    \"show_join_date\": false,
+    \"show_post_count\": true,
+    \"show_interests\": false,
+    \"show_occupation\": false,
     \"sub_county\": \"Westlands\",
     \"ward\": \"Kitisuru\",
-    \"display_full_name\": false,
+    \"display_full_name\": true,
     \"display_age\": true,
     \"prefix\": \"bngzmiyvdljnikhw\",
     \"public_role\": \"a\",
@@ -6537,7 +6539,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             \"year\": \"2023\"
         }
     ],
-    \"experience_visible\": true,
+    \"experience_visible\": false,
     \"education_visible\": false,
     \"skills\": [
         \"PCR\",
@@ -6545,7 +6547,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
         \"Next.js\"
     ],
     \"skills_visible\": false,
-    \"achievements_visible\": true,
+    \"achievements_visible\": false,
     \"certifications_visible\": false
 }"
 </code></pre></div>
@@ -6553,7 +6555,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/member-profiles/123"
+    "http://192.168.55.127:8000/api/member-profiles/123"
 );
 
 const headers = {
@@ -6584,13 +6586,13 @@ let body = {
     "public_bio": "Bio-technologist and community leader.",
     "show_email": false,
     "show_location": false,
-    "show_join_date": true,
-    "show_post_count": false,
-    "show_interests": true,
-    "show_occupation": true,
+    "show_join_date": false,
+    "show_post_count": true,
+    "show_interests": false,
+    "show_occupation": false,
     "sub_county": "Westlands",
     "ward": "Kitisuru",
-    "display_full_name": false,
+    "display_full_name": true,
     "display_age": true,
     "prefix": "bngzmiyvdljnikhw",
     "public_role": "a",
@@ -6601,7 +6603,7 @@ let body = {
             "year": "2023"
         }
     ],
-    "experience_visible": true,
+    "experience_visible": false,
     "education_visible": false,
     "skills": [
         "PCR",
@@ -6609,7 +6611,7 @@ let body = {
         "Next.js"
     ],
     "skills_visible": false,
-    "achievements_visible": true,
+    "achievements_visible": false,
     "certifications_visible": false
 };
 
@@ -6974,7 +6976,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>show_post_count</code></b>&nbsp;&nbsp;
@@ -6995,7 +6997,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>show_interests</code></b>&nbsp;&nbsp;
@@ -7016,7 +7018,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>show_occupation</code></b>&nbsp;&nbsp;
@@ -7037,7 +7039,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>sub_county</code></b>&nbsp;&nbsp;
@@ -7080,7 +7082,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>display_age</code></b>&nbsp;&nbsp;
@@ -7155,7 +7157,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>education</code></b>&nbsp;&nbsp;
@@ -7251,7 +7253,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>certifications</code></b>&nbsp;&nbsp;
@@ -7302,7 +7304,7 @@ RESTRICTED: Only admins can delete profiles, but they cannot delete their own pr
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/member-profiles/123" \
+    "http://192.168.55.127:8000/api/member-profiles/123" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -7310,7 +7312,7 @@ RESTRICTED: Only admins can delete profiles, but they cannot delete their own pr
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/member-profiles/123"
+    "http://192.168.55.127:8000/api/member-profiles/123"
 );
 
 const headers = {
@@ -7457,16 +7459,16 @@ Replaces any existing picture.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/member-profiles/profile-picture" \
+    "http://192.168.55.127:8000/api/member-profiles/profile-picture" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "profile_picture=@C:\Users\pasca\AppData\Local\Temp\phpA895.tmp" </code></pre></div>
+    --form "profile_picture=@C:\Users\pasca\AppData\Local\Temp\php16FC.tmp" </code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/member-profiles/profile-picture"
+    "http://192.168.55.127:8000/api/member-profiles/profile-picture"
 );
 
 const headers = {
@@ -7591,7 +7593,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>The image file (jpeg, png, jpg, gif). Max 2MB. Example: <code>C:\Users\pasca\AppData\Local\Temp\phpA895.tmp</code></p>
+<p>The image file (jpeg, png, jpg, gif). Max 2MB. Example: <code>C:\Users\pasca\AppData\Local\Temp\php16FC.tmp</code></p>
         </div>
         </form>
 
@@ -7612,7 +7614,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/users/self" \
+    "http://192.168.55.127:8000/api/users/self" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -7624,7 +7626,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/users/self"
+    "http://192.168.55.127:8000/api/users/self"
 );
 
 const headers = {
@@ -7754,14 +7756,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/users/self/export" \
+    --get "http://192.168.55.127:8000/api/users/self/export" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/users/self/export"
+    "http://192.168.55.127:8000/api/users/self/export"
 );
 
 const headers = {
@@ -7879,16 +7881,16 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/users/self/profile-picture" \
+    "http://192.168.55.127:8000/api/users/self/profile-picture" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "profile_picture=@C:\Users\pasca\AppData\Local\Temp\phpB1EC.tmp" </code></pre></div>
+    --form "profile_picture=@C:\Users\pasca\AppData\Local\Temp\php17C9.tmp" </code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/users/self/profile-picture"
+    "http://192.168.55.127:8000/api/users/self/profile-picture"
 );
 
 const headers = {
@@ -8013,7 +8015,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Profile picture image file (JPEG, PNG, GIF, SVG, max 5MB). Must be an image. Must not be greater than 5120 kilobytes. Example: <code>C:\Users\pasca\AppData\Local\Temp\phpB1EC.tmp</code></p>
+<p>Profile picture image file (JPEG, PNG, GIF, SVG, max 5MB). Must be an image. Must not be greater than 5120 kilobytes. Example: <code>C:\Users\pasca\AppData\Local\Temp\php17C9.tmp</code></p>
         </div>
         </form>
 
@@ -8030,7 +8032,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/users/self/invite" \
+    "http://192.168.55.127:8000/api/users/self/invite" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -8041,7 +8043,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/users/self/invite"
+    "http://192.168.55.127:8000/api/users/self/invite"
 );
 
 const headers = {
@@ -8159,7 +8161,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users/bulk/assign-role" \
+    "http://192.168.55.127:8000/api/admin/users/bulk/assign-role" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -8173,7 +8175,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/bulk/assign-role"
+    "http://192.168.55.127:8000/api/admin/users/bulk/assign-role"
 );
 
 const headers = {
@@ -8307,7 +8309,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users/bulk/remove-role" \
+    "http://192.168.55.127:8000/api/admin/users/bulk/remove-role" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -8321,7 +8323,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/bulk/remove-role"
+    "http://192.168.55.127:8000/api/admin/users/bulk/remove-role"
 );
 
 const headers = {
@@ -8455,7 +8457,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users/bulk/delete" \
+    "http://192.168.55.127:8000/api/admin/users/bulk/delete" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -8468,7 +8470,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/bulk/delete"
+    "http://192.168.55.127:8000/api/admin/users/bulk/delete"
 );
 
 const headers = {
@@ -8590,7 +8592,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users/bulk/restore" \
+    "http://192.168.55.127:8000/api/admin/users/bulk/restore" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -8603,7 +8605,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/bulk/restore"
+    "http://192.168.55.127:8000/api/admin/users/bulk/restore"
 );
 
 const headers = {
@@ -8725,7 +8727,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users/bulk/update" \
+    "http://192.168.55.127:8000/api/admin/users/bulk/update" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -8742,7 +8744,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/bulk/update"
+    "http://192.168.55.127:8000/api/admin/users/bulk/update"
 );
 
 const headers = {
@@ -8901,7 +8903,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users/invite" \
+    "http://192.168.55.127:8000/api/admin/users/invite" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -8915,7 +8917,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/invite"
+    "http://192.168.55.127:8000/api/admin/users/invite"
 );
 
 const headers = {
@@ -9049,7 +9051,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users/bulk-invite" \
+    "http://192.168.55.127:8000/api/admin/users/bulk-invite" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -9064,7 +9066,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/bulk-invite"
+    "http://192.168.55.127:8000/api/admin/users/bulk-invite"
 );
 
 const headers = {
@@ -9197,14 +9199,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/users" \
+    --get "http://192.168.55.127:8000/api/admin/users" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users"
+    "http://192.168.55.127:8000/api/admin/users"
 );
 
 const headers = {
@@ -9322,7 +9324,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users" \
+    "http://192.168.55.127:8000/api/admin/users" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -9341,7 +9343,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users"
+    "http://192.168.55.127:8000/api/admin/users"
 );
 
 const headers = {
@@ -9542,14 +9544,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/users/1" \
+    --get "http://192.168.55.127:8000/api/admin/users/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/1"
+    "http://192.168.55.127:8000/api/admin/users/1"
 );
 
 const headers = {
@@ -9678,7 +9680,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/users/1" \
+    "http://192.168.55.127:8000/api/admin/users/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -9690,7 +9692,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/1"
+    "http://192.168.55.127:8000/api/admin/users/1"
 );
 
 const headers = {
@@ -9832,14 +9834,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/users/1" \
+    "http://192.168.55.127:8000/api/admin/users/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/1"
+    "http://192.168.55.127:8000/api/admin/users/1"
 );
 
 const headers = {
@@ -9952,14 +9954,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users/1/restore" \
+    "http://192.168.55.127:8000/api/admin/users/1/restore" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/1/restore"
+    "http://192.168.55.127:8000/api/admin/users/1/restore"
 );
 
 const headers = {
@@ -10072,14 +10074,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/users/1/force" \
+    "http://192.168.55.127:8000/api/admin/users/1/force" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/1/force"
+    "http://192.168.55.127:8000/api/admin/users/1/force"
 );
 
 const headers = {
@@ -10192,14 +10194,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/users/1/audit" \
+    --get "http://192.168.55.127:8000/api/admin/users/1/audit" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/1/audit"
+    "http://192.168.55.127:8000/api/admin/users/1/audit"
 );
 
 const headers = {
@@ -10328,7 +10330,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users/1/assign-role" \
+    "http://192.168.55.127:8000/api/admin/users/1/assign-role" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -10339,7 +10341,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/1/assign-role"
+    "http://192.168.55.127:8000/api/admin/users/1/assign-role"
 );
 
 const headers = {
@@ -10469,7 +10471,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users/1/remove-role" \
+    "http://192.168.55.127:8000/api/admin/users/1/remove-role" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -10480,7 +10482,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/1/remove-role"
+    "http://192.168.55.127:8000/api/admin/users/1/remove-role"
 );
 
 const headers = {
@@ -10610,7 +10612,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/users/1/sync-roles" \
+    "http://192.168.55.127:8000/api/admin/users/1/sync-roles" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -10623,7 +10625,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/users/1/sync-roles"
+    "http://192.168.55.127:8000/api/admin/users/1/sync-roles"
 );
 
 const headers = {
@@ -10763,7 +10765,7 @@ These permissions define the granular actions available within the application (
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/permissions?search=manage_users" \
+    --get "http://192.168.55.127:8000/api/admin/permissions?search=manage_users" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -10771,7 +10773,7 @@ These permissions define the granular actions available within the application (
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/permissions"
+    "http://192.168.55.127:8000/api/admin/permissions"
 );
 
 const params = {
@@ -10922,7 +10924,7 @@ Includes a list of roles that currently hold this permission.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/permissions/1" \
+    --get "http://192.168.55.127:8000/api/admin/permissions/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -10930,7 +10932,7 @@ Includes a list of roles that currently hold this permission.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/permissions/1"
+    "http://192.168.55.127:8000/api/admin/permissions/1"
 );
 
 const headers = {
@@ -11091,7 +11093,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/roles?search=admin&amp;include_permissions=1&amp;page=1" \
+    --get "http://192.168.55.127:8000/api/admin/roles?search=admin&amp;include_permissions=1&amp;page=1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -11099,7 +11101,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/roles"
+    "http://192.168.55.127:8000/api/admin/roles"
 );
 
 const params = {
@@ -11295,7 +11297,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/roles" \
+    "http://192.168.55.127:8000/api/admin/roles" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -11307,7 +11309,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/roles"
+    "http://192.168.55.127:8000/api/admin/roles"
 );
 
 const headers = {
@@ -11472,7 +11474,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/roles/1" \
+    --get "http://192.168.55.127:8000/api/admin/roles/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -11480,7 +11482,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/roles/1"
+    "http://192.168.55.127:8000/api/admin/roles/1"
 );
 
 const headers = {
@@ -11640,7 +11642,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/roles/1" \
+    "http://192.168.55.127:8000/api/admin/roles/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -11652,7 +11654,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/roles/1"
+    "http://192.168.55.127:8000/api/admin/roles/1"
 );
 
 const headers = {
@@ -11823,7 +11825,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/roles/1" \
+    "http://192.168.55.127:8000/api/admin/roles/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -11831,7 +11833,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/roles/1"
+    "http://192.168.55.127:8000/api/admin/roles/1"
 );
 
 const headers = {
@@ -11990,7 +11992,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/roles/1/permissions" \
+    "http://192.168.55.127:8000/api/admin/roles/1/permissions" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -12005,7 +12007,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/roles/1/permissions"
+    "http://192.168.55.127:8000/api/admin/roles/1/permissions"
 );
 
 const headers = {
@@ -12188,7 +12190,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/roles/1/permissions" \
+    "http://192.168.55.127:8000/api/admin/roles/1/permissions" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -12202,7 +12204,7 @@ RESTRICTED: Super Admin only.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/roles/1/permissions"
+    "http://192.168.55.127:8000/api/admin/roles/1/permissions"
 );
 
 const headers = {
@@ -12385,7 +12387,7 @@ Useful for dashboard widgets or compliance reporting.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/retention-settings-summary" \
+    --get "http://192.168.55.127:8000/api/admin/retention-settings-summary" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -12393,7 +12395,7 @@ Useful for dashboard widgets or compliance reporting.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/retention-settings-summary"
+    "http://192.168.55.127:8000/api/admin/retention-settings-summary"
 );
 
 const headers = {
@@ -12522,7 +12524,7 @@ This is an alternative to the full update endpoint when only the day count needs
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/retention-settings/update-days" \
+    "http://192.168.55.127:8000/api/admin/retention-settings/update-days" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -12536,7 +12538,7 @@ This is an alternative to the full update endpoint when only the day count needs
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/retention-settings/update-days"
+    "http://192.168.55.127:8000/api/admin/retention-settings/update-days"
 );
 
 const headers = {
@@ -12716,7 +12718,7 @@ These policies determine how long various types of data (e.g., logs, user histor
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/retention-settings?data_type=0" \
+    --get "http://192.168.55.127:8000/api/admin/retention-settings?data_type=0" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -12724,7 +12726,7 @@ These policies determine how long various types of data (e.g., logs, user histor
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/retention-settings"
+    "http://192.168.55.127:8000/api/admin/retention-settings"
 );
 
 const params = {
@@ -12878,7 +12880,7 @@ Includes information on retention duration, auto-delete status, and the administ
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/retention-settings/1" \
+    --get "http://192.168.55.127:8000/api/admin/retention-settings/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -12886,7 +12888,7 @@ Includes information on retention duration, auto-delete status, and the administ
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/retention-settings/1"
+    "http://192.168.55.127:8000/api/admin/retention-settings/1"
 );
 
 const headers = {
@@ -13045,7 +13047,7 @@ All changes are audit-logged.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/retention-settings/1" \
+    "http://192.168.55.127:8000/api/admin/retention-settings/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -13060,7 +13062,7 @@ All changes are audit-logged.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/retention-settings/1"
+    "http://192.168.55.127:8000/api/admin/retention-settings/1"
 );
 
 const headers = {
@@ -13277,7 +13279,7 @@ Shows which commands are enabled, their frequency (e.g., daily), and the specifi
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/schedulers" \
+    --get "http://192.168.55.127:8000/api/admin/schedulers" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -13285,7 +13287,7 @@ Shows which commands are enabled, their frequency (e.g., daily), and the specifi
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/schedulers"
+    "http://192.168.55.127:8000/api/admin/schedulers"
 );
 
 const headers = {
@@ -13417,7 +13419,7 @@ Allows administrators to determine exactly when system maintenance tasks (like p
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/schedulers/update" \
+    "http://192.168.55.127:8000/api/admin/schedulers/update" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -13432,7 +13434,7 @@ Allows administrators to determine exactly when system maintenance tasks (like p
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/schedulers/update"
+    "http://192.168.55.127:8000/api/admin/schedulers/update"
 );
 
 const headers = {
@@ -13630,7 +13632,7 @@ Includes real-time totals for donations and event orders, broken down by payment
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/billing/dashboard" \
+    --get "http://192.168.55.127:8000/api/admin/billing/dashboard" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -13638,7 +13640,7 @@ Includes real-time totals for donations and event orders, broken down by payment
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/billing/dashboard"
+    "http://192.168.55.127:8000/api/admin/billing/dashboard"
 );
 
 const headers = {
@@ -13768,7 +13770,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/billing/reconcile/donations" \
+    "http://192.168.55.127:8000/api/admin/billing/reconcile/donations" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -13776,7 +13778,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/billing/reconcile/donations"
+    "http://192.168.55.127:8000/api/admin/billing/reconcile/donations"
 );
 
 const headers = {
@@ -13890,7 +13892,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/billing/reconcile/orders" \
+    "http://192.168.55.127:8000/api/admin/billing/reconcile/orders" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -13898,7 +13900,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/billing/reconcile/orders"
+    "http://192.168.55.127:8000/api/admin/billing/reconcile/orders"
 );
 
 const headers = {
@@ -14012,7 +14014,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/billing/reconcile/status" \
+    --get "http://192.168.55.127:8000/api/admin/billing/reconcile/status" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -14020,7 +14022,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/billing/reconcile/status"
+    "http://192.168.55.127:8000/api/admin/billing/reconcile/status"
 );
 
 const headers = {
@@ -14150,7 +14152,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/billing/export/donations" \
+    --get "http://192.168.55.127:8000/api/admin/billing/export/donations" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -14158,7 +14160,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/billing/export/donations"
+    "http://192.168.55.127:8000/api/admin/billing/export/donations"
 );
 
 const headers = {
@@ -14288,7 +14290,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/billing/export/event-orders" \
+    --get "http://192.168.55.127:8000/api/admin/billing/export/event-orders" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -14296,7 +14298,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/billing/export/event-orders"
+    "http://192.168.55.127:8000/api/admin/billing/export/event-orders"
 );
 
 const headers = {
@@ -14426,7 +14428,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/billing/export/donation-summary" \
+    --get "http://192.168.55.127:8000/api/admin/billing/export/donation-summary" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -14434,7 +14436,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/billing/export/donation-summary"
+    "http://192.168.55.127:8000/api/admin/billing/export/donation-summary"
 );
 
 const headers = {
@@ -14564,7 +14566,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/billing/export/event-sales-summary" \
+    --get "http://192.168.55.127:8000/api/admin/billing/export/event-sales-summary" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -14572,7 +14574,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/billing/export/event-sales-summary"
+    "http://192.168.55.127:8000/api/admin/billing/export/event-sales-summary"
 );
 
 const headers = {
@@ -14702,7 +14704,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/billing/export/financial-reconciliation" \
+    --get "http://192.168.55.127:8000/api/admin/billing/export/financial-reconciliation" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -14710,7 +14712,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/billing/export/financial-reconciliation"
+    "http://192.168.55.127:8000/api/admin/billing/export/financial-reconciliation"
 );
 
 const headers = {
@@ -14844,7 +14846,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/categories" \
+    --get "http://192.168.55.127:8000/api/admin/blog/categories" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -14852,7 +14854,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/categories"
+    "http://192.168.55.127:8000/api/admin/blog/categories"
 );
 
 const headers = {
@@ -14982,7 +14984,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/categories/create" \
+    --get "http://192.168.55.127:8000/api/admin/blog/categories/create" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -14990,7 +14992,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/categories/create"
+    "http://192.168.55.127:8000/api/admin/blog/categories/create"
 );
 
 const headers = {
@@ -15120,7 +15122,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/blog/categories" \
+    "http://192.168.55.127:8000/api/admin/blog/categories" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -15134,7 +15136,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/categories"
+    "http://192.168.55.127:8000/api/admin/blog/categories"
 );
 
 const headers = {
@@ -15289,7 +15291,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/categories/1" \
+    --get "http://192.168.55.127:8000/api/admin/blog/categories/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -15297,7 +15299,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/categories/1"
+    "http://192.168.55.127:8000/api/admin/blog/categories/1"
 );
 
 const headers = {
@@ -15439,7 +15441,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/categories/1/edit" \
+    --get "http://192.168.55.127:8000/api/admin/blog/categories/1/edit" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -15447,7 +15449,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/categories/1/edit"
+    "http://192.168.55.127:8000/api/admin/blog/categories/1/edit"
 );
 
 const headers = {
@@ -15589,7 +15591,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/blog/categories/1" \
+    "http://192.168.55.127:8000/api/admin/blog/categories/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -15603,7 +15605,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/categories/1"
+    "http://192.168.55.127:8000/api/admin/blog/categories/1"
 );
 
 const headers = {
@@ -15770,7 +15772,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/blog/categories/1" \
+    "http://192.168.55.127:8000/api/admin/blog/categories/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -15778,7 +15780,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/categories/1"
+    "http://192.168.55.127:8000/api/admin/blog/categories/1"
 );
 
 const headers = {
@@ -15904,7 +15906,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/categories" \
+    "http://192.168.55.127:8000/api/categories" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -15918,7 +15920,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/categories"
+    "http://192.168.55.127:8000/api/categories"
 );
 
 const headers = {
@@ -16073,7 +16075,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/categories/1" \
+    "http://192.168.55.127:8000/api/categories/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -16087,7 +16089,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/categories/1"
+    "http://192.168.55.127:8000/api/categories/1"
 );
 
 const headers = {
@@ -16254,7 +16256,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/categories/1" \
+    "http://192.168.55.127:8000/api/categories/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -16262,7 +16264,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/categories/1"
+    "http://192.168.55.127:8000/api/categories/1"
 );
 
 const headers = {
@@ -16388,7 +16390,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/categories/1/affected-posts" \
+    --get "http://192.168.55.127:8000/api/admin/blog/categories/1/affected-posts" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -16396,7 +16398,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/categories/1/affected-posts"
+    "http://192.168.55.127:8000/api/admin/blog/categories/1/affected-posts"
 );
 
 const headers = {
@@ -16542,7 +16544,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/posts" \
+    --get "http://192.168.55.127:8000/api/admin/blog/posts" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -16550,7 +16552,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts"
+    "http://192.168.55.127:8000/api/admin/blog/posts"
 );
 
 const headers = {
@@ -16680,7 +16682,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/posts/create" \
+    --get "http://192.168.55.127:8000/api/admin/blog/posts/create" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -16688,7 +16690,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/create"
+    "http://192.168.55.127:8000/api/admin/blog/posts/create"
 );
 
 const headers = {
@@ -16818,7 +16820,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/blog/posts" \
+    "http://192.168.55.127:8000/api/admin/blog/posts" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -16853,7 +16855,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts"
+    "http://192.168.55.127:8000/api/admin/blog/posts"
 );
 
 const headers = {
@@ -17172,7 +17174,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/posts/1" \
+    --get "http://192.168.55.127:8000/api/admin/blog/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -17180,7 +17182,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1"
 );
 
 const headers = {
@@ -17322,7 +17324,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/posts/1/edit" \
+    --get "http://192.168.55.127:8000/api/admin/blog/posts/1/edit" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -17330,7 +17332,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/edit"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/edit"
 );
 
 const headers = {
@@ -17472,7 +17474,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/blog/posts/1" \
+    "http://192.168.55.127:8000/api/admin/blog/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -17494,7 +17496,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1"
 );
 
 const headers = {
@@ -17870,7 +17872,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/blog/posts/1" \
+    "http://192.168.55.127:8000/api/admin/blog/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -17878,7 +17880,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1"
 );
 
 const headers = {
@@ -18004,7 +18006,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/restore" \
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/restore" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -18012,7 +18014,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/restore"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/restore"
 );
 
 const headers = {
@@ -18138,7 +18140,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/force" \
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/force" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -18146,7 +18148,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/force"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/force"
 );
 
 const headers = {
@@ -18272,7 +18274,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/publish" \
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/publish" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -18280,7 +18282,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/publish"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/publish"
 );
 
 const headers = {
@@ -18406,7 +18408,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/unpublish" \
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/unpublish" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -18414,7 +18416,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/unpublish"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/unpublish"
 );
 
 const headers = {
@@ -18540,7 +18542,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/posts/1" \
+    --get "http://192.168.55.127:8000/api/admin/blog/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -18548,7 +18550,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1"
 );
 
 const headers = {
@@ -18690,7 +18692,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/blog/posts/1" \
+    "http://192.168.55.127:8000/api/admin/blog/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -18712,7 +18714,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1"
 );
 
 const headers = {
@@ -19088,7 +19090,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/blog/posts/1" \
+    "http://192.168.55.127:8000/api/admin/blog/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -19096,7 +19098,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1"
 );
 
 const headers = {
@@ -19222,7 +19224,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/publish" \
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/publish" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -19230,7 +19232,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/publish"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/publish"
 );
 
 const headers = {
@@ -19356,7 +19358,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/unpublish" \
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/unpublish" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -19364,7 +19366,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/unpublish"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/unpublish"
 );
 
 const headers = {
@@ -19490,7 +19492,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/restore" \
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/restore" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -19498,7 +19500,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/posts/1/restore"
+    "http://192.168.55.127:8000/api/admin/blog/posts/1/restore"
 );
 
 const headers = {
@@ -19628,7 +19630,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/tags" \
+    --get "http://192.168.55.127:8000/api/admin/blog/tags" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -19636,7 +19638,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/tags"
+    "http://192.168.55.127:8000/api/admin/blog/tags"
 );
 
 const headers = {
@@ -19766,7 +19768,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/tags/create" \
+    --get "http://192.168.55.127:8000/api/admin/blog/tags/create" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -19774,7 +19776,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/tags/create"
+    "http://192.168.55.127:8000/api/admin/blog/tags/create"
 );
 
 const headers = {
@@ -19904,7 +19906,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/blog/tags" \
+    "http://192.168.55.127:8000/api/admin/blog/tags" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -19912,7 +19914,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/tags"
+    "http://192.168.55.127:8000/api/admin/blog/tags"
 );
 
 const headers = {
@@ -20026,7 +20028,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/tags/1" \
+    --get "http://192.168.55.127:8000/api/admin/blog/tags/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -20034,7 +20036,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/tags/1"
+    "http://192.168.55.127:8000/api/admin/blog/tags/1"
 );
 
 const headers = {
@@ -20176,7 +20178,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/tags/1/edit" \
+    --get "http://192.168.55.127:8000/api/admin/blog/tags/1/edit" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -20184,7 +20186,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/tags/1/edit"
+    "http://192.168.55.127:8000/api/admin/blog/tags/1/edit"
 );
 
 const headers = {
@@ -20326,7 +20328,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/blog/tags/1" \
+    "http://192.168.55.127:8000/api/admin/blog/tags/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -20334,7 +20336,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/tags/1"
+    "http://192.168.55.127:8000/api/admin/blog/tags/1"
 );
 
 const headers = {
@@ -20460,7 +20462,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/blog/tags/1" \
+    "http://192.168.55.127:8000/api/admin/blog/tags/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -20468,7 +20470,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/tags/1"
+    "http://192.168.55.127:8000/api/admin/blog/tags/1"
 );
 
 const headers = {
@@ -20594,7 +20596,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/tags" \
+    "http://192.168.55.127:8000/api/tags" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -20602,7 +20604,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/tags"
+    "http://192.168.55.127:8000/api/tags"
 );
 
 const headers = {
@@ -20716,7 +20718,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/tags/1" \
+    "http://192.168.55.127:8000/api/tags/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -20724,7 +20726,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/tags/1"
+    "http://192.168.55.127:8000/api/tags/1"
 );
 
 const headers = {
@@ -20850,7 +20852,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/tags/1" \
+    "http://192.168.55.127:8000/api/tags/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -20858,7 +20860,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/tags/1"
+    "http://192.168.55.127:8000/api/tags/1"
 );
 
 const headers = {
@@ -20984,7 +20986,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/tags/1/affected-posts" \
+    --get "http://192.168.55.127:8000/api/admin/blog/tags/1/affected-posts" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -20992,7 +20994,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/tags/1/affected-posts"
+    "http://192.168.55.127:8000/api/admin/blog/tags/1/affected-posts"
 );
 
 const headers = {
@@ -21139,7 +21141,7 @@ Delegates logic to MenuService to ensure consistency with user profile capabilit
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/menu" \
+    --get "http://192.168.55.127:8000/api/admin/menu" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -21147,7 +21149,7 @@ Delegates logic to MenuService to ensure consistency with user profile capabilit
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/menu"
+    "http://192.168.55.127:8000/api/admin/menu"
 );
 
 const headers = {
@@ -21281,7 +21283,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/blog/deletion-reviews" \
+    --get "http://192.168.55.127:8000/api/admin/blog/deletion-reviews" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -21289,7 +21291,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/deletion-reviews"
+    "http://192.168.55.127:8000/api/admin/blog/deletion-reviews"
 );
 
 const headers = {
@@ -21419,7 +21421,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/blog/deletion-reviews/architecto/architecto/approve" \
+    "http://192.168.55.127:8000/api/admin/blog/deletion-reviews/architecto/architecto/approve" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -21427,7 +21429,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/deletion-reviews/architecto/architecto/approve"
+    "http://192.168.55.127:8000/api/admin/blog/deletion-reviews/architecto/architecto/approve"
 );
 
 const headers = {
@@ -21564,7 +21566,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/blog/deletion-reviews/architecto/architecto/reject" \
+    "http://192.168.55.127:8000/api/admin/blog/deletion-reviews/architecto/architecto/reject" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -21572,7 +21574,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/deletion-reviews/architecto/architecto/reject"
+    "http://192.168.55.127:8000/api/admin/blog/deletion-reviews/architecto/architecto/reject"
 );
 
 const headers = {
@@ -21713,7 +21715,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/donation-campaigns" \
+    --get "http://192.168.55.127:8000/api/admin/donation-campaigns" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -21721,7 +21723,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donation-campaigns"
+    "http://192.168.55.127:8000/api/admin/donation-campaigns"
 );
 
 const headers = {
@@ -21851,7 +21853,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/donation-campaigns/create" \
+    --get "http://192.168.55.127:8000/api/admin/donation-campaigns/create" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -21859,7 +21861,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/create"
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/create"
 );
 
 const headers = {
@@ -21989,7 +21991,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/donation-campaigns" \
+    "http://192.168.55.127:8000/api/admin/donation-campaigns" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -22014,7 +22016,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donation-campaigns"
+    "http://192.168.55.127:8000/api/admin/donation-campaigns"
 );
 
 const headers = {
@@ -22328,7 +22330,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025" \
+    --get "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -22336,7 +22338,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025"
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025"
 );
 
 const headers = {
@@ -22478,7 +22480,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025/edit" \
+    --get "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025/edit" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -22486,7 +22488,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025/edit"
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025/edit"
 );
 
 const headers = {
@@ -22628,7 +22630,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025" \
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -22653,7 +22655,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025"
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025"
 );
 
 const headers = {
@@ -22990,7 +22992,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025" \
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -22998,7 +23000,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025"
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025"
 );
 
 const headers = {
@@ -23124,7 +23126,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025/restore" \
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025/restore" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -23132,7 +23134,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025/restore"
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025/restore"
 );
 
 const headers = {
@@ -23258,7 +23260,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025/publish" \
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025/publish" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -23266,7 +23268,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025/publish"
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025/publish"
 );
 
 const headers = {
@@ -23392,7 +23394,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025/unpublish" \
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025/unpublish" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -23400,7 +23402,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025/unpublish"
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025/unpublish"
 );
 
 const headers = {
@@ -23526,7 +23528,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025/complete" \
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025/complete" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -23534,7 +23536,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donation-campaigns/education-fund-2025/complete"
+    "http://192.168.55.127:8000/api/admin/donation-campaigns/education-fund-2025/complete"
 );
 
 const headers = {
@@ -23664,7 +23666,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/donations" \
+    --get "http://192.168.55.127:8000/api/admin/donations" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -23672,7 +23674,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donations"
+    "http://192.168.55.127:8000/api/admin/donations"
 );
 
 const headers = {
@@ -23802,7 +23804,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/donations/stats" \
+    --get "http://192.168.55.127:8000/api/admin/donations/stats" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -23810,7 +23812,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donations/stats"
+    "http://192.168.55.127:8000/api/admin/donations/stats"
 );
 
 const headers = {
@@ -23940,7 +23942,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/donations/1" \
+    --get "http://192.168.55.127:8000/api/admin/donations/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -23948,7 +23950,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/donations/1"
+    "http://192.168.55.127:8000/api/admin/donations/1"
 );
 
 const headers = {
@@ -24094,7 +24096,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/event-categories" \
+    "http://192.168.55.127:8000/api/admin/event-categories" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -24112,7 +24114,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/event-categories"
+    "http://192.168.55.127:8000/api/admin/event-categories"
 );
 
 const headers = {
@@ -24336,7 +24338,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/event-categories/1" \
+    "http://192.168.55.127:8000/api/admin/event-categories/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -24354,7 +24356,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/event-categories/1"
+    "http://192.168.55.127:8000/api/admin/event-categories/1"
 );
 
 const headers = {
@@ -24594,7 +24596,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/event-categories/1" \
+    "http://192.168.55.127:8000/api/admin/event-categories/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -24602,7 +24604,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/event-categories/1"
+    "http://192.168.55.127:8000/api/admin/event-categories/1"
 );
 
 const headers = {
@@ -24732,7 +24734,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/event-tags" \
+    "http://192.168.55.127:8000/api/admin/event-tags" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -24745,7 +24747,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/event-tags"
+    "http://192.168.55.127:8000/api/admin/event-tags"
 );
 
 const headers = {
@@ -24888,7 +24890,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/event-tags/1" \
+    "http://192.168.55.127:8000/api/admin/event-tags/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -24896,7 +24898,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/event-tags/1"
+    "http://192.168.55.127:8000/api/admin/event-tags/1"
 );
 
 const headers = {
@@ -25026,7 +25028,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/finance/payments?status=architecto&amp;type=architecto&amp;search=architecto&amp;date_from=architecto&amp;date_to=architecto&amp;per_page=16" \
+    --get "http://192.168.55.127:8000/api/admin/finance/payments?status=architecto&amp;type=architecto&amp;search=architecto&amp;date_from=architecto&amp;date_to=architecto&amp;per_page=16" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -25034,7 +25036,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/finance/payments"
+    "http://192.168.55.127:8000/api/admin/finance/payments"
 );
 
 const params = {
@@ -25242,7 +25244,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/finance/payments/16" \
+    --get "http://192.168.55.127:8000/api/admin/finance/payments/16" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -25250,7 +25252,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/finance/payments/16"
+    "http://192.168.55.127:8000/api/admin/finance/payments/16"
 );
 
 const headers = {
@@ -25392,7 +25394,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/finance/payments/16/refund" \
+    "http://192.168.55.127:8000/api/admin/finance/payments/16/refund" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -25404,7 +25406,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/finance/payments/16/refund"
+    "http://192.168.55.127:8000/api/admin/finance/payments/16/refund"
 );
 
 const headers = {
@@ -25553,7 +25555,7 @@ Supervisors can only see bookings for their assigned spaces.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/lab-bookings?status=confirmed&amp;date_from=2024-01-01&amp;date_to=2024-01-31&amp;per_page=15" \
+    --get "http://192.168.55.127:8000/api/admin/lab-bookings?status=confirmed&amp;date_from=2024-01-01&amp;date_to=2024-01-31&amp;per_page=15" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -25561,7 +25563,7 @@ Supervisors can only see bookings for their assigned spaces.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-bookings"
+    "http://192.168.55.127:8000/api/admin/lab-bookings"
 );
 
 const params = {
@@ -25739,14 +25741,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/lab-bookings/stats?period=month&amp;lab_space_id=1" \
+    --get "http://192.168.55.127:8000/api/admin/lab-bookings/stats?period=month&amp;lab_space_id=1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-bookings/stats"
+    "http://192.168.55.127:8000/api/admin/lab-bookings/stats"
 );
 
 const params = {
@@ -25909,14 +25911,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/lab-bookings/1" \
+    --get "http://192.168.55.127:8000/api/admin/lab-bookings/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-bookings/1"
+    "http://192.168.55.127:8000/api/admin/lab-bookings/1"
 );
 
 const headers = {
@@ -26038,14 +26040,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/lab-bookings/1/guest-check-in" \
+    "http://192.168.55.127:8000/api/admin/lab-bookings/1/guest-check-in" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-bookings/1/guest-check-in"
+    "http://192.168.55.127:8000/api/admin/lab-bookings/1/guest-check-in"
 );
 
 const headers = {
@@ -26169,14 +26171,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/lab-bookings/16/check-in" \
+    "http://192.168.55.127:8000/api/admin/lab-bookings/16/check-in" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-bookings/16/check-in"
+    "http://192.168.55.127:8000/api/admin/lab-bookings/16/check-in"
 );
 
 const headers = {
@@ -26289,14 +26291,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/lab-bookings/16/undo-check-in" \
+    "http://192.168.55.127:8000/api/admin/lab-bookings/16/undo-check-in" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-bookings/16/undo-check-in"
+    "http://192.168.55.127:8000/api/admin/lab-bookings/16/undo-check-in"
 );
 
 const headers = {
@@ -26409,14 +26411,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/lab-bookings/16/no-show" \
+    "http://192.168.55.127:8000/api/admin/lab-bookings/16/no-show" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-bookings/16/no-show"
+    "http://192.168.55.127:8000/api/admin/lab-bookings/16/no-show"
 );
 
 const headers = {
@@ -26529,14 +26531,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/lab-attendance/analytics" \
+    --get "http://192.168.55.127:8000/api/admin/lab-attendance/analytics" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-attendance/analytics"
+    "http://192.168.55.127:8000/api/admin/lab-attendance/analytics"
 );
 
 const headers = {
@@ -26653,14 +26655,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/lab-attendance/logs" \
+    --get "http://192.168.55.127:8000/api/admin/lab-attendance/logs" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-attendance/logs"
+    "http://192.168.55.127:8000/api/admin/lab-attendance/logs"
 );
 
 const headers = {
@@ -26777,11 +26779,11 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/lab-bookings/564/slot-attendance" \
+    "http://192.168.55.127:8000/api/admin/lab-bookings/564/slot-attendance" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"slot_start_time\": \"2026-03-24T17:58:39\",
+    \"slot_start_time\": \"2026-03-27T07:18:25\",
     \"status\": \"attended\",
     \"notes\": \"b\"
 }"
@@ -26790,7 +26792,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-bookings/564/slot-attendance"
+    "http://192.168.55.127:8000/api/admin/lab-bookings/564/slot-attendance"
 );
 
 const headers = {
@@ -26799,7 +26801,7 @@ const headers = {
 };
 
 let body = {
-    "slot_start_time": "2026-03-24T17:58:39",
+    "slot_start_time": "2026-03-27T07:18:25",
     "status": "attended",
     "notes": "b"
 };
@@ -26902,10 +26904,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="slot_start_time"                data-endpoint="POSTapi-admin-lab-bookings--id--slot-attendance"
-               value="2026-03-24T17:58:39"
+               value="2026-03-27T07:18:25"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-24T17:58:39</code></p>
+<p>Must be a valid date. Example: <code>2026-03-27T07:18:25</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>status</code></b>&nbsp;&nbsp;
@@ -26947,7 +26949,7 @@ Logs the cancellation reason to audit trail.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/bookings/1/cancel" \
+    "http://192.168.55.127:8000/api/admin/bookings/1/cancel" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -26959,7 +26961,7 @@ Logs the cancellation reason to audit trail.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/bookings/1/cancel"
+    "http://192.168.55.127:8000/api/admin/bookings/1/cancel"
 );
 
 const headers = {
@@ -27132,7 +27134,7 @@ Lab Supervisors must have their requests approved by Lab Manager/Admin.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/bookings/1/refund-request" \
+    "http://192.168.55.127:8000/api/admin/bookings/1/refund-request" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -27144,7 +27146,7 @@ Lab Supervisors must have their requests approved by Lab Manager/Admin.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/bookings/1/refund-request"
+    "http://192.168.55.127:8000/api/admin/bookings/1/refund-request"
 );
 
 const headers = {
@@ -27309,14 +27311,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/spaces/564/bookings?status=confirmed&amp;date_from=2026-03-01&amp;date_to=2026-03-31&amp;per_page=20" \
+    --get "http://192.168.55.127:8000/api/admin/spaces/564/bookings?status=confirmed&amp;date_from=2026-03-01&amp;date_to=2026-03-31&amp;per_page=20" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/spaces/564/bookings"
+    "http://192.168.55.127:8000/api/admin/spaces/564/bookings"
 );
 
 const params = {
@@ -27511,7 +27513,7 @@ Maintenance blocks prevent bookings during scheduled maintenance periods.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/lab-maintenance?lab_space_id=1&amp;upcoming=1&amp;per_page=15" \
+    --get "http://192.168.55.127:8000/api/admin/lab-maintenance?lab_space_id=1&amp;upcoming=1&amp;per_page=15" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -27519,7 +27521,7 @@ Maintenance blocks prevent bookings during scheduled maintenance periods.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-maintenance"
+    "http://192.168.55.127:8000/api/admin/lab-maintenance"
 );
 
 const params = {
@@ -27695,7 +27697,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/lab-maintenance" \
+    "http://192.168.55.127:8000/api/admin/lab-maintenance" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -27711,7 +27713,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-maintenance"
+    "http://192.168.55.127:8000/api/admin/lab-maintenance"
 );
 
 const headers = {
@@ -27901,7 +27903,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/lab-maintenance/rollover-reports?status=escalated&amp;lab_space_id=1" \
+    --get "http://192.168.55.127:8000/api/admin/lab-maintenance/rollover-reports?status=escalated&amp;lab_space_id=1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -27909,7 +27911,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-maintenance/rollover-reports"
+    "http://192.168.55.127:8000/api/admin/lab-maintenance/rollover-reports"
 );
 
 const params = {
@@ -28063,7 +28065,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/lab-maintenance/rollover-retry/1" \
+    "http://192.168.55.127:8000/api/admin/lab-maintenance/rollover-retry/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -28071,7 +28073,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-maintenance/rollover-retry/1"
+    "http://192.168.55.127:8000/api/admin/lab-maintenance/rollover-retry/1"
 );
 
 const headers = {
@@ -28206,14 +28208,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/lab-maintenance/1" \
+    --get "http://192.168.55.127:8000/api/admin/lab-maintenance/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-maintenance/1"
+    "http://192.168.55.127:8000/api/admin/lab-maintenance/1"
 );
 
 const headers = {
@@ -28336,7 +28338,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/lab-maintenance/1" \
+    "http://192.168.55.127:8000/api/admin/lab-maintenance/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -28350,7 +28352,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-maintenance/1"
+    "http://192.168.55.127:8000/api/admin/lab-maintenance/1"
 );
 
 const headers = {
@@ -28527,14 +28529,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/lab-maintenance/1" \
+    "http://192.168.55.127:8000/api/admin/lab-maintenance/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-maintenance/1"
+    "http://192.168.55.127:8000/api/admin/lab-maintenance/1"
 );
 
 const headers = {
@@ -28662,7 +28664,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/spaces?type=wet_lab&amp;active=1&amp;per_page=15" \
+    --get "http://192.168.55.127:8000/api/admin/spaces?type=wet_lab&amp;active=1&amp;per_page=15" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -28670,7 +28672,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/spaces"
+    "http://192.168.55.127:8000/api/admin/spaces"
 );
 
 const params = {
@@ -28847,7 +28849,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/spaces/my-labs" \
+    --get "http://192.168.55.127:8000/api/admin/spaces/my-labs" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -28855,7 +28857,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/spaces/my-labs"
+    "http://192.168.55.127:8000/api/admin/spaces/my-labs"
 );
 
 const headers = {
@@ -28981,7 +28983,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/spaces" \
+    "http://192.168.55.127:8000/api/admin/spaces" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -29012,7 +29014,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/spaces"
+    "http://192.168.55.127:8000/api/admin/spaces"
 );
 
 const headers = {
@@ -29332,7 +29334,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/spaces/1" \
+    --get "http://192.168.55.127:8000/api/admin/spaces/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -29340,7 +29342,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/spaces/1"
+    "http://192.168.55.127:8000/api/admin/spaces/1"
 );
 
 const headers = {
@@ -29476,7 +29478,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/spaces/1" \
+    "http://192.168.55.127:8000/api/admin/spaces/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -29507,7 +29509,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/spaces/1"
+    "http://192.168.55.127:8000/api/admin/spaces/1"
 );
 
 const headers = {
@@ -29839,7 +29841,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/spaces/architecto" \
+    "http://192.168.55.127:8000/api/admin/spaces/architecto" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -29847,7 +29849,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/spaces/architecto"
+    "http://192.168.55.127:8000/api/admin/spaces/architecto"
 );
 
 const headers = {
@@ -29975,7 +29977,7 @@ links remain functional.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/spaces/1/bookings/disable" \
+    "http://192.168.55.127:8000/api/admin/spaces/1/bookings/disable" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -29987,7 +29989,7 @@ links remain functional.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/spaces/1/bookings/disable"
+    "http://192.168.55.127:8000/api/admin/spaces/1/bookings/disable"
 );
 
 const headers = {
@@ -30145,7 +30147,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/spaces/1/bookings/enable" \
+    "http://192.168.55.127:8000/api/admin/spaces/1/bookings/enable" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -30153,7 +30155,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/spaces/1/bookings/enable"
+    "http://192.168.55.127:8000/api/admin/spaces/1/bookings/enable"
 );
 
 const headers = {
@@ -30294,7 +30296,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/lab-supervisors?lab_space_id=1&amp;per_page=15" \
+    --get "http://192.168.55.127:8000/api/admin/lab-supervisors?lab_space_id=1&amp;per_page=15" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -30302,7 +30304,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-supervisors"
+    "http://192.168.55.127:8000/api/admin/lab-supervisors"
 );
 
 const params = {
@@ -30457,6 +30459,174 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                 </form>
 
+                    <h2 id="admin-lab-spaces-POSTapi-admin-lab-supervisors-bulk-assign">Bulk assign supervisor to multiple labs</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
+
+<span id="example-requests-POSTapi-admin-lab-supervisors-bulk-assign">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://192.168.55.127:8000/api/admin/lab-supervisors/bulk-assign" \
+    --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"user_ids\": [
+        16
+    ],
+    \"lab_space_ids\": [
+        16
+    ]
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://192.168.55.127:8000/api/admin/lab-supervisors/bulk-assign"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_AUTH_KEY}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "user_ids": [
+        16
+    ],
+    "lab_space_ids": [
+        16
+    ]
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-admin-lab-supervisors-bulk-assign">
+</span>
+<span id="execution-results-POSTapi-admin-lab-supervisors-bulk-assign" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-admin-lab-supervisors-bulk-assign"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-admin-lab-supervisors-bulk-assign"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-admin-lab-supervisors-bulk-assign" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-admin-lab-supervisors-bulk-assign">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-admin-lab-supervisors-bulk-assign" data-method="POST"
+      data-path="api/admin/lab-supervisors/bulk-assign"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-admin-lab-supervisors-bulk-assign', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-admin-lab-supervisors-bulk-assign"
+                    onclick="tryItOut('POSTapi-admin-lab-supervisors-bulk-assign');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-admin-lab-supervisors-bulk-assign"
+                    onclick="cancelTryOut('POSTapi-admin-lab-supervisors-bulk-assign');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-admin-lab-supervisors-bulk-assign"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/admin/lab-supervisors/bulk-assign</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-admin-lab-supervisors-bulk-assign"
+               value="Bearer {YOUR_AUTH_KEY}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_AUTH_KEY}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-admin-lab-supervisors-bulk-assign"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-admin-lab-supervisors-bulk-assign"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>user_ids</code></b>&nbsp;&nbsp;
+<small>integer[]</small>&nbsp;
+<i>optional</i> &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="user_ids[0]"                data-endpoint="POSTapi-admin-lab-supervisors-bulk-assign"
+               data-component="body">
+        <input type="number" style="display: none"
+               name="user_ids[1]"                data-endpoint="POSTapi-admin-lab-supervisors-bulk-assign"
+               data-component="body">
+    <br>
+<p>The <code>id</code> of an existing record in the users table.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>lab_space_ids</code></b>&nbsp;&nbsp;
+<small>integer[]</small>&nbsp;
+<i>optional</i> &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="lab_space_ids[0]"                data-endpoint="POSTapi-admin-lab-supervisors-bulk-assign"
+               data-component="body">
+        <input type="number" style="display: none"
+               name="lab_space_ids[1]"                data-endpoint="POSTapi-admin-lab-supervisors-bulk-assign"
+               data-component="body">
+    <br>
+<p>The <code>id</code> of an existing record in the lab_spaces table.</p>
+        </div>
+        </form>
+
                     <h2 id="admin-lab-spaces-POSTapi-admin-lab-supervisors">Assign a supervisor to a lab space.</h2>
 
 <p>
@@ -30471,7 +30641,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/lab-supervisors" \
+    "http://192.168.55.127:8000/api/admin/lab-supervisors" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -30484,7 +30654,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-supervisors"
+    "http://192.168.55.127:8000/api/admin/lab-supervisors"
 );
 
 const headers = {
@@ -30643,7 +30813,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/lab-supervisors/architecto/architecto" \
+    "http://192.168.55.127:8000/api/admin/lab-supervisors/architecto/architecto" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -30651,7 +30821,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-supervisors/architecto/architecto"
+    "http://192.168.55.127:8000/api/admin/lab-supervisors/architecto/architecto"
 );
 
 const headers = {
@@ -30827,7 +30997,7 @@ Results are sorted by most recent first.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/reconciliation?status=success&amp;period_start=2025-01-01&amp;period_end=2025-12-31&amp;county=Nairobi&amp;per_page=20" \
+    --get "http://192.168.55.127:8000/api/admin/reconciliation?status=success&amp;period_start=2025-01-01&amp;period_end=2025-12-31&amp;county=Nairobi&amp;per_page=20" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -30835,7 +31005,7 @@ Results are sorted by most recent first.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/reconciliation"
+    "http://192.168.55.127:8000/api/admin/reconciliation"
 );
 
 const params = {
@@ -31053,7 +31223,7 @@ success rates, discrepancy totals, and transaction flow metrics.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/reconciliation/stats?period_start=2025-01-01&amp;period_end=2025-12-31" \
+    --get "http://192.168.55.127:8000/api/admin/reconciliation/stats?period_start=2025-01-01&amp;period_end=2025-12-31" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -31061,7 +31231,7 @@ success rates, discrepancy totals, and transaction flow metrics.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/reconciliation/stats"
+    "http://192.168.55.127:8000/api/admin/reconciliation/stats"
 );
 
 const params = {
@@ -31234,7 +31404,7 @@ Useful for reporting, auditing, and detailed reconciliation review.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/reconciliation/export?run_id=1&amp;status=matched" \
+    --get "http://192.168.55.127:8000/api/admin/reconciliation/export?run_id=1&amp;status=matched" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -31242,7 +31412,7 @@ Useful for reporting, auditing, and detailed reconciliation review.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/reconciliation/export"
+    "http://192.168.55.127:8000/api/admin/reconciliation/export"
 );
 
 const params = {
@@ -31434,7 +31604,7 @@ For queued (default): dispatches to queue and returns immediately with queued st
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/reconciliation/trigger" \
+    "http://192.168.55.127:8000/api/admin/reconciliation/trigger" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -31454,7 +31624,7 @@ For queued (default): dispatches to queue and returns immediately with queued st
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/reconciliation/trigger"
+    "http://192.168.55.127:8000/api/admin/reconciliation/trigger"
 );
 
 const headers = {
@@ -31780,7 +31950,7 @@ This is useful for removing erroneous runs or test data.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/reconciliation/16" \
+    "http://192.168.55.127:8000/api/admin/reconciliation/16" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -31788,7 +31958,7 @@ This is useful for removing erroneous runs or test data.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/reconciliation/16"
+    "http://192.168.55.127:8000/api/admin/reconciliation/16"
 );
 
 const headers = {
@@ -31943,7 +32113,7 @@ Use this to inspect individual run results and view linked transaction pairs.</p
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/reconciliation/16" \
+    --get "http://192.168.55.127:8000/api/admin/reconciliation/16" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -31951,7 +32121,7 @@ Use this to inspect individual run results and view linked transaction pairs.</p
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/reconciliation/16"
+    "http://192.168.55.127:8000/api/admin/reconciliation/16"
 );
 
 const headers = {
@@ -32136,7 +32306,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/refunds?status=pending&amp;reason=cancellation&amp;search=architecto&amp;per_page=20" \
+    --get "http://192.168.55.127:8000/api/admin/refunds?status=pending&amp;reason=cancellation&amp;search=architecto&amp;per_page=20" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -32144,7 +32314,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/refunds"
+    "http://192.168.55.127:8000/api/admin/refunds"
 );
 
 const params = {
@@ -32336,7 +32506,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/refunds/stats" \
+    --get "http://192.168.55.127:8000/api/admin/refunds/stats" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -32344,7 +32514,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/refunds/stats"
+    "http://192.168.55.127:8000/api/admin/refunds/stats"
 );
 
 const headers = {
@@ -32473,7 +32643,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/refunds/16" \
+    --get "http://192.168.55.127:8000/api/admin/refunds/16" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -32481,7 +32651,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/refunds/16"
+    "http://192.168.55.127:8000/api/admin/refunds/16"
 );
 
 const headers = {
@@ -32636,7 +32806,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/refunds" \
+    "http://192.168.55.127:8000/api/admin/refunds" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -32650,7 +32820,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/refunds"
+    "http://192.168.55.127:8000/api/admin/refunds"
 );
 
 const headers = {
@@ -32805,7 +32975,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/refunds/16/approve" \
+    "http://192.168.55.127:8000/api/admin/refunds/16/approve" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -32817,7 +32987,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/refunds/16/approve"
+    "http://192.168.55.127:8000/api/admin/refunds/16/approve"
 );
 
 const headers = {
@@ -32982,7 +33152,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/refunds/16/reject" \
+    "http://192.168.55.127:8000/api/admin/refunds/16/reject" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -32994,7 +33164,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/refunds/16/reject"
+    "http://192.168.55.127:8000/api/admin/refunds/16/reject"
 );
 
 const headers = {
@@ -33159,7 +33329,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/refunds/16/process" \
+    "http://192.168.55.127:8000/api/admin/refunds/16/process" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -33167,7 +33337,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/refunds/16/process"
+    "http://192.168.55.127:8000/api/admin/refunds/16/process"
 );
 
 const headers = {
@@ -33319,7 +33489,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/subscriptions?search=architecto&amp;status=architecto&amp;plan_id=16&amp;per_page=16" \
+    --get "http://192.168.55.127:8000/api/admin/subscriptions?search=architecto&amp;status=architecto&amp;plan_id=16&amp;per_page=16" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -33327,7 +33497,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/subscriptions"
+    "http://192.168.55.127:8000/api/admin/subscriptions"
 );
 
 const params = {
@@ -33511,7 +33681,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/subscriptions/1" \
+    --get "http://192.168.55.127:8000/api/admin/subscriptions/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -33519,7 +33689,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/subscriptions/1"
+    "http://192.168.55.127:8000/api/admin/subscriptions/1"
 );
 
 const headers = {
@@ -33661,7 +33831,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/subscriptions/1/cancel" \
+    "http://192.168.55.127:8000/api/admin/subscriptions/1/cancel" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -33669,7 +33839,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/subscriptions/1/cancel"
+    "http://192.168.55.127:8000/api/admin/subscriptions/1/cancel"
 );
 
 const headers = {
@@ -33799,7 +33969,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/system-features?active=1" \
+    --get "http://192.168.55.127:8000/api/admin/system-features?active=1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -33807,7 +33977,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/system-features"
+    "http://192.168.55.127:8000/api/admin/system-features"
 );
 
 const params = {
@@ -33970,7 +34140,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/system-features/1" \
+    --get "http://192.168.55.127:8000/api/admin/system-features/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -33978,7 +34148,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/system-features/1"
+    "http://192.168.55.127:8000/api/admin/system-features/1"
 );
 
 const headers = {
@@ -34125,7 +34295,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/system-features/1" \
+    "http://192.168.55.127:8000/api/admin/system-features/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -34141,7 +34311,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/system-features/1"
+    "http://192.168.55.127:8000/api/admin/system-features/1"
 );
 
 const headers = {
@@ -34364,7 +34534,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/system-features/1/toggle" \
+    "http://192.168.55.127:8000/api/admin/system-features/1/toggle" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -34372,7 +34542,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/system-features/1/toggle"
+    "http://192.168.55.127:8000/api/admin/system-features/1/toggle"
 );
 
 const headers = {
@@ -34526,7 +34696,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/system-settings?group=pesapal" \
+    --get "http://192.168.55.127:8000/api/admin/system-settings?group=pesapal" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -34534,7 +34704,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/system-settings"
+    "http://192.168.55.127:8000/api/admin/system-settings"
 );
 
 const params = {
@@ -34681,7 +34851,7 @@ The system automatically infers the group (prefix before dot) and type (boolean/
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/system-settings" \
+    "http://192.168.55.127:8000/api/admin/system-settings" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -34690,7 +34860,7 @@ The system automatically infers the group (prefix before dot) and type (boolean/
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/system-settings"
+    "http://192.168.55.127:8000/api/admin/system-settings"
 );
 
 const headers = {
@@ -34866,7 +35036,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/groups?search=Technology&amp;active=1&amp;per_page=20" \
+    --get "http://192.168.55.127:8000/api/admin/groups?search=Technology&amp;active=1&amp;per_page=20" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -34874,7 +35044,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/groups"
+    "http://192.168.55.127:8000/api/admin/groups"
 );
 
 const params = {
@@ -35068,7 +35238,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/groups" \
+    "http://192.168.55.127:8000/api/admin/groups" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -35084,7 +35254,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/groups"
+    "http://192.168.55.127:8000/api/admin/groups"
 );
 
 const headers = {
@@ -35297,7 +35467,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/groups/1" \
+    "http://192.168.55.127:8000/api/admin/groups/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -35312,7 +35482,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/groups/1"
+    "http://192.168.55.127:8000/api/admin/groups/1"
 );
 
 const headers = {
@@ -35536,7 +35706,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/groups/1" \
+    "http://192.168.55.127:8000/api/admin/groups/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -35544,7 +35714,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/groups/1"
+    "http://192.168.55.127:8000/api/admin/groups/1"
 );
 
 const headers = {
@@ -35691,7 +35861,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/groups/1/members?per_page=20" \
+    --get "http://192.168.55.127:8000/api/admin/groups/1/members?per_page=20" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -35699,7 +35869,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/groups/1/members"
+    "http://192.168.55.127:8000/api/admin/groups/1/members"
 );
 
 const params = {
@@ -35872,7 +36042,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/groups/1/members/architecto" \
+    "http://192.168.55.127:8000/api/admin/groups/1/members/architecto" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -35880,7 +36050,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/groups/1/members/architecto"
+    "http://192.168.55.127:8000/api/admin/groups/1/members/architecto"
 );
 
 const headers = {
@@ -36053,7 +36223,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/events/1/attendance" \
+    --get "http://192.168.55.127:8000/api/admin/events/1/attendance" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -36061,7 +36231,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/attendance"
+    "http://192.168.55.127:8000/api/admin/events/1/attendance"
 );
 
 const headers = {
@@ -36214,7 +36384,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/events/1/attendance/stats" \
+    --get "http://192.168.55.127:8000/api/admin/events/1/attendance/stats" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -36222,7 +36392,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/attendance/stats"
+    "http://192.168.55.127:8000/api/admin/events/1/attendance/stats"
 );
 
 const headers = {
@@ -36373,7 +36543,7 @@ Supports both free RSVPs and paid tickets.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/events/1/attendance/scan" \
+    "http://192.168.55.127:8000/api/admin/events/1/attendance/scan" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -36385,7 +36555,7 @@ Supports both free RSVPs and paid tickets.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/attendance/scan"
+    "http://192.168.55.127:8000/api/admin/events/1/attendance/scan"
 );
 
 const headers = {
@@ -36569,7 +36739,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/events/stats" \
+    --get "http://192.168.55.127:8000/api/admin/events/stats" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -36577,7 +36747,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/stats"
+    "http://192.168.55.127:8000/api/admin/events/stats"
 );
 
 const headers = {
@@ -36706,7 +36876,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/events?status=published&amp;event_type=workshop&amp;featured=1&amp;organizer_id=1&amp;search=Tech&amp;sort_by=starts_at&amp;sort_dir=desc&amp;upcoming=1&amp;type=online&amp;timeframe=past&amp;per_page=15" \
+    --get "http://192.168.55.127:8000/api/admin/events?status=published&amp;event_type=workshop&amp;featured=1&amp;organizer_id=1&amp;search=Tech&amp;sort_by=starts_at&amp;sort_dir=desc&amp;upcoming=1&amp;type=in_person&amp;timeframe=upcoming&amp;per_page=15" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -36714,7 +36884,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events"
+    "http://192.168.55.127:8000/api/admin/events"
 );
 
 const params = {
@@ -36726,8 +36896,8 @@ const params = {
     "sort_by": "starts_at",
     "sort_dir": "desc",
     "upcoming": "1",
-    "type": "online",
-    "timeframe": "past",
+    "type": "in_person",
+    "timeframe": "upcoming",
     "per_page": "15",
 };
 Object.keys(params)
@@ -36962,10 +37132,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="type"                data-endpoint="GETapi-admin-events"
-               value="online"
+               value="in_person"
                data-component="query">
     <br>
-<p>Example: <code>online</code></p>
+<p>Example: <code>in_person</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>online</code></li> <li><code>in_person</code></li></ul>
             </div>
@@ -36975,10 +37145,10 @@ Must be one of:
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="timeframe"                data-endpoint="GETapi-admin-events"
-               value="past"
+               value="upcoming"
                data-component="query">
     <br>
-<p>Example: <code>past</code></p>
+<p>Example: <code>upcoming</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>upcoming</code></li> <li><code>past</code></li> <li><code>all</code></li></ul>
             </div>
@@ -37009,7 +37179,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/events" \
+    "http://192.168.55.127:8000/api/admin/events" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -37060,7 +37230,7 @@ Must be one of:
             \"discount_value\": 22,
             \"usage_limit\": 30,
             \"ticket_id\": 16,
-            \"is_active\": true
+            \"is_active\": false
         }
     ]
 }"
@@ -37069,7 +37239,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events"
+    "http://192.168.55.127:8000/api/admin/events"
 );
 
 const headers = {
@@ -37125,7 +37295,7 @@ let body = {
             "discount_value": 22,
             "usage_limit": 30,
             "ticket_id": 16,
-            "is_active": true
+            "is_active": false
         }
     ]
 };
@@ -37752,7 +37922,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
                     </div>
                                     </details>
         </div>
@@ -37772,7 +37942,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/events/1" \
+    --get "http://192.168.55.127:8000/api/admin/events/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -37780,7 +37950,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1"
+    "http://192.168.55.127:8000/api/admin/events/1"
 );
 
 const headers = {
@@ -37932,7 +38102,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/events/1" \
+    "http://192.168.55.127:8000/api/admin/events/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -37979,7 +38149,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
         {
             \"id\": 16,
             \"code\": \"ngzmiyvdljnikhwa\",
-            \"discount_type\": \"percentage\",
+            \"discount_type\": \"fixed\",
             \"discount_value\": 50,
             \"usage_limit\": 73,
             \"ticket_id\": 16,
@@ -37992,7 +38162,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1"
+    "http://192.168.55.127:8000/api/admin/events/1"
 );
 
 const headers = {
@@ -38044,7 +38214,7 @@ let body = {
         {
             "id": 16,
             "code": "ngzmiyvdljnikhwa",
-            "discount_type": "percentage",
+            "discount_type": "fixed",
             "discount_value": 50,
             "usage_limit": 73,
             "ticket_id": 16,
@@ -38671,10 +38841,10 @@ Must be one of:
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="promo_codes.0.discount_type"                data-endpoint="PUTapi-admin-events--id-"
-               value="percentage"
+               value="fixed"
                data-component="body">
     <br>
-<p>This field is required when <code>promo_codes</code> is present. Example: <code>percentage</code></p>
+<p>This field is required when <code>promo_codes</code> is present. Example: <code>fixed</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>percentage</code></li> <li><code>fixed</code></li></ul>
                     </div>
@@ -38750,7 +38920,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/events/1/publish" \
+    "http://192.168.55.127:8000/api/admin/events/1/publish" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -38758,7 +38928,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/publish"
+    "http://192.168.55.127:8000/api/admin/events/1/publish"
 );
 
 const headers = {
@@ -38909,7 +39079,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/events/1/cancel" \
+    "http://192.168.55.127:8000/api/admin/events/1/cancel" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -38917,7 +39087,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/cancel"
+    "http://192.168.55.127:8000/api/admin/events/1/cancel"
 );
 
 const headers = {
@@ -39064,7 +39234,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/events/1/suspend" \
+    "http://192.168.55.127:8000/api/admin/events/1/suspend" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -39072,7 +39242,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/suspend"
+    "http://192.168.55.127:8000/api/admin/events/1/suspend"
 );
 
 const headers = {
@@ -39219,7 +39389,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/events/1/feature" \
+    "http://192.168.55.127:8000/api/admin/events/1/feature" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -39231,7 +39401,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/feature"
+    "http://192.168.55.127:8000/api/admin/events/1/feature"
 );
 
 const headers = {
@@ -39399,7 +39569,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/events/1/unfeature" \
+    "http://192.168.55.127:8000/api/admin/events/1/unfeature" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -39407,7 +39577,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/unfeature"
+    "http://192.168.55.127:8000/api/admin/events/1/unfeature"
 );
 
 const headers = {
@@ -39554,7 +39724,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/events/1/registrations?status=confirmed&amp;waitlist=&amp;per_page=50" \
+    --get "http://192.168.55.127:8000/api/admin/events/1/registrations?status=confirmed&amp;waitlist=&amp;per_page=50" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -39562,7 +39732,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/registrations"
+    "http://192.168.55.127:8000/api/admin/events/1/registrations"
 );
 
 const params = {
@@ -39771,7 +39941,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/events/1" \
+    "http://192.168.55.127:8000/api/admin/events/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -39779,7 +39949,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1"
+    "http://192.168.55.127:8000/api/admin/events/1"
 );
 
 const headers = {
@@ -39926,7 +40096,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/forum/stats" \
+    --get "http://192.168.55.127:8000/api/admin/forum/stats" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -39934,7 +40104,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/forum/stats"
+    "http://192.168.55.127:8000/api/admin/forum/stats"
 );
 
 const headers = {
@@ -40068,7 +40238,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/audit-logs?model_type=App%5CModels%5CUser&amp;action=create&amp;user_id=1&amp;model_id=123&amp;date_from=2025-01-01&amp;date_to=2025-12-31&amp;page=1&amp;per_page=50" \
+    --get "http://192.168.55.127:8000/api/admin/audit-logs?model_type=App%5CModels%5CUser&amp;action=create&amp;user_id=1&amp;model_id=123&amp;date_from=2025-01-01&amp;date_to=2025-12-31&amp;page=1&amp;per_page=50" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -40076,7 +40246,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/audit-logs"
+    "http://192.168.55.127:8000/api/admin/audit-logs"
 );
 
 const params = {
@@ -40321,7 +40491,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/audit-logs/16" \
+    --get "http://192.168.55.127:8000/api/admin/audit-logs/16" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -40329,7 +40499,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/audit-logs/16"
+    "http://192.168.55.127:8000/api/admin/audit-logs/16"
 );
 
 const headers = {
@@ -40488,7 +40658,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/audit-logs/model-history?model_type=App%5CModels%5CUser&amp;model_id=123&amp;page=1" \
+    --get "http://192.168.55.127:8000/api/admin/audit-logs/model-history?model_type=App%5CModels%5CUser&amp;model_id=123&amp;page=1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -40496,7 +40666,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/audit-logs/model-history"
+    "http://192.168.55.127:8000/api/admin/audit-logs/model-history"
 );
 
 const params = {
@@ -40671,7 +40841,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/audit-logs/user-actions?user_id=1&amp;page=1" \
+    --get "http://192.168.55.127:8000/api/admin/audit-logs/user-actions?user_id=1&amp;page=1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -40679,7 +40849,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/audit-logs/user-actions"
+    "http://192.168.55.127:8000/api/admin/audit-logs/user-actions"
 );
 
 const params = {
@@ -40845,7 +41015,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/user/blog/posts" \
+    --get "http://192.168.55.127:8000/api/user/blog/posts" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -40853,7 +41023,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/posts"
+    "http://192.168.55.127:8000/api/user/blog/posts"
 );
 
 const headers = {
@@ -40983,7 +41153,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/user/blog/posts/create" \
+    --get "http://192.168.55.127:8000/api/user/blog/posts/create" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -40991,7 +41161,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/posts/create"
+    "http://192.168.55.127:8000/api/user/blog/posts/create"
 );
 
 const headers = {
@@ -41121,7 +41291,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/user/blog/posts" \
+    "http://192.168.55.127:8000/api/user/blog/posts" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -41148,7 +41318,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/posts"
+    "http://192.168.55.127:8000/api/user/blog/posts"
 );
 
 const headers = {
@@ -41429,7 +41599,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/user/blog/posts/1" \
+    --get "http://192.168.55.127:8000/api/user/blog/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -41437,7 +41607,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/posts/1"
+    "http://192.168.55.127:8000/api/user/blog/posts/1"
 );
 
 const headers = {
@@ -41579,7 +41749,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/user/blog/posts/1/edit" \
+    --get "http://192.168.55.127:8000/api/user/blog/posts/1/edit" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -41587,7 +41757,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/posts/1/edit"
+    "http://192.168.55.127:8000/api/user/blog/posts/1/edit"
 );
 
 const headers = {
@@ -41729,7 +41899,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/user/blog/posts/1" \
+    "http://192.168.55.127:8000/api/user/blog/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -41756,7 +41926,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/posts/1"
+    "http://192.168.55.127:8000/api/user/blog/posts/1"
 );
 
 const headers = {
@@ -42049,7 +42219,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/user/blog/posts/1" \
+    "http://192.168.55.127:8000/api/user/blog/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -42057,7 +42227,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/posts/1"
+    "http://192.168.55.127:8000/api/user/blog/posts/1"
 );
 
 const headers = {
@@ -42183,7 +42353,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/user/blog/posts/1/restore" \
+    "http://192.168.55.127:8000/api/user/blog/posts/1/restore" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -42191,7 +42361,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/posts/1/restore"
+    "http://192.168.55.127:8000/api/user/blog/posts/1/restore"
 );
 
 const headers = {
@@ -42317,7 +42487,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/user/blog/posts/1/publish" \
+    "http://192.168.55.127:8000/api/user/blog/posts/1/publish" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -42325,7 +42495,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/posts/1/publish"
+    "http://192.168.55.127:8000/api/user/blog/posts/1/publish"
 );
 
 const headers = {
@@ -42451,7 +42621,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/user/blog/posts/1/unpublish" \
+    "http://192.168.55.127:8000/api/user/blog/posts/1/unpublish" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -42459,7 +42629,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/posts/1/unpublish"
+    "http://192.168.55.127:8000/api/user/blog/posts/1/unpublish"
 );
 
 const headers = {
@@ -42585,7 +42755,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/user/blog/categories" \
+    --get "http://192.168.55.127:8000/api/user/blog/categories" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -42593,7 +42763,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/categories"
+    "http://192.168.55.127:8000/api/user/blog/categories"
 );
 
 const headers = {
@@ -42723,7 +42893,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/user/blog/categories" \
+    "http://192.168.55.127:8000/api/user/blog/categories" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -42731,7 +42901,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/categories"
+    "http://192.168.55.127:8000/api/user/blog/categories"
 );
 
 const headers = {
@@ -42845,7 +43015,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/user/blog/categories/1" \
+    "http://192.168.55.127:8000/api/user/blog/categories/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -42853,7 +43023,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/categories/1"
+    "http://192.168.55.127:8000/api/user/blog/categories/1"
 );
 
 const headers = {
@@ -42979,7 +43149,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/user/blog/categories/1/request-delete" \
+    "http://192.168.55.127:8000/api/user/blog/categories/1/request-delete" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -42987,7 +43157,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/categories/1/request-delete"
+    "http://192.168.55.127:8000/api/user/blog/categories/1/request-delete"
 );
 
 const headers = {
@@ -43113,7 +43283,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/user/blog/tags" \
+    --get "http://192.168.55.127:8000/api/user/blog/tags" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -43121,7 +43291,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/tags"
+    "http://192.168.55.127:8000/api/user/blog/tags"
 );
 
 const headers = {
@@ -43251,7 +43421,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/user/blog/tags" \
+    "http://192.168.55.127:8000/api/user/blog/tags" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -43259,7 +43429,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/tags"
+    "http://192.168.55.127:8000/api/user/blog/tags"
 );
 
 const headers = {
@@ -43373,7 +43543,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/user/blog/tags/1" \
+    "http://192.168.55.127:8000/api/user/blog/tags/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -43381,7 +43551,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/tags/1"
+    "http://192.168.55.127:8000/api/user/blog/tags/1"
 );
 
 const headers = {
@@ -43507,7 +43677,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/user/blog/tags/1/request-delete" \
+    "http://192.168.55.127:8000/api/user/blog/tags/1/request-delete" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -43515,7 +43685,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/user/blog/tags/1/request-delete"
+    "http://192.168.55.127:8000/api/user/blog/tags/1/request-delete"
 );
 
 const headers = {
@@ -43641,7 +43811,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/blog/my-posts" \
+    --get "http://192.168.55.127:8000/api/blog/my-posts" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -43649,7 +43819,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/my-posts"
+    "http://192.168.55.127:8000/api/blog/my-posts"
 );
 
 const headers = {
@@ -43779,7 +43949,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/blog/my-posts/1" \
+    "http://192.168.55.127:8000/api/blog/my-posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -43801,7 +43971,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/my-posts/1"
+    "http://192.168.55.127:8000/api/blog/my-posts/1"
 );
 
 const headers = {
@@ -44024,7 +44194,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/blog/my-posts/1" \
+    "http://192.168.55.127:8000/api/blog/my-posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -44032,7 +44202,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/my-posts/1"
+    "http://192.168.55.127:8000/api/blog/my-posts/1"
 );
 
 const headers = {
@@ -44158,7 +44328,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/author/posts" \
+    --get "http://192.168.55.127:8000/api/author/posts" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -44166,7 +44336,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/author/posts"
+    "http://192.168.55.127:8000/api/author/posts"
 );
 
 const headers = {
@@ -44296,7 +44466,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/author/posts/create" \
+    --get "http://192.168.55.127:8000/api/author/posts/create" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -44304,7 +44474,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/author/posts/create"
+    "http://192.168.55.127:8000/api/author/posts/create"
 );
 
 const headers = {
@@ -44434,7 +44604,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/author/posts" \
+    "http://192.168.55.127:8000/api/author/posts" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -44461,7 +44631,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/author/posts"
+    "http://192.168.55.127:8000/api/author/posts"
 );
 
 const headers = {
@@ -44742,7 +44912,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/author/posts/1" \
+    --get "http://192.168.55.127:8000/api/author/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -44750,7 +44920,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/author/posts/1"
+    "http://192.168.55.127:8000/api/author/posts/1"
 );
 
 const headers = {
@@ -44892,7 +45062,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/author/posts/1/edit" \
+    --get "http://192.168.55.127:8000/api/author/posts/1/edit" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -44900,7 +45070,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/author/posts/1/edit"
+    "http://192.168.55.127:8000/api/author/posts/1/edit"
 );
 
 const headers = {
@@ -45042,7 +45212,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/author/posts/1" \
+    "http://192.168.55.127:8000/api/author/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -45069,7 +45239,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/author/posts/1"
+    "http://192.168.55.127:8000/api/author/posts/1"
 );
 
 const headers = {
@@ -45362,7 +45532,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/author/posts/1" \
+    "http://192.168.55.127:8000/api/author/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -45370,7 +45540,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/author/posts/1"
+    "http://192.168.55.127:8000/api/author/posts/1"
 );
 
 const headers = {
@@ -45496,7 +45666,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/author/posts/1/restore" \
+    "http://192.168.55.127:8000/api/author/posts/1/restore" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -45504,7 +45674,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/author/posts/1/restore"
+    "http://192.168.55.127:8000/api/author/posts/1/restore"
 );
 
 const headers = {
@@ -45630,7 +45800,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/author/posts/1/publish" \
+    "http://192.168.55.127:8000/api/author/posts/1/publish" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -45638,7 +45808,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/author/posts/1/publish"
+    "http://192.168.55.127:8000/api/author/posts/1/publish"
 );
 
 const headers = {
@@ -45764,7 +45934,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/author/posts/1/unpublish" \
+    "http://192.168.55.127:8000/api/author/posts/1/unpublish" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -45772,7 +45942,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/author/posts/1/unpublish"
+    "http://192.168.55.127:8000/api/author/posts/1/unpublish"
 );
 
 const headers = {
@@ -45901,14 +46071,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/blog/posts" \
+    --get "http://192.168.55.127:8000/api/blog/posts" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/posts"
+    "http://192.168.55.127:8000/api/blog/posts"
 );
 
 const headers = {
@@ -45940,2534 +46110,6 @@ vary: Origin
     &quot;success&quot;: true,
     &quot;data&quot;: [
         {
-            &quot;id&quot;: 13,
-            &quot;user_id&quot;: 1,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;Environmental Sustainability through Bioremediation&quot;,
-            &quot;slug&quot;: &quot;environmental-sustainability-through-bioremediation&quot;,
-            &quot;excerpt&quot;: &quot;Targeting oil spills and heavy metal contamination with specialized microorganisms. A biotechnical approach to environmental restoration.&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;Targeting oil spills and heavy metal contamination with specialized microorganisms. A biotechnical approach to environmental restoration.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;Environmental Sustainability through Bioremediation&quot;,
-            &quot;meta_description&quot;: &quot;Targeting oil spills and heavy metal contamination with specialized microorganisms. A biotechnical approach to environmental restoration.&quot;,
-            &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: true,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;Targeting oil spills and heavy metal contamination with specialized microorganisms. A biotechnical approach to environmental restoration.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 5,
-            &quot;dislikes_count&quot;: 2,
-            &quot;comments_count&quot;: 5,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 1,
-                &quot;username&quot;: &quot;superadmin&quot;,
-                &quot;email&quot;: &quot;superadmin@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:53:04.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: null,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: null,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Super Admin&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 1,
-                    &quot;user_id&quot;: 1,
-                    &quot;first_name&quot;: &quot;Super&quot;,
-                    &quot;last_name&quot;: &quot;Admin&quot;,
-                    &quot;phone_number&quot;: &quot;+254733198803&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 14,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 1,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Genomics&quot;,
-                    &quot;slug&quot;: &quot;genomics&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Genomics and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 2,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 13,
-                        &quot;category_id&quot;: 1
-                    }
-                },
-                {
-                    &quot;id&quot;: 3,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Bioinformatics&quot;,
-                    &quot;slug&quot;: &quot;bioinformatics&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Bioinformatics and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 3,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 13,
-                        &quot;category_id&quot;: 3
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 3,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;GMO&quot;,
-                    &quot;slug&quot;: &quot;gmo&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 13,
-                        &quot;tag_id&quot;: 3
-                    }
-                },
-                {
-                    &quot;id&quot;: 13,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;CRISPR-Cas12&quot;,
-                    &quot;slug&quot;: &quot;crispr-cas12&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 2,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 13,
-                        &quot;tag_id&quot;: 13
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 21,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 934159,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 3,
-                    &quot;folder_id&quot;: 25,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;tech-hub.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 13,
-                        &quot;media_id&quot;: 21,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 3,
-                        &quot;hash&quot;: &quot;86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;size&quot;: 934159,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:43.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
-            &quot;id&quot;: 14,
-            &quot;user_id&quot;: 2,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;Marine Biotechnology: Treasures from the Kenyan Coast&quot;,
-            &quot;slug&quot;: &quot;marine-biotechnology-treasures-from-the-kenyan-coast&quot;,
-            &quot;excerpt&quot;: &quot;Exploring the unique biodiversity of the Indian Ocean for potential bioactive compounds and new pharmaceutical leads.&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;Exploring the unique biodiversity of the Indian Ocean for potential bioactive compounds and new pharmaceutical leads.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;Marine Biotechnology: Treasures from the Kenyan Coast&quot;,
-            &quot;meta_description&quot;: &quot;Exploring the unique biodiversity of the Indian Ocean for potential bioactive compounds and new pharmaceutical leads.&quot;,
-            &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: true,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;Exploring the unique biodiversity of the Indian Ocean for potential bioactive compounds and new pharmaceutical leads.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 6,
-            &quot;dislikes_count&quot;: 0,
-            &quot;comments_count&quot;: 3,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 2,
-                &quot;username&quot;: &quot;admin&quot;,
-                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: null,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: null,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Admin User&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;user_id&quot;: 2,
-                    &quot;first_name&quot;: &quot;Admin&quot;,
-                    &quot;last_name&quot;: &quot;User&quot;,
-                    &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 5,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 4,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
-                    &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 14,
-                        &quot;category_id&quot;: 4
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 6,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Stem Cells&quot;,
-                    &quot;slug&quot;: &quot;stem-cells&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 14,
-                        &quot;tag_id&quot;: 6
-                    }
-                },
-                {
-                    &quot;id&quot;: 10,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Biofuels&quot;,
-                    &quot;slug&quot;: &quot;biofuels&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 14,
-                        &quot;tag_id&quot;: 10
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 22,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 934159,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 3,
-                    &quot;folder_id&quot;: 26,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;tech-hub.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 14,
-                        &quot;media_id&quot;: 22,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 3,
-                        &quot;hash&quot;: &quot;86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;size&quot;: 934159,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:43.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
-            &quot;id&quot;: 15,
-            &quot;user_id&quot;: 2,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;Industrial Biotech: Fermenting the Future of Kenyan Industry&quot;,
-            &quot;slug&quot;: &quot;industrial-biotech-fermenting-the-future-of-kenyan-industry&quot;,
-            &quot;excerpt&quot;: &quot;Using enzymes and microorganisms for industrial processes, reducing emissions and increasing efficiency in local factories.&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;Using enzymes and microorganisms for industrial processes, reducing emissions and increasing efficiency in local factories.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;Industrial Biotech: Fermenting the Future of Kenyan Indus...&quot;,
-            &quot;meta_description&quot;: &quot;Using enzymes and microorganisms for industrial processes, reducing emissions and increasing efficiency in local factories.&quot;,
-            &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: true,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;Using enzymes and microorganisms for industrial processes, reducing emissions and increasing efficiency in local factories.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 5,
-            &quot;dislikes_count&quot;: 2,
-            &quot;comments_count&quot;: 5,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 2,
-                &quot;username&quot;: &quot;admin&quot;,
-                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: null,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: null,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Admin User&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;user_id&quot;: 2,
-                    &quot;first_name&quot;: &quot;Admin&quot;,
-                    &quot;last_name&quot;: &quot;User&quot;,
-                    &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 5,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 3,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Bioinformatics&quot;,
-                    &quot;slug&quot;: &quot;bioinformatics&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Bioinformatics and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 3,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 15,
-                        &quot;category_id&quot;: 3
-                    }
-                },
-                {
-                    &quot;id&quot;: 9,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Neuroinformatics&quot;,
-                    &quot;slug&quot;: &quot;neuroinformatics&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 15,
-                        &quot;category_id&quot;: 9
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 8,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Bioplastics&quot;,
-                    &quot;slug&quot;: &quot;bioplastics&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 1,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 15,
-                        &quot;tag_id&quot;: 8
-                    }
-                },
-                {
-                    &quot;id&quot;: 10,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Biofuels&quot;,
-                    &quot;slug&quot;: &quot;biofuels&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 15,
-                        &quot;tag_id&quot;: 10
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 23,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 850020,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 5,
-                    &quot;folder_id&quot;: 27,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 15,
-                        &quot;media_id&quot;: 23,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 5,
-                        &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-                        &quot;size&quot;: 850020,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:48.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
-            &quot;id&quot;: 16,
-            &quot;user_id&quot;: 2,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;The Rise of Biofuels: Powering Kenya with Algae&quot;,
-            &quot;slug&quot;: &quot;the-rise-of-biofuels-powering-kenya-with-algae&quot;,
-            &quot;excerpt&quot;: &quot;Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;The Rise of Biofuels: Powering Kenya with Algae&quot;,
-            &quot;meta_description&quot;: &quot;Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.&quot;,
-            &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: false,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 3,
-            &quot;dislikes_count&quot;: 2,
-            &quot;comments_count&quot;: 4,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 2,
-                &quot;username&quot;: &quot;admin&quot;,
-                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: null,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: null,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Admin User&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;user_id&quot;: 2,
-                    &quot;first_name&quot;: &quot;Admin&quot;,
-                    &quot;last_name&quot;: &quot;User&quot;,
-                    &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 5,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 4,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
-                    &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 16,
-                        &quot;category_id&quot;: 4
-                    }
-                },
-                {
-                    &quot;id&quot;: 5,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Medical Biotechnology&quot;,
-                    &quot;slug&quot;: &quot;medical-biotechnology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Medical Biotechnology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 3,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 16,
-                        &quot;category_id&quot;: 5
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 7,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Genetic Engineering&quot;,
-                    &quot;slug&quot;: &quot;genetic-engineering&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 16,
-                        &quot;tag_id&quot;: 7
-                    }
-                },
-                {
-                    &quot;id&quot;: 11,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Microbiome&quot;,
-                    &quot;slug&quot;: &quot;microbiome&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 16,
-                        &quot;tag_id&quot;: 11
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 24,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 850020,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 5,
-                    &quot;folder_id&quot;: 28,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 16,
-                        &quot;media_id&quot;: 24,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 5,
-                        &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-                        &quot;size&quot;: 850020,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:48.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
-            &quot;id&quot;: 17,
-            &quot;user_id&quot;: 2,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;Immunology Breakthroughs: Developing Next-Gen Antibodies&quot;,
-            &quot;slug&quot;: &quot;immunology-breakthroughs-developing-next-gen-antibodies&quot;,
-            &quot;excerpt&quot;: &quot;A deep dive into monoclonal antibodies and their use in treating chronic diseases and emerging infections in the region.&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;A deep dive into monoclonal antibodies and their use in treating chronic diseases and emerging infections in the region.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;Immunology Breakthroughs: Developing Next-Gen Antibodies&quot;,
-            &quot;meta_description&quot;: &quot;A deep dive into monoclonal antibodies and their use in treating chronic diseases and emerging infections in the region.&quot;,
-            &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: true,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;A deep dive into monoclonal antibodies and their use in treating chronic diseases and emerging infections in the region.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 7,
-            &quot;dislikes_count&quot;: 1,
-            &quot;comments_count&quot;: 4,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 2,
-                &quot;username&quot;: &quot;admin&quot;,
-                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: null,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: null,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Admin User&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;user_id&quot;: 2,
-                    &quot;first_name&quot;: &quot;Admin&quot;,
-                    &quot;last_name&quot;: &quot;User&quot;,
-                    &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 5,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 6,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Marine Biotechnology&quot;,
-                    &quot;slug&quot;: &quot;marine-biotechnology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 2,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 17,
-                        &quot;category_id&quot;: 6
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 5,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Bioremediation&quot;,
-                    &quot;slug&quot;: &quot;bioremediation&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 17,
-                        &quot;tag_id&quot;: 5
-                    }
-                },
-                {
-                    &quot;id&quot;: 14,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Nanobiotechnology&quot;,
-                    &quot;slug&quot;: &quot;nanobiotechnology&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 1,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 17,
-                        &quot;tag_id&quot;: 14
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 25,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 934159,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 3,
-                    &quot;folder_id&quot;: 29,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;tech-hub.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 17,
-                        &quot;media_id&quot;: 25,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 3,
-                        &quot;hash&quot;: &quot;86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;size&quot;: 934159,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:43.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
-            &quot;id&quot;: 18,
-            &quot;user_id&quot;: 2,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;Nanobiotechnology in Cancer Detection: Tiny Tools, Big Impact&quot;,
-            &quot;slug&quot;: &quot;nanobiotechnology-in-cancer-detection-tiny-tools-big-impact&quot;,
-            &quot;excerpt&quot;: &quot;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;Nanobiotechnology in Cancer Detection: Tiny Tools, Big Im...&quot;,
-            &quot;meta_description&quot;: &quot;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&quot;,
-            &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: false,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 6,
-            &quot;dislikes_count&quot;: 1,
-            &quot;comments_count&quot;: 5,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 2,
-                &quot;username&quot;: &quot;admin&quot;,
-                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: null,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: null,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Admin User&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;user_id&quot;: 2,
-                    &quot;first_name&quot;: &quot;Admin&quot;,
-                    &quot;last_name&quot;: &quot;User&quot;,
-                    &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 5,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 10,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Environmental Sustainability&quot;,
-                    &quot;slug&quot;: &quot;environmental-sustainability&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Environmental Sustainability and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 2,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 18,
-                        &quot;category_id&quot;: 10
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 1,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;CRISPR&quot;,
-                    &quot;slug&quot;: &quot;crispr&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 18,
-                        &quot;tag_id&quot;: 1
-                    }
-                },
-                {
-                    &quot;id&quot;: 3,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;GMO&quot;,
-                    &quot;slug&quot;: &quot;gmo&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 18,
-                        &quot;tag_id&quot;: 3
-                    }
-                },
-                {
-                    &quot;id&quot;: 11,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Microbiome&quot;,
-                    &quot;slug&quot;: &quot;microbiome&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 18,
-                        &quot;tag_id&quot;: 11
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 26,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 934159,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 3,
-                    &quot;folder_id&quot;: 30,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;tech-hub.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 18,
-                        &quot;media_id&quot;: 26,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 3,
-                        &quot;hash&quot;: &quot;86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;size&quot;: 934159,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:43.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
-            &quot;id&quot;: 19,
-            &quot;user_id&quot;: 10,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;Microbiome Research: The Secret Life of Our Gut Bacteria&quot;,
-            &quot;slug&quot;: &quot;microbiome-research-the-secret-life-of-our-gut-bacteria&quot;,
-            &quot;excerpt&quot;: &quot;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;Microbiome Research: The Secret Life of Our Gut Bacteria&quot;,
-            &quot;meta_description&quot;: &quot;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&quot;,
-            &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: true,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 2,
-            &quot;dislikes_count&quot;: 1,
-            &quot;comments_count&quot;: 4,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 10,
-                &quot;username&quot;: &quot;janesmith&quot;,
-                &quot;email&quot;: &quot;jane.smith@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:23.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:23.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:23.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: 2,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: &quot;2026-03-20 00:52:23&quot;,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Jane Smith&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 10,
-                    &quot;user_id&quot;: 10,
-                    &quot;first_name&quot;: &quot;Jane&quot;,
-                    &quot;last_name&quot;: &quot;Smith&quot;,
-                    &quot;phone_number&quot;: &quot;+254760830894&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 1,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: false,
-                    &quot;plan_id&quot;: 1,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: false,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:23.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:23.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 2,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                    &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 6,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 19,
-                        &quot;category_id&quot;: 2
-                    }
-                },
-                {
-                    &quot;id&quot;: 4,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
-                    &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 19,
-                        &quot;category_id&quot;: 4
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 1,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;CRISPR&quot;,
-                    &quot;slug&quot;: &quot;crispr&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 19,
-                        &quot;tag_id&quot;: 1
-                    }
-                },
-                {
-                    &quot;id&quot;: 11,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Microbiome&quot;,
-                    &quot;slug&quot;: &quot;microbiome&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 19,
-                        &quot;tag_id&quot;: 11
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 27,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 934159,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 3,
-                    &quot;folder_id&quot;: 31,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;tech-hub.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 19,
-                        &quot;media_id&quot;: 27,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 3,
-                        &quot;hash&quot;: &quot;86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;size&quot;: 934159,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:43.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
-            &quot;id&quot;: 20,
-            &quot;user_id&quot;: 11,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;Bioplastics: A Bio-based Solution to Kenya&#039;s Pollution&quot;,
-            &quot;slug&quot;: &quot;bioplastics-a-bio-based-solution-to-kenyas-pollution&quot;,
-            &quot;excerpt&quot;: &quot;Exploring biopolymers derived from agricultural waste as a sustainable alternative to conventional plastics in local markets.&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;Exploring biopolymers derived from agricultural waste as a sustainable alternative to conventional plastics in local markets.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;Bioplastics: A Bio-based Solution to Kenya&#039;s Pollution&quot;,
-            &quot;meta_description&quot;: &quot;Exploring biopolymers derived from agricultural waste as a sustainable alternative to conventional plastics in local markets.&quot;,
-            &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: false,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;Exploring biopolymers derived from agricultural waste as a sustainable alternative to conventional plastics in local markets.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 5,
-            &quot;dislikes_count&quot;: 0,
-            &quot;comments_count&quot;: 4,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 11,
-                &quot;username&quot;: &quot;alexstudent&quot;,
-                &quot;email&quot;: &quot;student@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:24.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:24.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:24.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: 3,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: &quot;2026-03-20 00:52:24&quot;,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Alex Student&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 11,
-                    &quot;user_id&quot;: 11,
-                    &quot;first_name&quot;: &quot;Alex&quot;,
-                    &quot;last_name&quot;: &quot;Student&quot;,
-                    &quot;phone_number&quot;: &quot;+254711101825&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 27,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: false,
-                    &quot;plan_id&quot;: 2,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: false,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:24.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:24.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 9,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Neuroinformatics&quot;,
-                    &quot;slug&quot;: &quot;neuroinformatics&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 20,
-                        &quot;category_id&quot;: 9
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 6,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Stem Cells&quot;,
-                    &quot;slug&quot;: &quot;stem-cells&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 20,
-                        &quot;tag_id&quot;: 6
-                    }
-                },
-                {
-                    &quot;id&quot;: 11,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Microbiome&quot;,
-                    &quot;slug&quot;: &quot;microbiome&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 20,
-                        &quot;tag_id&quot;: 11
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 28,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 829674,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 2,
-                    &quot;folder_id&quot;: 32,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 20,
-                        &quot;media_id&quot;: 28,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 2,
-                        &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;size&quot;: 829674,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 7,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:40.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
-            &quot;id&quot;: 1,
-            &quot;user_id&quot;: 1,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;Revolutionizing Medicine with CRISPR Gene Editing&quot;,
-            &quot;slug&quot;: &quot;revolutionizing-medicine-with-crispr-gene-editing&quot;,
-            &quot;excerpt&quot;: &quot;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-s...&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving treatments for genetic disorders.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;Revolutionizing Medicine with CRISPR Gene Editing&quot;,
-            &quot;meta_description&quot;: &quot;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving t...&quot;,
-            &quot;is_featured&quot;: true,
-            &quot;allow_comments&quot;: true,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving treatments for genetic disorders.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 3,
-            &quot;dislikes_count&quot;: 0,
-            &quot;comments_count&quot;: 5,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 1,
-                &quot;username&quot;: &quot;superadmin&quot;,
-                &quot;email&quot;: &quot;superadmin@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:53:04.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: null,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: null,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Super Admin&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 1,
-                    &quot;user_id&quot;: 1,
-                    &quot;first_name&quot;: &quot;Super&quot;,
-                    &quot;last_name&quot;: &quot;Admin&quot;,
-                    &quot;phone_number&quot;: &quot;+254733198803&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 14,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 2,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                    &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 6,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 1,
-                        &quot;category_id&quot;: 2
-                    }
-                },
-                {
-                    &quot;id&quot;: 9,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Neuroinformatics&quot;,
-                    &quot;slug&quot;: &quot;neuroinformatics&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 1,
-                        &quot;category_id&quot;: 9
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 7,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Genetic Engineering&quot;,
-                    &quot;slug&quot;: &quot;genetic-engineering&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 1,
-                        &quot;tag_id&quot;: 7
-                    }
-                },
-                {
-                    &quot;id&quot;: 12,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Data Science&quot;,
-                    &quot;slug&quot;: &quot;data-science&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 2,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 1,
-                        &quot;tag_id&quot;: 12
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 9,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 829674,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 2,
-                    &quot;folder_id&quot;: 13,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 1,
-                        &quot;media_id&quot;: 9,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 2,
-                        &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;size&quot;: 829674,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 7,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:40.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
-            &quot;id&quot;: 2,
-            &quot;user_id&quot;: 1,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;The Genomics Era: Mapping the Human Future&quot;,
-            &quot;slug&quot;: &quot;the-genomics-era-mapping-the-human-future&quot;,
-            &quot;excerpt&quot;: &quot;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;The Genomics Era: Mapping the Human Future&quot;,
-            &quot;meta_description&quot;: &quot;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&quot;,
-            &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: true,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 4,
-            &quot;dislikes_count&quot;: 0,
-            &quot;comments_count&quot;: 5,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 1,
-                &quot;username&quot;: &quot;superadmin&quot;,
-                &quot;email&quot;: &quot;superadmin@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:53:04.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: null,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: null,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Super Admin&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 1,
-                    &quot;user_id&quot;: 1,
-                    &quot;first_name&quot;: &quot;Super&quot;,
-                    &quot;last_name&quot;: &quot;Admin&quot;,
-                    &quot;phone_number&quot;: &quot;+254733198803&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 14,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 1,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Genomics&quot;,
-                    &quot;slug&quot;: &quot;genomics&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Genomics and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 2,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 2,
-                        &quot;category_id&quot;: 1
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 5,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Bioremediation&quot;,
-                    &quot;slug&quot;: &quot;bioremediation&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 2,
-                        &quot;tag_id&quot;: 5
-                    }
-                },
-                {
-                    &quot;id&quot;: 6,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Stem Cells&quot;,
-                    &quot;slug&quot;: &quot;stem-cells&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 2,
-                        &quot;tag_id&quot;: 6
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 10,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 934159,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 3,
-                    &quot;folder_id&quot;: 14,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;tech-hub.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 2,
-                        &quot;media_id&quot;: 10,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 3,
-                        &quot;hash&quot;: &quot;86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
-                        &quot;size&quot;: 934159,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:43.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
-            &quot;id&quot;: 4,
-            &quot;user_id&quot;: 2,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;The Future of Sustainable Agriculture: GMOs in Africa&quot;,
-            &quot;slug&quot;: &quot;the-future-of-sustainable-agriculture-gmos-in-africa&quot;,
-            &quot;excerpt&quot;: &quot;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;The Future of Sustainable Agriculture: GMOs in Africa&quot;,
-            &quot;meta_description&quot;: &quot;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&quot;,
-            &quot;is_featured&quot;: true,
-            &quot;allow_comments&quot;: true,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 2,
-            &quot;dislikes_count&quot;: 1,
-            &quot;comments_count&quot;: 4,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 2,
-                &quot;username&quot;: &quot;admin&quot;,
-                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: null,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: null,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Admin User&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;user_id&quot;: 2,
-                    &quot;first_name&quot;: &quot;Admin&quot;,
-                    &quot;last_name&quot;: &quot;User&quot;,
-                    &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 5,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 2,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                    &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 6,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 4,
-                        &quot;category_id&quot;: 2
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 5,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Bioremediation&quot;,
-                    &quot;slug&quot;: &quot;bioremediation&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 4,
-                        &quot;tag_id&quot;: 5
-                    }
-                },
-                {
-                    &quot;id&quot;: 9,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;DNA Profiling&quot;,
-                    &quot;slug&quot;: &quot;dna-profiling&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 4,
-                        &quot;tag_id&quot;: 9
-                    }
-                },
-                {
-                    &quot;id&quot;: 13,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;CRISPR-Cas12&quot;,
-                    &quot;slug&quot;: &quot;crispr-cas12&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 2,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 4,
-                        &quot;tag_id&quot;: 13
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 12,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 829674,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 2,
-                    &quot;folder_id&quot;: 16,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 4,
-                        &quot;media_id&quot;: 12,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 2,
-                        &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;size&quot;: 829674,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 7,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:40.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
-            &quot;id&quot;: 5,
-            &quot;user_id&quot;: 2,
-            &quot;county_id&quot;: 1,
-            &quot;title&quot;: &quot;Synthetic Biology: Designing Life Forms of Tomorrow&quot;,
-            &quot;slug&quot;: &quot;synthetic-biology-designing-life-forms-of-tomorrow&quot;,
-            &quot;excerpt&quot;: &quot;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&quot;,
-            &quot;body&quot;: &quot;&lt;p&gt;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&lt;/p&gt;&quot;,
-            &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;meta_title&quot;: &quot;Synthetic Biology: Designing Life Forms of Tomorrow&quot;,
-            &quot;meta_description&quot;: &quot;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&quot;,
-            &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: true,
-            &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-            &quot;content&quot;: &quot;&lt;p&gt;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&lt;/p&gt;&quot;,
-            &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 5,
-            &quot;dislikes_count&quot;: 2,
-            &quot;comments_count&quot;: 2,
-            &quot;gallery_images&quot;: [],
-            &quot;author&quot;: {
-                &quot;id&quot;: 2,
-                &quot;username&quot;: &quot;admin&quot;,
-                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
-                &quot;profile_picture_path&quot;: null,
-                &quot;phone&quot;: null,
-                &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: 0,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;active_subscription_id&quot;: null,
-                &quot;plan_id&quot;: null,
-                &quot;subscription_status&quot;: &quot;active&quot;,
-                &quot;subscription_expires_at&quot;: null,
-                &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: null,
-                &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Admin User&quot;,
-                &quot;member_profile&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;user_id&quot;: 2,
-                    &quot;first_name&quot;: &quot;Admin&quot;,
-                    &quot;last_name&quot;: &quot;User&quot;,
-                    &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 5,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
-                    &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
-                    ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
-                    &quot;emergency_contact_name&quot;: null,
-                    &quot;emergency_contact_phone&quot;: null,
-                    &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;plan_type&quot;: &quot;free&quot;,
-                    &quot;plan_expires_at&quot;: null,
-                    &quot;public_profile_enabled&quot;: true,
-                    &quot;display_full_name&quot;: false,
-                    &quot;display_age&quot;: false,
-                    &quot;prefix&quot;: null,
-                    &quot;public_role&quot;: null,
-                    &quot;experience&quot;: null,
-                    &quot;experience_visible&quot;: false,
-                    &quot;education&quot;: null,
-                    &quot;education_visible&quot;: false,
-                    &quot;skills&quot;: null,
-                    &quot;skills_visible&quot;: false,
-                    &quot;achievements&quot;: null,
-                    &quot;achievements_visible&quot;: false,
-                    &quot;certifications&quot;: null,
-                    &quot;certifications_visible&quot;: false,
-                    &quot;public_bio&quot;: null,
-                    &quot;show_email&quot;: false,
-                    &quot;show_location&quot;: true,
-                    &quot;show_join_date&quot;: true,
-                    &quot;show_post_count&quot;: true,
-                    &quot;show_interests&quot;: true,
-                    &quot;show_occupation&quot;: 0
-                }
-            },
-            &quot;categories&quot;: [
-                {
-                    &quot;id&quot;: 2,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                    &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 6,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 5,
-                        &quot;category_id&quot;: 2
-                    }
-                },
-                {
-                    &quot;id&quot;: 6,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Marine Biotechnology&quot;,
-                    &quot;slug&quot;: &quot;marine-biotechnology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 2,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 5,
-                        &quot;category_id&quot;: 6
-                    }
-                }
-            ],
-            &quot;tags&quot;: [
-                {
-                    &quot;id&quot;: 1,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;CRISPR&quot;,
-                    &quot;slug&quot;: &quot;crispr&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 5,
-                        &quot;tag_id&quot;: 1
-                    }
-                },
-                {
-                    &quot;id&quot;: 10,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Biofuels&quot;,
-                    &quot;slug&quot;: &quot;biofuels&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 5,
-                        &quot;tag_id&quot;: 10
-                    }
-                }
-            ],
-            &quot;media&quot;: [
-                {
-                    &quot;id&quot;: 13,
-                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 829674,
-                    &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 2,
-                    &quot;folder_id&quot;: 17,
-                    &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
-                    &quot;type&quot;: &quot;image&quot;,
-                    &quot;deleted_at&quot;: null,
-                    &quot;temporary_until&quot;: null,
-                    &quot;visibility&quot;: &quot;public&quot;,
-                    &quot;share_token&quot;: null,
-                    &quot;expires_at&quot;: null,
-                    &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                    &quot;pivot&quot;: {
-                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 5,
-                        &quot;media_id&quot;: 13,
-                        &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
-                    },
-                    &quot;file&quot;: {
-                        &quot;id&quot;: 2,
-                        &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;size&quot;: 829674,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 7,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:40.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                    }
-                }
-            ],
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Mombasa&quot;
-            }
-        },
-        {
             &quot;id&quot;: 6,
             &quot;user_id&quot;: 2,
             &quot;county_id&quot;: 1,
@@ -48476,20 +46118,20 @@ vary: Origin
             &quot;excerpt&quot;: &quot;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&quot;,
             &quot;body&quot;: &quot;&lt;p&gt;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&lt;/p&gt;&quot;,
             &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;meta_title&quot;: &quot;Bioinformatics: Decoding the Language of the Genome&quot;,
             &quot;meta_description&quot;: &quot;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&quot;,
             &quot;is_featured&quot;: false,
             &quot;allow_comments&quot;: true,
             &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;deleted_at&quot;: null,
             &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 6,
-            &quot;dislikes_count&quot;: 1,
+            &quot;likes_count&quot;: 5,
+            &quot;dislikes_count&quot;: 3,
             &quot;comments_count&quot;: 4,
             &quot;gallery_images&quot;: [],
             &quot;author&quot;: {
@@ -48499,13 +46141,13 @@ vary: Origin
                 &quot;profile_picture_path&quot;: null,
                 &quot;phone&quot;: null,
                 &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
                 &quot;two_factor_secret&quot;: null,
                 &quot;two_factor_enabled&quot;: 0,
                 &quot;two_factor_recovery_codes&quot;: null,
                 &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;active_subscription_id&quot;: null,
                 &quot;plan_id&quot;: null,
@@ -48520,10 +46162,10 @@ vary: Origin
                     &quot;user_id&quot;: 2,
                     &quot;first_name&quot;: &quot;Admin&quot;,
                     &quot;last_name&quot;: &quot;User&quot;,
-                    &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
+                    &quot;phone_number&quot;: &quot;+254755501462&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
                     &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 5,
+                    &quot;county_id&quot;: 8,
                     &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
                     &quot;ward&quot;: &quot;Demo Ward&quot;,
                     &quot;interests&quot;: [
@@ -48532,15 +46174,14 @@ vary: Origin
                         &quot;biotech&quot;
                     ],
                     &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
                     &quot;plan_id&quot;: null,
                     &quot;occupation&quot;: &quot;Software Developer&quot;,
                     &quot;emergency_contact_name&quot;: null,
                     &quot;emergency_contact_phone&quot;: null,
                     &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
                     &quot;deleted_at&quot;: null,
                     &quot;plan_type&quot;: &quot;free&quot;,
                     &quot;plan_expires_at&quot;: null,
@@ -48570,85 +46211,53 @@ vary: Origin
             },
             &quot;categories&quot;: [
                 {
-                    &quot;id&quot;: 2,
+                    &quot;id&quot;: 16,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                    &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;name&quot;: &quot;Industrial Biotechnology&quot;,
+                    &quot;slug&quot;: &quot;industrial-biotechnology&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Industrial Biotechnology and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 6,
+                    &quot;post_count&quot;: 2,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 6,
-                        &quot;category_id&quot;: 2
-                    }
-                },
-                {
-                    &quot;id&quot;: 5,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Medical Biotechnology&quot;,
-                    &quot;slug&quot;: &quot;medical-biotechnology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Medical Biotechnology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 3,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 6,
-                        &quot;category_id&quot;: 5
+                        &quot;category_id&quot;: 16
                     }
                 }
             ],
             &quot;tags&quot;: [
                 {
-                    &quot;id&quot;: 6,
+                    &quot;id&quot;: 14,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Stem Cells&quot;,
-                    &quot;slug&quot;: &quot;stem-cells&quot;,
+                    &quot;name&quot;: &quot;DNA Sequencing&quot;,
+                    &quot;slug&quot;: &quot;dna-sequencing&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
                     &quot;post_count&quot;: 4,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 6,
-                        &quot;tag_id&quot;: 6
+                        &quot;tag_id&quot;: 14
                     }
                 },
                 {
-                    &quot;id&quot;: 7,
+                    &quot;id&quot;: 19,
                     &quot;created_by&quot;: null,
                     &quot;name&quot;: &quot;Genetic Engineering&quot;,
                     &quot;slug&quot;: &quot;genetic-engineering&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
+                    &quot;post_count&quot;: 6,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 6,
-                        &quot;tag_id&quot;: 7
-                    }
-                },
-                {
-                    &quot;id&quot;: 11,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Microbiome&quot;,
-                    &quot;slug&quot;: &quot;microbiome&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 6,
-                        &quot;tag_id&quot;: 11
+                        &quot;tag_id&quot;: 19
                     }
                 }
             ],
@@ -48658,11 +46267,11 @@ vary: Origin
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
                     &quot;file_size&quot;: 850020,
                     &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
                     &quot;user_id&quot;: 1,
                     &quot;media_file_id&quot;: 5,
-                    &quot;folder_id&quot;: 18,
+                    &quot;folder_id&quot;: 16,
                     &quot;root_type&quot;: &quot;public&quot;,
                     &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
                     &quot;type&quot;: &quot;image&quot;,
@@ -48678,8 +46287,8 @@ vary: Origin
                         &quot;attachable_id&quot;: 6,
                         &quot;media_id&quot;: 14,
                         &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                     },
                     &quot;file&quot;: {
                         &quot;id&quot;: 5,
@@ -48688,9 +46297,9 @@ vary: Origin
                         &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                         &quot;size&quot;: 850020,
                         &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:48.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
+                        &quot;ref_count&quot;: 13,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                     }
                 }
             ],
@@ -48708,21 +46317,21 @@ vary: Origin
             &quot;excerpt&quot;: &quot;Following the success of COVID-19 vaccines, mRNA technology is being targeted at Malaria and HIV. A look at the regional manufacturing hubs.&quot;,
             &quot;body&quot;: &quot;&lt;p&gt;Following the success of COVID-19 vaccines, mRNA technology is being targeted at Malaria and HIV. A look at the regional manufacturing hubs.&lt;/p&gt;&quot;,
             &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;meta_title&quot;: &quot;Biopharma Breakthroughs: The Rise of mRNA Vaccines&quot;,
             &quot;meta_description&quot;: &quot;Following the success of COVID-19 vaccines, mRNA technology is being targeted at Malaria and HIV. A look at the regional manufacturing hubs.&quot;,
             &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: true,
+            &quot;allow_comments&quot;: false,
             &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;deleted_at&quot;: null,
             &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Following the success of COVID-19 vaccines, mRNA technology is being targeted at Malaria and HIV. A look at the regional manufacturing hubs.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 4,
-            &quot;dislikes_count&quot;: 1,
-            &quot;comments_count&quot;: 3,
+            &quot;likes_count&quot;: 5,
+            &quot;dislikes_count&quot;: 0,
+            &quot;comments_count&quot;: 5,
             &quot;gallery_images&quot;: [],
             &quot;author&quot;: {
                 &quot;id&quot;: 2,
@@ -48731,13 +46340,13 @@ vary: Origin
                 &quot;profile_picture_path&quot;: null,
                 &quot;phone&quot;: null,
                 &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
                 &quot;two_factor_secret&quot;: null,
                 &quot;two_factor_enabled&quot;: 0,
                 &quot;two_factor_recovery_codes&quot;: null,
                 &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;active_subscription_id&quot;: null,
                 &quot;plan_id&quot;: null,
@@ -48752,10 +46361,10 @@ vary: Origin
                     &quot;user_id&quot;: 2,
                     &quot;first_name&quot;: &quot;Admin&quot;,
                     &quot;last_name&quot;: &quot;User&quot;,
-                    &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
+                    &quot;phone_number&quot;: &quot;+254755501462&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
                     &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 5,
+                    &quot;county_id&quot;: 8,
                     &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
                     &quot;ward&quot;: &quot;Demo Ward&quot;,
                     &quot;interests&quot;: [
@@ -48764,15 +46373,14 @@ vary: Origin
                         &quot;biotech&quot;
                     ],
                     &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
                     &quot;plan_id&quot;: null,
                     &quot;occupation&quot;: &quot;Software Developer&quot;,
                     &quot;emergency_contact_name&quot;: null,
                     &quot;emergency_contact_phone&quot;: null,
                     &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
                     &quot;deleted_at&quot;: null,
                     &quot;plan_type&quot;: &quot;free&quot;,
                     &quot;plan_expires_at&quot;: null,
@@ -48802,69 +46410,53 @@ vary: Origin
             },
             &quot;categories&quot;: [
                 {
-                    &quot;id&quot;: 4,
+                    &quot;id&quot;: 12,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
-                    &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;name&quot;: &quot;Bioinformatics&quot;,
+                    &quot;slug&quot;: &quot;bioinformatics&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Bioinformatics and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
+                    &quot;post_count&quot;: 3,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 7,
-                        &quot;category_id&quot;: 4
-                    }
-                },
-                {
-                    &quot;id&quot;: 7,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Industrial Biotechnology&quot;,
-                    &quot;slug&quot;: &quot;industrial-biotechnology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Industrial Biotechnology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 1,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 7,
-                        &quot;category_id&quot;: 7
+                        &quot;category_id&quot;: 12
                     }
                 }
             ],
             &quot;tags&quot;: [
                 {
-                    &quot;id&quot;: 1,
+                    &quot;id&quot;: 17,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;CRISPR&quot;,
-                    &quot;slug&quot;: &quot;crispr&quot;,
+                    &quot;name&quot;: &quot;Bioremediation&quot;,
+                    &quot;slug&quot;: &quot;bioremediation&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
+                    &quot;post_count&quot;: 3,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 7,
-                        &quot;tag_id&quot;: 1
+                        &quot;tag_id&quot;: 17
                     }
                 },
                 {
-                    &quot;id&quot;: 10,
+                    &quot;id&quot;: 19,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Biofuels&quot;,
-                    &quot;slug&quot;: &quot;biofuels&quot;,
+                    &quot;name&quot;: &quot;Genetic Engineering&quot;,
+                    &quot;slug&quot;: &quot;genetic-engineering&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
+                    &quot;post_count&quot;: 6,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 7,
-                        &quot;tag_id&quot;: 10
+                        &quot;tag_id&quot;: 19
                     }
                 }
             ],
@@ -48874,11 +46466,11 @@ vary: Origin
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
                     &quot;file_size&quot;: 850020,
                     &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
                     &quot;user_id&quot;: 1,
                     &quot;media_file_id&quot;: 5,
-                    &quot;folder_id&quot;: 19,
+                    &quot;folder_id&quot;: 17,
                     &quot;root_type&quot;: &quot;public&quot;,
                     &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
                     &quot;type&quot;: &quot;image&quot;,
@@ -48894,8 +46486,8 @@ vary: Origin
                         &quot;attachable_id&quot;: 7,
                         &quot;media_id&quot;: 15,
                         &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                     },
                     &quot;file&quot;: {
                         &quot;id&quot;: 5,
@@ -48904,9 +46496,9 @@ vary: Origin
                         &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                         &quot;size&quot;: 850020,
                         &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:48.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
+                        &quot;ref_count&quot;: 13,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                     }
                 }
             ],
@@ -48924,21 +46516,21 @@ vary: Origin
             &quot;excerpt&quot;: &quot;As a student researcher, I&#039;ve seen the potential of stem cells in tissue engineering. This post summarizes the key takeaways from the recent Nairobi B...&quot;,
             &quot;body&quot;: &quot;&lt;p&gt;As a student researcher, I&#039;ve seen the potential of stem cells in tissue engineering. This post summarizes the key takeaways from the recent Nairobi Biotech Summit.&lt;/p&gt;&quot;,
             &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;meta_title&quot;: &quot;Stem Cells: A Student Perspective on Regenerative Medicin...&quot;,
             &quot;meta_description&quot;: &quot;As a student researcher, I&#039;ve seen the potential of stem cells in tissue engineering. This post summarizes the key takeaways from the recent Nairobi Biotech...&quot;,
             &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: true,
+            &quot;allow_comments&quot;: false,
             &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;deleted_at&quot;: null,
             &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;As a student researcher, I&#039;ve seen the potential of stem cells in tissue engineering. This post summarizes the key takeaways from the recent Nairobi Biotech Summit.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 6,
-            &quot;dislikes_count&quot;: 2,
-            &quot;comments_count&quot;: 5,
+            &quot;likes_count&quot;: 1,
+            &quot;dislikes_count&quot;: 3,
+            &quot;comments_count&quot;: 4,
             &quot;gallery_images&quot;: [],
             &quot;author&quot;: {
                 &quot;id&quot;: 11,
@@ -48947,20 +46539,20 @@ vary: Origin
                 &quot;profile_picture_path&quot;: null,
                 &quot;phone&quot;: null,
                 &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:24.000000Z&quot;,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:40.000000Z&quot;,
                 &quot;two_factor_secret&quot;: null,
                 &quot;two_factor_enabled&quot;: 0,
                 &quot;two_factor_recovery_codes&quot;: null,
                 &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:24.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:24.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:40.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:40.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;active_subscription_id&quot;: 3,
                 &quot;plan_id&quot;: null,
                 &quot;subscription_status&quot;: &quot;active&quot;,
                 &quot;subscription_expires_at&quot;: null,
                 &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: &quot;2026-03-20 00:52:24&quot;,
+                &quot;subscription_activated_at&quot;: &quot;2026-03-27 05:35:40&quot;,
                 &quot;profile_picture_url&quot;: null,
                 &quot;display_name&quot;: &quot;Alex Student&quot;,
                 &quot;member_profile&quot;: {
@@ -48968,10 +46560,10 @@ vary: Origin
                     &quot;user_id&quot;: 11,
                     &quot;first_name&quot;: &quot;Alex&quot;,
                     &quot;last_name&quot;: &quot;Student&quot;,
-                    &quot;phone_number&quot;: &quot;+254711101825&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
+                    &quot;phone_number&quot;: &quot;+254794146404&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
                     &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 27,
+                    &quot;county_id&quot;: 9,
                     &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
                     &quot;ward&quot;: &quot;Demo Ward&quot;,
                     &quot;interests&quot;: [
@@ -48980,15 +46572,14 @@ vary: Origin
                         &quot;biotech&quot;
                     ],
                     &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: false,
                     &quot;plan_id&quot;: 2,
                     &quot;occupation&quot;: &quot;Software Developer&quot;,
                     &quot;emergency_contact_name&quot;: null,
                     &quot;emergency_contact_phone&quot;: null,
                     &quot;terms_accepted&quot;: true,
                     &quot;marketing_consent&quot;: false,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:24.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:24.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:40.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:40.000000Z&quot;,
                     &quot;deleted_at&quot;: null,
                     &quot;plan_type&quot;: &quot;free&quot;,
                     &quot;plan_expires_at&quot;: null,
@@ -49018,85 +46609,53 @@ vary: Origin
             },
             &quot;categories&quot;: [
                 {
-                    &quot;id&quot;: 3,
+                    &quot;id&quot;: 16,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Bioinformatics&quot;,
-                    &quot;slug&quot;: &quot;bioinformatics&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Bioinformatics and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 3,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 9,
-                        &quot;category_id&quot;: 3
-                    }
-                },
-                {
-                    &quot;id&quot;: 8,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Forensic Science&quot;,
-                    &quot;slug&quot;: &quot;forensic-science&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Forensic Science and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;name&quot;: &quot;Industrial Biotechnology&quot;,
+                    &quot;slug&quot;: &quot;industrial-biotechnology&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Industrial Biotechnology and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
                     &quot;post_count&quot;: 2,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 9,
-                        &quot;category_id&quot;: 8
+                        &quot;category_id&quot;: 16
                     }
                 }
             ],
             &quot;tags&quot;: [
                 {
-                    &quot;id&quot;: 3,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;GMO&quot;,
-                    &quot;slug&quot;: &quot;gmo&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 9,
-                        &quot;tag_id&quot;: 3
-                    }
-                },
-                {
-                    &quot;id&quot;: 9,
+                    &quot;id&quot;: 21,
                     &quot;created_by&quot;: null,
                     &quot;name&quot;: &quot;DNA Profiling&quot;,
                     &quot;slug&quot;: &quot;dna-profiling&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
+                    &quot;post_count&quot;: 3,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 9,
-                        &quot;tag_id&quot;: 9
+                        &quot;tag_id&quot;: 21
                     }
                 },
                 {
-                    &quot;id&quot;: 10,
+                    &quot;id&quot;: 26,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Biofuels&quot;,
-                    &quot;slug&quot;: &quot;biofuels&quot;,
+                    &quot;name&quot;: &quot;Nanobiotechnology&quot;,
+                    &quot;slug&quot;: &quot;nanobiotechnology&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
                     &quot;post_count&quot;: 5,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 9,
-                        &quot;tag_id&quot;: 10
+                        &quot;tag_id&quot;: 26
                     }
                 }
             ],
@@ -49106,11 +46665,11 @@ vary: Origin
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
                     &quot;file_size&quot;: 850020,
                     &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
                     &quot;user_id&quot;: 1,
                     &quot;media_file_id&quot;: 5,
-                    &quot;folder_id&quot;: 21,
+                    &quot;folder_id&quot;: 19,
                     &quot;root_type&quot;: &quot;public&quot;,
                     &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
                     &quot;type&quot;: &quot;image&quot;,
@@ -49126,8 +46685,8 @@ vary: Origin
                         &quot;attachable_id&quot;: 9,
                         &quot;media_id&quot;: 17,
                         &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                     },
                     &quot;file&quot;: {
                         &quot;id&quot;: 5,
@@ -49136,9 +46695,9 @@ vary: Origin
                         &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                         &quot;size&quot;: 850020,
                         &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:48.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
+                        &quot;ref_count&quot;: 13,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                     }
                 }
             ],
@@ -49156,21 +46715,21 @@ vary: Origin
             &quot;excerpt&quot;: &quot;Pharmacogenomics allows doctors to prescribe the right drug at the right dose. Why this is the next frontier for healthcare investment in Africa.&quot;,
             &quot;body&quot;: &quot;&lt;p&gt;Pharmacogenomics allows doctors to prescribe the right drug at the right dose. Why this is the next frontier for healthcare investment in Africa.&lt;/p&gt;&quot;,
             &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;meta_title&quot;: &quot;Personalized Medicine: Tailoring Treatments to Your DNA&quot;,
             &quot;meta_description&quot;: &quot;Pharmacogenomics allows doctors to prescribe the right drug at the right dose. Why this is the next frontier for healthcare investment in Africa.&quot;,
             &quot;is_featured&quot;: false,
-            &quot;allow_comments&quot;: true,
+            &quot;allow_comments&quot;: false,
             &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Pharmacogenomics allows doctors to prescribe the right drug at the right dose. Why this is the next frontier for healthcare investment in Africa.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 4,
-            &quot;dislikes_count&quot;: 1,
-            &quot;comments_count&quot;: 5,
+            &quot;dislikes_count&quot;: 0,
+            &quot;comments_count&quot;: 2,
             &quot;gallery_images&quot;: [],
             &quot;author&quot;: {
                 &quot;id&quot;: 10,
@@ -49179,20 +46738,20 @@ vary: Origin
                 &quot;profile_picture_path&quot;: null,
                 &quot;phone&quot;: null,
                 &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:23.000000Z&quot;,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
                 &quot;two_factor_secret&quot;: null,
                 &quot;two_factor_enabled&quot;: 0,
                 &quot;two_factor_recovery_codes&quot;: null,
                 &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:23.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:23.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;active_subscription_id&quot;: 2,
                 &quot;plan_id&quot;: null,
                 &quot;subscription_status&quot;: &quot;active&quot;,
                 &quot;subscription_expires_at&quot;: null,
                 &quot;last_payment_date&quot;: null,
-                &quot;subscription_activated_at&quot;: &quot;2026-03-20 00:52:23&quot;,
+                &quot;subscription_activated_at&quot;: &quot;2026-03-27 05:35:39&quot;,
                 &quot;profile_picture_url&quot;: null,
                 &quot;display_name&quot;: &quot;Jane Smith&quot;,
                 &quot;member_profile&quot;: {
@@ -49200,10 +46759,10 @@ vary: Origin
                     &quot;user_id&quot;: 10,
                     &quot;first_name&quot;: &quot;Jane&quot;,
                     &quot;last_name&quot;: &quot;Smith&quot;,
-                    &quot;phone_number&quot;: &quot;+254760830894&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
+                    &quot;phone_number&quot;: &quot;+254743267167&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
                     &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 1,
+                    &quot;county_id&quot;: 39,
                     &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
                     &quot;ward&quot;: &quot;Demo Ward&quot;,
                     &quot;interests&quot;: [
@@ -49212,15 +46771,14 @@ vary: Origin
                         &quot;biotech&quot;
                     ],
                     &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: false,
                     &quot;plan_id&quot;: 1,
                     &quot;occupation&quot;: &quot;Software Developer&quot;,
                     &quot;emergency_contact_name&quot;: null,
                     &quot;emergency_contact_phone&quot;: null,
                     &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: false,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:23.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:23.000000Z&quot;,
+                    &quot;marketing_consent&quot;: true,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
                     &quot;deleted_at&quot;: null,
                     &quot;plan_type&quot;: &quot;free&quot;,
                     &quot;plan_expires_at&quot;: null,
@@ -49250,85 +46808,69 @@ vary: Origin
             },
             &quot;categories&quot;: [
                 {
-                    &quot;id&quot;: 5,
+                    &quot;id&quot;: 15,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Medical Biotechnology&quot;,
-                    &quot;slug&quot;: &quot;medical-biotechnology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Medical Biotechnology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;name&quot;: &quot;Marine Biotechnology&quot;,
+                    &quot;slug&quot;: &quot;marine-biotechnology&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
                     &quot;post_count&quot;: 3,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 10,
-                        &quot;category_id&quot;: 5
+                        &quot;category_id&quot;: 15
                     }
                 },
                 {
-                    &quot;id&quot;: 8,
+                    &quot;id&quot;: 18,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Forensic Science&quot;,
-                    &quot;slug&quot;: &quot;forensic-science&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Forensic Science and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;name&quot;: &quot;Neuroinformatics&quot;,
+                    &quot;slug&quot;: &quot;neuroinformatics&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 2,
+                    &quot;post_count&quot;: 6,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 10,
-                        &quot;category_id&quot;: 8
+                        &quot;category_id&quot;: 18
                     }
                 }
             ],
             &quot;tags&quot;: [
                 {
-                    &quot;id&quot;: 3,
+                    &quot;id&quot;: 17,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;GMO&quot;,
-                    &quot;slug&quot;: &quot;gmo&quot;,
+                    &quot;name&quot;: &quot;Bioremediation&quot;,
+                    &quot;slug&quot;: &quot;bioremediation&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
+                    &quot;post_count&quot;: 3,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 10,
-                        &quot;tag_id&quot;: 3
+                        &quot;tag_id&quot;: 17
                     }
                 },
                 {
-                    &quot;id&quot;: 9,
+                    &quot;id&quot;: 19,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;DNA Profiling&quot;,
-                    &quot;slug&quot;: &quot;dna-profiling&quot;,
+                    &quot;name&quot;: &quot;Genetic Engineering&quot;,
+                    &quot;slug&quot;: &quot;genetic-engineering&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 5,
+                    &quot;post_count&quot;: 6,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 10,
-                        &quot;tag_id&quot;: 9
-                    }
-                },
-                {
-                    &quot;id&quot;: 12,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Data Science&quot;,
-                    &quot;slug&quot;: &quot;data-science&quot;,
-                    &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 2,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 10,
-                        &quot;tag_id&quot;: 12
+                        &quot;tag_id&quot;: 19
                     }
                 }
             ],
@@ -49336,15 +46878,15 @@ vary: Origin
                 {
                     &quot;id&quot;: 18,
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 850020,
+                    &quot;file_size&quot;: 934159,
                     &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
                     &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 5,
-                    &quot;folder_id&quot;: 22,
+                    &quot;media_file_id&quot;: 3,
+                    &quot;folder_id&quot;: 20,
                     &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
+                    &quot;file_name&quot;: &quot;tech-hub.png&quot;,
                     &quot;type&quot;: &quot;image&quot;,
                     &quot;deleted_at&quot;: null,
                     &quot;temporary_until&quot;: null,
@@ -49352,25 +46894,25 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 10,
                         &quot;media_id&quot;: 18,
                         &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                     },
                     &quot;file&quot;: {
-                        &quot;id&quot;: 5,
-                        &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;id&quot;: 3,
+                        &quot;hash&quot;: &quot;86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                         &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-                        &quot;size&quot;: 850020,
+                        &quot;path&quot;: &quot;blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                        &quot;size&quot;: 934159,
                         &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:48.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
+                        &quot;ref_count&quot;: 9,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:27.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:16.000000Z&quot;
                     }
                 }
             ],
@@ -49388,21 +46930,21 @@ vary: Origin
             &quot;excerpt&quot;: &quot;How DNA profiling has revolutionized the criminal justice system in Kenya. A look at current forensic labs and future capabilities.&quot;,
             &quot;body&quot;: &quot;&lt;p&gt;How DNA profiling has revolutionized the criminal justice system in Kenya. A look at current forensic labs and future capabilities.&lt;/p&gt;&quot;,
             &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;meta_title&quot;: &quot;Forensic DNA Profiling: Solving Crimes in the 21st Centur...&quot;,
             &quot;meta_description&quot;: &quot;How DNA profiling has revolutionized the criminal justice system in Kenya. A look at current forensic labs and future capabilities.&quot;,
             &quot;is_featured&quot;: false,
             &quot;allow_comments&quot;: true,
             &quot;views_count&quot;: 0,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;How DNA profiling has revolutionized the criminal justice system in Kenya. A look at current forensic labs and future capabilities.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 5,
-            &quot;dislikes_count&quot;: 3,
-            &quot;comments_count&quot;: 3,
+            &quot;dislikes_count&quot;: 0,
+            &quot;comments_count&quot;: 5,
             &quot;gallery_images&quot;: [],
             &quot;author&quot;: {
                 &quot;id&quot;: 1,
@@ -49411,13 +46953,13 @@ vary: Origin
                 &quot;profile_picture_path&quot;: null,
                 &quot;phone&quot;: null,
                 &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
                 &quot;two_factor_secret&quot;: null,
                 &quot;two_factor_enabled&quot;: 0,
                 &quot;two_factor_recovery_codes&quot;: null,
                 &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:53:04.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:37:20.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;active_subscription_id&quot;: null,
                 &quot;plan_id&quot;: null,
@@ -49426,33 +46968,30 @@ vary: Origin
                 &quot;last_payment_date&quot;: null,
                 &quot;subscription_activated_at&quot;: null,
                 &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Super Admin&quot;,
+                &quot;display_name&quot;: &quot;System Administrator&quot;,
                 &quot;member_profile&quot;: {
                     &quot;id&quot;: 1,
                     &quot;user_id&quot;: 1,
-                    &quot;first_name&quot;: &quot;Super&quot;,
-                    &quot;last_name&quot;: &quot;Admin&quot;,
-                    &quot;phone_number&quot;: &quot;+254733198803&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 14,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
+                    &quot;first_name&quot;: &quot;System&quot;,
+                    &quot;last_name&quot;: &quot;Administrator&quot;,
+                    &quot;phone_number&quot;: &quot;+254700000000&quot;,
+                    &quot;date_of_birth&quot;: &quot;1990-01-01T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: null,
+                    &quot;county_id&quot;: 1,
+                    &quot;sub_county&quot;: &quot;System&quot;,
+                    &quot;ward&quot;: &quot;System&quot;,
                     &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
+                        &quot;system&quot;
                     ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
+                    &quot;bio&quot;: &quot;Initial system administrator account.&quot;,
+                    &quot;plan_id&quot;: 1,
+                    &quot;occupation&quot;: &quot;System Admin&quot;,
                     &quot;emergency_contact_name&quot;: null,
                     &quot;emergency_contact_phone&quot;: null,
                     &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
                     &quot;deleted_at&quot;: null,
                     &quot;plan_type&quot;: &quot;free&quot;,
                     &quot;plan_expires_at&quot;: null,
@@ -49482,85 +47021,69 @@ vary: Origin
             },
             &quot;categories&quot;: [
                 {
-                    &quot;id&quot;: 9,
+                    &quot;id&quot;: 18,
                     &quot;created_by&quot;: null,
                     &quot;name&quot;: &quot;Neuroinformatics&quot;,
                     &quot;slug&quot;: &quot;neuroinformatics&quot;,
                     &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 4,
+                    &quot;post_count&quot;: 6,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 11,
-                        &quot;category_id&quot;: 9
-                    }
-                },
-                {
-                    &quot;id&quot;: 10,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Environmental Sustainability&quot;,
-                    &quot;slug&quot;: &quot;environmental-sustainability&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Environmental Sustainability and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 2,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 11,
-                        &quot;category_id&quot;: 10
+                        &quot;category_id&quot;: 18
                     }
                 }
             ],
             &quot;tags&quot;: [
                 {
-                    &quot;id&quot;: 4,
+                    &quot;id&quot;: 21,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Vaccines&quot;,
-                    &quot;slug&quot;: &quot;vaccines&quot;,
+                    &quot;name&quot;: &quot;DNA Profiling&quot;,
+                    &quot;slug&quot;: &quot;dna-profiling&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 1,
+                    &quot;post_count&quot;: 3,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 11,
-                        &quot;tag_id&quot;: 4
+                        &quot;tag_id&quot;: 21
                     }
                 },
                 {
-                    &quot;id&quot;: 7,
+                    &quot;id&quot;: 25,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Genetic Engineering&quot;,
-                    &quot;slug&quot;: &quot;genetic-engineering&quot;,
+                    &quot;name&quot;: &quot;CRISPR-Cas12&quot;,
+                    &quot;slug&quot;: &quot;crispr-cas12&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
                     &quot;post_count&quot;: 4,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 11,
-                        &quot;tag_id&quot;: 7
+                        &quot;tag_id&quot;: 25
                     }
                 },
                 {
-                    &quot;id&quot;: 9,
+                    &quot;id&quot;: 26,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;DNA Profiling&quot;,
-                    &quot;slug&quot;: &quot;dna-profiling&quot;,
+                    &quot;name&quot;: &quot;Nanobiotechnology&quot;,
+                    &quot;slug&quot;: &quot;nanobiotechnology&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
                     &quot;post_count&quot;: 5,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 11,
-                        &quot;tag_id&quot;: 9
+                        &quot;tag_id&quot;: 26
                     }
                 }
             ],
@@ -49568,15 +47091,15 @@ vary: Origin
                 {
                     &quot;id&quot;: 19,
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;file_size&quot;: 850020,
+                    &quot;file_size&quot;: 934159,
                     &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
                     &quot;user_id&quot;: 1,
-                    &quot;media_file_id&quot;: 5,
-                    &quot;folder_id&quot;: 23,
+                    &quot;media_file_id&quot;: 3,
+                    &quot;folder_id&quot;: 21,
                     &quot;root_type&quot;: &quot;public&quot;,
-                    &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
+                    &quot;file_name&quot;: &quot;tech-hub.png&quot;,
                     &quot;type&quot;: &quot;image&quot;,
                     &quot;deleted_at&quot;: null,
                     &quot;temporary_until&quot;: null,
@@ -49584,25 +47107,25 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 11,
                         &quot;media_id&quot;: 19,
                         &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                     },
                     &quot;file&quot;: {
-                        &quot;id&quot;: 5,
-                        &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;id&quot;: 3,
+                        &quot;hash&quot;: &quot;86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                         &quot;disk&quot;: &quot;r2&quot;,
-                        &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-                        &quot;size&quot;: 850020,
+                        &quot;path&quot;: &quot;blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                        &quot;size&quot;: 934159,
                         &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:48.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
+                        &quot;ref_count&quot;: 9,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:27.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:16.000000Z&quot;
                     }
                 }
             ],
@@ -49620,21 +47143,21 @@ vary: Origin
             &quot;excerpt&quot;: &quot;Computational tools are allowing us to model brain activity like never before. Exploring the intersection of neuroscience and big data.&quot;,
             &quot;body&quot;: &quot;&lt;p&gt;Computational tools are allowing us to model brain activity like never before. Exploring the intersection of neuroscience and big data.&lt;/p&gt;&quot;,
             &quot;status&quot;: &quot;published&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;meta_title&quot;: &quot;Neuroinformatics: Mapping the Mysteries of the Human Brai...&quot;,
             &quot;meta_description&quot;: &quot;Computational tools are allowing us to model brain activity like never before. Exploring the intersection of neuroscience and big data.&quot;,
             &quot;is_featured&quot;: false,
             &quot;allow_comments&quot;: true,
-            &quot;views_count&quot;: 2,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-21T00:28:56.000000Z&quot;,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Computational tools are allowing us to model brain activity like never before. Exploring the intersection of neuroscience and big data.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
-            &quot;likes_count&quot;: 7,
-            &quot;dislikes_count&quot;: 1,
-            &quot;comments_count&quot;: 2,
+            &quot;likes_count&quot;: 6,
+            &quot;dislikes_count&quot;: 2,
+            &quot;comments_count&quot;: 3,
             &quot;gallery_images&quot;: [],
             &quot;author&quot;: {
                 &quot;id&quot;: 1,
@@ -49643,13 +47166,13 @@ vary: Origin
                 &quot;profile_picture_path&quot;: null,
                 &quot;phone&quot;: null,
                 &quot;google_id&quot;: null,
-                &quot;email_verified_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
                 &quot;two_factor_secret&quot;: null,
                 &quot;two_factor_enabled&quot;: 0,
                 &quot;two_factor_recovery_codes&quot;: null,
                 &quot;two_factor_confirmed_at&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:53:04.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:37:20.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;active_subscription_id&quot;: null,
                 &quot;plan_id&quot;: null,
@@ -49658,33 +47181,30 @@ vary: Origin
                 &quot;last_payment_date&quot;: null,
                 &quot;subscription_activated_at&quot;: null,
                 &quot;profile_picture_url&quot;: null,
-                &quot;display_name&quot;: &quot;Super Admin&quot;,
+                &quot;display_name&quot;: &quot;System Administrator&quot;,
                 &quot;member_profile&quot;: {
                     &quot;id&quot;: 1,
                     &quot;user_id&quot;: 1,
-                    &quot;first_name&quot;: &quot;Super&quot;,
-                    &quot;last_name&quot;: &quot;Admin&quot;,
-                    &quot;phone_number&quot;: &quot;+254733198803&quot;,
-                    &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                    &quot;gender&quot;: &quot;male&quot;,
-                    &quot;county_id&quot;: 14,
-                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                    &quot;ward&quot;: &quot;Demo Ward&quot;,
+                    &quot;first_name&quot;: &quot;System&quot;,
+                    &quot;last_name&quot;: &quot;Administrator&quot;,
+                    &quot;phone_number&quot;: &quot;+254700000000&quot;,
+                    &quot;date_of_birth&quot;: &quot;1990-01-01T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: null,
+                    &quot;county_id&quot;: 1,
+                    &quot;sub_county&quot;: &quot;System&quot;,
+                    &quot;ward&quot;: &quot;System&quot;,
                     &quot;interests&quot;: [
-                        &quot;technology&quot;,
-                        &quot;community&quot;,
-                        &quot;biotech&quot;
+                        &quot;system&quot;
                     ],
-                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                    &quot;is_staff&quot;: true,
-                    &quot;plan_id&quot;: null,
-                    &quot;occupation&quot;: &quot;Software Developer&quot;,
+                    &quot;bio&quot;: &quot;Initial system administrator account.&quot;,
+                    &quot;plan_id&quot;: 1,
+                    &quot;occupation&quot;: &quot;System Admin&quot;,
                     &quot;emergency_contact_name&quot;: null,
                     &quot;emergency_contact_phone&quot;: null,
                     &quot;terms_accepted&quot;: true,
-                    &quot;marketing_consent&quot;: true,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
                     &quot;deleted_at&quot;: null,
                     &quot;plan_type&quot;: &quot;free&quot;,
                     &quot;plan_expires_at&quot;: null,
@@ -49714,69 +47234,69 @@ vary: Origin
             },
             &quot;categories&quot;: [
                 {
-                    &quot;id&quot;: 2,
+                    &quot;id&quot;: 12,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                    &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;name&quot;: &quot;Bioinformatics&quot;,
+                    &quot;slug&quot;: &quot;bioinformatics&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Bioinformatics and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 6,
+                    &quot;post_count&quot;: 3,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 12,
-                        &quot;category_id&quot;: 2
-                    }
-                },
-                {
-                    &quot;id&quot;: 11,
-                    &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Immunology&quot;,
-                    &quot;slug&quot;: &quot;immunology&quot;,
-                    &quot;description&quot;: &quot;Deep dive into Immunology and its impact on the future.&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;requested_deletion_at&quot;: null,
-                    &quot;deletion_requested_by&quot;: null,
-                    &quot;post_count&quot;: 1,
-                    &quot;pivot&quot;: {
-                        &quot;post_id&quot;: 12,
-                        &quot;category_id&quot;: 11
+                        &quot;category_id&quot;: 12
                     }
                 }
             ],
             &quot;tags&quot;: [
                 {
-                    &quot;id&quot;: 5,
+                    &quot;id&quot;: 18,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;Bioremediation&quot;,
-                    &quot;slug&quot;: &quot;bioremediation&quot;,
+                    &quot;name&quot;: &quot;Stem Cells&quot;,
+                    &quot;slug&quot;: &quot;stem-cells&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
                     &quot;post_count&quot;: 4,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 12,
-                        &quot;tag_id&quot;: 5
+                        &quot;tag_id&quot;: 18
                     }
                 },
                 {
-                    &quot;id&quot;: 9,
+                    &quot;id&quot;: 22,
                     &quot;created_by&quot;: null,
-                    &quot;name&quot;: &quot;DNA Profiling&quot;,
-                    &quot;slug&quot;: &quot;dna-profiling&quot;,
+                    &quot;name&quot;: &quot;Biofuels&quot;,
+                    &quot;slug&quot;: &quot;biofuels&quot;,
                     &quot;description&quot;: null,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 2,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 12,
+                        &quot;tag_id&quot;: 22
+                    }
+                },
+                {
+                    &quot;id&quot;: 26,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Nanobiotechnology&quot;,
+                    &quot;slug&quot;: &quot;nanobiotechnology&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                     &quot;requested_deletion_at&quot;: null,
                     &quot;deletion_requested_by&quot;: null,
                     &quot;post_count&quot;: 5,
                     &quot;pivot&quot;: {
                         &quot;post_id&quot;: 12,
-                        &quot;tag_id&quot;: 9
+                        &quot;tag_id&quot;: 26
                     }
                 }
             ],
@@ -49784,10 +47304,406 @@ vary: Origin
                 {
                     &quot;id&quot;: 20,
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 829674,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 2,
+                    &quot;folder_id&quot;: 22,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 12,
+                        &quot;media_id&quot;: 20,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 2,
+                        &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                        &quot;size&quot;: 829674,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 5,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:18.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:16.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 13,
+            &quot;user_id&quot;: 1,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;Environmental Sustainability through Bioremediation&quot;,
+            &quot;slug&quot;: &quot;environmental-sustainability-through-bioremediation&quot;,
+            &quot;excerpt&quot;: &quot;Targeting oil spills and heavy metal contamination with specialized microorganisms. A biotechnical approach to environmental restoration.&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;Targeting oil spills and heavy metal contamination with specialized microorganisms. A biotechnical approach to environmental restoration.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;Environmental Sustainability through Bioremediation&quot;,
+            &quot;meta_description&quot;: &quot;Targeting oil spills and heavy metal contamination with specialized microorganisms. A biotechnical approach to environmental restoration.&quot;,
+            &quot;is_featured&quot;: false,
+            &quot;allow_comments&quot;: false,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;Targeting oil spills and heavy metal contamination with specialized microorganisms. A biotechnical approach to environmental restoration.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 5,
+            &quot;dislikes_count&quot;: 2,
+            &quot;comments_count&quot;: 2,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 1,
+                &quot;username&quot;: &quot;superadmin&quot;,
+                &quot;email&quot;: &quot;superadmin@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:37:20.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: null,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: null,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;System Administrator&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 1,
+                    &quot;user_id&quot;: 1,
+                    &quot;first_name&quot;: &quot;System&quot;,
+                    &quot;last_name&quot;: &quot;Administrator&quot;,
+                    &quot;phone_number&quot;: &quot;+254700000000&quot;,
+                    &quot;date_of_birth&quot;: &quot;1990-01-01T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: null,
+                    &quot;county_id&quot;: 1,
+                    &quot;sub_county&quot;: &quot;System&quot;,
+                    &quot;ward&quot;: &quot;System&quot;,
+                    &quot;interests&quot;: [
+                        &quot;system&quot;
+                    ],
+                    &quot;bio&quot;: &quot;Initial system administrator account.&quot;,
+                    &quot;plan_id&quot;: 1,
+                    &quot;occupation&quot;: &quot;System Admin&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 18,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Neuroinformatics&quot;,
+                    &quot;slug&quot;: &quot;neuroinformatics&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 6,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 13,
+                        &quot;category_id&quot;: 18
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 14,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;DNA Sequencing&quot;,
+                    &quot;slug&quot;: &quot;dna-sequencing&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 13,
+                        &quot;tag_id&quot;: 14
+                    }
+                },
+                {
+                    &quot;id&quot;: 26,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Nanobiotechnology&quot;,
+                    &quot;slug&quot;: &quot;nanobiotechnology&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 5,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 13,
+                        &quot;tag_id&quot;: 26
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 21,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 829674,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 2,
+                    &quot;folder_id&quot;: 23,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 13,
+                        &quot;media_id&quot;: 21,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 2,
+                        &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                        &quot;size&quot;: 829674,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 5,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:18.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:16.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 14,
+            &quot;user_id&quot;: 2,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;Marine Biotechnology: Treasures from the Kenyan Coast&quot;,
+            &quot;slug&quot;: &quot;marine-biotechnology-treasures-from-the-kenyan-coast&quot;,
+            &quot;excerpt&quot;: &quot;Exploring the unique biodiversity of the Indian Ocean for potential bioactive compounds and new pharmaceutical leads.&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;Exploring the unique biodiversity of the Indian Ocean for potential bioactive compounds and new pharmaceutical leads.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;Marine Biotechnology: Treasures from the Kenyan Coast&quot;,
+            &quot;meta_description&quot;: &quot;Exploring the unique biodiversity of the Indian Ocean for potential bioactive compounds and new pharmaceutical leads.&quot;,
+            &quot;is_featured&quot;: false,
+            &quot;allow_comments&quot;: true,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;Exploring the unique biodiversity of the Indian Ocean for potential bioactive compounds and new pharmaceutical leads.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 6,
+            &quot;dislikes_count&quot;: 0,
+            &quot;comments_count&quot;: 3,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 2,
+                &quot;username&quot;: &quot;admin&quot;,
+                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: null,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: null,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;Admin User&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 2,
+                    &quot;user_id&quot;: 2,
+                    &quot;first_name&quot;: &quot;Admin&quot;,
+                    &quot;last_name&quot;: &quot;User&quot;,
+                    &quot;phone_number&quot;: &quot;+254755501462&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: &quot;male&quot;,
+                    &quot;county_id&quot;: 8,
+                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
+                    &quot;ward&quot;: &quot;Demo Ward&quot;,
+                    &quot;interests&quot;: [
+                        &quot;technology&quot;,
+                        &quot;community&quot;,
+                        &quot;biotech&quot;
+                    ],
+                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
+                    &quot;plan_id&quot;: null,
+                    &quot;occupation&quot;: &quot;Software Developer&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 18,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Neuroinformatics&quot;,
+                    &quot;slug&quot;: &quot;neuroinformatics&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 6,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 14,
+                        &quot;category_id&quot;: 18
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 15,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;GMO&quot;,
+                    &quot;slug&quot;: &quot;gmo&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 2,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 14,
+                        &quot;tag_id&quot;: 15
+                    }
+                },
+                {
+                    &quot;id&quot;: 19,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Genetic Engineering&quot;,
+                    &quot;slug&quot;: &quot;genetic-engineering&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 6,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 14,
+                        &quot;tag_id&quot;: 19
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 22,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
                     &quot;file_size&quot;: 850020,
                     &quot;usage_count&quot;: 0,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
                     &quot;user_id&quot;: 1,
                     &quot;media_file_id&quot;: 5,
                     &quot;folder_id&quot;: 24,
@@ -49803,11 +47719,11 @@ vary: Origin
                     &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                        &quot;attachable_id&quot;: 12,
-                        &quot;media_id&quot;: 20,
+                        &quot;attachable_id&quot;: 14,
+                        &quot;media_id&quot;: 22,
                         &quot;role&quot;: &quot;featured&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                     },
                     &quot;file&quot;: {
                         &quot;id&quot;: 5,
@@ -49816,9 +47732,2107 @@ vary: Origin
                         &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                         &quot;size&quot;: 850020,
                         &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;ref_count&quot;: 10,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:48.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
+                        &quot;ref_count&quot;: 13,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 15,
+            &quot;user_id&quot;: 2,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;Industrial Biotech: Fermenting the Future of Kenyan Industry&quot;,
+            &quot;slug&quot;: &quot;industrial-biotech-fermenting-the-future-of-kenyan-industry&quot;,
+            &quot;excerpt&quot;: &quot;Using enzymes and microorganisms for industrial processes, reducing emissions and increasing efficiency in local factories.&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;Using enzymes and microorganisms for industrial processes, reducing emissions and increasing efficiency in local factories.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;Industrial Biotech: Fermenting the Future of Kenyan Indus...&quot;,
+            &quot;meta_description&quot;: &quot;Using enzymes and microorganisms for industrial processes, reducing emissions and increasing efficiency in local factories.&quot;,
+            &quot;is_featured&quot;: false,
+            &quot;allow_comments&quot;: true,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;Using enzymes and microorganisms for industrial processes, reducing emissions and increasing efficiency in local factories.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 3,
+            &quot;dislikes_count&quot;: 2,
+            &quot;comments_count&quot;: 2,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 2,
+                &quot;username&quot;: &quot;admin&quot;,
+                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: null,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: null,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;Admin User&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 2,
+                    &quot;user_id&quot;: 2,
+                    &quot;first_name&quot;: &quot;Admin&quot;,
+                    &quot;last_name&quot;: &quot;User&quot;,
+                    &quot;phone_number&quot;: &quot;+254755501462&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: &quot;male&quot;,
+                    &quot;county_id&quot;: 8,
+                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
+                    &quot;ward&quot;: &quot;Demo Ward&quot;,
+                    &quot;interests&quot;: [
+                        &quot;technology&quot;,
+                        &quot;community&quot;,
+                        &quot;biotech&quot;
+                    ],
+                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
+                    &quot;plan_id&quot;: null,
+                    &quot;occupation&quot;: &quot;Software Developer&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 11,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Synthetic Biology&quot;,
+                    &quot;slug&quot;: &quot;synthetic-biology&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 1,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 15,
+                        &quot;category_id&quot;: 11
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 17,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Bioremediation&quot;,
+                    &quot;slug&quot;: &quot;bioremediation&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 3,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 15,
+                        &quot;tag_id&quot;: 17
+                    }
+                },
+                {
+                    &quot;id&quot;: 18,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Stem Cells&quot;,
+                    &quot;slug&quot;: &quot;stem-cells&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 15,
+                        &quot;tag_id&quot;: 18
+                    }
+                },
+                {
+                    &quot;id&quot;: 19,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Genetic Engineering&quot;,
+                    &quot;slug&quot;: &quot;genetic-engineering&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 6,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 15,
+                        &quot;tag_id&quot;: 19
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 23,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 850020,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 5,
+                    &quot;folder_id&quot;: 25,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 15,
+                        &quot;media_id&quot;: 23,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 5,
+                        &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;size&quot;: 850020,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 13,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 16,
+            &quot;user_id&quot;: 2,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;The Rise of Biofuels: Powering Kenya with Algae&quot;,
+            &quot;slug&quot;: &quot;the-rise-of-biofuels-powering-kenya-with-algae&quot;,
+            &quot;excerpt&quot;: &quot;Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;The Rise of Biofuels: Powering Kenya with Algae&quot;,
+            &quot;meta_description&quot;: &quot;Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.&quot;,
+            &quot;is_featured&quot;: false,
+            &quot;allow_comments&quot;: true,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 6,
+            &quot;dislikes_count&quot;: 1,
+            &quot;comments_count&quot;: 3,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 2,
+                &quot;username&quot;: &quot;admin&quot;,
+                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: null,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: null,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;Admin User&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 2,
+                    &quot;user_id&quot;: 2,
+                    &quot;first_name&quot;: &quot;Admin&quot;,
+                    &quot;last_name&quot;: &quot;User&quot;,
+                    &quot;phone_number&quot;: &quot;+254755501462&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: &quot;male&quot;,
+                    &quot;county_id&quot;: 8,
+                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
+                    &quot;ward&quot;: &quot;Demo Ward&quot;,
+                    &quot;interests&quot;: [
+                        &quot;technology&quot;,
+                        &quot;community&quot;,
+                        &quot;biotech&quot;
+                    ],
+                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
+                    &quot;plan_id&quot;: null,
+                    &quot;occupation&quot;: &quot;Software Developer&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 12,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Bioinformatics&quot;,
+                    &quot;slug&quot;: &quot;bioinformatics&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Bioinformatics and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 3,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 16,
+                        &quot;category_id&quot;: 12
+                    }
+                },
+                {
+                    &quot;id&quot;: 19,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Environmental Sustainability&quot;,
+                    &quot;slug&quot;: &quot;environmental-sustainability&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Environmental Sustainability and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 2,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 16,
+                        &quot;category_id&quot;: 19
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 14,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;DNA Sequencing&quot;,
+                    &quot;slug&quot;: &quot;dna-sequencing&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 16,
+                        &quot;tag_id&quot;: 14
+                    }
+                },
+                {
+                    &quot;id&quot;: 16,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Vaccines&quot;,
+                    &quot;slug&quot;: &quot;vaccines&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 16,
+                        &quot;tag_id&quot;: 16
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 24,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 934159,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 3,
+                    &quot;folder_id&quot;: 26,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;tech-hub.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 16,
+                        &quot;media_id&quot;: 24,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 3,
+                        &quot;hash&quot;: &quot;86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                        &quot;size&quot;: 934159,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 9,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:27.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:16.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 17,
+            &quot;user_id&quot;: 2,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;Immunology Breakthroughs: Developing Next-Gen Antibodies&quot;,
+            &quot;slug&quot;: &quot;immunology-breakthroughs-developing-next-gen-antibodies&quot;,
+            &quot;excerpt&quot;: &quot;A deep dive into monoclonal antibodies and their use in treating chronic diseases and emerging infections in the region.&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;A deep dive into monoclonal antibodies and their use in treating chronic diseases and emerging infections in the region.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;Immunology Breakthroughs: Developing Next-Gen Antibodies&quot;,
+            &quot;meta_description&quot;: &quot;A deep dive into monoclonal antibodies and their use in treating chronic diseases and emerging infections in the region.&quot;,
+            &quot;is_featured&quot;: false,
+            &quot;allow_comments&quot;: true,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;A deep dive into monoclonal antibodies and their use in treating chronic diseases and emerging infections in the region.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 2,
+            &quot;dislikes_count&quot;: 2,
+            &quot;comments_count&quot;: 4,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 2,
+                &quot;username&quot;: &quot;admin&quot;,
+                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: null,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: null,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;Admin User&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 2,
+                    &quot;user_id&quot;: 2,
+                    &quot;first_name&quot;: &quot;Admin&quot;,
+                    &quot;last_name&quot;: &quot;User&quot;,
+                    &quot;phone_number&quot;: &quot;+254755501462&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: &quot;male&quot;,
+                    &quot;county_id&quot;: 8,
+                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
+                    &quot;ward&quot;: &quot;Demo Ward&quot;,
+                    &quot;interests&quot;: [
+                        &quot;technology&quot;,
+                        &quot;community&quot;,
+                        &quot;biotech&quot;
+                    ],
+                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
+                    &quot;plan_id&quot;: null,
+                    &quot;occupation&quot;: &quot;Software Developer&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 17,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Forensic Science&quot;,
+                    &quot;slug&quot;: &quot;forensic-science&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Forensic Science and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 1,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 17,
+                        &quot;category_id&quot;: 17
+                    }
+                },
+                {
+                    &quot;id&quot;: 18,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Neuroinformatics&quot;,
+                    &quot;slug&quot;: &quot;neuroinformatics&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 6,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 17,
+                        &quot;category_id&quot;: 18
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 18,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Stem Cells&quot;,
+                    &quot;slug&quot;: &quot;stem-cells&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 17,
+                        &quot;tag_id&quot;: 18
+                    }
+                },
+                {
+                    &quot;id&quot;: 25,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;CRISPR-Cas12&quot;,
+                    &quot;slug&quot;: &quot;crispr-cas12&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 17,
+                        &quot;tag_id&quot;: 25
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 25,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 850020,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 5,
+                    &quot;folder_id&quot;: 27,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 17,
+                        &quot;media_id&quot;: 25,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 5,
+                        &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;size&quot;: 850020,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 13,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 18,
+            &quot;user_id&quot;: 2,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;Nanobiotechnology in Cancer Detection: Tiny Tools, Big Impact&quot;,
+            &quot;slug&quot;: &quot;nanobiotechnology-in-cancer-detection-tiny-tools-big-impact&quot;,
+            &quot;excerpt&quot;: &quot;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;Nanobiotechnology in Cancer Detection: Tiny Tools, Big Im...&quot;,
+            &quot;meta_description&quot;: &quot;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&quot;,
+            &quot;is_featured&quot;: false,
+            &quot;allow_comments&quot;: true,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 4,
+            &quot;dislikes_count&quot;: 0,
+            &quot;comments_count&quot;: 5,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 2,
+                &quot;username&quot;: &quot;admin&quot;,
+                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: null,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: null,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;Admin User&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 2,
+                    &quot;user_id&quot;: 2,
+                    &quot;first_name&quot;: &quot;Admin&quot;,
+                    &quot;last_name&quot;: &quot;User&quot;,
+                    &quot;phone_number&quot;: &quot;+254755501462&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: &quot;male&quot;,
+                    &quot;county_id&quot;: 8,
+                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
+                    &quot;ward&quot;: &quot;Demo Ward&quot;,
+                    &quot;interests&quot;: [
+                        &quot;technology&quot;,
+                        &quot;community&quot;,
+                        &quot;biotech&quot;
+                    ],
+                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
+                    &quot;plan_id&quot;: null,
+                    &quot;occupation&quot;: &quot;Software Developer&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 13,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
+                    &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 3,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 18,
+                        &quot;category_id&quot;: 13
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 14,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;DNA Sequencing&quot;,
+                    &quot;slug&quot;: &quot;dna-sequencing&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 18,
+                        &quot;tag_id&quot;: 14
+                    }
+                },
+                {
+                    &quot;id&quot;: 16,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Vaccines&quot;,
+                    &quot;slug&quot;: &quot;vaccines&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 18,
+                        &quot;tag_id&quot;: 16
+                    }
+                },
+                {
+                    &quot;id&quot;: 21,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;DNA Profiling&quot;,
+                    &quot;slug&quot;: &quot;dna-profiling&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 3,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 18,
+                        &quot;tag_id&quot;: 21
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 26,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 850020,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 5,
+                    &quot;folder_id&quot;: 28,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 18,
+                        &quot;media_id&quot;: 26,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 5,
+                        &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;size&quot;: 850020,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 13,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 19,
+            &quot;user_id&quot;: 10,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;Microbiome Research: The Secret Life of Our Gut Bacteria&quot;,
+            &quot;slug&quot;: &quot;microbiome-research-the-secret-life-of-our-gut-bacteria&quot;,
+            &quot;excerpt&quot;: &quot;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;Microbiome Research: The Secret Life of Our Gut Bacteria&quot;,
+            &quot;meta_description&quot;: &quot;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&quot;,
+            &quot;is_featured&quot;: false,
+            &quot;allow_comments&quot;: false,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 3,
+            &quot;dislikes_count&quot;: 0,
+            &quot;comments_count&quot;: 3,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 10,
+                &quot;username&quot;: &quot;janesmith&quot;,
+                &quot;email&quot;: &quot;jane.smith@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: 2,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: &quot;2026-03-27 05:35:39&quot;,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;Jane Smith&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 10,
+                    &quot;user_id&quot;: 10,
+                    &quot;first_name&quot;: &quot;Jane&quot;,
+                    &quot;last_name&quot;: &quot;Smith&quot;,
+                    &quot;phone_number&quot;: &quot;+254743267167&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: &quot;male&quot;,
+                    &quot;county_id&quot;: 39,
+                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
+                    &quot;ward&quot;: &quot;Demo Ward&quot;,
+                    &quot;interests&quot;: [
+                        &quot;technology&quot;,
+                        &quot;community&quot;,
+                        &quot;biotech&quot;
+                    ],
+                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
+                    &quot;plan_id&quot;: 1,
+                    &quot;occupation&quot;: &quot;Software Developer&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: true,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 13,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
+                    &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 3,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 19,
+                        &quot;category_id&quot;: 13
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 23,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Microbiome&quot;,
+                    &quot;slug&quot;: &quot;microbiome&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 2,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 19,
+                        &quot;tag_id&quot;: 23
+                    }
+                },
+                {
+                    &quot;id&quot;: 25,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;CRISPR-Cas12&quot;,
+                    &quot;slug&quot;: &quot;crispr-cas12&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 19,
+                        &quot;tag_id&quot;: 25
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 27,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 829674,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 2,
+                    &quot;folder_id&quot;: 29,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 19,
+                        &quot;media_id&quot;: 27,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 2,
+                        &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                        &quot;size&quot;: 829674,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 5,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:18.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:16.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 20,
+            &quot;user_id&quot;: 11,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;Bioplastics: A Bio-based Solution to Kenya&#039;s Pollution&quot;,
+            &quot;slug&quot;: &quot;bioplastics-a-bio-based-solution-to-kenyas-pollution&quot;,
+            &quot;excerpt&quot;: &quot;Exploring biopolymers derived from agricultural waste as a sustainable alternative to conventional plastics in local markets.&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;Exploring biopolymers derived from agricultural waste as a sustainable alternative to conventional plastics in local markets.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;Bioplastics: A Bio-based Solution to Kenya&#039;s Pollution&quot;,
+            &quot;meta_description&quot;: &quot;Exploring biopolymers derived from agricultural waste as a sustainable alternative to conventional plastics in local markets.&quot;,
+            &quot;is_featured&quot;: false,
+            &quot;allow_comments&quot;: true,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;Exploring biopolymers derived from agricultural waste as a sustainable alternative to conventional plastics in local markets.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 4,
+            &quot;dislikes_count&quot;: 1,
+            &quot;comments_count&quot;: 2,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 11,
+                &quot;username&quot;: &quot;alexstudent&quot;,
+                &quot;email&quot;: &quot;student@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:40.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:40.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:40.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: 3,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: &quot;2026-03-27 05:35:40&quot;,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;Alex Student&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 11,
+                    &quot;user_id&quot;: 11,
+                    &quot;first_name&quot;: &quot;Alex&quot;,
+                    &quot;last_name&quot;: &quot;Student&quot;,
+                    &quot;phone_number&quot;: &quot;+254794146404&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: &quot;male&quot;,
+                    &quot;county_id&quot;: 9,
+                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
+                    &quot;ward&quot;: &quot;Demo Ward&quot;,
+                    &quot;interests&quot;: [
+                        &quot;technology&quot;,
+                        &quot;community&quot;,
+                        &quot;biotech&quot;
+                    ],
+                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
+                    &quot;plan_id&quot;: 2,
+                    &quot;occupation&quot;: &quot;Software Developer&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:40.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:40.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 18,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Neuroinformatics&quot;,
+                    &quot;slug&quot;: &quot;neuroinformatics&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 6,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 20,
+                        &quot;category_id&quot;: 18
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 19,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Genetic Engineering&quot;,
+                    &quot;slug&quot;: &quot;genetic-engineering&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 6,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 20,
+                        &quot;tag_id&quot;: 19
+                    }
+                },
+                {
+                    &quot;id&quot;: 23,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Microbiome&quot;,
+                    &quot;slug&quot;: &quot;microbiome&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 2,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 20,
+                        &quot;tag_id&quot;: 23
+                    }
+                },
+                {
+                    &quot;id&quot;: 25,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;CRISPR-Cas12&quot;,
+                    &quot;slug&quot;: &quot;crispr-cas12&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 20,
+                        &quot;tag_id&quot;: 25
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 28,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 850020,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 5,
+                    &quot;folder_id&quot;: 30,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 20,
+                        &quot;media_id&quot;: 28,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 5,
+                        &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;size&quot;: 850020,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 13,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 1,
+            &quot;user_id&quot;: 1,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;Revolutionizing Medicine with CRISPR Gene Editing&quot;,
+            &quot;slug&quot;: &quot;revolutionizing-medicine-with-crispr-gene-editing&quot;,
+            &quot;excerpt&quot;: &quot;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-s...&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving treatments for genetic disorders.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;Revolutionizing Medicine with CRISPR Gene Editing&quot;,
+            &quot;meta_description&quot;: &quot;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving t...&quot;,
+            &quot;is_featured&quot;: true,
+            &quot;allow_comments&quot;: false,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving treatments for genetic disorders.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 4,
+            &quot;dislikes_count&quot;: 0,
+            &quot;comments_count&quot;: 2,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 1,
+                &quot;username&quot;: &quot;superadmin&quot;,
+                &quot;email&quot;: &quot;superadmin@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:37:20.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: null,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: null,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;System Administrator&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 1,
+                    &quot;user_id&quot;: 1,
+                    &quot;first_name&quot;: &quot;System&quot;,
+                    &quot;last_name&quot;: &quot;Administrator&quot;,
+                    &quot;phone_number&quot;: &quot;+254700000000&quot;,
+                    &quot;date_of_birth&quot;: &quot;1990-01-01T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: null,
+                    &quot;county_id&quot;: 1,
+                    &quot;sub_county&quot;: &quot;System&quot;,
+                    &quot;ward&quot;: &quot;System&quot;,
+                    &quot;interests&quot;: [
+                        &quot;system&quot;
+                    ],
+                    &quot;bio&quot;: &quot;Initial system administrator account.&quot;,
+                    &quot;plan_id&quot;: 1,
+                    &quot;occupation&quot;: &quot;System Admin&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 13,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
+                    &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 3,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 1,
+                        &quot;category_id&quot;: 13
+                    }
+                },
+                {
+                    &quot;id&quot;: 15,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Marine Biotechnology&quot;,
+                    &quot;slug&quot;: &quot;marine-biotechnology&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 3,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 1,
+                        &quot;category_id&quot;: 15
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 15,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;GMO&quot;,
+                    &quot;slug&quot;: &quot;gmo&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 2,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 1,
+                        &quot;tag_id&quot;: 15
+                    }
+                },
+                {
+                    &quot;id&quot;: 26,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Nanobiotechnology&quot;,
+                    &quot;slug&quot;: &quot;nanobiotechnology&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 5,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 1,
+                        &quot;tag_id&quot;: 26
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 9,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 850020,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 5,
+                    &quot;folder_id&quot;: 11,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 1,
+                        &quot;media_id&quot;: 9,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 5,
+                        &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;size&quot;: 850020,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 13,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 2,
+            &quot;user_id&quot;: 1,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;The Genomics Era: Mapping the Human Future&quot;,
+            &quot;slug&quot;: &quot;the-genomics-era-mapping-the-human-future&quot;,
+            &quot;excerpt&quot;: &quot;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;The Genomics Era: Mapping the Human Future&quot;,
+            &quot;meta_description&quot;: &quot;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&quot;,
+            &quot;is_featured&quot;: false,
+            &quot;allow_comments&quot;: true,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 4,
+            &quot;dislikes_count&quot;: 1,
+            &quot;comments_count&quot;: 2,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 1,
+                &quot;username&quot;: &quot;superadmin&quot;,
+                &quot;email&quot;: &quot;superadmin@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:37:20.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: null,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: null,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;System Administrator&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 1,
+                    &quot;user_id&quot;: 1,
+                    &quot;first_name&quot;: &quot;System&quot;,
+                    &quot;last_name&quot;: &quot;Administrator&quot;,
+                    &quot;phone_number&quot;: &quot;+254700000000&quot;,
+                    &quot;date_of_birth&quot;: &quot;1990-01-01T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: null,
+                    &quot;county_id&quot;: 1,
+                    &quot;sub_county&quot;: &quot;System&quot;,
+                    &quot;ward&quot;: &quot;System&quot;,
+                    &quot;interests&quot;: [
+                        &quot;system&quot;
+                    ],
+                    &quot;bio&quot;: &quot;Initial system administrator account.&quot;,
+                    &quot;plan_id&quot;: 1,
+                    &quot;occupation&quot;: &quot;System Admin&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 14,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Medical Biotechnology&quot;,
+                    &quot;slug&quot;: &quot;medical-biotechnology&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Medical Biotechnology and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 1,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 2,
+                        &quot;category_id&quot;: 14
+                    }
+                },
+                {
+                    &quot;id&quot;: 15,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Marine Biotechnology&quot;,
+                    &quot;slug&quot;: &quot;marine-biotechnology&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 3,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 2,
+                        &quot;category_id&quot;: 15
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 13,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;CRISPR&quot;,
+                    &quot;slug&quot;: &quot;crispr&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 2,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 2,
+                        &quot;tag_id&quot;: 13
+                    }
+                },
+                {
+                    &quot;id&quot;: 18,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Stem Cells&quot;,
+                    &quot;slug&quot;: &quot;stem-cells&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 2,
+                        &quot;tag_id&quot;: 18
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 10,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 850020,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 5,
+                    &quot;folder_id&quot;: 12,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 2,
+                        &quot;media_id&quot;: 10,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 5,
+                        &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;size&quot;: 850020,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 13,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 4,
+            &quot;user_id&quot;: 2,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;The Future of Sustainable Agriculture: GMOs in Africa&quot;,
+            &quot;slug&quot;: &quot;the-future-of-sustainable-agriculture-gmos-in-africa&quot;,
+            &quot;excerpt&quot;: &quot;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;The Future of Sustainable Agriculture: GMOs in Africa&quot;,
+            &quot;meta_description&quot;: &quot;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&quot;,
+            &quot;is_featured&quot;: true,
+            &quot;allow_comments&quot;: true,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 4,
+            &quot;dislikes_count&quot;: 1,
+            &quot;comments_count&quot;: 4,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 2,
+                &quot;username&quot;: &quot;admin&quot;,
+                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: null,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: null,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;Admin User&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 2,
+                    &quot;user_id&quot;: 2,
+                    &quot;first_name&quot;: &quot;Admin&quot;,
+                    &quot;last_name&quot;: &quot;User&quot;,
+                    &quot;phone_number&quot;: &quot;+254755501462&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: &quot;male&quot;,
+                    &quot;county_id&quot;: 8,
+                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
+                    &quot;ward&quot;: &quot;Demo Ward&quot;,
+                    &quot;interests&quot;: [
+                        &quot;technology&quot;,
+                        &quot;community&quot;,
+                        &quot;biotech&quot;
+                    ],
+                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
+                    &quot;plan_id&quot;: null,
+                    &quot;occupation&quot;: &quot;Software Developer&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 19,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Environmental Sustainability&quot;,
+                    &quot;slug&quot;: &quot;environmental-sustainability&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Environmental Sustainability and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 2,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 4,
+                        &quot;category_id&quot;: 19
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 13,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;CRISPR&quot;,
+                    &quot;slug&quot;: &quot;crispr&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 2,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 4,
+                        &quot;tag_id&quot;: 13
+                    }
+                },
+                {
+                    &quot;id&quot;: 16,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Vaccines&quot;,
+                    &quot;slug&quot;: &quot;vaccines&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 4,
+                        &quot;tag_id&quot;: 16
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 12,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 934159,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 3,
+                    &quot;folder_id&quot;: 14,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;tech-hub.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 4,
+                        &quot;media_id&quot;: 12,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 3,
+                        &quot;hash&quot;: &quot;86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                        &quot;size&quot;: 934159,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 9,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:27.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:16.000000Z&quot;
+                    }
+                }
+            ],
+            &quot;county&quot;: {
+                &quot;id&quot;: 1,
+                &quot;name&quot;: &quot;Mombasa&quot;
+            }
+        },
+        {
+            &quot;id&quot;: 5,
+            &quot;user_id&quot;: 2,
+            &quot;county_id&quot;: 1,
+            &quot;title&quot;: &quot;Synthetic Biology: Designing Life Forms of Tomorrow&quot;,
+            &quot;slug&quot;: &quot;synthetic-biology-designing-life-forms-of-tomorrow&quot;,
+            &quot;excerpt&quot;: &quot;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&quot;,
+            &quot;body&quot;: &quot;&lt;p&gt;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&lt;/p&gt;&quot;,
+            &quot;status&quot;: &quot;published&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;meta_title&quot;: &quot;Synthetic Biology: Designing Life Forms of Tomorrow&quot;,
+            &quot;meta_description&quot;: &quot;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&quot;,
+            &quot;is_featured&quot;: false,
+            &quot;allow_comments&quot;: true,
+            &quot;views_count&quot;: 0,
+            &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+            &quot;deleted_at&quot;: null,
+            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;content&quot;: &quot;&lt;p&gt;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&lt;/p&gt;&quot;,
+            &quot;is_published&quot;: true,
+            &quot;likes_count&quot;: 3,
+            &quot;dislikes_count&quot;: 0,
+            &quot;comments_count&quot;: 3,
+            &quot;gallery_images&quot;: [],
+            &quot;author&quot;: {
+                &quot;id&quot;: 2,
+                &quot;username&quot;: &quot;admin&quot;,
+                &quot;email&quot;: &quot;admin@dadisilab.com&quot;,
+                &quot;profile_picture_path&quot;: null,
+                &quot;phone&quot;: null,
+                &quot;google_id&quot;: null,
+                &quot;email_verified_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;two_factor_secret&quot;: null,
+                &quot;two_factor_enabled&quot;: 0,
+                &quot;two_factor_recovery_codes&quot;: null,
+                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;active_subscription_id&quot;: null,
+                &quot;plan_id&quot;: null,
+                &quot;subscription_status&quot;: &quot;active&quot;,
+                &quot;subscription_expires_at&quot;: null,
+                &quot;last_payment_date&quot;: null,
+                &quot;subscription_activated_at&quot;: null,
+                &quot;profile_picture_url&quot;: null,
+                &quot;display_name&quot;: &quot;Admin User&quot;,
+                &quot;member_profile&quot;: {
+                    &quot;id&quot;: 2,
+                    &quot;user_id&quot;: 2,
+                    &quot;first_name&quot;: &quot;Admin&quot;,
+                    &quot;last_name&quot;: &quot;User&quot;,
+                    &quot;phone_number&quot;: &quot;+254755501462&quot;,
+                    &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
+                    &quot;gender&quot;: &quot;male&quot;,
+                    &quot;county_id&quot;: 8,
+                    &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
+                    &quot;ward&quot;: &quot;Demo Ward&quot;,
+                    &quot;interests&quot;: [
+                        &quot;technology&quot;,
+                        &quot;community&quot;,
+                        &quot;biotech&quot;
+                    ],
+                    &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
+                    &quot;plan_id&quot;: null,
+                    &quot;occupation&quot;: &quot;Software Developer&quot;,
+                    &quot;emergency_contact_name&quot;: null,
+                    &quot;emergency_contact_phone&quot;: null,
+                    &quot;terms_accepted&quot;: true,
+                    &quot;marketing_consent&quot;: false,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;plan_type&quot;: &quot;free&quot;,
+                    &quot;plan_expires_at&quot;: null,
+                    &quot;public_profile_enabled&quot;: true,
+                    &quot;display_full_name&quot;: false,
+                    &quot;display_age&quot;: false,
+                    &quot;prefix&quot;: null,
+                    &quot;public_role&quot;: null,
+                    &quot;experience&quot;: null,
+                    &quot;experience_visible&quot;: false,
+                    &quot;education&quot;: null,
+                    &quot;education_visible&quot;: false,
+                    &quot;skills&quot;: null,
+                    &quot;skills_visible&quot;: false,
+                    &quot;achievements&quot;: null,
+                    &quot;achievements_visible&quot;: false,
+                    &quot;certifications&quot;: null,
+                    &quot;certifications_visible&quot;: false,
+                    &quot;public_bio&quot;: null,
+                    &quot;show_email&quot;: false,
+                    &quot;show_location&quot;: true,
+                    &quot;show_join_date&quot;: true,
+                    &quot;show_post_count&quot;: true,
+                    &quot;show_interests&quot;: true,
+                    &quot;show_occupation&quot;: 0
+                }
+            },
+            &quot;categories&quot;: [
+                {
+                    &quot;id&quot;: 10,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Genomics&quot;,
+                    &quot;slug&quot;: &quot;genomics&quot;,
+                    &quot;description&quot;: &quot;Deep dive into Genomics and its impact on the future.&quot;,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 1,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 5,
+                        &quot;category_id&quot;: 10
+                    }
+                }
+            ],
+            &quot;tags&quot;: [
+                {
+                    &quot;id&quot;: 16,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Vaccines&quot;,
+                    &quot;slug&quot;: &quot;vaccines&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 4,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 5,
+                        &quot;tag_id&quot;: 16
+                    }
+                },
+                {
+                    &quot;id&quot;: 22,
+                    &quot;created_by&quot;: null,
+                    &quot;name&quot;: &quot;Biofuels&quot;,
+                    &quot;slug&quot;: &quot;biofuels&quot;,
+                    &quot;description&quot;: null,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;requested_deletion_at&quot;: null,
+                    &quot;deletion_requested_by&quot;: null,
+                    &quot;post_count&quot;: 2,
+                    &quot;pivot&quot;: {
+                        &quot;post_id&quot;: 5,
+                        &quot;tag_id&quot;: 22
+                    }
+                }
+            ],
+            &quot;media&quot;: [
+                {
+                    &quot;id&quot;: 13,
+                    &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                    &quot;file_size&quot;: 850020,
+                    &quot;usage_count&quot;: 0,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                    &quot;user_id&quot;: 1,
+                    &quot;media_file_id&quot;: 5,
+                    &quot;folder_id&quot;: 15,
+                    &quot;root_type&quot;: &quot;public&quot;,
+                    &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
+                    &quot;type&quot;: &quot;image&quot;,
+                    &quot;deleted_at&quot;: null,
+                    &quot;temporary_until&quot;: null,
+                    &quot;visibility&quot;: &quot;public&quot;,
+                    &quot;share_token&quot;: null,
+                    &quot;expires_at&quot;: null,
+                    &quot;allow_download&quot;: true,
+                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;pivot&quot;: {
+                        &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                        &quot;attachable_id&quot;: 5,
+                        &quot;media_id&quot;: 13,
+                        &quot;role&quot;: &quot;featured&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                    },
+                    &quot;file&quot;: {
+                        &quot;id&quot;: 5,
+                        &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;disk&quot;: &quot;r2&quot;,
+                        &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;size&quot;: 850020,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;ref_count&quot;: 13,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                     }
                 }
             ],
@@ -49921,14 +49935,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/blog/posts/1" \
+    --get "http://192.168.55.127:8000/api/blog/posts/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/posts/1"
+    "http://192.168.55.127:8000/api/blog/posts/1"
 );
 
 const headers = {
@@ -49967,54 +49981,51 @@ vary: Origin
         &quot;excerpt&quot;: &quot;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-s...&quot;,
         &quot;body&quot;: &quot;&lt;p&gt;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving treatments for genetic disorders.&lt;/p&gt;&quot;,
         &quot;status&quot;: &quot;published&quot;,
-        &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+        &quot;published_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
         &quot;meta_title&quot;: &quot;Revolutionizing Medicine with CRISPR Gene Editing&quot;,
         &quot;meta_description&quot;: &quot;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving t...&quot;,
         &quot;is_featured&quot;: true,
-        &quot;allow_comments&quot;: true,
+        &quot;allow_comments&quot;: false,
         &quot;views_count&quot;: 1,
-        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
         &quot;deleted_at&quot;: null,
-        &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+        &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
         &quot;content&quot;: &quot;&lt;p&gt;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving treatments for genetic disorders.&lt;/p&gt;&quot;,
         &quot;is_published&quot;: true,
-        &quot;likes_count&quot;: 3,
+        &quot;likes_count&quot;: 4,
         &quot;dislikes_count&quot;: 0,
-        &quot;comments_count&quot;: 5,
+        &quot;comments_count&quot;: 2,
         &quot;gallery_images&quot;: [],
         &quot;author&quot;: {
             &quot;id&quot;: 1,
             &quot;username&quot;: &quot;superadmin&quot;,
             &quot;email&quot;: &quot;superadmin@dadisilab.com&quot;,
             &quot;profile_picture_url&quot;: null,
-            &quot;display_name&quot;: &quot;Super Admin&quot;,
+            &quot;display_name&quot;: &quot;System Administrator&quot;,
             &quot;member_profile&quot;: {
                 &quot;id&quot;: 1,
                 &quot;user_id&quot;: 1,
-                &quot;first_name&quot;: &quot;Super&quot;,
-                &quot;last_name&quot;: &quot;Admin&quot;,
-                &quot;phone_number&quot;: &quot;+254733198803&quot;,
-                &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                &quot;gender&quot;: &quot;male&quot;,
-                &quot;county_id&quot;: 14,
-                &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                &quot;ward&quot;: &quot;Demo Ward&quot;,
+                &quot;first_name&quot;: &quot;System&quot;,
+                &quot;last_name&quot;: &quot;Administrator&quot;,
+                &quot;phone_number&quot;: &quot;+254700000000&quot;,
+                &quot;date_of_birth&quot;: &quot;1990-01-01T00:00:00.000000Z&quot;,
+                &quot;gender&quot;: null,
+                &quot;county_id&quot;: 1,
+                &quot;sub_county&quot;: &quot;System&quot;,
+                &quot;ward&quot;: &quot;System&quot;,
                 &quot;interests&quot;: [
-                    &quot;technology&quot;,
-                    &quot;community&quot;,
-                    &quot;biotech&quot;
+                    &quot;system&quot;
                 ],
-                &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                &quot;is_staff&quot;: true,
-                &quot;plan_id&quot;: null,
-                &quot;occupation&quot;: &quot;Software Developer&quot;,
+                &quot;bio&quot;: &quot;Initial system administrator account.&quot;,
+                &quot;plan_id&quot;: 1,
+                &quot;occupation&quot;: &quot;System Admin&quot;,
                 &quot;emergency_contact_name&quot;: null,
                 &quot;emergency_contact_phone&quot;: null,
                 &quot;terms_accepted&quot;: true,
-                &quot;marketing_consent&quot;: true,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                &quot;marketing_consent&quot;: false,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;plan_type&quot;: &quot;free&quot;,
                 &quot;plan_expires_at&quot;: null,
@@ -50044,69 +50055,69 @@ vary: Origin
         },
         &quot;categories&quot;: [
             {
-                &quot;id&quot;: 2,
+                &quot;id&quot;: 13,
                 &quot;created_by&quot;: null,
-                &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
+                &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
+                &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                 &quot;requested_deletion_at&quot;: null,
                 &quot;deletion_requested_by&quot;: null,
-                &quot;post_count&quot;: 6,
+                &quot;post_count&quot;: 3,
                 &quot;pivot&quot;: {
                     &quot;post_id&quot;: 1,
-                    &quot;category_id&quot;: 2
+                    &quot;category_id&quot;: 13
                 }
             },
             {
-                &quot;id&quot;: 9,
+                &quot;id&quot;: 15,
                 &quot;created_by&quot;: null,
-                &quot;name&quot;: &quot;Neuroinformatics&quot;,
-                &quot;slug&quot;: &quot;neuroinformatics&quot;,
-                &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                &quot;name&quot;: &quot;Marine Biotechnology&quot;,
+                &quot;slug&quot;: &quot;marine-biotechnology&quot;,
+                &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                 &quot;requested_deletion_at&quot;: null,
                 &quot;deletion_requested_by&quot;: null,
-                &quot;post_count&quot;: 4,
+                &quot;post_count&quot;: 3,
                 &quot;pivot&quot;: {
                     &quot;post_id&quot;: 1,
-                    &quot;category_id&quot;: 9
+                    &quot;category_id&quot;: 15
                 }
             }
         ],
         &quot;tags&quot;: [
             {
-                &quot;id&quot;: 7,
+                &quot;id&quot;: 15,
                 &quot;created_by&quot;: null,
-                &quot;name&quot;: &quot;Genetic Engineering&quot;,
-                &quot;slug&quot;: &quot;genetic-engineering&quot;,
+                &quot;name&quot;: &quot;GMO&quot;,
+                &quot;slug&quot;: &quot;gmo&quot;,
                 &quot;description&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;requested_deletion_at&quot;: null,
-                &quot;deletion_requested_by&quot;: null,
-                &quot;post_count&quot;: 4,
-                &quot;pivot&quot;: {
-                    &quot;post_id&quot;: 1,
-                    &quot;tag_id&quot;: 7
-                }
-            },
-            {
-                &quot;id&quot;: 12,
-                &quot;created_by&quot;: null,
-                &quot;name&quot;: &quot;Data Science&quot;,
-                &quot;slug&quot;: &quot;data-science&quot;,
-                &quot;description&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                 &quot;requested_deletion_at&quot;: null,
                 &quot;deletion_requested_by&quot;: null,
                 &quot;post_count&quot;: 2,
                 &quot;pivot&quot;: {
                     &quot;post_id&quot;: 1,
-                    &quot;tag_id&quot;: 12
+                    &quot;tag_id&quot;: 15
+                }
+            },
+            {
+                &quot;id&quot;: 26,
+                &quot;created_by&quot;: null,
+                &quot;name&quot;: &quot;Nanobiotechnology&quot;,
+                &quot;slug&quot;: &quot;nanobiotechnology&quot;,
+                &quot;description&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;requested_deletion_at&quot;: null,
+                &quot;deletion_requested_by&quot;: null,
+                &quot;post_count&quot;: 5,
+                &quot;pivot&quot;: {
+                    &quot;post_id&quot;: 1,
+                    &quot;tag_id&quot;: 26
                 }
             }
         ],
@@ -50114,15 +50125,15 @@ vary: Origin
             {
                 &quot;id&quot;: 9,
                 &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                &quot;file_size&quot;: 829674,
+                &quot;file_size&quot;: 850020,
                 &quot;usage_count&quot;: 0,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                 &quot;user_id&quot;: 1,
-                &quot;media_file_id&quot;: 2,
-                &quot;folder_id&quot;: 13,
+                &quot;media_file_id&quot;: 5,
+                &quot;folder_id&quot;: 11,
                 &quot;root_type&quot;: &quot;public&quot;,
-                &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
+                &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
                 &quot;type&quot;: &quot;image&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;temporary_until&quot;: null,
@@ -50130,25 +50141,25 @@ vary: Origin
                 &quot;share_token&quot;: null,
                 &quot;expires_at&quot;: null,
                 &quot;allow_download&quot;: true,
-                &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                 &quot;pivot&quot;: {
                     &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                     &quot;attachable_id&quot;: 1,
                     &quot;media_id&quot;: 9,
                     &quot;role&quot;: &quot;featured&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;
                 },
                 &quot;file&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                    &quot;id&quot;: 5,
+                    &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                     &quot;disk&quot;: &quot;r2&quot;,
-                    &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                    &quot;size&quot;: 829674,
+                    &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;size&quot;: 850020,
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;ref_count&quot;: 7,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:40.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
+                    &quot;ref_count&quot;: 13,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                 }
             }
         ],
@@ -50158,425 +50169,29 @@ vary: Origin
         },
         &quot;related_posts&quot;: [
             {
-                &quot;id&quot;: 4,
+                &quot;id&quot;: 18,
                 &quot;user_id&quot;: 2,
                 &quot;county_id&quot;: 1,
-                &quot;title&quot;: &quot;The Future of Sustainable Agriculture: GMOs in Africa&quot;,
-                &quot;slug&quot;: &quot;the-future-of-sustainable-agriculture-gmos-in-africa&quot;,
-                &quot;excerpt&quot;: &quot;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&quot;,
-                &quot;body&quot;: &quot;&lt;p&gt;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&lt;/p&gt;&quot;,
+                &quot;title&quot;: &quot;Nanobiotechnology in Cancer Detection: Tiny Tools, Big Impact&quot;,
+                &quot;slug&quot;: &quot;nanobiotechnology-in-cancer-detection-tiny-tools-big-impact&quot;,
+                &quot;excerpt&quot;: &quot;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&quot;,
+                &quot;body&quot;: &quot;&lt;p&gt;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&lt;/p&gt;&quot;,
                 &quot;status&quot;: &quot;published&quot;,
-                &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;meta_title&quot;: &quot;The Future of Sustainable Agriculture: GMOs in Africa&quot;,
-                &quot;meta_description&quot;: &quot;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&quot;,
-                &quot;is_featured&quot;: true,
-                &quot;allow_comments&quot;: true,
-                &quot;views_count&quot;: 0,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                &quot;content&quot;: &quot;&lt;p&gt;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&lt;/p&gt;&quot;,
-                &quot;is_published&quot;: true,
-                &quot;likes_count&quot;: 2,
-                &quot;dislikes_count&quot;: 1,
-                &quot;comments_count&quot;: 4,
-                &quot;gallery_images&quot;: [],
-                &quot;author&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;username&quot;: &quot;admin&quot;,
-                    &quot;profile_picture_url&quot;: null,
-                    &quot;display_name&quot;: &quot;Admin User&quot;,
-                    &quot;member_profile&quot;: {
-                        &quot;id&quot;: 2,
-                        &quot;user_id&quot;: 2,
-                        &quot;first_name&quot;: &quot;Admin&quot;,
-                        &quot;last_name&quot;: &quot;User&quot;,
-                        &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                        &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                        &quot;gender&quot;: &quot;male&quot;,
-                        &quot;county_id&quot;: 5,
-                        &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                        &quot;ward&quot;: &quot;Demo Ward&quot;,
-                        &quot;interests&quot;: [
-                            &quot;technology&quot;,
-                            &quot;community&quot;,
-                            &quot;biotech&quot;
-                        ],
-                        &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                        &quot;is_staff&quot;: true,
-                        &quot;plan_id&quot;: null,
-                        &quot;occupation&quot;: &quot;Software Developer&quot;,
-                        &quot;emergency_contact_name&quot;: null,
-                        &quot;emergency_contact_phone&quot;: null,
-                        &quot;terms_accepted&quot;: true,
-                        &quot;marketing_consent&quot;: true,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                        &quot;deleted_at&quot;: null,
-                        &quot;plan_type&quot;: &quot;free&quot;,
-                        &quot;plan_expires_at&quot;: null,
-                        &quot;public_profile_enabled&quot;: true,
-                        &quot;display_full_name&quot;: false,
-                        &quot;display_age&quot;: false,
-                        &quot;prefix&quot;: null,
-                        &quot;public_role&quot;: null,
-                        &quot;experience&quot;: null,
-                        &quot;experience_visible&quot;: false,
-                        &quot;education&quot;: null,
-                        &quot;education_visible&quot;: false,
-                        &quot;skills&quot;: null,
-                        &quot;skills_visible&quot;: false,
-                        &quot;achievements&quot;: null,
-                        &quot;achievements_visible&quot;: false,
-                        &quot;certifications&quot;: null,
-                        &quot;certifications_visible&quot;: false,
-                        &quot;public_bio&quot;: null,
-                        &quot;show_email&quot;: false,
-                        &quot;show_location&quot;: true,
-                        &quot;show_join_date&quot;: true,
-                        &quot;show_post_count&quot;: true,
-                        &quot;show_interests&quot;: true,
-                        &quot;show_occupation&quot;: 0
-                    }
-                },
-                &quot;categories&quot;: [
-                    {
-                        &quot;id&quot;: 2,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                        &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                        &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 6,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 4,
-                            &quot;category_id&quot;: 2
-                        }
-                    }
-                ],
-                &quot;tags&quot;: [
-                    {
-                        &quot;id&quot;: 5,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Bioremediation&quot;,
-                        &quot;slug&quot;: &quot;bioremediation&quot;,
-                        &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 4,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 4,
-                            &quot;tag_id&quot;: 5
-                        }
-                    },
-                    {
-                        &quot;id&quot;: 9,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;DNA Profiling&quot;,
-                        &quot;slug&quot;: &quot;dna-profiling&quot;,
-                        &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 5,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 4,
-                            &quot;tag_id&quot;: 9
-                        }
-                    },
-                    {
-                        &quot;id&quot;: 13,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;CRISPR-Cas12&quot;,
-                        &quot;slug&quot;: &quot;crispr-cas12&quot;,
-                        &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 2,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 4,
-                            &quot;tag_id&quot;: 13
-                        }
-                    }
-                ],
-                &quot;media&quot;: [
-                    {
-                        &quot;id&quot;: 12,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;file_size&quot;: 829674,
-                        &quot;usage_count&quot;: 0,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;user_id&quot;: 1,
-                        &quot;media_file_id&quot;: 2,
-                        &quot;folder_id&quot;: 16,
-                        &quot;root_type&quot;: &quot;public&quot;,
-                        &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
-                        &quot;type&quot;: &quot;image&quot;,
-                        &quot;deleted_at&quot;: null,
-                        &quot;temporary_until&quot;: null,
-                        &quot;visibility&quot;: &quot;public&quot;,
-                        &quot;share_token&quot;: null,
-                        &quot;expires_at&quot;: null,
-                        &quot;allow_download&quot;: true,
-                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;pivot&quot;: {
-                            &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                            &quot;attachable_id&quot;: 4,
-                            &quot;media_id&quot;: 12,
-                            &quot;role&quot;: &quot;featured&quot;,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
-                        },
-                        &quot;file&quot;: {
-                            &quot;id&quot;: 2,
-                            &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                            &quot;disk&quot;: &quot;r2&quot;,
-                            &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                            &quot;size&quot;: 829674,
-                            &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                            &quot;ref_count&quot;: 7,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:40.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                        }
-                    }
-                ],
-                &quot;county&quot;: {
-                    &quot;id&quot;: 1,
-                    &quot;name&quot;: &quot;Mombasa&quot;
-                }
-            },
-            {
-                &quot;id&quot;: 5,
-                &quot;user_id&quot;: 2,
-                &quot;county_id&quot;: 1,
-                &quot;title&quot;: &quot;Synthetic Biology: Designing Life Forms of Tomorrow&quot;,
-                &quot;slug&quot;: &quot;synthetic-biology-designing-life-forms-of-tomorrow&quot;,
-                &quot;excerpt&quot;: &quot;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&quot;,
-                &quot;body&quot;: &quot;&lt;p&gt;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&lt;/p&gt;&quot;,
-                &quot;status&quot;: &quot;published&quot;,
-                &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;meta_title&quot;: &quot;Synthetic Biology: Designing Life Forms of Tomorrow&quot;,
-                &quot;meta_description&quot;: &quot;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&quot;,
+                &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                &quot;meta_title&quot;: &quot;Nanobiotechnology in Cancer Detection: Tiny Tools, Big Im...&quot;,
+                &quot;meta_description&quot;: &quot;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&quot;,
                 &quot;is_featured&quot;: false,
                 &quot;allow_comments&quot;: true,
                 &quot;views_count&quot;: 0,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                &quot;content&quot;: &quot;&lt;p&gt;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&lt;/p&gt;&quot;,
-                &quot;is_published&quot;: true,
-                &quot;likes_count&quot;: 5,
-                &quot;dislikes_count&quot;: 2,
-                &quot;comments_count&quot;: 2,
-                &quot;gallery_images&quot;: [],
-                &quot;author&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;username&quot;: &quot;admin&quot;,
-                    &quot;profile_picture_url&quot;: null,
-                    &quot;display_name&quot;: &quot;Admin User&quot;,
-                    &quot;member_profile&quot;: {
-                        &quot;id&quot;: 2,
-                        &quot;user_id&quot;: 2,
-                        &quot;first_name&quot;: &quot;Admin&quot;,
-                        &quot;last_name&quot;: &quot;User&quot;,
-                        &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                        &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                        &quot;gender&quot;: &quot;male&quot;,
-                        &quot;county_id&quot;: 5,
-                        &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                        &quot;ward&quot;: &quot;Demo Ward&quot;,
-                        &quot;interests&quot;: [
-                            &quot;technology&quot;,
-                            &quot;community&quot;,
-                            &quot;biotech&quot;
-                        ],
-                        &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                        &quot;is_staff&quot;: true,
-                        &quot;plan_id&quot;: null,
-                        &quot;occupation&quot;: &quot;Software Developer&quot;,
-                        &quot;emergency_contact_name&quot;: null,
-                        &quot;emergency_contact_phone&quot;: null,
-                        &quot;terms_accepted&quot;: true,
-                        &quot;marketing_consent&quot;: true,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                        &quot;deleted_at&quot;: null,
-                        &quot;plan_type&quot;: &quot;free&quot;,
-                        &quot;plan_expires_at&quot;: null,
-                        &quot;public_profile_enabled&quot;: true,
-                        &quot;display_full_name&quot;: false,
-                        &quot;display_age&quot;: false,
-                        &quot;prefix&quot;: null,
-                        &quot;public_role&quot;: null,
-                        &quot;experience&quot;: null,
-                        &quot;experience_visible&quot;: false,
-                        &quot;education&quot;: null,
-                        &quot;education_visible&quot;: false,
-                        &quot;skills&quot;: null,
-                        &quot;skills_visible&quot;: false,
-                        &quot;achievements&quot;: null,
-                        &quot;achievements_visible&quot;: false,
-                        &quot;certifications&quot;: null,
-                        &quot;certifications_visible&quot;: false,
-                        &quot;public_bio&quot;: null,
-                        &quot;show_email&quot;: false,
-                        &quot;show_location&quot;: true,
-                        &quot;show_join_date&quot;: true,
-                        &quot;show_post_count&quot;: true,
-                        &quot;show_interests&quot;: true,
-                        &quot;show_occupation&quot;: 0
-                    }
-                },
-                &quot;categories&quot;: [
-                    {
-                        &quot;id&quot;: 2,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                        &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                        &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 6,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 5,
-                            &quot;category_id&quot;: 2
-                        }
-                    },
-                    {
-                        &quot;id&quot;: 6,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Marine Biotechnology&quot;,
-                        &quot;slug&quot;: &quot;marine-biotechnology&quot;,
-                        &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 2,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 5,
-                            &quot;category_id&quot;: 6
-                        }
-                    }
-                ],
-                &quot;tags&quot;: [
-                    {
-                        &quot;id&quot;: 1,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;CRISPR&quot;,
-                        &quot;slug&quot;: &quot;crispr&quot;,
-                        &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 4,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 5,
-                            &quot;tag_id&quot;: 1
-                        }
-                    },
-                    {
-                        &quot;id&quot;: 10,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Biofuels&quot;,
-                        &quot;slug&quot;: &quot;biofuels&quot;,
-                        &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 5,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 5,
-                            &quot;tag_id&quot;: 10
-                        }
-                    }
-                ],
-                &quot;media&quot;: [
-                    {
-                        &quot;id&quot;: 13,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;file_size&quot;: 829674,
-                        &quot;usage_count&quot;: 0,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;user_id&quot;: 1,
-                        &quot;media_file_id&quot;: 2,
-                        &quot;folder_id&quot;: 17,
-                        &quot;root_type&quot;: &quot;public&quot;,
-                        &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
-                        &quot;type&quot;: &quot;image&quot;,
-                        &quot;deleted_at&quot;: null,
-                        &quot;temporary_until&quot;: null,
-                        &quot;visibility&quot;: &quot;public&quot;,
-                        &quot;share_token&quot;: null,
-                        &quot;expires_at&quot;: null,
-                        &quot;allow_download&quot;: true,
-                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;pivot&quot;: {
-                            &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                            &quot;attachable_id&quot;: 5,
-                            &quot;media_id&quot;: 13,
-                            &quot;role&quot;: &quot;featured&quot;,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
-                        },
-                        &quot;file&quot;: {
-                            &quot;id&quot;: 2,
-                            &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                            &quot;disk&quot;: &quot;r2&quot;,
-                            &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                            &quot;size&quot;: 829674,
-                            &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                            &quot;ref_count&quot;: 7,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:40.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                        }
-                    }
-                ],
-                &quot;county&quot;: {
-                    &quot;id&quot;: 1,
-                    &quot;name&quot;: &quot;Mombasa&quot;
-                }
-            },
-            {
-                &quot;id&quot;: 6,
-                &quot;user_id&quot;: 2,
-                &quot;county_id&quot;: 1,
-                &quot;title&quot;: &quot;Bioinformatics: Decoding the Language of the Genome&quot;,
-                &quot;slug&quot;: &quot;bioinformatics-decoding-the-language-of-the-genome&quot;,
-                &quot;excerpt&quot;: &quot;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&quot;,
-                &quot;body&quot;: &quot;&lt;p&gt;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&lt;/p&gt;&quot;,
-                &quot;status&quot;: &quot;published&quot;,
-                &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;meta_title&quot;: &quot;Bioinformatics: Decoding the Language of the Genome&quot;,
-                &quot;meta_description&quot;: &quot;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&quot;,
-                &quot;is_featured&quot;: false,
-                &quot;allow_comments&quot;: true,
-                &quot;views_count&quot;: 0,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-                &quot;content&quot;: &quot;&lt;p&gt;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&lt;/p&gt;&quot;,
+                &quot;content&quot;: &quot;&lt;p&gt;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&lt;/p&gt;&quot;,
                 &quot;is_published&quot;: true,
-                &quot;likes_count&quot;: 6,
-                &quot;dislikes_count&quot;: 1,
-                &quot;comments_count&quot;: 4,
+                &quot;likes_count&quot;: 4,
+                &quot;dislikes_count&quot;: 0,
+                &quot;comments_count&quot;: 5,
                 &quot;gallery_images&quot;: [],
                 &quot;author&quot;: {
                     &quot;id&quot;: 2,
@@ -50588,10 +50203,10 @@ vary: Origin
                         &quot;user_id&quot;: 2,
                         &quot;first_name&quot;: &quot;Admin&quot;,
                         &quot;last_name&quot;: &quot;User&quot;,
-                        &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                        &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
+                        &quot;phone_number&quot;: &quot;+254755501462&quot;,
+                        &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
                         &quot;gender&quot;: &quot;male&quot;,
-                        &quot;county_id&quot;: 5,
+                        &quot;county_id&quot;: 8,
                         &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
                         &quot;ward&quot;: &quot;Demo Ward&quot;,
                         &quot;interests&quot;: [
@@ -50600,15 +50215,14 @@ vary: Origin
                             &quot;biotech&quot;
                         ],
                         &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                        &quot;is_staff&quot;: true,
                         &quot;plan_id&quot;: null,
                         &quot;occupation&quot;: &quot;Software Developer&quot;,
                         &quot;emergency_contact_name&quot;: null,
                         &quot;emergency_contact_phone&quot;: null,
                         &quot;terms_accepted&quot;: true,
-                        &quot;marketing_consent&quot;: true,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                        &quot;marketing_consent&quot;: false,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
                         &quot;deleted_at&quot;: null,
                         &quot;plan_type&quot;: &quot;free&quot;,
                         &quot;plan_expires_at&quot;: null,
@@ -50638,99 +50252,83 @@ vary: Origin
                 },
                 &quot;categories&quot;: [
                     {
-                        &quot;id&quot;: 2,
+                        &quot;id&quot;: 13,
                         &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                        &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                        &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 6,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 6,
-                            &quot;category_id&quot;: 2
-                        }
-                    },
-                    {
-                        &quot;id&quot;: 5,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Medical Biotechnology&quot;,
-                        &quot;slug&quot;: &quot;medical-biotechnology&quot;,
-                        &quot;description&quot;: &quot;Deep dive into Medical Biotechnology and its impact on the future.&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                        &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
+                        &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
+                        &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                         &quot;requested_deletion_at&quot;: null,
                         &quot;deletion_requested_by&quot;: null,
                         &quot;post_count&quot;: 3,
                         &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 6,
-                            &quot;category_id&quot;: 5
+                            &quot;post_id&quot;: 18,
+                            &quot;category_id&quot;: 13
                         }
                     }
                 ],
                 &quot;tags&quot;: [
                     {
-                        &quot;id&quot;: 6,
+                        &quot;id&quot;: 14,
                         &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Stem Cells&quot;,
-                        &quot;slug&quot;: &quot;stem-cells&quot;,
+                        &quot;name&quot;: &quot;DNA Sequencing&quot;,
+                        &quot;slug&quot;: &quot;dna-sequencing&quot;,
                         &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                         &quot;requested_deletion_at&quot;: null,
                         &quot;deletion_requested_by&quot;: null,
                         &quot;post_count&quot;: 4,
                         &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 6,
-                            &quot;tag_id&quot;: 6
+                            &quot;post_id&quot;: 18,
+                            &quot;tag_id&quot;: 14
                         }
                     },
                     {
-                        &quot;id&quot;: 7,
+                        &quot;id&quot;: 16,
                         &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Genetic Engineering&quot;,
-                        &quot;slug&quot;: &quot;genetic-engineering&quot;,
+                        &quot;name&quot;: &quot;Vaccines&quot;,
+                        &quot;slug&quot;: &quot;vaccines&quot;,
                         &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                         &quot;requested_deletion_at&quot;: null,
                         &quot;deletion_requested_by&quot;: null,
                         &quot;post_count&quot;: 4,
                         &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 6,
-                            &quot;tag_id&quot;: 7
+                            &quot;post_id&quot;: 18,
+                            &quot;tag_id&quot;: 16
                         }
                     },
                     {
-                        &quot;id&quot;: 11,
+                        &quot;id&quot;: 21,
                         &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Microbiome&quot;,
-                        &quot;slug&quot;: &quot;microbiome&quot;,
+                        &quot;name&quot;: &quot;DNA Profiling&quot;,
+                        &quot;slug&quot;: &quot;dna-profiling&quot;,
                         &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                         &quot;requested_deletion_at&quot;: null,
                         &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 5,
+                        &quot;post_count&quot;: 3,
                         &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 6,
-                            &quot;tag_id&quot;: 11
+                            &quot;post_id&quot;: 18,
+                            &quot;tag_id&quot;: 21
                         }
                     }
                 ],
                 &quot;media&quot;: [
                     {
-                        &quot;id&quot;: 14,
+                        &quot;id&quot;: 26,
                         &quot;mime_type&quot;: &quot;image/jpeg&quot;,
                         &quot;file_size&quot;: 850020,
                         &quot;usage_count&quot;: 0,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
                         &quot;user_id&quot;: 1,
                         &quot;media_file_id&quot;: 5,
-                        &quot;folder_id&quot;: 18,
+                        &quot;folder_id&quot;: 28,
                         &quot;root_type&quot;: &quot;public&quot;,
                         &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
                         &quot;type&quot;: &quot;image&quot;,
@@ -50743,11 +50341,11 @@ vary: Origin
                         &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                         &quot;pivot&quot;: {
                             &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                            &quot;attachable_id&quot;: 6,
-                            &quot;media_id&quot;: 14,
+                            &quot;attachable_id&quot;: 18,
+                            &quot;media_id&quot;: 26,
                             &quot;role&quot;: &quot;featured&quot;,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
+                            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                         },
                         &quot;file&quot;: {
                             &quot;id&quot;: 5,
@@ -50756,9 +50354,385 @@ vary: Origin
                             &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                             &quot;size&quot;: 850020,
                             &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                            &quot;ref_count&quot;: 10,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:48.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
+                            &quot;ref_count&quot;: 13,
+                            &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                        }
+                    }
+                ],
+                &quot;county&quot;: {
+                    &quot;id&quot;: 1,
+                    &quot;name&quot;: &quot;Mombasa&quot;
+                }
+            },
+            {
+                &quot;id&quot;: 19,
+                &quot;user_id&quot;: 10,
+                &quot;county_id&quot;: 1,
+                &quot;title&quot;: &quot;Microbiome Research: The Secret Life of Our Gut Bacteria&quot;,
+                &quot;slug&quot;: &quot;microbiome-research-the-secret-life-of-our-gut-bacteria&quot;,
+                &quot;excerpt&quot;: &quot;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&quot;,
+                &quot;body&quot;: &quot;&lt;p&gt;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&lt;/p&gt;&quot;,
+                &quot;status&quot;: &quot;published&quot;,
+                &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                &quot;meta_title&quot;: &quot;Microbiome Research: The Secret Life of Our Gut Bacteria&quot;,
+                &quot;meta_description&quot;: &quot;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&quot;,
+                &quot;is_featured&quot;: false,
+                &quot;allow_comments&quot;: false,
+                &quot;views_count&quot;: 0,
+                &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                &quot;content&quot;: &quot;&lt;p&gt;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&lt;/p&gt;&quot;,
+                &quot;is_published&quot;: true,
+                &quot;likes_count&quot;: 3,
+                &quot;dislikes_count&quot;: 0,
+                &quot;comments_count&quot;: 3,
+                &quot;gallery_images&quot;: [],
+                &quot;author&quot;: {
+                    &quot;id&quot;: 10,
+                    &quot;username&quot;: &quot;janesmith&quot;,
+                    &quot;profile_picture_url&quot;: null,
+                    &quot;display_name&quot;: &quot;Jane Smith&quot;,
+                    &quot;member_profile&quot;: {
+                        &quot;id&quot;: 10,
+                        &quot;user_id&quot;: 10,
+                        &quot;first_name&quot;: &quot;Jane&quot;,
+                        &quot;last_name&quot;: &quot;Smith&quot;,
+                        &quot;phone_number&quot;: &quot;+254743267167&quot;,
+                        &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
+                        &quot;gender&quot;: &quot;male&quot;,
+                        &quot;county_id&quot;: 39,
+                        &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
+                        &quot;ward&quot;: &quot;Demo Ward&quot;,
+                        &quot;interests&quot;: [
+                            &quot;technology&quot;,
+                            &quot;community&quot;,
+                            &quot;biotech&quot;
+                        ],
+                        &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
+                        &quot;plan_id&quot;: 1,
+                        &quot;occupation&quot;: &quot;Software Developer&quot;,
+                        &quot;emergency_contact_name&quot;: null,
+                        &quot;emergency_contact_phone&quot;: null,
+                        &quot;terms_accepted&quot;: true,
+                        &quot;marketing_consent&quot;: true,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
+                        &quot;deleted_at&quot;: null,
+                        &quot;plan_type&quot;: &quot;free&quot;,
+                        &quot;plan_expires_at&quot;: null,
+                        &quot;public_profile_enabled&quot;: true,
+                        &quot;display_full_name&quot;: false,
+                        &quot;display_age&quot;: false,
+                        &quot;prefix&quot;: null,
+                        &quot;public_role&quot;: null,
+                        &quot;experience&quot;: null,
+                        &quot;experience_visible&quot;: false,
+                        &quot;education&quot;: null,
+                        &quot;education_visible&quot;: false,
+                        &quot;skills&quot;: null,
+                        &quot;skills_visible&quot;: false,
+                        &quot;achievements&quot;: null,
+                        &quot;achievements_visible&quot;: false,
+                        &quot;certifications&quot;: null,
+                        &quot;certifications_visible&quot;: false,
+                        &quot;public_bio&quot;: null,
+                        &quot;show_email&quot;: false,
+                        &quot;show_location&quot;: true,
+                        &quot;show_join_date&quot;: true,
+                        &quot;show_post_count&quot;: true,
+                        &quot;show_interests&quot;: true,
+                        &quot;show_occupation&quot;: 0
+                    }
+                },
+                &quot;categories&quot;: [
+                    {
+                        &quot;id&quot;: 13,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
+                        &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
+                        &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 3,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 19,
+                            &quot;category_id&quot;: 13
+                        }
+                    }
+                ],
+                &quot;tags&quot;: [
+                    {
+                        &quot;id&quot;: 23,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;Microbiome&quot;,
+                        &quot;slug&quot;: &quot;microbiome&quot;,
+                        &quot;description&quot;: null,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 2,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 19,
+                            &quot;tag_id&quot;: 23
+                        }
+                    },
+                    {
+                        &quot;id&quot;: 25,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;CRISPR-Cas12&quot;,
+                        &quot;slug&quot;: &quot;crispr-cas12&quot;,
+                        &quot;description&quot;: null,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 4,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 19,
+                            &quot;tag_id&quot;: 25
+                        }
+                    }
+                ],
+                &quot;media&quot;: [
+                    {
+                        &quot;id&quot;: 27,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;file_size&quot;: 829674,
+                        &quot;usage_count&quot;: 0,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;user_id&quot;: 1,
+                        &quot;media_file_id&quot;: 2,
+                        &quot;folder_id&quot;: 29,
+                        &quot;root_type&quot;: &quot;public&quot;,
+                        &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
+                        &quot;type&quot;: &quot;image&quot;,
+                        &quot;deleted_at&quot;: null,
+                        &quot;temporary_until&quot;: null,
+                        &quot;visibility&quot;: &quot;public&quot;,
+                        &quot;share_token&quot;: null,
+                        &quot;expires_at&quot;: null,
+                        &quot;allow_download&quot;: true,
+                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                        &quot;pivot&quot;: {
+                            &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                            &quot;attachable_id&quot;: 19,
+                            &quot;media_id&quot;: 27,
+                            &quot;role&quot;: &quot;featured&quot;,
+                            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                        },
+                        &quot;file&quot;: {
+                            &quot;id&quot;: 2,
+                            &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                            &quot;disk&quot;: &quot;r2&quot;,
+                            &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                            &quot;size&quot;: 829674,
+                            &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                            &quot;ref_count&quot;: 5,
+                            &quot;created_at&quot;: &quot;2026-03-27T05:36:18.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:37:16.000000Z&quot;
+                        }
+                    }
+                ],
+                &quot;county&quot;: {
+                    &quot;id&quot;: 1,
+                    &quot;name&quot;: &quot;Mombasa&quot;
+                }
+            },
+            {
+                &quot;id&quot;: 2,
+                &quot;user_id&quot;: 1,
+                &quot;county_id&quot;: 1,
+                &quot;title&quot;: &quot;The Genomics Era: Mapping the Human Future&quot;,
+                &quot;slug&quot;: &quot;the-genomics-era-mapping-the-human-future&quot;,
+                &quot;excerpt&quot;: &quot;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&quot;,
+                &quot;body&quot;: &quot;&lt;p&gt;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&lt;/p&gt;&quot;,
+                &quot;status&quot;: &quot;published&quot;,
+                &quot;published_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;meta_title&quot;: &quot;The Genomics Era: Mapping the Human Future&quot;,
+                &quot;meta_description&quot;: &quot;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&quot;,
+                &quot;is_featured&quot;: false,
+                &quot;allow_comments&quot;: true,
+                &quot;views_count&quot;: 0,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                &quot;content&quot;: &quot;&lt;p&gt;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&lt;/p&gt;&quot;,
+                &quot;is_published&quot;: true,
+                &quot;likes_count&quot;: 4,
+                &quot;dislikes_count&quot;: 1,
+                &quot;comments_count&quot;: 2,
+                &quot;gallery_images&quot;: [],
+                &quot;author&quot;: {
+                    &quot;id&quot;: 1,
+                    &quot;username&quot;: &quot;superadmin&quot;,
+                    &quot;profile_picture_url&quot;: null,
+                    &quot;display_name&quot;: &quot;System Administrator&quot;,
+                    &quot;member_profile&quot;: {
+                        &quot;id&quot;: 1,
+                        &quot;user_id&quot;: 1,
+                        &quot;first_name&quot;: &quot;System&quot;,
+                        &quot;last_name&quot;: &quot;Administrator&quot;,
+                        &quot;phone_number&quot;: &quot;+254700000000&quot;,
+                        &quot;date_of_birth&quot;: &quot;1990-01-01T00:00:00.000000Z&quot;,
+                        &quot;gender&quot;: null,
+                        &quot;county_id&quot;: 1,
+                        &quot;sub_county&quot;: &quot;System&quot;,
+                        &quot;ward&quot;: &quot;System&quot;,
+                        &quot;interests&quot;: [
+                            &quot;system&quot;
+                        ],
+                        &quot;bio&quot;: &quot;Initial system administrator account.&quot;,
+                        &quot;plan_id&quot;: 1,
+                        &quot;occupation&quot;: &quot;System Admin&quot;,
+                        &quot;emergency_contact_name&quot;: null,
+                        &quot;emergency_contact_phone&quot;: null,
+                        &quot;terms_accepted&quot;: true,
+                        &quot;marketing_consent&quot;: false,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                        &quot;deleted_at&quot;: null,
+                        &quot;plan_type&quot;: &quot;free&quot;,
+                        &quot;plan_expires_at&quot;: null,
+                        &quot;public_profile_enabled&quot;: true,
+                        &quot;display_full_name&quot;: false,
+                        &quot;display_age&quot;: false,
+                        &quot;prefix&quot;: null,
+                        &quot;public_role&quot;: null,
+                        &quot;experience&quot;: null,
+                        &quot;experience_visible&quot;: false,
+                        &quot;education&quot;: null,
+                        &quot;education_visible&quot;: false,
+                        &quot;skills&quot;: null,
+                        &quot;skills_visible&quot;: false,
+                        &quot;achievements&quot;: null,
+                        &quot;achievements_visible&quot;: false,
+                        &quot;certifications&quot;: null,
+                        &quot;certifications_visible&quot;: false,
+                        &quot;public_bio&quot;: null,
+                        &quot;show_email&quot;: false,
+                        &quot;show_location&quot;: true,
+                        &quot;show_join_date&quot;: true,
+                        &quot;show_post_count&quot;: true,
+                        &quot;show_interests&quot;: true,
+                        &quot;show_occupation&quot;: 0
+                    }
+                },
+                &quot;categories&quot;: [
+                    {
+                        &quot;id&quot;: 14,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;Medical Biotechnology&quot;,
+                        &quot;slug&quot;: &quot;medical-biotechnology&quot;,
+                        &quot;description&quot;: &quot;Deep dive into Medical Biotechnology and its impact on the future.&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 1,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 2,
+                            &quot;category_id&quot;: 14
+                        }
+                    },
+                    {
+                        &quot;id&quot;: 15,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;Marine Biotechnology&quot;,
+                        &quot;slug&quot;: &quot;marine-biotechnology&quot;,
+                        &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 3,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 2,
+                            &quot;category_id&quot;: 15
+                        }
+                    }
+                ],
+                &quot;tags&quot;: [
+                    {
+                        &quot;id&quot;: 13,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;CRISPR&quot;,
+                        &quot;slug&quot;: &quot;crispr&quot;,
+                        &quot;description&quot;: null,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 2,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 2,
+                            &quot;tag_id&quot;: 13
+                        }
+                    },
+                    {
+                        &quot;id&quot;: 18,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;Stem Cells&quot;,
+                        &quot;slug&quot;: &quot;stem-cells&quot;,
+                        &quot;description&quot;: null,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 4,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 2,
+                            &quot;tag_id&quot;: 18
+                        }
+                    }
+                ],
+                &quot;media&quot;: [
+                    {
+                        &quot;id&quot;: 10,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;file_size&quot;: 850020,
+                        &quot;usage_count&quot;: 0,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;user_id&quot;: 1,
+                        &quot;media_file_id&quot;: 5,
+                        &quot;folder_id&quot;: 12,
+                        &quot;root_type&quot;: &quot;public&quot;,
+                        &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
+                        &quot;type&quot;: &quot;image&quot;,
+                        &quot;deleted_at&quot;: null,
+                        &quot;temporary_until&quot;: null,
+                        &quot;visibility&quot;: &quot;public&quot;,
+                        &quot;share_token&quot;: null,
+                        &quot;expires_at&quot;: null,
+                        &quot;allow_download&quot;: true,
+                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;pivot&quot;: {
+                            &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                            &quot;attachable_id&quot;: 2,
+                            &quot;media_id&quot;: 10,
+                            &quot;role&quot;: &quot;featured&quot;,
+                            &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;
+                        },
+                        &quot;file&quot;: {
+                            &quot;id&quot;: 5,
+                            &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                            &quot;disk&quot;: &quot;r2&quot;,
+                            &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                            &quot;size&quot;: 850020,
+                            &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                            &quot;ref_count&quot;: 13,
+                            &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                         }
                     }
                 ],
@@ -50868,14 +50842,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/blog/categories" \
+    --get "http://192.168.55.127:8000/api/blog/categories" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/categories"
+    "http://192.168.55.127:8000/api/blog/categories"
 );
 
 const headers = {
@@ -50907,81 +50881,74 @@ vary: Origin
     &quot;success&quot;: true,
     &quot;data&quot;: [
         {
-            &quot;id&quot;: 4,
+            &quot;id&quot;: 13,
             &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
             &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
             &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
-            &quot;post_count&quot;: 4
+            &quot;post_count&quot;: 3
         },
         {
-            &quot;id&quot;: 3,
+            &quot;id&quot;: 12,
             &quot;name&quot;: &quot;Bioinformatics&quot;,
             &quot;slug&quot;: &quot;bioinformatics&quot;,
             &quot;description&quot;: &quot;Deep dive into Bioinformatics and its impact on the future.&quot;,
             &quot;post_count&quot;: 3
         },
         {
-            &quot;id&quot;: 10,
+            &quot;id&quot;: 19,
             &quot;name&quot;: &quot;Environmental Sustainability&quot;,
             &quot;slug&quot;: &quot;environmental-sustainability&quot;,
             &quot;description&quot;: &quot;Deep dive into Environmental Sustainability and its impact on the future.&quot;,
             &quot;post_count&quot;: 2
         },
         {
-            &quot;id&quot;: 8,
+            &quot;id&quot;: 17,
             &quot;name&quot;: &quot;Forensic Science&quot;,
             &quot;slug&quot;: &quot;forensic-science&quot;,
             &quot;description&quot;: &quot;Deep dive into Forensic Science and its impact on the future.&quot;,
-            &quot;post_count&quot;: 2
+            &quot;post_count&quot;: 1
         },
         {
-            &quot;id&quot;: 1,
+            &quot;id&quot;: 10,
             &quot;name&quot;: &quot;Genomics&quot;,
             &quot;slug&quot;: &quot;genomics&quot;,
             &quot;description&quot;: &quot;Deep dive into Genomics and its impact on the future.&quot;,
-            &quot;post_count&quot;: 2
-        },
-        {
-            &quot;id&quot;: 11,
-            &quot;name&quot;: &quot;Immunology&quot;,
-            &quot;slug&quot;: &quot;immunology&quot;,
-            &quot;description&quot;: &quot;Deep dive into Immunology and its impact on the future.&quot;,
             &quot;post_count&quot;: 1
         },
         {
-            &quot;id&quot;: 7,
+            &quot;id&quot;: 16,
             &quot;name&quot;: &quot;Industrial Biotechnology&quot;,
             &quot;slug&quot;: &quot;industrial-biotechnology&quot;,
             &quot;description&quot;: &quot;Deep dive into Industrial Biotechnology and its impact on the future.&quot;,
-            &quot;post_count&quot;: 1
-        },
-        {
-            &quot;id&quot;: 6,
-            &quot;name&quot;: &quot;Marine Biotechnology&quot;,
-            &quot;slug&quot;: &quot;marine-biotechnology&quot;,
-            &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
             &quot;post_count&quot;: 2
         },
         {
-            &quot;id&quot;: 5,
-            &quot;name&quot;: &quot;Medical Biotechnology&quot;,
-            &quot;slug&quot;: &quot;medical-biotechnology&quot;,
-            &quot;description&quot;: &quot;Deep dive into Medical Biotechnology and its impact on the future.&quot;,
+            &quot;id&quot;: 15,
+            &quot;name&quot;: &quot;Marine Biotechnology&quot;,
+            &quot;slug&quot;: &quot;marine-biotechnology&quot;,
+            &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
             &quot;post_count&quot;: 3
         },
         {
-            &quot;id&quot;: 9,
+            &quot;id&quot;: 14,
+            &quot;name&quot;: &quot;Medical Biotechnology&quot;,
+            &quot;slug&quot;: &quot;medical-biotechnology&quot;,
+            &quot;description&quot;: &quot;Deep dive into Medical Biotechnology and its impact on the future.&quot;,
+            &quot;post_count&quot;: 1
+        },
+        {
+            &quot;id&quot;: 18,
             &quot;name&quot;: &quot;Neuroinformatics&quot;,
             &quot;slug&quot;: &quot;neuroinformatics&quot;,
             &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
-            &quot;post_count&quot;: 4
+            &quot;post_count&quot;: 6
         },
         {
-            &quot;id&quot;: 2,
+            &quot;id&quot;: 11,
             &quot;name&quot;: &quot;Synthetic Biology&quot;,
             &quot;slug&quot;: &quot;synthetic-biology&quot;,
             &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-            &quot;post_count&quot;: 6
+            &quot;post_count&quot;: 1
         }
     ]
 }</code>
@@ -51071,14 +51038,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/blog/tags" \
+    --get "http://192.168.55.127:8000/api/blog/tags" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/tags"
+    "http://192.168.55.127:8000/api/blog/tags"
 );
 
 const headers = {
@@ -51110,82 +51077,76 @@ vary: Origin
     &quot;success&quot;: true,
     &quot;data&quot;: [
         {
-            &quot;id&quot;: 10,
+            &quot;id&quot;: 22,
             &quot;name&quot;: &quot;Biofuels&quot;,
             &quot;slug&quot;: &quot;biofuels&quot;,
-            &quot;post_count&quot;: 5
+            &quot;post_count&quot;: 2
         },
         {
-            &quot;id&quot;: 8,
-            &quot;name&quot;: &quot;Bioplastics&quot;,
-            &quot;slug&quot;: &quot;bioplastics&quot;,
-            &quot;post_count&quot;: 1
-        },
-        {
-            &quot;id&quot;: 5,
+            &quot;id&quot;: 17,
             &quot;name&quot;: &quot;Bioremediation&quot;,
             &quot;slug&quot;: &quot;bioremediation&quot;,
-            &quot;post_count&quot;: 4
-        },
-        {
-            &quot;id&quot;: 1,
-            &quot;name&quot;: &quot;CRISPR&quot;,
-            &quot;slug&quot;: &quot;crispr&quot;,
-            &quot;post_count&quot;: 4
+            &quot;post_count&quot;: 3
         },
         {
             &quot;id&quot;: 13,
+            &quot;name&quot;: &quot;CRISPR&quot;,
+            &quot;slug&quot;: &quot;crispr&quot;,
+            &quot;post_count&quot;: 2
+        },
+        {
+            &quot;id&quot;: 25,
             &quot;name&quot;: &quot;CRISPR-Cas12&quot;,
             &quot;slug&quot;: &quot;crispr-cas12&quot;,
-            &quot;post_count&quot;: 2
+            &quot;post_count&quot;: 4
         },
         {
-            &quot;id&quot;: 12,
-            &quot;name&quot;: &quot;Data Science&quot;,
-            &quot;slug&quot;: &quot;data-science&quot;,
-            &quot;post_count&quot;: 2
-        },
-        {
-            &quot;id&quot;: 9,
+            &quot;id&quot;: 21,
             &quot;name&quot;: &quot;DNA Profiling&quot;,
             &quot;slug&quot;: &quot;dna-profiling&quot;,
-            &quot;post_count&quot;: 5
-        },
-        {
-            &quot;id&quot;: 7,
-            &quot;name&quot;: &quot;Genetic Engineering&quot;,
-            &quot;slug&quot;: &quot;genetic-engineering&quot;,
-            &quot;post_count&quot;: 4
-        },
-        {
-            &quot;id&quot;: 3,
-            &quot;name&quot;: &quot;GMO&quot;,
-            &quot;slug&quot;: &quot;gmo&quot;,
-            &quot;post_count&quot;: 4
-        },
-        {
-            &quot;id&quot;: 11,
-            &quot;name&quot;: &quot;Microbiome&quot;,
-            &quot;slug&quot;: &quot;microbiome&quot;,
-            &quot;post_count&quot;: 5
+            &quot;post_count&quot;: 3
         },
         {
             &quot;id&quot;: 14,
-            &quot;name&quot;: &quot;Nanobiotechnology&quot;,
-            &quot;slug&quot;: &quot;nanobiotechnology&quot;,
-            &quot;post_count&quot;: 1
+            &quot;name&quot;: &quot;DNA Sequencing&quot;,
+            &quot;slug&quot;: &quot;dna-sequencing&quot;,
+            &quot;post_count&quot;: 4
         },
         {
-            &quot;id&quot;: 6,
+            &quot;id&quot;: 19,
+            &quot;name&quot;: &quot;Genetic Engineering&quot;,
+            &quot;slug&quot;: &quot;genetic-engineering&quot;,
+            &quot;post_count&quot;: 6
+        },
+        {
+            &quot;id&quot;: 15,
+            &quot;name&quot;: &quot;GMO&quot;,
+            &quot;slug&quot;: &quot;gmo&quot;,
+            &quot;post_count&quot;: 2
+        },
+        {
+            &quot;id&quot;: 23,
+            &quot;name&quot;: &quot;Microbiome&quot;,
+            &quot;slug&quot;: &quot;microbiome&quot;,
+            &quot;post_count&quot;: 2
+        },
+        {
+            &quot;id&quot;: 26,
+            &quot;name&quot;: &quot;Nanobiotechnology&quot;,
+            &quot;slug&quot;: &quot;nanobiotechnology&quot;,
+            &quot;post_count&quot;: 5
+        },
+        {
+            &quot;id&quot;: 18,
             &quot;name&quot;: &quot;Stem Cells&quot;,
             &quot;slug&quot;: &quot;stem-cells&quot;,
             &quot;post_count&quot;: 4
         },
         {
-            &quot;id&quot;: 4,
+            &quot;id&quot;: 16,
             &quot;name&quot;: &quot;Vaccines&quot;,
             &quot;slug&quot;: &quot;vaccines&quot;,
-            &quot;post_count&quot;: 1
+            &quot;post_count&quot;: 4
         }
     ]
 }</code>
@@ -51275,14 +51236,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/blog/posts/1" \
+    --get "http://192.168.55.127:8000/api/blog/posts/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/posts/1"
+    "http://192.168.55.127:8000/api/blog/posts/1"
 );
 
 const headers = {
@@ -51321,54 +51282,51 @@ vary: Origin
         &quot;excerpt&quot;: &quot;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-s...&quot;,
         &quot;body&quot;: &quot;&lt;p&gt;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving treatments for genetic disorders.&lt;/p&gt;&quot;,
         &quot;status&quot;: &quot;published&quot;,
-        &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+        &quot;published_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
         &quot;meta_title&quot;: &quot;Revolutionizing Medicine with CRISPR Gene Editing&quot;,
         &quot;meta_description&quot;: &quot;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving t...&quot;,
         &quot;is_featured&quot;: true,
-        &quot;allow_comments&quot;: true,
+        &quot;allow_comments&quot;: false,
         &quot;views_count&quot;: 1,
-        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
         &quot;deleted_at&quot;: null,
-        &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+        &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
         &quot;content&quot;: &quot;&lt;p&gt;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving treatments for genetic disorders.&lt;/p&gt;&quot;,
         &quot;is_published&quot;: true,
-        &quot;likes_count&quot;: 3,
+        &quot;likes_count&quot;: 4,
         &quot;dislikes_count&quot;: 0,
-        &quot;comments_count&quot;: 5,
+        &quot;comments_count&quot;: 2,
         &quot;gallery_images&quot;: [],
         &quot;author&quot;: {
             &quot;id&quot;: 1,
             &quot;username&quot;: &quot;superadmin&quot;,
             &quot;email&quot;: &quot;superadmin@dadisilab.com&quot;,
             &quot;profile_picture_url&quot;: null,
-            &quot;display_name&quot;: &quot;Super Admin&quot;,
+            &quot;display_name&quot;: &quot;System Administrator&quot;,
             &quot;member_profile&quot;: {
                 &quot;id&quot;: 1,
                 &quot;user_id&quot;: 1,
-                &quot;first_name&quot;: &quot;Super&quot;,
-                &quot;last_name&quot;: &quot;Admin&quot;,
-                &quot;phone_number&quot;: &quot;+254733198803&quot;,
-                &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                &quot;gender&quot;: &quot;male&quot;,
-                &quot;county_id&quot;: 14,
-                &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                &quot;ward&quot;: &quot;Demo Ward&quot;,
+                &quot;first_name&quot;: &quot;System&quot;,
+                &quot;last_name&quot;: &quot;Administrator&quot;,
+                &quot;phone_number&quot;: &quot;+254700000000&quot;,
+                &quot;date_of_birth&quot;: &quot;1990-01-01T00:00:00.000000Z&quot;,
+                &quot;gender&quot;: null,
+                &quot;county_id&quot;: 1,
+                &quot;sub_county&quot;: &quot;System&quot;,
+                &quot;ward&quot;: &quot;System&quot;,
                 &quot;interests&quot;: [
-                    &quot;technology&quot;,
-                    &quot;community&quot;,
-                    &quot;biotech&quot;
+                    &quot;system&quot;
                 ],
-                &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                &quot;is_staff&quot;: true,
-                &quot;plan_id&quot;: null,
-                &quot;occupation&quot;: &quot;Software Developer&quot;,
+                &quot;bio&quot;: &quot;Initial system administrator account.&quot;,
+                &quot;plan_id&quot;: 1,
+                &quot;occupation&quot;: &quot;System Admin&quot;,
                 &quot;emergency_contact_name&quot;: null,
                 &quot;emergency_contact_phone&quot;: null,
                 &quot;terms_accepted&quot;: true,
-                &quot;marketing_consent&quot;: true,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                &quot;marketing_consent&quot;: false,
+                &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;plan_type&quot;: &quot;free&quot;,
                 &quot;plan_expires_at&quot;: null,
@@ -51398,69 +51356,69 @@ vary: Origin
         },
         &quot;categories&quot;: [
             {
-                &quot;id&quot;: 2,
+                &quot;id&quot;: 13,
                 &quot;created_by&quot;: null,
-                &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
+                &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
+                &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                 &quot;requested_deletion_at&quot;: null,
                 &quot;deletion_requested_by&quot;: null,
-                &quot;post_count&quot;: 6,
+                &quot;post_count&quot;: 3,
                 &quot;pivot&quot;: {
                     &quot;post_id&quot;: 1,
-                    &quot;category_id&quot;: 2
+                    &quot;category_id&quot;: 13
                 }
             },
             {
-                &quot;id&quot;: 9,
+                &quot;id&quot;: 15,
                 &quot;created_by&quot;: null,
-                &quot;name&quot;: &quot;Neuroinformatics&quot;,
-                &quot;slug&quot;: &quot;neuroinformatics&quot;,
-                &quot;description&quot;: &quot;Deep dive into Neuroinformatics and its impact on the future.&quot;,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                &quot;name&quot;: &quot;Marine Biotechnology&quot;,
+                &quot;slug&quot;: &quot;marine-biotechnology&quot;,
+                &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                 &quot;requested_deletion_at&quot;: null,
                 &quot;deletion_requested_by&quot;: null,
-                &quot;post_count&quot;: 4,
+                &quot;post_count&quot;: 3,
                 &quot;pivot&quot;: {
                     &quot;post_id&quot;: 1,
-                    &quot;category_id&quot;: 9
+                    &quot;category_id&quot;: 15
                 }
             }
         ],
         &quot;tags&quot;: [
             {
-                &quot;id&quot;: 7,
+                &quot;id&quot;: 15,
                 &quot;created_by&quot;: null,
-                &quot;name&quot;: &quot;Genetic Engineering&quot;,
-                &quot;slug&quot;: &quot;genetic-engineering&quot;,
+                &quot;name&quot;: &quot;GMO&quot;,
+                &quot;slug&quot;: &quot;gmo&quot;,
                 &quot;description&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;requested_deletion_at&quot;: null,
-                &quot;deletion_requested_by&quot;: null,
-                &quot;post_count&quot;: 4,
-                &quot;pivot&quot;: {
-                    &quot;post_id&quot;: 1,
-                    &quot;tag_id&quot;: 7
-                }
-            },
-            {
-                &quot;id&quot;: 12,
-                &quot;created_by&quot;: null,
-                &quot;name&quot;: &quot;Data Science&quot;,
-                &quot;slug&quot;: &quot;data-science&quot;,
-                &quot;description&quot;: null,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                 &quot;requested_deletion_at&quot;: null,
                 &quot;deletion_requested_by&quot;: null,
                 &quot;post_count&quot;: 2,
                 &quot;pivot&quot;: {
                     &quot;post_id&quot;: 1,
-                    &quot;tag_id&quot;: 12
+                    &quot;tag_id&quot;: 15
+                }
+            },
+            {
+                &quot;id&quot;: 26,
+                &quot;created_by&quot;: null,
+                &quot;name&quot;: &quot;Nanobiotechnology&quot;,
+                &quot;slug&quot;: &quot;nanobiotechnology&quot;,
+                &quot;description&quot;: null,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;requested_deletion_at&quot;: null,
+                &quot;deletion_requested_by&quot;: null,
+                &quot;post_count&quot;: 5,
+                &quot;pivot&quot;: {
+                    &quot;post_id&quot;: 1,
+                    &quot;tag_id&quot;: 26
                 }
             }
         ],
@@ -51468,15 +51426,15 @@ vary: Origin
             {
                 &quot;id&quot;: 9,
                 &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                &quot;file_size&quot;: 829674,
+                &quot;file_size&quot;: 850020,
                 &quot;usage_count&quot;: 0,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                 &quot;user_id&quot;: 1,
-                &quot;media_file_id&quot;: 2,
-                &quot;folder_id&quot;: 13,
+                &quot;media_file_id&quot;: 5,
+                &quot;folder_id&quot;: 11,
                 &quot;root_type&quot;: &quot;public&quot;,
-                &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
+                &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
                 &quot;type&quot;: &quot;image&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;temporary_until&quot;: null,
@@ -51484,25 +51442,25 @@ vary: Origin
                 &quot;share_token&quot;: null,
                 &quot;expires_at&quot;: null,
                 &quot;allow_download&quot;: true,
-                &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                 &quot;pivot&quot;: {
                     &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                     &quot;attachable_id&quot;: 1,
                     &quot;media_id&quot;: 9,
                     &quot;role&quot;: &quot;featured&quot;,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;
                 },
                 &quot;file&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                    &quot;id&quot;: 5,
+                    &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                     &quot;disk&quot;: &quot;r2&quot;,
-                    &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                    &quot;size&quot;: 829674,
+                    &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;size&quot;: 850020,
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                    &quot;ref_count&quot;: 7,
-                    &quot;created_at&quot;: &quot;2026-03-20T00:52:40.000000Z&quot;,
-                    &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
+                    &quot;ref_count&quot;: 13,
+                    &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                    &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                 }
             }
         ],
@@ -51512,425 +51470,29 @@ vary: Origin
         },
         &quot;related_posts&quot;: [
             {
-                &quot;id&quot;: 4,
+                &quot;id&quot;: 18,
                 &quot;user_id&quot;: 2,
                 &quot;county_id&quot;: 1,
-                &quot;title&quot;: &quot;The Future of Sustainable Agriculture: GMOs in Africa&quot;,
-                &quot;slug&quot;: &quot;the-future-of-sustainable-agriculture-gmos-in-africa&quot;,
-                &quot;excerpt&quot;: &quot;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&quot;,
-                &quot;body&quot;: &quot;&lt;p&gt;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&lt;/p&gt;&quot;,
+                &quot;title&quot;: &quot;Nanobiotechnology in Cancer Detection: Tiny Tools, Big Impact&quot;,
+                &quot;slug&quot;: &quot;nanobiotechnology-in-cancer-detection-tiny-tools-big-impact&quot;,
+                &quot;excerpt&quot;: &quot;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&quot;,
+                &quot;body&quot;: &quot;&lt;p&gt;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&lt;/p&gt;&quot;,
                 &quot;status&quot;: &quot;published&quot;,
-                &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;meta_title&quot;: &quot;The Future of Sustainable Agriculture: GMOs in Africa&quot;,
-                &quot;meta_description&quot;: &quot;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&quot;,
-                &quot;is_featured&quot;: true,
-                &quot;allow_comments&quot;: true,
-                &quot;views_count&quot;: 0,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                &quot;content&quot;: &quot;&lt;p&gt;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&lt;/p&gt;&quot;,
-                &quot;is_published&quot;: true,
-                &quot;likes_count&quot;: 2,
-                &quot;dislikes_count&quot;: 1,
-                &quot;comments_count&quot;: 4,
-                &quot;gallery_images&quot;: [],
-                &quot;author&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;username&quot;: &quot;admin&quot;,
-                    &quot;profile_picture_url&quot;: null,
-                    &quot;display_name&quot;: &quot;Admin User&quot;,
-                    &quot;member_profile&quot;: {
-                        &quot;id&quot;: 2,
-                        &quot;user_id&quot;: 2,
-                        &quot;first_name&quot;: &quot;Admin&quot;,
-                        &quot;last_name&quot;: &quot;User&quot;,
-                        &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                        &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                        &quot;gender&quot;: &quot;male&quot;,
-                        &quot;county_id&quot;: 5,
-                        &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                        &quot;ward&quot;: &quot;Demo Ward&quot;,
-                        &quot;interests&quot;: [
-                            &quot;technology&quot;,
-                            &quot;community&quot;,
-                            &quot;biotech&quot;
-                        ],
-                        &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                        &quot;is_staff&quot;: true,
-                        &quot;plan_id&quot;: null,
-                        &quot;occupation&quot;: &quot;Software Developer&quot;,
-                        &quot;emergency_contact_name&quot;: null,
-                        &quot;emergency_contact_phone&quot;: null,
-                        &quot;terms_accepted&quot;: true,
-                        &quot;marketing_consent&quot;: true,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                        &quot;deleted_at&quot;: null,
-                        &quot;plan_type&quot;: &quot;free&quot;,
-                        &quot;plan_expires_at&quot;: null,
-                        &quot;public_profile_enabled&quot;: true,
-                        &quot;display_full_name&quot;: false,
-                        &quot;display_age&quot;: false,
-                        &quot;prefix&quot;: null,
-                        &quot;public_role&quot;: null,
-                        &quot;experience&quot;: null,
-                        &quot;experience_visible&quot;: false,
-                        &quot;education&quot;: null,
-                        &quot;education_visible&quot;: false,
-                        &quot;skills&quot;: null,
-                        &quot;skills_visible&quot;: false,
-                        &quot;achievements&quot;: null,
-                        &quot;achievements_visible&quot;: false,
-                        &quot;certifications&quot;: null,
-                        &quot;certifications_visible&quot;: false,
-                        &quot;public_bio&quot;: null,
-                        &quot;show_email&quot;: false,
-                        &quot;show_location&quot;: true,
-                        &quot;show_join_date&quot;: true,
-                        &quot;show_post_count&quot;: true,
-                        &quot;show_interests&quot;: true,
-                        &quot;show_occupation&quot;: 0
-                    }
-                },
-                &quot;categories&quot;: [
-                    {
-                        &quot;id&quot;: 2,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                        &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                        &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 6,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 4,
-                            &quot;category_id&quot;: 2
-                        }
-                    }
-                ],
-                &quot;tags&quot;: [
-                    {
-                        &quot;id&quot;: 5,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Bioremediation&quot;,
-                        &quot;slug&quot;: &quot;bioremediation&quot;,
-                        &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 4,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 4,
-                            &quot;tag_id&quot;: 5
-                        }
-                    },
-                    {
-                        &quot;id&quot;: 9,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;DNA Profiling&quot;,
-                        &quot;slug&quot;: &quot;dna-profiling&quot;,
-                        &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 5,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 4,
-                            &quot;tag_id&quot;: 9
-                        }
-                    },
-                    {
-                        &quot;id&quot;: 13,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;CRISPR-Cas12&quot;,
-                        &quot;slug&quot;: &quot;crispr-cas12&quot;,
-                        &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 2,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 4,
-                            &quot;tag_id&quot;: 13
-                        }
-                    }
-                ],
-                &quot;media&quot;: [
-                    {
-                        &quot;id&quot;: 12,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;file_size&quot;: 829674,
-                        &quot;usage_count&quot;: 0,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;user_id&quot;: 1,
-                        &quot;media_file_id&quot;: 2,
-                        &quot;folder_id&quot;: 16,
-                        &quot;root_type&quot;: &quot;public&quot;,
-                        &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
-                        &quot;type&quot;: &quot;image&quot;,
-                        &quot;deleted_at&quot;: null,
-                        &quot;temporary_until&quot;: null,
-                        &quot;visibility&quot;: &quot;public&quot;,
-                        &quot;share_token&quot;: null,
-                        &quot;expires_at&quot;: null,
-                        &quot;allow_download&quot;: true,
-                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;pivot&quot;: {
-                            &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                            &quot;attachable_id&quot;: 4,
-                            &quot;media_id&quot;: 12,
-                            &quot;role&quot;: &quot;featured&quot;,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
-                        },
-                        &quot;file&quot;: {
-                            &quot;id&quot;: 2,
-                            &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                            &quot;disk&quot;: &quot;r2&quot;,
-                            &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                            &quot;size&quot;: 829674,
-                            &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                            &quot;ref_count&quot;: 7,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:40.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                        }
-                    }
-                ],
-                &quot;county&quot;: {
-                    &quot;id&quot;: 1,
-                    &quot;name&quot;: &quot;Mombasa&quot;
-                }
-            },
-            {
-                &quot;id&quot;: 5,
-                &quot;user_id&quot;: 2,
-                &quot;county_id&quot;: 1,
-                &quot;title&quot;: &quot;Synthetic Biology: Designing Life Forms of Tomorrow&quot;,
-                &quot;slug&quot;: &quot;synthetic-biology-designing-life-forms-of-tomorrow&quot;,
-                &quot;excerpt&quot;: &quot;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&quot;,
-                &quot;body&quot;: &quot;&lt;p&gt;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&lt;/p&gt;&quot;,
-                &quot;status&quot;: &quot;published&quot;,
-                &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;meta_title&quot;: &quot;Synthetic Biology: Designing Life Forms of Tomorrow&quot;,
-                &quot;meta_description&quot;: &quot;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&quot;,
+                &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                &quot;meta_title&quot;: &quot;Nanobiotechnology in Cancer Detection: Tiny Tools, Big Im...&quot;,
+                &quot;meta_description&quot;: &quot;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&quot;,
                 &quot;is_featured&quot;: false,
                 &quot;allow_comments&quot;: true,
                 &quot;views_count&quot;: 0,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;deleted_at&quot;: null,
-                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                &quot;content&quot;: &quot;&lt;p&gt;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&lt;/p&gt;&quot;,
-                &quot;is_published&quot;: true,
-                &quot;likes_count&quot;: 5,
-                &quot;dislikes_count&quot;: 2,
-                &quot;comments_count&quot;: 2,
-                &quot;gallery_images&quot;: [],
-                &quot;author&quot;: {
-                    &quot;id&quot;: 2,
-                    &quot;username&quot;: &quot;admin&quot;,
-                    &quot;profile_picture_url&quot;: null,
-                    &quot;display_name&quot;: &quot;Admin User&quot;,
-                    &quot;member_profile&quot;: {
-                        &quot;id&quot;: 2,
-                        &quot;user_id&quot;: 2,
-                        &quot;first_name&quot;: &quot;Admin&quot;,
-                        &quot;last_name&quot;: &quot;User&quot;,
-                        &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                        &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
-                        &quot;gender&quot;: &quot;male&quot;,
-                        &quot;county_id&quot;: 5,
-                        &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
-                        &quot;ward&quot;: &quot;Demo Ward&quot;,
-                        &quot;interests&quot;: [
-                            &quot;technology&quot;,
-                            &quot;community&quot;,
-                            &quot;biotech&quot;
-                        ],
-                        &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                        &quot;is_staff&quot;: true,
-                        &quot;plan_id&quot;: null,
-                        &quot;occupation&quot;: &quot;Software Developer&quot;,
-                        &quot;emergency_contact_name&quot;: null,
-                        &quot;emergency_contact_phone&quot;: null,
-                        &quot;terms_accepted&quot;: true,
-                        &quot;marketing_consent&quot;: true,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                        &quot;deleted_at&quot;: null,
-                        &quot;plan_type&quot;: &quot;free&quot;,
-                        &quot;plan_expires_at&quot;: null,
-                        &quot;public_profile_enabled&quot;: true,
-                        &quot;display_full_name&quot;: false,
-                        &quot;display_age&quot;: false,
-                        &quot;prefix&quot;: null,
-                        &quot;public_role&quot;: null,
-                        &quot;experience&quot;: null,
-                        &quot;experience_visible&quot;: false,
-                        &quot;education&quot;: null,
-                        &quot;education_visible&quot;: false,
-                        &quot;skills&quot;: null,
-                        &quot;skills_visible&quot;: false,
-                        &quot;achievements&quot;: null,
-                        &quot;achievements_visible&quot;: false,
-                        &quot;certifications&quot;: null,
-                        &quot;certifications_visible&quot;: false,
-                        &quot;public_bio&quot;: null,
-                        &quot;show_email&quot;: false,
-                        &quot;show_location&quot;: true,
-                        &quot;show_join_date&quot;: true,
-                        &quot;show_post_count&quot;: true,
-                        &quot;show_interests&quot;: true,
-                        &quot;show_occupation&quot;: 0
-                    }
-                },
-                &quot;categories&quot;: [
-                    {
-                        &quot;id&quot;: 2,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                        &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                        &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 6,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 5,
-                            &quot;category_id&quot;: 2
-                        }
-                    },
-                    {
-                        &quot;id&quot;: 6,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Marine Biotechnology&quot;,
-                        &quot;slug&quot;: &quot;marine-biotechnology&quot;,
-                        &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 2,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 5,
-                            &quot;category_id&quot;: 6
-                        }
-                    }
-                ],
-                &quot;tags&quot;: [
-                    {
-                        &quot;id&quot;: 1,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;CRISPR&quot;,
-                        &quot;slug&quot;: &quot;crispr&quot;,
-                        &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 4,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 5,
-                            &quot;tag_id&quot;: 1
-                        }
-                    },
-                    {
-                        &quot;id&quot;: 10,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Biofuels&quot;,
-                        &quot;slug&quot;: &quot;biofuels&quot;,
-                        &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 5,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 5,
-                            &quot;tag_id&quot;: 10
-                        }
-                    }
-                ],
-                &quot;media&quot;: [
-                    {
-                        &quot;id&quot;: 13,
-                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                        &quot;file_size&quot;: 829674,
-                        &quot;usage_count&quot;: 0,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;user_id&quot;: 1,
-                        &quot;media_file_id&quot;: 2,
-                        &quot;folder_id&quot;: 17,
-                        &quot;root_type&quot;: &quot;public&quot;,
-                        &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
-                        &quot;type&quot;: &quot;image&quot;,
-                        &quot;deleted_at&quot;: null,
-                        &quot;temporary_until&quot;: null,
-                        &quot;visibility&quot;: &quot;public&quot;,
-                        &quot;share_token&quot;: null,
-                        &quot;expires_at&quot;: null,
-                        &quot;allow_download&quot;: true,
-                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                        &quot;pivot&quot;: {
-                            &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                            &quot;attachable_id&quot;: 5,
-                            &quot;media_id&quot;: 13,
-                            &quot;role&quot;: &quot;featured&quot;,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
-                        },
-                        &quot;file&quot;: {
-                            &quot;id&quot;: 2,
-                            &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                            &quot;disk&quot;: &quot;r2&quot;,
-                            &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
-                            &quot;size&quot;: 829674,
-                            &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                            &quot;ref_count&quot;: 7,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:40.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:53:01.000000Z&quot;
-                        }
-                    }
-                ],
-                &quot;county&quot;: {
-                    &quot;id&quot;: 1,
-                    &quot;name&quot;: &quot;Mombasa&quot;
-                }
-            },
-            {
-                &quot;id&quot;: 6,
-                &quot;user_id&quot;: 2,
-                &quot;county_id&quot;: 1,
-                &quot;title&quot;: &quot;Bioinformatics: Decoding the Language of the Genome&quot;,
-                &quot;slug&quot;: &quot;bioinformatics-decoding-the-language-of-the-genome&quot;,
-                &quot;excerpt&quot;: &quot;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&quot;,
-                &quot;body&quot;: &quot;&lt;p&gt;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&lt;/p&gt;&quot;,
-                &quot;status&quot;: &quot;published&quot;,
-                &quot;published_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;meta_title&quot;: &quot;Bioinformatics: Decoding the Language of the Genome&quot;,
-                &quot;meta_description&quot;: &quot;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&quot;,
-                &quot;is_featured&quot;: false,
-                &quot;allow_comments&quot;: true,
-                &quot;views_count&quot;: 0,
-                &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
-                &quot;content&quot;: &quot;&lt;p&gt;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&lt;/p&gt;&quot;,
+                &quot;content&quot;: &quot;&lt;p&gt;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&lt;/p&gt;&quot;,
                 &quot;is_published&quot;: true,
-                &quot;likes_count&quot;: 6,
-                &quot;dislikes_count&quot;: 1,
-                &quot;comments_count&quot;: 4,
+                &quot;likes_count&quot;: 4,
+                &quot;dislikes_count&quot;: 0,
+                &quot;comments_count&quot;: 5,
                 &quot;gallery_images&quot;: [],
                 &quot;author&quot;: {
                     &quot;id&quot;: 2,
@@ -51942,10 +51504,10 @@ vary: Origin
                         &quot;user_id&quot;: 2,
                         &quot;first_name&quot;: &quot;Admin&quot;,
                         &quot;last_name&quot;: &quot;User&quot;,
-                        &quot;phone_number&quot;: &quot;+254750653363&quot;,
-                        &quot;date_of_birth&quot;: &quot;2001-03-20T00:00:00.000000Z&quot;,
+                        &quot;phone_number&quot;: &quot;+254755501462&quot;,
+                        &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
                         &quot;gender&quot;: &quot;male&quot;,
-                        &quot;county_id&quot;: 5,
+                        &quot;county_id&quot;: 8,
                         &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
                         &quot;ward&quot;: &quot;Demo Ward&quot;,
                         &quot;interests&quot;: [
@@ -51954,15 +51516,14 @@ vary: Origin
                             &quot;biotech&quot;
                         ],
                         &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
-                        &quot;is_staff&quot;: true,
                         &quot;plan_id&quot;: null,
                         &quot;occupation&quot;: &quot;Software Developer&quot;,
                         &quot;emergency_contact_name&quot;: null,
                         &quot;emergency_contact_phone&quot;: null,
                         &quot;terms_accepted&quot;: true,
-                        &quot;marketing_consent&quot;: true,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:20.000000Z&quot;,
+                        &quot;marketing_consent&quot;: false,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:35:35.000000Z&quot;,
                         &quot;deleted_at&quot;: null,
                         &quot;plan_type&quot;: &quot;free&quot;,
                         &quot;plan_expires_at&quot;: null,
@@ -51992,99 +51553,83 @@ vary: Origin
                 },
                 &quot;categories&quot;: [
                     {
-                        &quot;id&quot;: 2,
+                        &quot;id&quot;: 13,
                         &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Synthetic Biology&quot;,
-                        &quot;slug&quot;: &quot;synthetic-biology&quot;,
-                        &quot;description&quot;: &quot;Deep dive into Synthetic Biology and its impact on the future.&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;requested_deletion_at&quot;: null,
-                        &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 6,
-                        &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 6,
-                            &quot;category_id&quot;: 2
-                        }
-                    },
-                    {
-                        &quot;id&quot;: 5,
-                        &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Medical Biotechnology&quot;,
-                        &quot;slug&quot;: &quot;medical-biotechnology&quot;,
-                        &quot;description&quot;: &quot;Deep dive into Medical Biotechnology and its impact on the future.&quot;,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                        &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
+                        &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
+                        &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                         &quot;requested_deletion_at&quot;: null,
                         &quot;deletion_requested_by&quot;: null,
                         &quot;post_count&quot;: 3,
                         &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 6,
-                            &quot;category_id&quot;: 5
+                            &quot;post_id&quot;: 18,
+                            &quot;category_id&quot;: 13
                         }
                     }
                 ],
                 &quot;tags&quot;: [
                     {
-                        &quot;id&quot;: 6,
+                        &quot;id&quot;: 14,
                         &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Stem Cells&quot;,
-                        &quot;slug&quot;: &quot;stem-cells&quot;,
+                        &quot;name&quot;: &quot;DNA Sequencing&quot;,
+                        &quot;slug&quot;: &quot;dna-sequencing&quot;,
                         &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                         &quot;requested_deletion_at&quot;: null,
                         &quot;deletion_requested_by&quot;: null,
                         &quot;post_count&quot;: 4,
                         &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 6,
-                            &quot;tag_id&quot;: 6
+                            &quot;post_id&quot;: 18,
+                            &quot;tag_id&quot;: 14
                         }
                     },
                     {
-                        &quot;id&quot;: 7,
+                        &quot;id&quot;: 16,
                         &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Genetic Engineering&quot;,
-                        &quot;slug&quot;: &quot;genetic-engineering&quot;,
+                        &quot;name&quot;: &quot;Vaccines&quot;,
+                        &quot;slug&quot;: &quot;vaccines&quot;,
                         &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                         &quot;requested_deletion_at&quot;: null,
                         &quot;deletion_requested_by&quot;: null,
                         &quot;post_count&quot;: 4,
                         &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 6,
-                            &quot;tag_id&quot;: 7
+                            &quot;post_id&quot;: 18,
+                            &quot;tag_id&quot;: 16
                         }
                     },
                     {
-                        &quot;id&quot;: 11,
+                        &quot;id&quot;: 21,
                         &quot;created_by&quot;: null,
-                        &quot;name&quot;: &quot;Microbiome&quot;,
-                        &quot;slug&quot;: &quot;microbiome&quot;,
+                        &quot;name&quot;: &quot;DNA Profiling&quot;,
+                        &quot;slug&quot;: &quot;dna-profiling&quot;,
                         &quot;description&quot;: null,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
                         &quot;requested_deletion_at&quot;: null,
                         &quot;deletion_requested_by&quot;: null,
-                        &quot;post_count&quot;: 5,
+                        &quot;post_count&quot;: 3,
                         &quot;pivot&quot;: {
-                            &quot;post_id&quot;: 6,
-                            &quot;tag_id&quot;: 11
+                            &quot;post_id&quot;: 18,
+                            &quot;tag_id&quot;: 21
                         }
                     }
                 ],
                 &quot;media&quot;: [
                     {
-                        &quot;id&quot;: 14,
+                        &quot;id&quot;: 26,
                         &quot;mime_type&quot;: &quot;image/jpeg&quot;,
                         &quot;file_size&quot;: 850020,
                         &quot;usage_count&quot;: 0,
-                        &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                        &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
                         &quot;user_id&quot;: 1,
                         &quot;media_file_id&quot;: 5,
-                        &quot;folder_id&quot;: 18,
+                        &quot;folder_id&quot;: 28,
                         &quot;root_type&quot;: &quot;public&quot;,
                         &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
                         &quot;type&quot;: &quot;image&quot;,
@@ -52097,11 +51642,11 @@ vary: Origin
                         &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                         &quot;pivot&quot;: {
                             &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
-                            &quot;attachable_id&quot;: 6,
-                            &quot;media_id&quot;: 14,
+                            &quot;attachable_id&quot;: 18,
+                            &quot;media_id&quot;: 26,
                             &quot;role&quot;: &quot;featured&quot;,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:52:52.000000Z&quot;
+                            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                         },
                         &quot;file&quot;: {
                             &quot;id&quot;: 5,
@@ -52110,9 +51655,385 @@ vary: Origin
                             &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                             &quot;size&quot;: 850020,
                             &quot;mime_type&quot;: &quot;image/jpeg&quot;,
-                            &quot;ref_count&quot;: 10,
-                            &quot;created_at&quot;: &quot;2026-03-20T00:52:48.000000Z&quot;,
-                            &quot;updated_at&quot;: &quot;2026-03-20T00:52:53.000000Z&quot;
+                            &quot;ref_count&quot;: 13,
+                            &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                        }
+                    }
+                ],
+                &quot;county&quot;: {
+                    &quot;id&quot;: 1,
+                    &quot;name&quot;: &quot;Mombasa&quot;
+                }
+            },
+            {
+                &quot;id&quot;: 19,
+                &quot;user_id&quot;: 10,
+                &quot;county_id&quot;: 1,
+                &quot;title&quot;: &quot;Microbiome Research: The Secret Life of Our Gut Bacteria&quot;,
+                &quot;slug&quot;: &quot;microbiome-research-the-secret-life-of-our-gut-bacteria&quot;,
+                &quot;excerpt&quot;: &quot;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&quot;,
+                &quot;body&quot;: &quot;&lt;p&gt;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&lt;/p&gt;&quot;,
+                &quot;status&quot;: &quot;published&quot;,
+                &quot;published_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                &quot;meta_title&quot;: &quot;Microbiome Research: The Secret Life of Our Gut Bacteria&quot;,
+                &quot;meta_description&quot;: &quot;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&quot;,
+                &quot;is_featured&quot;: false,
+                &quot;allow_comments&quot;: false,
+                &quot;views_count&quot;: 0,
+                &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                &quot;content&quot;: &quot;&lt;p&gt;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&lt;/p&gt;&quot;,
+                &quot;is_published&quot;: true,
+                &quot;likes_count&quot;: 3,
+                &quot;dislikes_count&quot;: 0,
+                &quot;comments_count&quot;: 3,
+                &quot;gallery_images&quot;: [],
+                &quot;author&quot;: {
+                    &quot;id&quot;: 10,
+                    &quot;username&quot;: &quot;janesmith&quot;,
+                    &quot;profile_picture_url&quot;: null,
+                    &quot;display_name&quot;: &quot;Jane Smith&quot;,
+                    &quot;member_profile&quot;: {
+                        &quot;id&quot;: 10,
+                        &quot;user_id&quot;: 10,
+                        &quot;first_name&quot;: &quot;Jane&quot;,
+                        &quot;last_name&quot;: &quot;Smith&quot;,
+                        &quot;phone_number&quot;: &quot;+254743267167&quot;,
+                        &quot;date_of_birth&quot;: &quot;2001-03-27T00:00:00.000000Z&quot;,
+                        &quot;gender&quot;: &quot;male&quot;,
+                        &quot;county_id&quot;: 39,
+                        &quot;sub_county&quot;: &quot;Demo Sub-County&quot;,
+                        &quot;ward&quot;: &quot;Demo Ward&quot;,
+                        &quot;interests&quot;: [
+                            &quot;technology&quot;,
+                            &quot;community&quot;,
+                            &quot;biotech&quot;
+                        ],
+                        &quot;bio&quot;: &quot;A passionate member of the Dadisi Community Labs community.&quot;,
+                        &quot;plan_id&quot;: 1,
+                        &quot;occupation&quot;: &quot;Software Developer&quot;,
+                        &quot;emergency_contact_name&quot;: null,
+                        &quot;emergency_contact_phone&quot;: null,
+                        &quot;terms_accepted&quot;: true,
+                        &quot;marketing_consent&quot;: true,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:35:39.000000Z&quot;,
+                        &quot;deleted_at&quot;: null,
+                        &quot;plan_type&quot;: &quot;free&quot;,
+                        &quot;plan_expires_at&quot;: null,
+                        &quot;public_profile_enabled&quot;: true,
+                        &quot;display_full_name&quot;: false,
+                        &quot;display_age&quot;: false,
+                        &quot;prefix&quot;: null,
+                        &quot;public_role&quot;: null,
+                        &quot;experience&quot;: null,
+                        &quot;experience_visible&quot;: false,
+                        &quot;education&quot;: null,
+                        &quot;education_visible&quot;: false,
+                        &quot;skills&quot;: null,
+                        &quot;skills_visible&quot;: false,
+                        &quot;achievements&quot;: null,
+                        &quot;achievements_visible&quot;: false,
+                        &quot;certifications&quot;: null,
+                        &quot;certifications_visible&quot;: false,
+                        &quot;public_bio&quot;: null,
+                        &quot;show_email&quot;: false,
+                        &quot;show_location&quot;: true,
+                        &quot;show_join_date&quot;: true,
+                        &quot;show_post_count&quot;: true,
+                        &quot;show_interests&quot;: true,
+                        &quot;show_occupation&quot;: 0
+                    }
+                },
+                &quot;categories&quot;: [
+                    {
+                        &quot;id&quot;: 13,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;Agricultural Biotechnology&quot;,
+                        &quot;slug&quot;: &quot;agricultural-biotechnology&quot;,
+                        &quot;description&quot;: &quot;Deep dive into Agricultural Biotechnology and its impact on the future.&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 3,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 19,
+                            &quot;category_id&quot;: 13
+                        }
+                    }
+                ],
+                &quot;tags&quot;: [
+                    {
+                        &quot;id&quot;: 23,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;Microbiome&quot;,
+                        &quot;slug&quot;: &quot;microbiome&quot;,
+                        &quot;description&quot;: null,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 2,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 19,
+                            &quot;tag_id&quot;: 23
+                        }
+                    },
+                    {
+                        &quot;id&quot;: 25,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;CRISPR-Cas12&quot;,
+                        &quot;slug&quot;: &quot;crispr-cas12&quot;,
+                        &quot;description&quot;: null,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 4,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 19,
+                            &quot;tag_id&quot;: 25
+                        }
+                    }
+                ],
+                &quot;media&quot;: [
+                    {
+                        &quot;id&quot;: 27,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;file_size&quot;: 829674,
+                        &quot;usage_count&quot;: 0,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                        &quot;user_id&quot;: 1,
+                        &quot;media_file_id&quot;: 2,
+                        &quot;folder_id&quot;: 29,
+                        &quot;root_type&quot;: &quot;public&quot;,
+                        &quot;file_name&quot;: &quot;biotech-lab.png&quot;,
+                        &quot;type&quot;: &quot;image&quot;,
+                        &quot;deleted_at&quot;: null,
+                        &quot;temporary_until&quot;: null,
+                        &quot;visibility&quot;: &quot;public&quot;,
+                        &quot;share_token&quot;: null,
+                        &quot;expires_at&quot;: null,
+                        &quot;allow_download&quot;: true,
+                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                        &quot;pivot&quot;: {
+                            &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                            &quot;attachable_id&quot;: 19,
+                            &quot;media_id&quot;: 27,
+                            &quot;role&quot;: &quot;featured&quot;,
+                            &quot;created_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
+                        },
+                        &quot;file&quot;: {
+                            &quot;id&quot;: 2,
+                            &quot;hash&quot;: &quot;9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                            &quot;disk&quot;: &quot;r2&quot;,
+                            &quot;path&quot;: &quot;blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                            &quot;size&quot;: 829674,
+                            &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                            &quot;ref_count&quot;: 5,
+                            &quot;created_at&quot;: &quot;2026-03-27T05:36:18.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:37:16.000000Z&quot;
+                        }
+                    }
+                ],
+                &quot;county&quot;: {
+                    &quot;id&quot;: 1,
+                    &quot;name&quot;: &quot;Mombasa&quot;
+                }
+            },
+            {
+                &quot;id&quot;: 2,
+                &quot;user_id&quot;: 1,
+                &quot;county_id&quot;: 1,
+                &quot;title&quot;: &quot;The Genomics Era: Mapping the Human Future&quot;,
+                &quot;slug&quot;: &quot;the-genomics-era-mapping-the-human-future&quot;,
+                &quot;excerpt&quot;: &quot;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&quot;,
+                &quot;body&quot;: &quot;&lt;p&gt;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&lt;/p&gt;&quot;,
+                &quot;status&quot;: &quot;published&quot;,
+                &quot;published_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;meta_title&quot;: &quot;The Genomics Era: Mapping the Human Future&quot;,
+                &quot;meta_description&quot;: &quot;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&quot;,
+                &quot;is_featured&quot;: false,
+                &quot;allow_comments&quot;: true,
+                &quot;views_count&quot;: 0,
+                &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                &quot;deleted_at&quot;: null,
+                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                &quot;content&quot;: &quot;&lt;p&gt;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&lt;/p&gt;&quot;,
+                &quot;is_published&quot;: true,
+                &quot;likes_count&quot;: 4,
+                &quot;dislikes_count&quot;: 1,
+                &quot;comments_count&quot;: 2,
+                &quot;gallery_images&quot;: [],
+                &quot;author&quot;: {
+                    &quot;id&quot;: 1,
+                    &quot;username&quot;: &quot;superadmin&quot;,
+                    &quot;profile_picture_url&quot;: null,
+                    &quot;display_name&quot;: &quot;System Administrator&quot;,
+                    &quot;member_profile&quot;: {
+                        &quot;id&quot;: 1,
+                        &quot;user_id&quot;: 1,
+                        &quot;first_name&quot;: &quot;System&quot;,
+                        &quot;last_name&quot;: &quot;Administrator&quot;,
+                        &quot;phone_number&quot;: &quot;+254700000000&quot;,
+                        &quot;date_of_birth&quot;: &quot;1990-01-01T00:00:00.000000Z&quot;,
+                        &quot;gender&quot;: null,
+                        &quot;county_id&quot;: 1,
+                        &quot;sub_county&quot;: &quot;System&quot;,
+                        &quot;ward&quot;: &quot;System&quot;,
+                        &quot;interests&quot;: [
+                            &quot;system&quot;
+                        ],
+                        &quot;bio&quot;: &quot;Initial system administrator account.&quot;,
+                        &quot;plan_id&quot;: 1,
+                        &quot;occupation&quot;: &quot;System Admin&quot;,
+                        &quot;emergency_contact_name&quot;: null,
+                        &quot;emergency_contact_phone&quot;: null,
+                        &quot;terms_accepted&quot;: true,
+                        &quot;marketing_consent&quot;: false,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:35:34.000000Z&quot;,
+                        &quot;deleted_at&quot;: null,
+                        &quot;plan_type&quot;: &quot;free&quot;,
+                        &quot;plan_expires_at&quot;: null,
+                        &quot;public_profile_enabled&quot;: true,
+                        &quot;display_full_name&quot;: false,
+                        &quot;display_age&quot;: false,
+                        &quot;prefix&quot;: null,
+                        &quot;public_role&quot;: null,
+                        &quot;experience&quot;: null,
+                        &quot;experience_visible&quot;: false,
+                        &quot;education&quot;: null,
+                        &quot;education_visible&quot;: false,
+                        &quot;skills&quot;: null,
+                        &quot;skills_visible&quot;: false,
+                        &quot;achievements&quot;: null,
+                        &quot;achievements_visible&quot;: false,
+                        &quot;certifications&quot;: null,
+                        &quot;certifications_visible&quot;: false,
+                        &quot;public_bio&quot;: null,
+                        &quot;show_email&quot;: false,
+                        &quot;show_location&quot;: true,
+                        &quot;show_join_date&quot;: true,
+                        &quot;show_post_count&quot;: true,
+                        &quot;show_interests&quot;: true,
+                        &quot;show_occupation&quot;: 0
+                    }
+                },
+                &quot;categories&quot;: [
+                    {
+                        &quot;id&quot;: 14,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;Medical Biotechnology&quot;,
+                        &quot;slug&quot;: &quot;medical-biotechnology&quot;,
+                        &quot;description&quot;: &quot;Deep dive into Medical Biotechnology and its impact on the future.&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 1,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 2,
+                            &quot;category_id&quot;: 14
+                        }
+                    },
+                    {
+                        &quot;id&quot;: 15,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;Marine Biotechnology&quot;,
+                        &quot;slug&quot;: &quot;marine-biotechnology&quot;,
+                        &quot;description&quot;: &quot;Deep dive into Marine Biotechnology and its impact on the future.&quot;,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 3,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 2,
+                            &quot;category_id&quot;: 15
+                        }
+                    }
+                ],
+                &quot;tags&quot;: [
+                    {
+                        &quot;id&quot;: 13,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;CRISPR&quot;,
+                        &quot;slug&quot;: &quot;crispr&quot;,
+                        &quot;description&quot;: null,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 2,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 2,
+                            &quot;tag_id&quot;: 13
+                        }
+                    },
+                    {
+                        &quot;id&quot;: 18,
+                        &quot;created_by&quot;: null,
+                        &quot;name&quot;: &quot;Stem Cells&quot;,
+                        &quot;slug&quot;: &quot;stem-cells&quot;,
+                        &quot;description&quot;: null,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;requested_deletion_at&quot;: null,
+                        &quot;deletion_requested_by&quot;: null,
+                        &quot;post_count&quot;: 4,
+                        &quot;pivot&quot;: {
+                            &quot;post_id&quot;: 2,
+                            &quot;tag_id&quot;: 18
+                        }
+                    }
+                ],
+                &quot;media&quot;: [
+                    {
+                        &quot;id&quot;: 10,
+                        &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                        &quot;file_size&quot;: 850020,
+                        &quot;usage_count&quot;: 0,
+                        &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                        &quot;user_id&quot;: 1,
+                        &quot;media_file_id&quot;: 5,
+                        &quot;folder_id&quot;: 12,
+                        &quot;root_type&quot;: &quot;public&quot;,
+                        &quot;file_name&quot;: &quot;genomics-viz.png&quot;,
+                        &quot;type&quot;: &quot;image&quot;,
+                        &quot;deleted_at&quot;: null,
+                        &quot;temporary_until&quot;: null,
+                        &quot;visibility&quot;: &quot;public&quot;,
+                        &quot;share_token&quot;: null,
+                        &quot;expires_at&quot;: null,
+                        &quot;allow_download&quot;: true,
+                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;pivot&quot;: {
+                            &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
+                            &quot;attachable_id&quot;: 2,
+                            &quot;media_id&quot;: 10,
+                            &quot;role&quot;: &quot;featured&quot;,
+                            &quot;created_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:36:59.000000Z&quot;
+                        },
+                        &quot;file&quot;: {
+                            &quot;id&quot;: 5,
+                            &quot;hash&quot;: &quot;90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                            &quot;disk&quot;: &quot;r2&quot;,
+                            &quot;path&quot;: &quot;blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                            &quot;size&quot;: 850020,
+                            &quot;mime_type&quot;: &quot;image/jpeg&quot;,
+                            &quot;ref_count&quot;: 13,
+                            &quot;created_at&quot;: &quot;2026-03-27T05:36:44.000000Z&quot;,
+                            &quot;updated_at&quot;: &quot;2026-03-27T05:37:00.000000Z&quot;
                         }
                     }
                 ],
@@ -52226,7 +52147,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/contact" \
+    "http://192.168.55.127:8000/api/contact" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -52240,7 +52161,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/contact"
+    "http://192.168.55.127:8000/api/contact"
 );
 
 const headers = {
@@ -52399,14 +52320,14 @@ This is a public endpoint for populating dropdowns.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/counties" \
+    --get "http://192.168.55.127:8000/api/counties" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/counties"
+    "http://192.168.55.127:8000/api/counties"
 );
 
 const headers = {
@@ -52530,14 +52451,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/counties/1" \
+    --get "http://192.168.55.127:8000/api/counties/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/counties/1"
+    "http://192.168.55.127:8000/api/counties/1"
 );
 
 const headers = {
@@ -52675,7 +52596,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/counties" \
+    "http://192.168.55.127:8000/api/counties" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -52687,7 +52608,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/counties"
+    "http://192.168.55.127:8000/api/counties"
 );
 
 const headers = {
@@ -52832,7 +52753,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/counties/1" \
+    "http://192.168.55.127:8000/api/counties/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -52844,7 +52765,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/counties/1"
+    "http://192.168.55.127:8000/api/counties/1"
 );
 
 const headers = {
@@ -53012,7 +52933,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/counties/1" \
+    "http://192.168.55.127:8000/api/counties/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -53020,7 +52941,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/counties/1"
+    "http://192.168.55.127:8000/api/counties/1"
 );
 
 const headers = {
@@ -53170,14 +53091,14 @@ Supports filtering by county ID and searching by name.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/groups?county_id=1&amp;search=Nairobi&amp;per_page=15" \
+    --get "http://192.168.55.127:8000/api/groups?county_id=1&amp;search=Nairobi&amp;per_page=15" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/groups"
+    "http://192.168.55.127:8000/api/groups"
 );
 
 const params = {
@@ -53348,14 +53269,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/groups/nairobi-community" \
+    --get "http://192.168.55.127:8000/api/groups/nairobi-community" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/groups/nairobi-community"
+    "http://192.168.55.127:8000/api/groups/nairobi-community"
 );
 
 const headers = {
@@ -53506,14 +53427,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/groups/nairobi-community/members?per_page=20" \
+    --get "http://192.168.55.127:8000/api/groups/nairobi-community/members?per_page=20" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/groups/nairobi-community/members"
+    "http://192.168.55.127:8000/api/groups/nairobi-community/members"
 );
 
 const params = {
@@ -53661,7 +53582,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/groups/nairobi-community/join" \
+    "http://192.168.55.127:8000/api/groups/nairobi-community/join" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -53669,7 +53590,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/groups/nairobi-community/join"
+    "http://192.168.55.127:8000/api/groups/nairobi-community/join"
 );
 
 const headers = {
@@ -53813,7 +53734,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/groups/nairobi-community/leave" \
+    "http://192.168.55.127:8000/api/groups/nairobi-community/leave" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -53821,7 +53742,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/groups/nairobi-community/leave"
+    "http://192.168.55.127:8000/api/groups/nairobi-community/leave"
 );
 
 const headers = {
@@ -53965,14 +53886,14 @@ Supports filtering by county ID and searching by name.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/groups?county_id=1&amp;search=Nairobi&amp;per_page=15" \
+    --get "http://192.168.55.127:8000/api/forum/groups?county_id=1&amp;search=Nairobi&amp;per_page=15" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/groups"
+    "http://192.168.55.127:8000/api/forum/groups"
 );
 
 const params = {
@@ -54143,14 +54064,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/groups/nairobi-community" \
+    --get "http://192.168.55.127:8000/api/forum/groups/nairobi-community" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/groups/nairobi-community"
+    "http://192.168.55.127:8000/api/forum/groups/nairobi-community"
 );
 
 const headers = {
@@ -54301,14 +54222,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/groups/nairobi-community/members?per_page=20" \
+    --get "http://192.168.55.127:8000/api/forum/groups/nairobi-community/members?per_page=20" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/groups/nairobi-community/members"
+    "http://192.168.55.127:8000/api/forum/groups/nairobi-community/members"
 );
 
 const params = {
@@ -54456,7 +54377,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/forum/groups/nairobi-community/join" \
+    "http://192.168.55.127:8000/api/forum/groups/nairobi-community/join" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -54464,7 +54385,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/groups/nairobi-community/join"
+    "http://192.168.55.127:8000/api/forum/groups/nairobi-community/join"
 );
 
 const headers = {
@@ -54608,7 +54529,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/forum/groups/nairobi-community/leave" \
+    "http://192.168.55.127:8000/api/forum/groups/nairobi-community/leave" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -54616,7 +54537,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/groups/nairobi-community/leave"
+    "http://192.168.55.127:8000/api/forum/groups/nairobi-community/leave"
 );
 
 const headers = {
@@ -54763,14 +54684,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/donation-campaigns" \
+    --get "http://192.168.55.127:8000/api/donation-campaigns" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/donation-campaigns"
+    "http://192.168.55.127:8000/api/donation-campaigns"
 );
 
 const headers = {
@@ -54810,9 +54731,9 @@ vary: Origin
             &quot;goal_amount&quot;: 500000,
             &quot;minimum_amount&quot;: 100,
             &quot;effective_minimum_amount&quot;: null,
-            &quot;current_amount&quot;: 79000,
-            &quot;progress_percentage&quot;: 15.8,
-            &quot;donor_count&quot;: 7,
+            &quot;current_amount&quot;: 126400,
+            &quot;progress_percentage&quot;: 25.28,
+            &quot;donor_count&quot;: 11,
             &quot;is_goal_reached&quot;: false,
             &quot;currency&quot;: &quot;KES&quot;,
             &quot;hero_image_url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/ad/3e/ad3ec9571be2b09cedc61db2a119eba4ee3e207b610172c3c75d47f2858b2fbf&quot;,
@@ -54834,11 +54755,11 @@ vary: Origin
                 &quot;id&quot;: 1,
                 &quot;name&quot;: &quot;Mombasa&quot;
             },
-            &quot;starts_at&quot;: &quot;2026-03-10T00:52:54.000000Z&quot;,
-            &quot;ends_at&quot;: &quot;2026-06-20T00:52:54.000000Z&quot;,
-            &quot;published_at&quot;: &quot;2026-03-20T00:52:54.000000Z&quot;,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:54.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:57.000000Z&quot;
+            &quot;starts_at&quot;: &quot;2026-03-17T05:37:02.000000Z&quot;,
+            &quot;ends_at&quot;: &quot;2026-06-27T05:37:02.000000Z&quot;,
+            &quot;published_at&quot;: &quot;2026-03-27T05:37:02.000000Z&quot;,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:02.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:13.000000Z&quot;
         },
         {
             &quot;id&quot;: 4,
@@ -54849,9 +54770,9 @@ vary: Origin
             &quot;goal_amount&quot;: 300000,
             &quot;minimum_amount&quot;: null,
             &quot;effective_minimum_amount&quot;: null,
-            &quot;current_amount&quot;: 55400,
-            &quot;progress_percentage&quot;: 18.47,
-            &quot;donor_count&quot;: 5,
+            &quot;current_amount&quot;: 147200,
+            &quot;progress_percentage&quot;: 49.07,
+            &quot;donor_count&quot;: 9,
             &quot;is_goal_reached&quot;: false,
             &quot;currency&quot;: &quot;KES&quot;,
             &quot;hero_image_url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/6b/27/6b278376b1b2e6d661bbcdc40c93adf4413549e8f19a174ae39811412d61bfde&quot;,
@@ -54873,11 +54794,11 @@ vary: Origin
                 &quot;id&quot;: 4,
                 &quot;name&quot;: &quot;Tana River&quot;
             },
-            &quot;starts_at&quot;: &quot;2026-03-20T00:52:54.000000Z&quot;,
-            &quot;ends_at&quot;: &quot;2026-05-20T00:52:54.000000Z&quot;,
-            &quot;published_at&quot;: &quot;2026-03-19T00:52:54.000000Z&quot;,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:56.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:57.000000Z&quot;
+            &quot;starts_at&quot;: &quot;2026-03-27T05:37:02.000000Z&quot;,
+            &quot;ends_at&quot;: &quot;2026-05-27T05:37:02.000000Z&quot;,
+            &quot;published_at&quot;: &quot;2026-03-26T05:37:02.000000Z&quot;,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:11.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:13.000000Z&quot;
         },
         {
             &quot;id&quot;: 3,
@@ -54888,9 +54809,9 @@ vary: Origin
             &quot;goal_amount&quot;: 1000000,
             &quot;minimum_amount&quot;: 500,
             &quot;effective_minimum_amount&quot;: null,
-            &quot;current_amount&quot;: 13000,
-            &quot;progress_percentage&quot;: 1.3,
-            &quot;donor_count&quot;: 4,
+            &quot;current_amount&quot;: 18500,
+            &quot;progress_percentage&quot;: 1.85,
+            &quot;donor_count&quot;: 10,
             &quot;is_goal_reached&quot;: false,
             &quot;currency&quot;: &quot;KES&quot;,
             &quot;hero_image_url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
@@ -54914,9 +54835,9 @@ vary: Origin
             },
             &quot;starts_at&quot;: null,
             &quot;ends_at&quot;: null,
-            &quot;published_at&quot;: &quot;2026-03-17T00:52:54.000000Z&quot;,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:56.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:57.000000Z&quot;
+            &quot;published_at&quot;: &quot;2026-03-24T05:37:02.000000Z&quot;,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:11.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:13.000000Z&quot;
         },
         {
             &quot;id&quot;: 2,
@@ -54927,8 +54848,8 @@ vary: Origin
             &quot;goal_amount&quot;: 750000,
             &quot;minimum_amount&quot;: 250,
             &quot;effective_minimum_amount&quot;: null,
-            &quot;current_amount&quot;: 73250,
-            &quot;progress_percentage&quot;: 9.77,
+            &quot;current_amount&quot;: 27750,
+            &quot;progress_percentage&quot;: 3.7,
             &quot;donor_count&quot;: 8,
             &quot;is_goal_reached&quot;: false,
             &quot;currency&quot;: &quot;KES&quot;,
@@ -54951,11 +54872,11 @@ vary: Origin
                 &quot;id&quot;: 2,
                 &quot;name&quot;: &quot;Kwale&quot;
             },
-            &quot;starts_at&quot;: &quot;2026-03-15T00:52:54.000000Z&quot;,
-            &quot;ends_at&quot;: &quot;2026-09-20T00:52:54.000000Z&quot;,
-            &quot;published_at&quot;: &quot;2026-03-15T00:52:54.000000Z&quot;,
-            &quot;created_at&quot;: &quot;2026-03-20T00:52:54.000000Z&quot;,
-            &quot;updated_at&quot;: &quot;2026-03-20T00:52:57.000000Z&quot;
+            &quot;starts_at&quot;: &quot;2026-03-22T05:37:02.000000Z&quot;,
+            &quot;ends_at&quot;: &quot;2026-09-27T05:37:02.000000Z&quot;,
+            &quot;published_at&quot;: &quot;2026-03-22T05:37:02.000000Z&quot;,
+            &quot;created_at&quot;: &quot;2026-03-27T05:37:02.000000Z&quot;,
+            &quot;updated_at&quot;: &quot;2026-03-27T05:37:13.000000Z&quot;
         }
     ],
     &quot;pagination&quot;: {
@@ -55052,14 +54973,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/donation-campaigns/education-fund-2025" \
+    --get "http://192.168.55.127:8000/api/donation-campaigns/education-fund-2025" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/donation-campaigns/education-fund-2025"
+    "http://192.168.55.127:8000/api/donation-campaigns/education-fund-2025"
 );
 
 const headers = {
@@ -55098,9 +55019,9 @@ vary: Origin
         &quot;goal_amount&quot;: 500000,
         &quot;minimum_amount&quot;: 100,
         &quot;effective_minimum_amount&quot;: null,
-        &quot;current_amount&quot;: 79000,
-        &quot;progress_percentage&quot;: 15.8,
-        &quot;donor_count&quot;: 7,
+        &quot;current_amount&quot;: 126400,
+        &quot;progress_percentage&quot;: 25.28,
+        &quot;donor_count&quot;: 11,
         &quot;is_goal_reached&quot;: false,
         &quot;currency&quot;: &quot;KES&quot;,
         &quot;hero_image_url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/ad/3e/ad3ec9571be2b09cedc61db2a119eba4ee3e207b610172c3c75d47f2858b2fbf&quot;,
@@ -55122,11 +55043,11 @@ vary: Origin
             &quot;id&quot;: 1,
             &quot;name&quot;: &quot;Mombasa&quot;
         },
-        &quot;starts_at&quot;: &quot;2026-03-10T00:52:54.000000Z&quot;,
-        &quot;ends_at&quot;: &quot;2026-06-20T00:52:54.000000Z&quot;,
-        &quot;published_at&quot;: &quot;2026-03-20T00:52:54.000000Z&quot;,
-        &quot;created_at&quot;: &quot;2026-03-20T00:52:54.000000Z&quot;,
-        &quot;updated_at&quot;: &quot;2026-03-20T00:52:57.000000Z&quot;
+        &quot;starts_at&quot;: &quot;2026-03-17T05:37:02.000000Z&quot;,
+        &quot;ends_at&quot;: &quot;2026-06-27T05:37:02.000000Z&quot;,
+        &quot;published_at&quot;: &quot;2026-03-27T05:37:02.000000Z&quot;,
+        &quot;created_at&quot;: &quot;2026-03-27T05:37:02.000000Z&quot;,
+        &quot;updated_at&quot;: &quot;2026-03-27T05:37:13.000000Z&quot;
     }
 }</code>
  </pre>
@@ -55227,11 +55148,11 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/donation-campaigns/education-fund-2025/donate" \
+    "http://192.168.55.127:8000/api/donation-campaigns/education-fund-2025/donate" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"amount\": \"et\",
+    \"amount\": \"architecto\",
     \"currency\": \"architecto\",
     \"first_name\": \"architecto\",
     \"last_name\": \"architecto\",
@@ -55246,7 +55167,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/donation-campaigns/education-fund-2025/donate"
+    "http://192.168.55.127:8000/api/donation-campaigns/education-fund-2025/donate"
 );
 
 const headers = {
@@ -55255,7 +55176,7 @@ const headers = {
 };
 
 let body = {
-    "amount": "et",
+    "amount": "architecto",
     "currency": "architecto",
     "first_name": "architecto",
     "last_name": "architecto",
@@ -55364,10 +55285,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="amount"                data-endpoint="POSTapi-donation-campaigns--campaign_slug--donate"
-               value="et"
+               value="architecto"
                data-component="body">
     <br>
-<p>Minimum: 1 or campaign minimum Example: <code>et</code></p>
+<p>Minimum: 1 or campaign minimum Example: <code>architecto</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>currency</code></b>&nbsp;&nbsp;
@@ -55486,14 +55407,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/donations/ref/architecto" \
+    --get "http://192.168.55.127:8000/api/donations/ref/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/donations/ref/architecto"
+    "http://192.168.55.127:8000/api/donations/ref/architecto"
 );
 
 const headers = {
@@ -55623,14 +55544,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/donations/ref/architecto/resume" \
+    "http://192.168.55.127:8000/api/donations/ref/architecto/resume" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/donations/ref/architecto/resume"
+    "http://192.168.55.127:8000/api/donations/ref/architecto/resume"
 );
 
 const headers = {
@@ -55743,14 +55664,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/donations/ref/architecto/cancel" \
+    "http://192.168.55.127:8000/api/donations/ref/architecto/cancel" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/donations/ref/architecto/cancel"
+    "http://192.168.55.127:8000/api/donations/ref/architecto/cancel"
 );
 
 const headers = {
@@ -55863,7 +55784,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/donations" \
+    "http://192.168.55.127:8000/api/donations" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -55881,7 +55802,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/donations"
+    "http://192.168.55.127:8000/api/donations"
 );
 
 const headers = {
@@ -56084,7 +56005,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/donations" \
+    --get "http://192.168.55.127:8000/api/donations" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -56092,7 +56013,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/donations"
+    "http://192.168.55.127:8000/api/donations"
 );
 
 const headers = {
@@ -56222,7 +56143,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/donations/1" \
+    "http://192.168.55.127:8000/api/donations/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -56230,7 +56151,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/donations/1"
+    "http://192.168.55.127:8000/api/donations/1"
 );
 
 const headers = {
@@ -56359,14 +56280,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/invitations/architecto/verify" \
+    --get "http://192.168.55.127:8000/api/invitations/architecto/verify" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/invitations/architecto/verify"
+    "http://192.168.55.127:8000/api/invitations/architecto/verify"
 );
 
 const headers = {
@@ -56495,7 +56416,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/invitations/16/accept" \
+    "http://192.168.55.127:8000/api/invitations/16/accept" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -56508,7 +56429,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/invitations/16/accept"
+    "http://192.168.55.127:8000/api/invitations/16/accept"
 );
 
 const headers = {
@@ -56672,14 +56593,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/chat/conversations" \
+    --get "http://192.168.55.127:8000/api/chat/conversations" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/chat/conversations"
+    "http://192.168.55.127:8000/api/chat/conversations"
 );
 
 const headers = {
@@ -56796,14 +56717,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/chat/conversations/start/1" \
+    "http://192.168.55.127:8000/api/chat/conversations/start/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/chat/conversations/start/1"
+    "http://192.168.55.127:8000/api/chat/conversations/start/1"
 );
 
 const headers = {
@@ -56916,14 +56837,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/chat/conversations/architecto/messages" \
+    --get "http://192.168.55.127:8000/api/chat/conversations/architecto/messages" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/chat/conversations/architecto/messages"
+    "http://192.168.55.127:8000/api/chat/conversations/architecto/messages"
 );
 
 const headers = {
@@ -57052,13 +56973,13 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/chat/messages" \
+    "http://192.168.55.127:8000/api/chat/messages" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
     \"conversation_id\": \"architecto\",
     \"content\": \"architecto\",
-    \"type\": \"video\",
+    \"type\": \"image\",
     \"r2_key\": \"architecto\",
     \"file_name\": \"architecto\",
     \"file_size\": 16
@@ -57068,7 +56989,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/chat/messages"
+    "http://192.168.55.127:8000/api/chat/messages"
 );
 
 const headers = {
@@ -57079,7 +57000,7 @@ const headers = {
 let body = {
     "conversation_id": "architecto",
     "content": "architecto",
-    "type": "video",
+    "type": "image",
     "r2_key": "architecto",
     "file_name": "architecto",
     "file_size": 16
@@ -57193,10 +57114,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="type"                data-endpoint="POSTapi-chat-messages"
-               value="video"
+               value="image"
                data-component="body">
     <br>
-<p>Example: <code>video</code></p>
+<p>Example: <code>image</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>text</code></li> <li><code>image</code></li> <li><code>video</code></li> <li><code>file</code></li></ul>
         </div>
@@ -57248,14 +57169,14 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/chat/messages/architecto" \
+    "http://192.168.55.127:8000/api/chat/messages/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/chat/messages/architecto"
+    "http://192.168.55.127:8000/api/chat/messages/architecto"
 );
 
 const headers = {
@@ -57368,14 +57289,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/chat/conversations/architecto" \
+    "http://192.168.55.127:8000/api/chat/conversations/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/chat/conversations/architecto"
+    "http://192.168.55.127:8000/api/chat/conversations/architecto"
 );
 
 const headers = {
@@ -57488,14 +57409,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/blog/posts/my-first-blog-post/comments" \
+    --get "http://192.168.55.127:8000/api/blog/posts/my-first-blog-post/comments" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/posts/my-first-blog-post/comments"
+    "http://192.168.55.127:8000/api/blog/posts/my-first-blog-post/comments"
 );
 
 const headers = {
@@ -57624,14 +57545,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/blog/comments/1" \
+    "http://192.168.55.127:8000/api/admin/blog/comments/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/blog/comments/1"
+    "http://192.168.55.127:8000/api/admin/blog/comments/1"
 );
 
 const headers = {
@@ -57755,7 +57676,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/blog/posts/my-first-blog-post/comments" \
+    "http://192.168.55.127:8000/api/blog/posts/my-first-blog-post/comments" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -57767,7 +57688,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/posts/my-first-blog-post/comments"
+    "http://192.168.55.127:8000/api/blog/posts/my-first-blog-post/comments"
 );
 
 const headers = {
@@ -57909,14 +57830,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/blog/comments/1" \
+    "http://192.168.55.127:8000/api/blog/comments/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/comments/1"
+    "http://192.168.55.127:8000/api/blog/comments/1"
 );
 
 const headers = {
@@ -58040,7 +57961,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/blog/posts/my-first-blog-post/like" \
+    "http://192.168.55.127:8000/api/blog/posts/my-first-blog-post/like" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -58051,7 +57972,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/posts/my-first-blog-post/like"
+    "http://192.168.55.127:8000/api/blog/posts/my-first-blog-post/like"
 );
 
 const headers = {
@@ -58181,14 +58102,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/blog/posts/my-first-blog-post/like-status" \
+    --get "http://192.168.55.127:8000/api/blog/posts/my-first-blog-post/like-status" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/posts/my-first-blog-post/like-status"
+    "http://192.168.55.127:8000/api/blog/posts/my-first-blog-post/like-status"
 );
 
 const headers = {
@@ -58317,14 +58238,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/blog/posts/architecto/likers" \
+    --get "http://192.168.55.127:8000/api/blog/posts/architecto/likers" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/blog/posts/architecto/likers"
+    "http://192.168.55.127:8000/api/blog/posts/architecto/likers"
 );
 
 const headers = {
@@ -58453,14 +58374,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/folders" \
+    --get "http://192.168.55.127:8000/api/folders" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/folders"
+    "http://192.168.55.127:8000/api/folders"
 );
 
 const headers = {
@@ -58577,19 +58498,19 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/folders" \
+    "http://192.168.55.127:8000/api/folders" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
     \"name\": \"b\",
-    \"root_type\": \"personal\"
+    \"root_type\": \"public\"
 }"
 </code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/folders"
+    "http://192.168.55.127:8000/api/folders"
 );
 
 const headers = {
@@ -58599,7 +58520,7 @@ const headers = {
 
 let body = {
     "name": "b",
-    "root_type": "personal"
+    "root_type": "public"
 };
 
 fetch(url, {
@@ -58710,10 +58631,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="root_type"                data-endpoint="POSTapi-folders"
-               value="personal"
+               value="public"
                data-component="body">
     <br>
-<p>Example: <code>personal</code></p>
+<p>Example: <code>public</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>personal</code></li> <li><code>public</code></li></ul>
         </div>
@@ -58732,20 +58653,20 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/folders/rename-by-name" \
+    "http://192.168.55.127:8000/api/folders/rename-by-name" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
     \"current_name\": \"architecto\",
     \"new_name\": \"architecto\",
-    \"root_type\": \"personal\"
+    \"root_type\": \"public\"
 }"
 </code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/folders/rename-by-name"
+    "http://192.168.55.127:8000/api/folders/rename-by-name"
 );
 
 const headers = {
@@ -58756,7 +58677,7 @@ const headers = {
 let body = {
     "current_name": "architecto",
     "new_name": "architecto",
-    "root_type": "personal"
+    "root_type": "public"
 };
 
 fetch(url, {
@@ -58867,10 +58788,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="root_type"                data-endpoint="POSTapi-folders-rename-by-name"
-               value="personal"
+               value="public"
                data-component="body">
     <br>
-<p>Example: <code>personal</code></p>
+<p>Example: <code>public</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>personal</code></li> <li><code>public</code></li></ul>
         </div>
@@ -58911,7 +58832,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/folders/2" \
+    "http://192.168.55.127:8000/api/folders/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -58922,7 +58843,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/folders/2"
+    "http://192.168.55.127:8000/api/folders/1"
 );
 
 const headers = {
@@ -59020,10 +58941,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="id"                data-endpoint="PUTapi-folders--id-"
-               value="2"
+               value="1"
                data-component="url">
     <br>
-<p>The ID of the folder. Example: <code>2</code></p>
+<p>The ID of the folder. Example: <code>1</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -59052,14 +58973,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/folders/2" \
+    "http://192.168.55.127:8000/api/folders/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/folders/2"
+    "http://192.168.55.127:8000/api/folders/1"
 );
 
 const headers = {
@@ -59152,10 +59073,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="id"                data-endpoint="DELETEapi-folders--id-"
-               value="2"
+               value="1"
                data-component="url">
     <br>
-<p>The ID of the folder. Example: <code>2</code></p>
+<p>The ID of the folder. Example: <code>1</code></p>
             </div>
                     </form>
 
@@ -59172,14 +59093,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/media/shared/architecto" \
+    --get "http://192.168.55.127:8000/api/media/shared/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media/shared/architecto"
+    "http://192.168.55.127:8000/api/media/shared/architecto"
 );
 
 const headers = {
@@ -59308,14 +59229,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/media/shared/architecto/download" \
+    --get "http://192.168.55.127:8000/api/media/shared/architecto/download" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media/shared/architecto/download"
+    "http://192.168.55.127:8000/api/media/shared/architecto/download"
 );
 
 const headers = {
@@ -59444,14 +59365,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/media/quota" \
+    --get "http://192.168.55.127:8000/api/media/quota" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media/quota"
+    "http://192.168.55.127:8000/api/media/quota"
 );
 
 const headers = {
@@ -59568,14 +59489,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/media" \
+    --get "http://192.168.55.127:8000/api/media" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media"
+    "http://192.168.55.127:8000/api/media"
 );
 
 const headers = {
@@ -59692,20 +59613,20 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/media" \
+    "http://192.168.55.127:8000/api/media" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
     --form "attached_to=architecto"\
     --form "attached_to_id=16"\
     --form "temporary="\
-    --form "root_type=personal"\
-    --form "visibility=public"\
-    --form "file=@C:\Users\pasca\AppData\Local\Temp\php1FDA.tmp" </code></pre></div>
+    --form "root_type=public"\
+    --form "visibility=shared"\
+    --form "file=@C:\Users\pasca\AppData\Local\Temp\php2289.tmp" </code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media"
+    "http://192.168.55.127:8000/api/media"
 );
 
 const headers = {
@@ -59717,8 +59638,8 @@ const body = new FormData();
 body.append('attached_to', 'architecto');
 body.append('attached_to_id', '16');
 body.append('temporary', '');
-body.append('root_type', 'personal');
-body.append('visibility', 'public');
+body.append('root_type', 'public');
+body.append('visibility', 'shared');
 body.append('file', document.querySelector('input[name="file"]').files[0]);
 
 fetch(url, {
@@ -59810,7 +59731,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>The file to upload (image, audio, video, pdf, gif). Example: <code>C:\Users\pasca\AppData\Local\Temp\php1FDA.tmp</code></p>
+<p>The file to upload (image, audio, video, pdf, gif). Example: <code>C:\Users\pasca\AppData\Local\Temp\php2289.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>attached_to</code></b>&nbsp;&nbsp;
@@ -59861,10 +59782,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="root_type"                data-endpoint="POSTapi-media"
-               value="personal"
+               value="public"
                data-component="body">
     <br>
-<p>Example: <code>personal</code></p>
+<p>Example: <code>public</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>personal</code></li> <li><code>public</code></li></ul>
         </div>
@@ -59885,10 +59806,10 @@ Must be one of:
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="visibility"                data-endpoint="POSTapi-media"
-               value="public"
+               value="shared"
                data-component="body">
     <br>
-<p>Example: <code>public</code></p>
+<p>Example: <code>shared</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>public</code></li> <li><code>private</code></li> <li><code>shared</code></li></ul>
         </div>
@@ -59907,14 +59828,14 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/media/1" \
+    --get "http://192.168.55.127:8000/api/media/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media/1"
+    "http://192.168.55.127:8000/api/media/1"
 );
 
 const headers = {
@@ -60043,14 +59964,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/media/1" \
+    "http://192.168.55.127:8000/api/media/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media/1"
+    "http://192.168.55.127:8000/api/media/1"
 );
 
 const headers = {
@@ -60163,14 +60084,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/media/1" \
+    "http://192.168.55.127:8000/api/media/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media/1"
+    "http://192.168.55.127:8000/api/media/1"
 );
 
 const headers = {
@@ -60283,7 +60204,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/media/bulk-move" \
+    "http://192.168.55.127:8000/api/media/bulk-move" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -60294,7 +60215,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media/bulk-move"
+    "http://192.168.55.127:8000/api/media/bulk-move"
 );
 
 const headers = {
@@ -60438,7 +60359,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/media/multipart/init" \
+    "http://192.168.55.127:8000/api/media/multipart/init" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -60451,7 +60372,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media/multipart/init"
+    "http://192.168.55.127:8000/api/media/multipart/init"
 );
 
 const headers = {
@@ -60593,16 +60514,16 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/media/multipart/architecto/chunk" \
+    "http://192.168.55.127:8000/api/media/multipart/architecto/chunk" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
     --form "chunk_index=16"\
-    --form "chunk=@C:\Users\pasca\AppData\Local\Temp\php201A.tmp" </code></pre></div>
+    --form "chunk=@C:\Users\pasca\AppData\Local\Temp\php22AA.tmp" </code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media/multipart/architecto/chunk"
+    "http://192.168.55.127:8000/api/media/multipart/architecto/chunk"
 );
 
 const headers = {
@@ -60715,7 +60636,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be a file. Example: <code>C:\Users\pasca\AppData\Local\Temp\php201A.tmp</code></p>
+<p>Must be a file. Example: <code>C:\Users\pasca\AppData\Local\Temp\php22AA.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>chunk_index</code></b>&nbsp;&nbsp;
@@ -60743,7 +60664,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/media/multipart/architecto/complete" \
+    "http://192.168.55.127:8000/api/media/multipart/architecto/complete" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -60755,7 +60676,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/media/multipart/architecto/complete"
+    "http://192.168.55.127:8000/api/media/multipart/architecto/complete"
 );
 
 const headers = {
@@ -60898,7 +60819,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/finance/analytics?period=architecto" \
+    --get "http://192.168.55.127:8000/api/admin/finance/analytics?period=architecto" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -60906,7 +60827,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/finance/analytics"
+    "http://192.168.55.127:8000/api/admin/finance/analytics"
 );
 
 const params = {
@@ -61053,7 +60974,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/payments/webhook" \
+    "http://192.168.55.127:8000/api/payments/webhook" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -61070,7 +60991,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/payments/webhook"
+    "http://192.168.55.127:8000/api/payments/webhook"
 );
 
 const headers = {
@@ -61260,7 +61181,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/payments/verify" \
+    "http://192.168.55.127:8000/api/payments/verify" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -61271,7 +61192,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/payments/verify"
+    "http://192.168.55.127:8000/api/payments/verify"
 );
 
 const headers = {
@@ -61389,7 +61310,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/payments/refund" \
+    "http://192.168.55.127:8000/api/payments/refund" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -61403,7 +61324,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/payments/refund"
+    "http://192.168.55.127:8000/api/payments/refund"
 );
 
 const headers = {
@@ -61557,14 +61478,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/events/1/leave-waitlist" \
+    "http://192.168.55.127:8000/api/events/1/leave-waitlist" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/events/1/leave-waitlist"
+    "http://192.168.55.127:8000/api/events/1/leave-waitlist"
 );
 
 const headers = {
@@ -61677,14 +61598,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/registrations/16" \
+    "http://192.168.55.127:8000/api/registrations/16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/registrations/16"
+    "http://192.168.55.127:8000/api/registrations/16"
 );
 
 const headers = {
@@ -61797,14 +61718,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/registrations/token/architecto" \
+    --get "http://192.168.55.127:8000/api/registrations/token/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/registrations/token/architecto"
+    "http://192.168.55.127:8000/api/registrations/token/architecto"
 );
 
 const headers = {
@@ -61934,14 +61855,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/registrations/token/architecto/cancel" \
+    "http://192.168.55.127:8000/api/registrations/token/architecto/cancel" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/registrations/token/architecto/cancel"
+    "http://192.168.55.127:8000/api/registrations/token/architecto/cancel"
 );
 
 const headers = {
@@ -62054,14 +61975,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/registrations/token/architecto/refund" \
+    "http://192.168.55.127:8000/api/registrations/token/architecto/refund" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/registrations/token/architecto/refund"
+    "http://192.168.55.127:8000/api/registrations/token/architecto/refund"
 );
 
 const headers = {
@@ -62174,14 +62095,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/support/tickets" \
+    --get "http://192.168.55.127:8000/api/support/tickets" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/support/tickets"
+    "http://192.168.55.127:8000/api/support/tickets"
 );
 
 const headers = {
@@ -62298,7 +62219,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/support/tickets" \
+    "http://192.168.55.127:8000/api/support/tickets" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -62311,7 +62232,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/support/tickets"
+    "http://192.168.55.127:8000/api/support/tickets"
 );
 
 const headers = {
@@ -62455,14 +62376,14 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/support/tickets/1" \
+    --get "http://192.168.55.127:8000/api/support/tickets/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/support/tickets/1"
+    "http://192.168.55.127:8000/api/support/tickets/1"
 );
 
 const headers = {
@@ -62591,7 +62512,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/support/tickets/1/responses" \
+    "http://192.168.55.127:8000/api/support/tickets/1/responses" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -62604,7 +62525,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/support/tickets/1/responses"
+    "http://192.168.55.127:8000/api/support/tickets/1/responses"
 );
 
 const headers = {
@@ -62768,14 +62689,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/support/tickets" \
+    --get "http://192.168.55.127:8000/api/admin/support/tickets" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/support/tickets"
+    "http://192.168.55.127:8000/api/admin/support/tickets"
 );
 
 const headers = {
@@ -62892,14 +62813,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/support/tickets/1" \
+    --get "http://192.168.55.127:8000/api/admin/support/tickets/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/support/tickets/1"
+    "http://192.168.55.127:8000/api/admin/support/tickets/1"
 );
 
 const headers = {
@@ -63028,7 +62949,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/support/tickets/1/responses" \
+    "http://192.168.55.127:8000/api/admin/support/tickets/1/responses" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -63041,7 +62962,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/support/tickets/1/responses"
+    "http://192.168.55.127:8000/api/admin/support/tickets/1/responses"
 );
 
 const headers = {
@@ -63205,7 +63126,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/support/tickets/1/assign" \
+    "http://192.168.55.127:8000/api/admin/support/tickets/1/assign" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -63216,7 +63137,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/support/tickets/1/assign"
+    "http://192.168.55.127:8000/api/admin/support/tickets/1/assign"
 );
 
 const headers = {
@@ -63346,7 +63267,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PATCH \
-    "http://192.168.3.127:8000/api/admin/support/tickets/1/status" \
+    "http://192.168.55.127:8000/api/admin/support/tickets/1/status" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -63357,7 +63278,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/support/tickets/1/status"
+    "http://192.168.55.127:8000/api/admin/support/tickets/1/status"
 );
 
 const headers = {
@@ -63489,7 +63410,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/bookings/series/architecto/cancel" \
+    "http://192.168.55.127:8000/api/bookings/series/architecto/cancel" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -63500,7 +63421,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/series/architecto/cancel"
+    "http://192.168.55.127:8000/api/bookings/series/architecto/cancel"
 );
 
 const headers = {
@@ -63630,14 +63551,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/bookings/series/architecto/refund-preview" \
+    --get "http://192.168.55.127:8000/api/bookings/series/architecto/refund-preview" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/series/architecto/refund-preview"
+    "http://192.168.55.127:8000/api/bookings/series/architecto/refund-preview"
 );
 
 const headers = {
@@ -63766,7 +63687,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/bookings/series/564/cancel" \
+    "http://192.168.55.127:8000/api/admin/bookings/series/564/cancel" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -63777,7 +63698,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/bookings/series/564/cancel"
+    "http://192.168.55.127:8000/api/admin/bookings/series/564/cancel"
 );
 
 const headers = {
@@ -63911,14 +63832,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/event-categories" \
+    --get "http://192.168.55.127:8000/api/event-categories" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/event-categories"
+    "http://192.168.55.127:8000/api/event-categories"
 );
 
 const headers = {
@@ -64109,14 +64030,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/event-categories/1" \
+    --get "http://192.168.55.127:8000/api/admin/event-categories/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/event-categories/1"
+    "http://192.168.55.127:8000/api/admin/event-categories/1"
 );
 
 const headers = {
@@ -64249,14 +64170,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/event-tags" \
+    --get "http://192.168.55.127:8000/api/event-tags" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/event-tags"
+    "http://192.168.55.127:8000/api/event-tags"
 );
 
 const headers = {
@@ -64425,7 +64346,7 @@ Returns a payment redirect URL for completing the purchase.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/events/1/purchase" \
+    "http://192.168.55.127:8000/api/events/1/purchase" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -64433,7 +64354,7 @@ Returns a payment redirect URL for completing the purchase.</p>
     \"quantity\": 2,
     \"phone\": \"+254712345678\",
     \"promo_code\": \"EARLY2024\",
-    \"is_waitlist_action\": true,
+    \"is_waitlist_action\": false,
     \"name\": \"John Doe\",
     \"email\": \"john@example.com\"
 }"
@@ -64442,7 +64363,7 @@ Returns a payment redirect URL for completing the purchase.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/events/1/purchase"
+    "http://192.168.55.127:8000/api/events/1/purchase"
 );
 
 const headers = {
@@ -64455,7 +64376,7 @@ let body = {
     "quantity": 2,
     "phone": "+254712345678",
     "promo_code": "EARLY2024",
-    "is_waitlist_action": true,
+    "is_waitlist_action": false,
     "name": "John Doe",
     "email": "john@example.com"
 };
@@ -64652,7 +64573,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>name</code></b>&nbsp;&nbsp;
@@ -64691,14 +64612,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/event-orders/status/ORD-ABC123XYZ" \
+    --get "http://192.168.55.127:8000/api/event-orders/status/ORD-ABC123XYZ" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/event-orders/status/ORD-ABC123XYZ"
+    "http://192.168.55.127:8000/api/event-orders/status/ORD-ABC123XYZ"
 );
 
 const headers = {
@@ -64824,14 +64745,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/event-orders/ref/architecto/resume" \
+    "http://192.168.55.127:8000/api/event-orders/ref/architecto/resume" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/event-orders/ref/architecto/resume"
+    "http://192.168.55.127:8000/api/event-orders/ref/architecto/resume"
 );
 
 const headers = {
@@ -64944,14 +64865,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/event-orders/ref/architecto/cancel" \
+    "http://192.168.55.127:8000/api/event-orders/ref/architecto/cancel" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/event-orders/ref/architecto/cancel"
+    "http://192.168.55.127:8000/api/event-orders/ref/architecto/cancel"
 );
 
 const headers = {
@@ -65065,7 +64986,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/my-tickets?status=paid" \
+    --get "http://192.168.55.127:8000/api/my-tickets?status=paid" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -65073,7 +64994,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/my-tickets"
+    "http://192.168.55.127:8000/api/my-tickets"
 );
 
 const params = {
@@ -65228,7 +65149,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/event-orders/1" \
+    --get "http://192.168.55.127:8000/api/event-orders/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -65236,7 +65157,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/event-orders/1"
+    "http://192.168.55.127:8000/api/event-orders/1"
 );
 
 const headers = {
@@ -65380,7 +65301,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/events/1/scan-ticket" \
+    "http://192.168.55.127:8000/api/events/1/scan-ticket" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -65392,7 +65313,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/events/1/scan-ticket"
+    "http://192.168.55.127:8000/api/events/1/scan-ticket"
 );
 
 const headers = {
@@ -65569,14 +65490,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/events?category=biotech-health&amp;category_id=1&amp;tag=free&amp;search=workshop&amp;county_id=1&amp;type=online&amp;timeframe=upcoming" \
+    --get "http://192.168.55.127:8000/api/events?category=biotech-health&amp;category_id=1&amp;tag=free&amp;search=workshop&amp;county_id=1&amp;type=online&amp;timeframe=upcoming" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/events"
+    "http://192.168.55.127:8000/api/events"
 );
 
 const params = {
@@ -65619,8 +65540,8 @@ vary: Origin
 <code class="language-json" style="max-height: 300px;">{
     &quot;data&quot;: [],
     &quot;links&quot;: {
-        &quot;first&quot;: &quot;http://192.168.3.127:8000/api/events?page=1&quot;,
-        &quot;last&quot;: &quot;http://192.168.3.127:8000/api/events?page=1&quot;,
+        &quot;first&quot;: &quot;http://192.168.55.127:8000/api/events?page=1&quot;,
+        &quot;last&quot;: &quot;http://192.168.55.127:8000/api/events?page=1&quot;,
         &quot;prev&quot;: null,
         &quot;next&quot;: null
     },
@@ -65636,7 +65557,7 @@ vary: Origin
                 &quot;active&quot;: false
             },
             {
-                &quot;url&quot;: &quot;http://192.168.3.127:8000/api/events?page=1&quot;,
+                &quot;url&quot;: &quot;http://192.168.55.127:8000/api/events?page=1&quot;,
                 &quot;label&quot;: &quot;1&quot;,
                 &quot;page&quot;: 1,
                 &quot;active&quot;: true
@@ -65648,7 +65569,7 @@ vary: Origin
                 &quot;active&quot;: false
             }
         ],
-        &quot;path&quot;: &quot;http://192.168.3.127:8000/api/events&quot;,
+        &quot;path&quot;: &quot;http://192.168.55.127:8000/api/events&quot;,
         &quot;per_page&quot;: 15,
         &quot;to&quot;: null,
         &quot;total&quot;: 0
@@ -65818,14 +65739,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/events/architecto" \
+    --get "http://192.168.55.127:8000/api/events/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/events/architecto"
+    "http://192.168.55.127:8000/api/events/architecto"
 );
 
 const headers = {
@@ -65955,14 +65876,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/events/1/validate-promo?code=architecto&amp;ticket_id=16" \
+    --get "http://192.168.55.127:8000/api/events/1/validate-promo?code=architecto&amp;ticket_id=16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/events/1/validate-promo"
+    "http://192.168.55.127:8000/api/events/1/validate-promo"
 );
 
 const params = {
@@ -66137,14 +66058,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/categories" \
+    --get "http://192.168.55.127:8000/api/forum/categories" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/categories"
+    "http://192.168.55.127:8000/api/forum/categories"
 );
 
 const headers = {
@@ -66267,14 +66188,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/categories/1" \
+    --get "http://192.168.55.127:8000/api/forum/categories/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/categories/1"
+    "http://192.168.55.127:8000/api/forum/categories/1"
 );
 
 const headers = {
@@ -66415,7 +66336,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/forum/categories" \
+    "http://192.168.55.127:8000/api/forum/categories" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -66432,7 +66353,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/categories"
+    "http://192.168.55.127:8000/api/forum/categories"
 );
 
 const headers = {
@@ -66633,7 +66554,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/forum/categories/1" \
+    "http://192.168.55.127:8000/api/forum/categories/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -66650,7 +66571,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/categories/1"
+    "http://192.168.55.127:8000/api/forum/categories/1"
 );
 
 const headers = {
@@ -66874,7 +66795,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/forum/categories/1" \
+    "http://192.168.55.127:8000/api/forum/categories/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -66882,7 +66803,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/categories/1"
+    "http://192.168.55.127:8000/api/forum/categories/1"
 );
 
 const headers = {
@@ -67022,14 +66943,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/posts?per_page=20" \
+    --get "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/posts?per_page=20" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/posts"
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/posts"
 );
 
 const params = {
@@ -67195,7 +67116,7 @@ Returns the created post details with user metadata.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/posts" \
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/posts" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -67207,7 +67128,7 @@ Returns the created post details with user metadata.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/posts"
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/posts"
 );
 
 const headers = {
@@ -67378,7 +67299,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/forum/posts/1" \
+    "http://192.168.55.127:8000/api/forum/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -67390,7 +67311,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/posts/1"
+    "http://192.168.55.127:8000/api/forum/posts/1"
 );
 
 const headers = {
@@ -67544,7 +67465,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/forum/posts/1" \
+    "http://192.168.55.127:8000/api/forum/posts/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -67552,7 +67473,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/posts/1"
+    "http://192.168.55.127:8000/api/forum/posts/1"
 );
 
 const headers = {
@@ -67692,14 +67613,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/tags" \
+    --get "http://192.168.55.127:8000/api/forum/tags" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/tags"
+    "http://192.168.55.127:8000/api/forum/tags"
 );
 
 const headers = {
@@ -67817,14 +67738,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/tags/1" \
+    --get "http://192.168.55.127:8000/api/forum/tags/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/tags/1"
+    "http://192.168.55.127:8000/api/forum/tags/1"
 );
 
 const headers = {
@@ -67965,7 +67886,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/forum/tags" \
+    "http://192.168.55.127:8000/api/forum/tags" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -67979,7 +67900,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/tags"
+    "http://192.168.55.127:8000/api/forum/tags"
 );
 
 const headers = {
@@ -68134,7 +68055,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/forum/tags/1" \
+    "http://192.168.55.127:8000/api/forum/tags/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -68148,7 +68069,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/tags/1"
+    "http://192.168.55.127:8000/api/forum/tags/1"
 );
 
 const headers = {
@@ -68326,7 +68247,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/forum/tags/1" \
+    "http://192.168.55.127:8000/api/forum/tags/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -68334,7 +68255,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/tags/1"
+    "http://192.168.55.127:8000/api/forum/tags/1"
 );
 
 const headers = {
@@ -68474,14 +68395,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/threads?category=architecto&amp;search=architecto&amp;page=16" \
+    --get "http://192.168.55.127:8000/api/forum/threads?category=architecto&amp;search=architecto&amp;page=16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/threads"
+    "http://192.168.55.127:8000/api/forum/threads"
 );
 
 const params = {
@@ -68665,14 +68586,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/categories/1/threads?category=architecto&amp;search=architecto&amp;page=16" \
+    --get "http://192.168.55.127:8000/api/forum/categories/1/threads?category=architecto&amp;search=architecto&amp;page=16" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/categories/1/threads"
+    "http://192.168.55.127:8000/api/forum/categories/1/threads"
 );
 
 const params = {
@@ -68868,14 +68789,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum" \
+    --get "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum"
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum"
 );
 
 const headers = {
@@ -69033,7 +68954,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/forum/categories/1/threads" \
+    "http://192.168.55.127:8000/api/forum/categories/1/threads" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -69051,7 +68972,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/categories/1/threads"
+    "http://192.168.55.127:8000/api/forum/categories/1/threads"
 );
 
 const headers = {
@@ -69246,7 +69167,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum" \
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -69264,7 +69185,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum"
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum"
 );
 
 const headers = {
@@ -69490,7 +69411,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum" \
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -69498,7 +69419,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum"
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum"
 );
 
 const headers = {
@@ -69635,7 +69556,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/pin" \
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/pin" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -69643,7 +69564,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/pin"
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/pin"
 );
 
 const headers = {
@@ -69780,7 +69701,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/unpin" \
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/unpin" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -69788,7 +69709,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/unpin"
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/unpin"
 );
 
 const headers = {
@@ -69925,7 +69846,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/lock" \
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/lock" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -69933,7 +69854,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/lock"
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/lock"
 );
 
 const headers = {
@@ -70070,7 +69991,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/unlock" \
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/unlock" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -70078,7 +69999,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/unlock"
+    "http://192.168.55.127:8000/api/forum/threads/welcome-to-the-new-dadisi-community-forum/unlock"
 );
 
 const headers = {
@@ -70218,14 +70139,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/forum/users?search=jane&amp;sort=recent_activity&amp;page=1&amp;per_page=20" \
+    --get "http://192.168.55.127:8000/api/forum/users?search=jane&amp;sort=recent_activity&amp;page=1&amp;per_page=20" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/forum/users"
+    "http://192.168.55.127:8000/api/forum/users"
 );
 
 const params = {
@@ -70414,7 +70335,7 @@ It validates the request signature to ensure authenticity before processing.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/webhooks/pesapal?token=secret_token_123" \
+    --get "http://192.168.55.127:8000/api/webhooks/pesapal?token=secret_token_123" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -70428,7 +70349,7 @@ It validates the request signature to ensure authenticity before processing.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/webhooks/pesapal"
+    "http://192.168.55.127:8000/api/webhooks/pesapal"
 );
 
 const params = {
@@ -70642,7 +70563,7 @@ Useful for debugging integration issues and verifying payment callbacks.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/webhooks?provider=pesapal&amp;status=failed&amp;per_page=20" \
+    --get "http://192.168.55.127:8000/api/webhooks?provider=pesapal&amp;status=failed&amp;per_page=20" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -70650,7 +70571,7 @@ Useful for debugging integration issues and verifying payment callbacks.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/webhooks"
+    "http://192.168.55.127:8000/api/webhooks"
 );
 
 const params = {
@@ -70830,7 +70751,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/bookings/guest" \
+    "http://192.168.55.127:8000/api/bookings/guest" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -70847,7 +70768,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/guest"
+    "http://192.168.55.127:8000/api/bookings/guest"
 );
 
 const headers = {
@@ -71049,7 +70970,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/bookings/guest-cancel" \
+    "http://192.168.55.127:8000/api/bookings/guest-cancel" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -71057,7 +70978,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/guest-cancel"
+    "http://192.168.55.127:8000/api/bookings/guest-cancel"
 );
 
 const headers = {
@@ -71171,7 +71092,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/bookings/discover/recurring" \
+    --get "http://192.168.55.127:8000/api/bookings/discover/recurring" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -71179,7 +71100,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/discover/recurring"
+    "http://192.168.55.127:8000/api/bookings/discover/recurring"
 );
 
 const headers = {
@@ -71310,7 +71231,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/bookings/discover/flexible" \
+    --get "http://192.168.55.127:8000/api/bookings/discover/flexible" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -71318,7 +71239,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/discover/flexible"
+    "http://192.168.55.127:8000/api/bookings/discover/flexible"
 );
 
 const headers = {
@@ -71449,7 +71370,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/bookings/quota" \
+    --get "http://192.168.55.127:8000/api/bookings/quota" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -71457,7 +71378,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/quota"
+    "http://192.168.55.127:8000/api/bookings/quota"
 );
 
 const headers = {
@@ -71602,7 +71523,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/bookings?group=active&amp;status=confirmed&amp;upcoming=1" \
+    --get "http://192.168.55.127:8000/api/bookings?group=active&amp;status=confirmed&amp;upcoming=1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -71610,7 +71531,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings"
+    "http://192.168.55.127:8000/api/bookings"
 );
 
 const params = {
@@ -71801,7 +71722,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/bookings/initiate" \
+    "http://192.168.55.127:8000/api/bookings/initiate" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -71809,7 +71730,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/initiate"
+    "http://192.168.55.127:8000/api/bookings/initiate"
 );
 
 const headers = {
@@ -71923,7 +71844,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/bookings/confirm" \
+    "http://192.168.55.127:8000/api/bookings/confirm" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -71931,7 +71852,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/confirm"
+    "http://192.168.55.127:8000/api/bookings/confirm"
 );
 
 const headers = {
@@ -72045,7 +71966,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/bookings/renew-hold" \
+    "http://192.168.55.127:8000/api/bookings/renew-hold" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -72053,7 +71974,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/renew-hold"
+    "http://192.168.55.127:8000/api/bookings/renew-hold"
 );
 
 const headers = {
@@ -72167,7 +72088,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/bookings" \
+    "http://192.168.55.127:8000/api/bookings" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -72185,7 +72106,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings"
+    "http://192.168.55.127:8000/api/bookings"
 );
 
 const headers = {
@@ -72390,7 +72311,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/bookings/1" \
+    --get "http://192.168.55.127:8000/api/bookings/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -72398,7 +72319,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/1"
+    "http://192.168.55.127:8000/api/bookings/1"
 );
 
 const headers = {
@@ -72550,7 +72471,7 @@ Quota is refunded on cancellation.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/bookings/1/cancel" \
+    "http://192.168.55.127:8000/api/bookings/1/cancel" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -72562,7 +72483,7 @@ Quota is refunded on cancellation.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/1/cancel"
+    "http://192.168.55.127:8000/api/bookings/1/cancel"
 );
 
 const headers = {
@@ -72741,7 +72662,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/bookings/564/resolve-conflict" \
+    "http://192.168.55.127:8000/api/bookings/564/resolve-conflict" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -72755,7 +72676,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/564/resolve-conflict"
+    "http://192.168.55.127:8000/api/bookings/564/resolve-conflict"
 );
 
 const headers = {
@@ -72922,7 +72843,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/bookings/1/check-in" \
+    "http://192.168.55.127:8000/api/bookings/1/check-in" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -72930,7 +72851,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/1/check-in"
+    "http://192.168.55.127:8000/api/bookings/1/check-in"
 );
 
 const headers = {
@@ -73067,7 +72988,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/bookings/check-in-by-token" \
+    "http://192.168.55.127:8000/api/bookings/check-in-by-token" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -73079,7 +73000,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/check-in-by-token"
+    "http://192.168.55.127:8000/api/bookings/check-in-by-token"
 );
 
 const headers = {
@@ -73211,7 +73132,7 @@ Quota is refunded on cancellation.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/bookings/1" \
+    "http://192.168.55.127:8000/api/bookings/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -73219,7 +73140,7 @@ Quota is refunded on cancellation.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/bookings/1"
+    "http://192.168.55.127:8000/api/bookings/1"
 );
 
 const headers = {
@@ -73371,7 +73292,7 @@ Lab supervisors can only manage blocks for their assigned labs.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/lab-maintenance/bulk-create" \
+    "http://192.168.55.127:8000/api/admin/lab-maintenance/bulk-create" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -73391,7 +73312,7 @@ Lab supervisors can only manage blocks for their assigned labs.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/lab-maintenance/bulk-create"
+    "http://192.168.55.127:8000/api/admin/lab-maintenance/bulk-create"
 );
 
 const headers = {
@@ -73617,14 +73538,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/spaces/1/blocks?start=2026-03-01T00%3A00%3A00Z&amp;end=2026-03-31T23%3A59%3A59Z&amp;block_type=maintenance" \
+    --get "http://192.168.55.127:8000/api/spaces/1/blocks?start=2026-03-01T00%3A00%3A00Z&amp;end=2026-03-31T23%3A59%3A59Z&amp;block_type=maintenance" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/spaces/1/blocks"
+    "http://192.168.55.127:8000/api/spaces/1/blocks"
 );
 
 const params = {
@@ -73803,7 +73724,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/spaces/1/blocks" \
+    "http://192.168.55.127:8000/api/spaces/1/blocks" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -73818,7 +73739,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/spaces/1/blocks"
+    "http://192.168.55.127:8000/api/spaces/1/blocks"
 );
 
 const headers = {
@@ -74024,7 +73945,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PATCH \
-    "http://192.168.3.127:8000/api/spaces/1/blocks/1" \
+    "http://192.168.55.127:8000/api/spaces/1/blocks/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -74039,7 +73960,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/spaces/1/blocks/1"
+    "http://192.168.55.127:8000/api/spaces/1/blocks/1"
 );
 
 const headers = {
@@ -74238,7 +74159,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/spaces/1/blocks/1" \
+    "http://192.168.55.127:8000/api/spaces/1/blocks/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -74253,7 +74174,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/spaces/1/blocks/1"
+    "http://192.168.55.127:8000/api/spaces/1/blocks/1"
 );
 
 const headers = {
@@ -74452,14 +74373,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/spaces/1/blocks/1" \
+    "http://192.168.55.127:8000/api/spaces/1/blocks/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/spaces/1/blocks/1"
+    "http://192.168.55.127:8000/api/spaces/1/blocks/1"
 );
 
 const headers = {
@@ -74593,14 +74514,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/spaces?type=wet_lab&amp;search=biology" \
+    --get "http://192.168.55.127:8000/api/spaces?type=wet_lab&amp;search=biology" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/spaces"
+    "http://192.168.55.127:8000/api/spaces"
 );
 
 const params = {
@@ -74761,14 +74682,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/spaces/wet-lab" \
+    --get "http://192.168.55.127:8000/api/spaces/wet-lab" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/spaces/wet-lab"
+    "http://192.168.55.127:8000/api/spaces/wet-lab"
 );
 
 const headers = {
@@ -74919,14 +74840,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/spaces/wet-lab/availability?start=2024-01-01T00%3A00%3A00Z&amp;end=2024-01-31T23%3A59%3A59Z" \
+    --get "http://192.168.55.127:8000/api/spaces/wet-lab/availability?start=2024-01-01T00%3A00%3A00Z&amp;end=2024-01-31T23%3A59%3A59Z" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/spaces/wet-lab/availability"
+    "http://192.168.55.127:8000/api/spaces/wet-lab/availability"
 );
 
 const params = {
@@ -75106,7 +75027,7 @@ Supports filtering by read status.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/notifications?unread_only=1&amp;per_page=20" \
+    --get "http://192.168.55.127:8000/api/notifications?unread_only=1&amp;per_page=20" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -75114,7 +75035,7 @@ Supports filtering by read status.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/notifications"
+    "http://192.168.55.127:8000/api/notifications"
 );
 
 const params = {
@@ -75294,7 +75215,7 @@ Useful for badge displays.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/notifications/unread-count" \
+    --get "http://192.168.55.127:8000/api/notifications/unread-count" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -75302,7 +75223,7 @@ Useful for badge displays.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/notifications/unread-count"
+    "http://192.168.55.127:8000/api/notifications/unread-count"
 );
 
 const headers = {
@@ -75428,7 +75349,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/notifications/mark-all-read" \
+    "http://192.168.55.127:8000/api/notifications/mark-all-read" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -75436,7 +75357,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/notifications/mark-all-read"
+    "http://192.168.55.127:8000/api/notifications/mark-all-read"
 );
 
 const headers = {
@@ -75563,7 +75484,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/notifications/clear-all" \
+    "http://192.168.55.127:8000/api/notifications/clear-all" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -75571,7 +75492,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/notifications/clear-all"
+    "http://192.168.55.127:8000/api/notifications/clear-all"
 );
 
 const headers = {
@@ -75698,7 +75619,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/notifications/uuid-string/read" \
+    "http://192.168.55.127:8000/api/notifications/uuid-string/read" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -75706,7 +75627,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/notifications/uuid-string/read"
+    "http://192.168.55.127:8000/api/notifications/uuid-string/read"
 );
 
 const headers = {
@@ -75842,7 +75763,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/notifications/uuid-string" \
+    "http://192.168.55.127:8000/api/notifications/uuid-string" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -75850,7 +75771,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/notifications/uuid-string"
+    "http://192.168.55.127:8000/api/notifications/uuid-string"
 );
 
 const headers = {
@@ -75986,7 +75907,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/notifications/push-subscription" \
+    "http://192.168.55.127:8000/api/notifications/push-subscription" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -76002,7 +75923,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/notifications/push-subscription"
+    "http://192.168.55.127:8000/api/notifications/push-subscription"
 );
 
 const headers = {
@@ -76170,7 +76091,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/notifications/push-subscription" \
+    "http://192.168.55.127:8000/api/notifications/push-subscription" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -76182,7 +76103,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/notifications/push-subscription"
+    "http://192.168.55.127:8000/api/notifications/push-subscription"
 );
 
 const headers = {
@@ -76317,14 +76238,14 @@ Can be called publically to support callback/redirect pages where auth might be 
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/payments/check-status?transaction_id=MOCK_abc123xyz" \
+    --get "http://192.168.55.127:8000/api/payments/check-status?transaction_id=MOCK_abc123xyz" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/payments/check-status"
+    "http://192.168.55.127:8000/api/payments/check-status"
 );
 
 const params = {
@@ -76471,7 +76392,7 @@ Use this to dynamically validate user input before submission.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/payments/form-metadata" \
+    --get "http://192.168.55.127:8000/api/payments/form-metadata" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -76479,7 +76400,7 @@ Use this to dynamically validate user input before submission.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/payments/form-metadata"
+    "http://192.168.55.127:8000/api/payments/form-metadata"
 );
 
 const headers = {
@@ -76615,7 +76536,7 @@ See <code>getPaymentFormMetadata</code> for test numbers.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/payments/process" \
+    "http://192.168.55.127:8000/api/payments/process" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -76629,7 +76550,7 @@ See <code>getPaymentFormMetadata</code> for test numbers.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/payments/process"
+    "http://192.168.55.127:8000/api/payments/process"
 );
 
 const headers = {
@@ -76814,7 +76735,7 @@ Includes successful, failed, and pending transactions.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/payments/history?per_page=15" \
+    --get "http://192.168.55.127:8000/api/payments/history?per_page=15" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -76822,7 +76743,7 @@ Includes successful, failed, and pending transactions.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/payments/history"
+    "http://192.168.55.127:8000/api/payments/history"
 );
 
 const params = {
@@ -76980,7 +76901,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/payments/test-mock-payment" \
+    "http://192.168.55.127:8000/api/payments/test-mock-payment" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -76995,7 +76916,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/payments/test-mock-payment"
+    "http://192.168.55.127:8000/api/payments/test-mock-payment"
 );
 
 const headers = {
@@ -77181,7 +77102,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/payments/test-pesapal-payment" \
+    "http://192.168.55.127:8000/api/payments/test-pesapal-payment" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -77198,7 +77119,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/payments/test-pesapal-payment"
+    "http://192.168.55.127:8000/api/payments/test-pesapal-payment"
 );
 
 const headers = {
@@ -77392,14 +77313,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/users/1/public?username=johndoe" \
+    --get "http://192.168.55.127:8000/api/users/1/public?username=johndoe" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/users/1/public"
+    "http://192.168.55.127:8000/api/users/1/public"
 );
 
 const params = {
@@ -77548,14 +77469,14 @@ Only works if the setting 'membership_page_user_list_enabled' is true.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/community/members" \
+    --get "http://192.168.55.127:8000/api/community/members" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/community/members"
+    "http://192.168.55.127:8000/api/community/members"
 );
 
 const headers = {
@@ -77660,24 +77581,6 @@ vary: Origin
                 &quot;avatar&quot;: null,
                 &quot;prefix&quot;: null,
                 &quot;public_role&quot;: null
-            },
-            {
-                &quot;username&quot;: &quot;e2e-greenhouse-user-1&quot;,
-                &quot;avatar&quot;: null,
-                &quot;prefix&quot;: null,
-                &quot;public_role&quot;: null
-            },
-            {
-                &quot;username&quot;: &quot;e2e-greenhouse-user-2&quot;,
-                &quot;avatar&quot;: null,
-                &quot;prefix&quot;: null,
-                &quot;public_role&quot;: null
-            },
-            {
-                &quot;username&quot;: &quot;e2e-greenhouse-user-3&quot;,
-                &quot;avatar&quot;: null,
-                &quot;prefix&quot;: null,
-                &quot;public_role&quot;: null
             }
         ]
     }
@@ -77772,14 +77675,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/settings/public" \
+    --get "http://192.168.55.127:8000/api/settings/public" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/settings/public"
+    "http://192.168.55.127:8000/api/settings/public"
 );
 
 const headers = {
@@ -77903,7 +77806,7 @@ Guests must provide their order reference and confirmation email.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/refunds" \
+    "http://192.168.55.127:8000/api/refunds" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -77917,7 +77820,7 @@ Guests must provide their order reference and confirmation email.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/refunds"
+    "http://192.168.55.127:8000/api/refunds"
 );
 
 const headers = {
@@ -78077,7 +77980,7 @@ Returns the registration details including QR code token for check-in.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/events/1/register" \
+    "http://192.168.55.127:8000/api/events/1/register" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -78092,7 +77995,7 @@ Returns the registration details including QR code token for check-in.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/events/1/register"
+    "http://192.168.55.127:8000/api/events/1/register"
 );
 
 const headers = {
@@ -78281,7 +78184,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/registrations/my" \
+    --get "http://192.168.55.127:8000/api/registrations/my" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -78289,7 +78192,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/registrations/my"
+    "http://192.168.55.127:8000/api/registrations/my"
 );
 
 const headers = {
@@ -78423,7 +78326,7 @@ This method is restricted to administrative staff and handles capacity updates a
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/events/1/registrations/bulk/cancel" \
+    "http://192.168.55.127:8000/api/admin/events/1/registrations/bulk/cancel" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -78440,7 +78343,7 @@ This method is restricted to administrative staff and handles capacity updates a
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/registrations/bulk/cancel"
+    "http://192.168.55.127:8000/api/admin/events/1/registrations/bulk/cancel"
 );
 
 const headers = {
@@ -78626,14 +78529,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/events/1/speakers" \
+    --get "http://192.168.55.127:8000/api/events/1/speakers" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/events/1/speakers"
+    "http://192.168.55.127:8000/api/events/1/speakers"
 );
 
 const headers = {
@@ -78774,14 +78677,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/events/1/speakers" \
+    "http://192.168.55.127:8000/api/admin/events/1/speakers" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/speakers"
+    "http://192.168.55.127:8000/api/admin/events/1/speakers"
 );
 
 const headers = {
@@ -78894,14 +78797,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/speakers/1" \
+    "http://192.168.55.127:8000/api/admin/speakers/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/speakers/1"
+    "http://192.168.55.127:8000/api/admin/speakers/1"
 );
 
 const headers = {
@@ -79014,14 +78917,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/speakers/1" \
+    "http://192.168.55.127:8000/api/admin/speakers/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/speakers/1"
+    "http://192.168.55.127:8000/api/admin/speakers/1"
 );
 
 const headers = {
@@ -79140,7 +79043,7 @@ Includes the plan details, subscription status, expiration dates, and any active
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/subscriptions/current" \
+    --get "http://192.168.55.127:8000/api/subscriptions/current" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -79148,7 +79051,7 @@ Includes the plan details, subscription status, expiration dates, and any active
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/subscriptions/current"
+    "http://192.168.55.127:8000/api/subscriptions/current"
 );
 
 const headers = {
@@ -79289,7 +79192,7 @@ Returns the current status, details of the active record, and any enhancement fl
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/subscriptions/status" \
+    --get "http://192.168.55.127:8000/api/subscriptions/status" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -79297,7 +79200,7 @@ Returns the current status, details of the active record, and any enhancement fl
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/subscriptions/status"
+    "http://192.168.55.127:8000/api/subscriptions/status"
 );
 
 const headers = {
@@ -79433,7 +79336,7 @@ This endpoint is often used for &quot;Upgrade Plan&quot; dropdowns.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/subscriptions/plans" \
+    --get "http://192.168.55.127:8000/api/subscriptions/plans" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -79441,7 +79344,7 @@ This endpoint is often used for &quot;Upgrade Plan&quot; dropdowns.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/subscriptions/plans"
+    "http://192.168.55.127:8000/api/subscriptions/plans"
 );
 
 const headers = {
@@ -79575,7 +79478,7 @@ Includes preferences for reminders, payment methods, and fallback behaviors.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/subscriptions/renewal-preferences" \
+    --get "http://192.168.55.127:8000/api/subscriptions/renewal-preferences" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -79583,7 +79486,7 @@ Includes preferences for reminders, payment methods, and fallback behaviors.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/subscriptions/renewal-preferences"
+    "http://192.168.55.127:8000/api/subscriptions/renewal-preferences"
 );
 
 const headers = {
@@ -79712,7 +79615,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/subscriptions/renewal-preferences" \
+    "http://192.168.55.127:8000/api/subscriptions/renewal-preferences" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -79729,7 +79632,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/subscriptions/renewal-preferences"
+    "http://192.168.55.127:8000/api/subscriptions/renewal-preferences"
 );
 
 const headers = {
@@ -79954,7 +79857,7 @@ This creates a pending subscription record and initiates a transaction with the 
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/subscriptions/initiate-payment" \
+    "http://192.168.55.127:8000/api/subscriptions/initiate-payment" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -79969,7 +79872,7 @@ This creates a pending subscription record and initiates a transaction with the 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/subscriptions/initiate-payment"
+    "http://192.168.55.127:8000/api/subscriptions/initiate-payment"
 );
 
 const headers = {
@@ -80151,7 +80054,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/subscriptions/cancel-payment" \
+    "http://192.168.55.127:8000/api/subscriptions/cancel-payment" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -80164,7 +80067,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/subscriptions/cancel-payment"
+    "http://192.168.55.127:8000/api/subscriptions/cancel-payment"
 );
 
 const headers = {
@@ -80328,7 +80231,7 @@ Allows developers to manually trigger a &quot;Success&quot; or &quot;Failure&quo
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/subscriptions/process-mock-payment" \
+    "http://192.168.55.127:8000/api/subscriptions/process-mock-payment" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -80341,7 +80244,7 @@ Allows developers to manually trigger a &quot;Success&quot; or &quot;Failure&quo
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/subscriptions/process-mock-payment"
+    "http://192.168.55.127:8000/api/subscriptions/process-mock-payment"
 );
 
 const headers = {
@@ -80498,7 +80401,7 @@ Depending on business logic, this may take effect immediately or at the end of t
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/subscriptions/cancel" \
+    "http://192.168.55.127:8000/api/subscriptions/cancel" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -80511,7 +80414,7 @@ Depending on business logic, this may take effect immediately or at the end of t
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/subscriptions/cancel"
+    "http://192.168.55.127:8000/api/subscriptions/cancel"
 );
 
 const headers = {
@@ -80685,7 +80588,7 @@ This follows the same pattern as the donation receipt system.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/subscriptions/ref/architecto" \
+    --get "http://192.168.55.127:8000/api/subscriptions/ref/architecto" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -80693,7 +80596,7 @@ This follows the same pattern as the donation receipt system.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/subscriptions/ref/architecto"
+    "http://192.168.55.127:8000/api/subscriptions/ref/architecto"
 );
 
 const headers = {
@@ -80842,7 +80745,7 @@ This endpoint is public and typically used to populate pricing pages.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/plans?include_features=" \
+    --get "http://192.168.55.127:8000/api/plans?include_features=" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -80850,7 +80753,7 @@ This endpoint is public and typically used to populate pricing pages.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/plans"
+    "http://192.168.55.127:8000/api/plans"
 );
 
 const params = {
@@ -81051,7 +80954,7 @@ Useful for displaying a &quot;Plan Details&quot; modal or checkout summary.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/plans/1" \
+    --get "http://192.168.55.127:8000/api/plans/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -81059,7 +80962,7 @@ Useful for displaying a &quot;Plan Details&quot; modal or checkout summary.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/plans/1"
+    "http://192.168.55.127:8000/api/plans/1"
 );
 
 const headers = {
@@ -81247,7 +81150,7 @@ Allows administrators to set up monthly and yearly billing options, assign featu
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/plans" \
+    "http://192.168.55.127:8000/api/plans" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -81272,7 +81175,7 @@ Allows administrators to set up monthly and yearly billing options, assign featu
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/plans"
+    "http://192.168.55.127:8000/api/plans"
 );
 
 const headers = {
@@ -81566,7 +81469,7 @@ Useful for adjusting prices, launching new campaigns, or retiring old plans.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/plans/16" \
+    "http://192.168.55.127:8000/api/plans/16" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -81588,7 +81491,7 @@ Useful for adjusting prices, launching new campaigns, or retiring old plans.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/plans/16"
+    "http://192.168.55.127:8000/api/plans/16"
 );
 
 const headers = {
@@ -81901,7 +81804,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/plans/1" \
+    "http://192.168.55.127:8000/api/plans/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -81909,7 +81812,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/plans/1"
+    "http://192.168.55.127:8000/api/plans/1"
 );
 
 const headers = {
@@ -82068,7 +81971,7 @@ Only one active request is allowed per user.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/student-approvals/submit" \
+    "http://192.168.55.127:8000/api/student-approvals/submit" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -82085,7 +81988,7 @@ Only one active request is allowed per user.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/student-approvals/submit"
+    "http://192.168.55.127:8000/api/student-approvals/submit"
 );
 
 const headers = {
@@ -82303,7 +82206,7 @@ Returns details including current status (pending, approved, rejected), submissi
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/student-approvals/status" \
+    --get "http://192.168.55.127:8000/api/student-approvals/status" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -82311,7 +82214,7 @@ Returns details including current status (pending, approved, rejected), submissi
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/student-approvals/status"
+    "http://192.168.55.127:8000/api/student-approvals/status"
 );
 
 const headers = {
@@ -82454,7 +82357,7 @@ Use this to show/hide the application form.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/student-approvals/eligible" \
+    --get "http://192.168.55.127:8000/api/student-approvals/eligible" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -82462,7 +82365,7 @@ Use this to show/hide the application form.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/student-approvals/eligible"
+    "http://192.168.55.127:8000/api/student-approvals/eligible"
 );
 
 const headers = {
@@ -82599,7 +82502,7 @@ Supports filtering by status (e.g., 'pending') and location (county) to help adm
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/student-approvals/requests?status=pending&amp;county=Nairobi&amp;per_page=15" \
+    --get "http://192.168.55.127:8000/api/student-approvals/requests?status=pending&amp;county=Nairobi&amp;per_page=15" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -82607,7 +82510,7 @@ Supports filtering by status (e.g., 'pending') and location (county) to help adm
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/student-approvals/requests"
+    "http://192.168.55.127:8000/api/student-approvals/requests"
 );
 
 const params = {
@@ -82788,7 +82691,7 @@ Users can view their own requests; Admins can view any request.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/student-approvals/requests/architecto" \
+    --get "http://192.168.55.127:8000/api/student-approvals/requests/architecto" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -82796,7 +82699,7 @@ Users can view their own requests; Admins can view any request.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/student-approvals/requests/architecto"
+    "http://192.168.55.127:8000/api/student-approvals/requests/architecto"
 );
 
 const headers = {
@@ -82962,7 +82865,7 @@ Restricted to administrators with appropriate permissions.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/student-approvals/requests/architecto/approve" \
+    "http://192.168.55.127:8000/api/student-approvals/requests/architecto/approve" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -82974,7 +82877,7 @@ Restricted to administrators with appropriate permissions.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/student-approvals/requests/architecto/approve"
+    "http://192.168.55.127:8000/api/student-approvals/requests/architecto/approve"
 );
 
 const headers = {
@@ -83155,7 +83058,7 @@ The user may then resolve the issue and re-apply.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/student-approvals/requests/architecto/reject" \
+    "http://192.168.55.127:8000/api/student-approvals/requests/architecto/reject" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -83168,7 +83071,7 @@ The user may then resolve the issue and re-apply.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/student-approvals/requests/architecto/reject"
+    "http://192.168.55.127:8000/api/student-approvals/requests/architecto/reject"
 );
 
 const headers = {
@@ -83349,7 +83252,7 @@ This does NOT send automatic notifications - staff will contact the user manuall
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/student-approvals/requests/architecto/overturn" \
+    "http://192.168.55.127:8000/api/student-approvals/requests/architecto/overturn" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -83361,7 +83264,7 @@ This does NOT send automatic notifications - staff will contact the user manuall
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/student-approvals/requests/architecto/overturn"
+    "http://192.168.55.127:8000/api/student-approvals/requests/architecto/overturn"
 );
 
 const headers = {
@@ -83544,7 +83447,7 @@ This rate is fetched from the local database cache to ensure performance and red
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/exchange-rates/latest" \
+    --get "http://192.168.55.127:8000/api/exchange-rates/latest" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -83552,7 +83455,7 @@ This rate is fetched from the local database cache to ensure performance and red
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/exchange-rates/latest"
+    "http://192.168.55.127:8000/api/exchange-rates/latest"
 );
 
 const headers = {
@@ -83684,7 +83587,7 @@ This rate is fetched from the local database cache to ensure performance and red
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/exchange-rates" \
+    --get "http://192.168.55.127:8000/api/admin/exchange-rates" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -83692,7 +83595,7 @@ This rate is fetched from the local database cache to ensure performance and red
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/exchange-rates"
+    "http://192.168.55.127:8000/api/admin/exchange-rates"
 );
 
 const headers = {
@@ -83825,7 +83728,7 @@ Used for the admin dashboard widget to show currency health.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/admin/exchange-rates/info" \
+    --get "http://192.168.55.127:8000/api/admin/exchange-rates/info" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -83833,7 +83736,7 @@ Used for the admin dashboard widget to show currency health.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/exchange-rates/info"
+    "http://192.168.55.127:8000/api/admin/exchange-rates/info"
 );
 
 const headers = {
@@ -83968,7 +83871,7 @@ This overrides the local cache and resets the &quot;last_updated&quot; timestamp
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/exchange-rates/refresh" \
+    "http://192.168.55.127:8000/api/admin/exchange-rates/refresh" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -83976,7 +83879,7 @@ This overrides the local cache and resets the &quot;last_updated&quot; timestamp
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/exchange-rates/refresh"
+    "http://192.168.55.127:8000/api/admin/exchange-rates/refresh"
 );
 
 const headers = {
@@ -84117,7 +84020,7 @@ Long cache durations save API costs, while shorter durations ensure tighter alig
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/exchange-rates/settings" \
+    "http://192.168.55.127:8000/api/admin/exchange-rates/settings" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -84129,7 +84032,7 @@ Long cache durations save API costs, while shorter durations ensure tighter alig
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/exchange-rates/settings"
+    "http://192.168.55.127:8000/api/admin/exchange-rates/settings"
 );
 
 const headers = {
@@ -84286,7 +84189,7 @@ The manual rate persists until the next manual update or API refresh.</p>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/exchange-rates/rate" \
+    "http://192.168.55.127:8000/api/admin/exchange-rates/rate" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -84298,7 +84201,7 @@ The manual rate persists until the next manual update or API refresh.</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/exchange-rates/rate"
+    "http://192.168.55.127:8000/api/admin/exchange-rates/rate"
 );
 
 const headers = {
@@ -84457,14 +84360,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://192.168.3.127:8000/api/events/1/tickets" \
+    --get "http://192.168.55.127:8000/api/events/1/tickets" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/events/1/tickets"
+    "http://192.168.55.127:8000/api/events/1/tickets"
 );
 
 const headers = {
@@ -84631,7 +84534,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://192.168.3.127:8000/api/admin/events/1/tickets" \
+    "http://192.168.55.127:8000/api/admin/events/1/tickets" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -84649,7 +84552,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/events/1/tickets"
+    "http://192.168.55.127:8000/api/admin/events/1/tickets"
 );
 
 const headers = {
@@ -84876,7 +84779,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://192.168.3.127:8000/api/admin/tickets/1" \
+    "http://192.168.55.127:8000/api/admin/tickets/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -84894,7 +84797,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/tickets/1"
+    "http://192.168.55.127:8000/api/admin/tickets/1"
 );
 
 const headers = {
@@ -85121,7 +85024,7 @@ Must be one of:
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://192.168.3.127:8000/api/admin/tickets/1" \
+    "http://192.168.55.127:8000/api/admin/tickets/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -85129,7 +85032,7 @@ Must be one of:
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://192.168.3.127:8000/api/admin/tickets/1"
+    "http://192.168.55.127:8000/api/admin/tickets/1"
 );
 
 const headers = {

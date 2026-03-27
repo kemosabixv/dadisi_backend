@@ -38,8 +38,7 @@ class EventResource extends JsonResource
                     'name' => $this->county->name,
                 ];
             }),
-            'image_path' => $this->image_path,
-            'image_url' => $this->image_path ? url('storage/' . $this->image_path) : null,
+            'image_url' => $this->image_url,
             'featured_media_id' => $this->media->firstWhere('pivot.role', 'featured')?->id,
             'featured_media' => $this->whenLoaded('media', function () {
                 $featured = $this->media->firstWhere('pivot.role', 'featured');

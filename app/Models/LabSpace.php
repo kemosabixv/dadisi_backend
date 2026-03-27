@@ -305,6 +305,7 @@ public function getGalleryMediaAttribute()
     public function getComputedStatusAttribute(): string
     {
         $activeBlock = $this->maintenanceBlocks()
+            ->whereNotIn('status', ['cancelled', 'completed'])
             ->where('starts_at', '<=', now())
             ->where('ends_at', '>=', now())
             ->orderByRaw("CASE 

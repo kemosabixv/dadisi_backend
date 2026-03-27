@@ -33,6 +33,7 @@ class PostServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
         $this->service = app(PostService::class);
         $this->author = User::factory()->create();
         $this->admin = User::factory()->create();
@@ -43,8 +44,9 @@ class PostServiceTest extends TestCase
             'first_name' => 'Author',
             'last_name' => 'Test',
             'county_id' => $county->id,
-            'is_staff' => true,
         ]);
+
+        $this->author->assignRole('admin'); // Authorize to bypass quota checks
 
         // Create common categories used in tests
         foreach (['technology', 'general', 'news', 'events', 'test'] as $slug) {

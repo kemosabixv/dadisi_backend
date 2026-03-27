@@ -94,7 +94,7 @@ interface LabBookingServiceContract
     public function findAlternativeSlot(
         int $spaceId,
         int $durationHours,
-        LabMaintenanceBlock $blockToAvoid,
+        $blocksToAvoid, // Can be LabMaintenanceBlock or Collection of blocks
         ?int $excludeBookingId = null
     ): ?array;
 

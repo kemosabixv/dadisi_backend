@@ -38,6 +38,9 @@ class ForumEndpointsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        
+        // Ensure roles and permissions exist
+        $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
 
         // Create test users
         $this->guest = User::factory()->create();
@@ -57,8 +60,9 @@ class ForumEndpointsTest extends TestCase
             'first_name' => 'Staff',
             'last_name' => 'User',
             'county_id' => $county->id,
-            'is_staff' => true,
         ]);
+
+        $this->staffUser->assignRole('admin');
 
         // Create subscription for subscriber
         $plan = Plan::factory()->create();

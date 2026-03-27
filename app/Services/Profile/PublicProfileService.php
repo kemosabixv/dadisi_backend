@@ -114,7 +114,7 @@ class PublicProfileService implements PublicProfileServiceContract
             ->whereDoesntHave('roles', function($q) {
                 $q->where('name', 'super_admin');
             })
-            ->with(['memberProfile:id,user_id,first_name,last_name,prefix,public_role,is_staff'])
+            ->with(['memberProfile:id,user_id,first_name,last_name,prefix,public_role'])
             ->get();
 
         $staff = [];
@@ -131,7 +131,7 @@ class PublicProfileService implements PublicProfileServiceContract
                 'public_role' => $profile->public_role,
             ];
 
-            if ($profile->is_staff) {
+            if ($profile->user->canAccessAdminPanel()) {
                 $staff[] = $userData;
             } else {
                 $members[] = $userData;

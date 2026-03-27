@@ -25,7 +25,6 @@ class MemberProfile extends Model
         'ward',
         'interests',
         'bio',
-        'is_staff',
         'plan_id',
         'occupation',
         'emergency_contact_name',
@@ -61,7 +60,6 @@ class MemberProfile extends Model
         'interests' => 'json',
         'terms_accepted' => 'boolean',
         'marketing_consent' => 'boolean',
-        'is_staff' => 'boolean',
         'date_of_birth' => 'date',
         // Privacy field casts
         'public_profile_enabled' => 'boolean',

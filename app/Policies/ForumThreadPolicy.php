@@ -17,8 +17,8 @@ class ForumThreadPolicy
             return true;
         }
 
-        // Check is_staff on member profile or specific permission
-        if ($user->can('moderate_forum') || ($user->memberProfile && $user->memberProfile->is_staff)) {
+        // Check access_admin_panel or specific permission
+        if ($user->can('moderate_forum') || $user->can('access_admin_panel')) {
             return true;
         }
 

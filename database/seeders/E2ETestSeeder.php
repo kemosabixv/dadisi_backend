@@ -316,7 +316,6 @@ class E2ETestSeeder extends Seeder
                 'phone_number' => '+2547'.rand(10000000, 99999999),
                 'county_id' => rand(1, 47),
                 'terms_accepted' => true,
-                'is_staff' => $role !== 'member',
                 'plan_id' => $plan?->id,
             ]);
         } elseif ($plan) {

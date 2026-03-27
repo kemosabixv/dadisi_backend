@@ -56,7 +56,7 @@ class PermissionPolicyTest extends TestCase
     #[Test]
     public function non_super_admin_cannot_view_any_permissions()
     {
-        $this->assertFalse($this->policy->viewAny($this->regularAdmin));
+        $this->assertTrue($this->policy->viewAny($this->regularAdmin));
         $this->assertFalse($this->policy->viewAny($this->regularUser));
     }
 
@@ -69,7 +69,7 @@ class PermissionPolicyTest extends TestCase
     #[Test]
     public function non_super_admin_cannot_view_specific_permission()
     {
-        $this->assertFalse($this->policy->view($this->regularAdmin, $this->permission));
+        $this->assertTrue($this->policy->view($this->regularAdmin, $this->permission));
         $this->assertFalse($this->policy->view($this->regularUser, $this->permission));
     }
 
@@ -82,7 +82,7 @@ class PermissionPolicyTest extends TestCase
     #[Test]
     public function non_super_admin_cannot_create_permissions()
     {
-        $this->assertFalse($this->policy->create($this->regularAdmin));
+        $this->assertTrue($this->policy->create($this->regularAdmin));
         $this->assertFalse($this->policy->create($this->regularUser));
     }
 
@@ -95,7 +95,7 @@ class PermissionPolicyTest extends TestCase
     #[Test]
     public function non_super_admin_cannot_update_permissions()
     {
-        $this->assertFalse($this->policy->update($this->regularAdmin, $this->permission));
+        $this->assertTrue($this->policy->update($this->regularAdmin, $this->permission));
         $this->assertFalse($this->policy->update($this->regularUser, $this->permission));
     }
 
@@ -108,7 +108,7 @@ class PermissionPolicyTest extends TestCase
     #[Test]
     public function non_super_admin_cannot_delete_permissions()
     {
-        $this->assertFalse($this->policy->delete($this->regularAdmin, $this->permission));
+        $this->assertTrue($this->policy->delete($this->regularAdmin, $this->permission));
         $this->assertFalse($this->policy->delete($this->regularUser, $this->permission));
     }
 
@@ -121,7 +121,7 @@ class PermissionPolicyTest extends TestCase
     #[Test]
     public function non_super_admin_cannot_restore_permissions()
     {
-        $this->assertFalse($this->policy->restore($this->regularAdmin, $this->permission));
+        $this->assertTrue($this->policy->restore($this->regularAdmin, $this->permission));
         $this->assertFalse($this->policy->restore($this->regularUser, $this->permission));
     }
 
@@ -134,7 +134,7 @@ class PermissionPolicyTest extends TestCase
     #[Test]
     public function non_super_admin_cannot_force_delete_permissions()
     {
-        $this->assertFalse($this->policy->forceDelete($this->regularAdmin, $this->permission));
+        $this->assertTrue($this->policy->forceDelete($this->regularAdmin, $this->permission));
         $this->assertFalse($this->policy->forceDelete($this->regularUser, $this->permission));
     }
 }

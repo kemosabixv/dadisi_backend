@@ -30,8 +30,8 @@ class SystemAdminSeeder extends Seeder
             ]
         );
 
-        // Assign super_admin role
-        $user->assignRole('super_admin');
+        // Assign super_admin role - use syncRoles to enforce exclusivity
+        $user->syncRoles(['super_admin']);
 
         // Create initial profile
         $county = \App\Models\County::first();
@@ -53,7 +53,6 @@ class SystemAdminSeeder extends Seeder
                 'interests' => ['system'],
                 'plan_id' => $plan?->id,
                 'terms_accepted' => true,
-                'is_staff' => true,
             ]
         );
 

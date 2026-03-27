@@ -34,7 +34,6 @@ class MemberProfileFactory extends Factory
             'date_of_birth' => $this->faker->date(),
             'county_id' => County::factory(),
             'terms_accepted' => true,
-            'is_staff' => false,
         ];
     }
 }

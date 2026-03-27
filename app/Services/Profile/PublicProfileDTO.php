@@ -28,7 +28,7 @@ class PublicProfileDTO
         public readonly ?array $sections,
         public readonly int $thread_count = 0,
         public readonly int $post_count = 0,
-        public readonly bool $is_staff = false,
+        public readonly bool $can_access_admin = false,
         public readonly bool $show_post_count = false
     ) {}
 
@@ -79,7 +79,7 @@ class PublicProfileDTO
             sections: $sections,
             thread_count: (int) ($user->forum_threads_count ?? 0),
             post_count: (int) ($user->forum_posts_count ?? 0),
-            is_staff: (bool) ($profile?->is_staff ?? false),
+            can_access_admin: $user->canAccessAdminPanel(),
             show_post_count: (bool) ($profile?->show_post_count ?? false)
         );
     }

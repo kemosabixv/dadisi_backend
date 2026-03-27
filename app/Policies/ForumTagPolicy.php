@@ -16,7 +16,7 @@ class ForumTagPolicy
             return true;
         }
         
-        if ($user->can('moderate_forum') || ($user->memberProfile && $user->memberProfile->is_staff)) {
+        if ($user->can('moderate_forum') || $user->can('access_admin_panel')) {
             return true;
         }
         

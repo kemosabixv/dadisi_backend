@@ -52,7 +52,6 @@ class SampleEventsSeeder extends Seeder
                 'phone_number' => '+254711000000',
                 'county_id' => $nairobiCounty->id,
                 'terms_accepted' => true,
-                'is_staff' => true,
             ]);
         }
 

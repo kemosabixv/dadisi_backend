@@ -22,6 +22,8 @@ class UpdateLabMaintenanceBlockRequest extends FormRequest
         return [
             'title' => ['sometimes', 'string', 'max:255'],
             'reason' => ['nullable', 'string', 'max:1000'],
+            'completion_report' => ['nullable', 'string', 'max:2000'],
+            'status' => ['sometimes', 'string', 'in:scheduled,in_progress,completed,cancelled'],
             'starts_at' => ['sometimes', 'date'],
             'ends_at' => ['sometimes', 'date', 'after:starts_at'],
         ];

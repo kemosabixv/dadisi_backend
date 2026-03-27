@@ -10,6 +10,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Spatie\Permission\Models\Role;
 
+use PHPUnit\Framework\Attributes\Test;
+
 class LabRolloverRBACTest extends TestCase
 {
     use RefreshDatabase;
@@ -20,7 +22,7 @@ class LabRolloverRBACTest extends TestCase
         $this->seed(\RolesPermissionsSeeder::class);
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_view_rollover_reports()
     {
         $admin = User::factory()->create();
@@ -32,7 +34,7 @@ class LabRolloverRBACTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function lab_manager_can_view_rollover_reports()
     {
         $manager = User::factory()->create();
@@ -44,7 +46,7 @@ class LabRolloverRBACTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function lab_supervisor_can_view_rollover_reports()
     {
         $supervisor = User::factory()->create();
@@ -56,7 +58,7 @@ class LabRolloverRBACTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function regular_member_cannot_view_rollover_reports()
     {
         $member = User::factory()->create();
@@ -68,7 +70,7 @@ class LabRolloverRBACTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_retry_rollover()
     {
         $admin = User::factory()->create();
@@ -92,7 +94,7 @@ class LabRolloverRBACTest extends TestCase
         $response->assertStatus(200);
     }
 
-    /** @test */
+    #[Test]
     public function lab_supervisor_cannot_retry_rollover()
     {
         $supervisor = User::factory()->create();

@@ -209,6 +209,9 @@ class RoleController extends Controller
         } catch (AuthorizationException $e) {
             throw $e;
         } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'protected system role')) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
+            }
             Log::error('Failed to update role', ['error' => $e->getMessage(), 'role_id' => $role->id]);
             return response()->json(['success' => false, 'message' => 'Failed to update role'], 500);
         }
@@ -240,14 +243,6 @@ class RoleController extends Controller
         try {
             $this->authorize('delete', $role);
 
-            // Prevent deletion of built-in system roles
-            if ($role->is_system ?? false) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot delete built-in system roles',
-                ], 403);
-            }
-
             $this->roleService->deleteRole($role);
 
             return response()->json([
@@ -257,6 +252,9 @@ class RoleController extends Controller
         } catch (AuthorizationException $e) {
             throw $e;
         } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'protected system role')) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
+            }
             if (str_contains($e->getMessage(), 'Cannot delete role')) {
                 return response()->json([
                     'success' => false,
@@ -363,6 +361,9 @@ class RoleController extends Controller
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'mandatory for the \'staff\' role')) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 403);
+            }
             Log::error('Failed to remove permissions from role', ['error' => $e->getMessage(), 'role_id' => $role->id]);
             return response()->json(['success' => false, 'message' => 'Failed to remove permissions'], 500);
         }

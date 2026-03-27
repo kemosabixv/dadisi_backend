@@ -67,7 +67,7 @@ class LabMaintenanceBlockPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('manage_lab_maintenance');
+        return $user->can('manage_lab_maintenance') || $user->hasRole(['lab_manager', 'lab_supervisor']);
     }
 
     /**
@@ -78,10 +78,6 @@ class LabMaintenanceBlockPolicy
      */
     public function update(User $user, LabMaintenanceBlock $block): bool
     {
-        if (!$user->can('manage_lab_maintenance')) {
-            return false;
-        }
-
         // lab_manager: global access
         if ($user->hasRole('lab_manager')) {
             return true;
@@ -92,7 +88,7 @@ class LabMaintenanceBlockPolicy
             return $this->isAssignedSupervisor($user, $block);
         }
 
-        // admin: global access
+        // admin: global access via permission
         if ($user->can('manage_lab_maintenance')) {
             return true;
         }

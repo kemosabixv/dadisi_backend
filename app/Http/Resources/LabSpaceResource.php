@@ -40,6 +40,7 @@ class LabSpaceResource extends JsonResource
             'media' => MediaResource::collection($this->whenLoaded('media')),
             'active_bookings_count' => $this->when(isset($this->active_bookings_count), $this->active_bookings_count),
             'bookings_count' => $this->when(isset($this->bookings_count), $this->bookings_count),
+            'maintenance_blocks_count' => $this->when(isset($this->maintenance_blocks_count), (int) $this->maintenance_blocks_count),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

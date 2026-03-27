@@ -75,3 +75,8 @@ test_output.txt
 .scribe/.filehashes
 bootstrap/cache/
 tests/tmp/
+.scribe/intro.md
+.scribe/endpoints/02.yaml
+.scribe/endpoints/03.yaml
+.scribe/.filehashes
+resources/views/scribe/index.blade.php

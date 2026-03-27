@@ -14,6 +14,7 @@ class MaintenanceBlockRollover extends Model
 
     protected $fillable = [
         'maintenance_block_id',
+        'series_id',
         'original_booking_id',
         'rolled_over_booking_id',
         'original_booking_data',

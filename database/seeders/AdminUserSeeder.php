@@ -34,19 +34,19 @@ class AdminUserSeeder extends Seeder
                 'email' => 'finance@dadisilab.com',
                 'username' => 'finance',
                 'display_name' => 'Finance User',
-                'role' => 'finance',
+                'role' => 'finance_manager',
             ],
             [
                 'email' => 'events@dadisilab.com',
                 'username' => 'eventsmanager',
                 'display_name' => 'Events Manager',
-                'role' => 'events_manager',
+                'role' => 'event_manager',
             ],
             [
                 'email' => 'blog@dadisilab.com',
                 'username' => 'contenteditor',
                 'display_name' => 'Content Editor',
-                'role' => 'content_editor',
+                'role' => 'content_manager',
             ],
             // Lab Staff
             [
@@ -99,8 +99,8 @@ class AdminUserSeeder extends Seeder
                 ]
             );
 
-            // Assign role
-            $user->assignRole($userData['role']);
+            // Assign role - use syncRoles to enforce mutual exclusivity
+            $user->syncRoles([$userData['role']]);
 
             // Create member profile if it doesn't exist
             $nameParts = explode(' ', $userData['display_name'], 2);
@@ -139,7 +139,6 @@ class AdminUserSeeder extends Seeder
                     'plan_id' => $plan?->id,
                     'terms_accepted' => true,
                     'marketing_consent' => (bool) rand(0, 1),
-                    'is_staff' => $userData['role'] !== 'member',
                 ]
             );
 

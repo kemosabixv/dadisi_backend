@@ -339,10 +339,7 @@ class User extends Authenticatable
      */
     public function canAccessAdminPanel(): bool
     {
-        // Check if user has specific admin roles or is a staff member
-        // Roles: super_admin, admin, finance, events_manager, content_editor, lab_manager
-        return $this->hasAnyRole(['super_admin', 'admin', 'finance', 'events_manager', 'content_editor', 'lab_manager'])
-               || ($this->memberProfile && $this->memberProfile->is_staff);
+        return $this->can('access_admin_panel');
     }
 
     /**

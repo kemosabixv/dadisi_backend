@@ -55,7 +55,6 @@ class UserService implements UserServiceContract
                 'user_id' => $user->id,
                 'first_name' => $profileData['first_name'] ?? '',
                 'last_name' => $profileData['last_name'] ?? '',
-                'is_staff' => $profileData['is_staff'] ?? false,
             ]);
 
             // Load relationships

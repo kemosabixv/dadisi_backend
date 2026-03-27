@@ -14,6 +14,8 @@ class UpdateMaintenanceBlockDTO
         public ?\DateTime $ends_at = null,
         public ?string $title = null,
         public ?string $reason = null,
+        public ?string $completion_report = null,
+        public ?string $status = null,
         public ?bool $recurring = null,
         public ?string $recurrence_rule = null,
     ) {}
@@ -28,6 +30,8 @@ class UpdateMaintenanceBlockDTO
             ends_at: isset($data['ends_at']) ? new \DateTime($data['ends_at']) : null,
             title: $data['title'] ?? null,
             reason: $data['reason'] ?? null,
+            completion_report: $data['completion_report'] ?? null,
+            status: $data['status'] ?? null,
             recurring: isset($data['recurring']) ? (bool) $data['recurring'] : null,
             recurrence_rule: $data['recurrence_rule'] ?? null,
         );
@@ -43,6 +47,8 @@ class UpdateMaintenanceBlockDTO
             'ends_at' => $this->ends_at?->format('Y-m-d H:i:s'),
             'title' => $this->title,
             'reason' => $this->reason,
+            'completion_report' => $this->completion_report,
+            'status' => $this->status,
             'recurring' => $this->recurring,
             'recurrence_rule' => $this->recurrence_rule,
         ], fn ($value) => $value !== null);

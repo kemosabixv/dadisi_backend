@@ -18,6 +18,10 @@ class LabBookingSeeder extends Seeder
 {
     public function run(): void
     {
+        // 0. Truncate existing booking data to ensure idempotency
+        LabBooking::query()->delete();
+        AttendanceLog::query()->delete();
+
         $labs = LabSpace::all();
         if ($labs->isEmpty()) {
             $this->command->warn('No lab spaces found. Skipping lab bookings seeding.');
@@ -34,14 +38,14 @@ class LabBookingSeeder extends Seeder
         $totalBookings = 0;
 
         foreach ($labs as $lab) {
-            // Seed past bookings (30 days window)
-            for ($i = 0; $i < 15; $i++) {
+            // Seed past bookings (reduced)
+            for ($i = 0; $i < 3; $i++) {
                 $this->createRandomBooking($lab, $users, $now->copy()->subDays(rand(1, 30)), true);
                 $totalBookings++;
             }
 
-            // Seed future bookings (30 days window)
-            for ($i = 0; $i < 10; $i++) {
+            // Seed future bookings (reduced)
+            for ($i = 0; $i < 2; $i++) {
                 $this->createRandomBooking($lab, $users, $now->copy()->addDays(rand(0, 30)), false);
                 $totalBookings++;
             }
@@ -78,7 +82,6 @@ class LabBookingSeeder extends Seeder
                     'last_name' => (string) $user->id,
                     'phone_number' => '+2547' . rand(10000000, 99999999),
                     'county_id' => $counties->random()->id ?? 1,
-                    'is_staff' => false,
                     'plan_id' => $plans->random()->id ?? null,
                     'terms_accepted' => true,
                 ]);

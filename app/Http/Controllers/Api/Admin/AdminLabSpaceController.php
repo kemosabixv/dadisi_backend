@@ -12,6 +12,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use App\Models\User;
+use App\Models\AuditLog;
 
 /**
  * @group Admin - Lab Spaces
@@ -47,7 +49,8 @@ class AdminLabSpaceController extends Controller
     {
         $this->authorize('viewAny', LabSpace::class);
 
-        $query = LabSpace::query();
+        $query = LabSpace::query()
+            ->with(['media']);
 
         if ($request->has('status')) {
             $status = $request->status;
@@ -84,12 +87,15 @@ class AdminLabSpaceController extends Controller
         }
 
         $perPage = $request->input('per_page', 50);
+        $now = now(); // Define $now here
         $spaces = $query
-            ->with('media')
             ->withCount([
                 'bookings as active_bookings_count' => function ($q) {
                     $q->whereIn('status', ['confirmed', 'in_progress']);
                 },
+                'maintenanceBlocks as maintenance_blocks_count' => function ($query) {
+                    $query->whereIn('status', ['scheduled', 'in_progress']);
+                }
             ])
             ->orderBy('name')
             ->paginate($perPage);
@@ -345,16 +351,8 @@ class AdminLabSpaceController extends Controller
             ], 422);
         }
 
-        // Check if already assigned
-        if ($space->supervisors()->where('user_id', $user->id)->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Supervisor is already assigned to this lab space',
-            ], 422);
-        }
-
         // Assign supervisor
-        $space->supervisors()->attach($user->id, ['assigned_at' => now()]);
+        $space->supervisors()->syncWithoutDetaching([$user->id => ['assigned_at' => now()]]);
 
         return response()->json([
             'success' => true,
@@ -367,6 +365,72 @@ class AdminLabSpaceController extends Controller
                 'assigned_at' => now(),
             ],
         ], 201);
+    }
+
+    /**
+     * Bulk assign supervisor to multiple labs
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function bulkAssignSupervisor(Request $request): JsonResponse
+    {
+        // Only admin and super_admin can assign supervisors
+        if (!$request->user()->hasAnyRole(['super_admin', 'admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized to assign supervisors',
+            ], 403);
+        }
+
+        $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'integer|exists:users,id',
+            'lab_space_ids' => 'required|array',
+            'lab_space_ids.*' => 'integer|exists:lab_spaces,id',
+        ]);
+
+        $users = User::whereIn('id', $request->user_ids)->get();
+        $labSpaces = LabSpace::whereIn('id', $request->lab_space_ids)->get();
+
+        $count = 0;
+        $assignedAt = now();
+
+        foreach ($users as $user) {
+            // Ensure the user has the lab_supervisor role
+            if (!$user->hasRole('lab_supervisor')) {
+                $user->assignRole('lab_supervisor');
+            }
+
+            foreach ($labSpaces as $labSpace) {
+                // syncWithoutDetaching with pivot data
+                $labSpace->supervisors()->syncWithoutDetaching([
+                    $user->id => ['assigned_at' => $assignedAt]
+                ]);
+
+                // Log the assignment
+                AuditLog::create([
+                    'user_id' => auth()->id(),
+                    'action' => 'assigned_lab_supervisor_bulk',
+                    'model_type' => 'lab_space',
+                    'model_id' => $labSpace->id,
+                    'new_values' => [
+                        'user_id' => $user->id,
+                        'user_name' => $user->name,
+                        'lab_name' => $labSpace->name,
+                    ],
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+                
+                $count++;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Supervisors assigned successfully.',
+            'assignments_count' => $count
+        ]);
     }
 
     /**
@@ -391,7 +455,7 @@ class AdminLabSpaceController extends Controller
         }
 
         $space = LabSpace::findOrFail($labSpaceId);
-        $user = \App\Models\User::findOrFail($userId);
+        $user = User::findOrFail($userId);
 
         // Check if assignment exists
         if (!$space->supervisors()->where('user_id', $user->id)->exists()) {
@@ -439,10 +503,10 @@ class AdminLabSpaceController extends Controller
         $space->update(['bookings_enabled' => false]);
 
         // Log the action to audit trail
-        \App\Models\AuditLog::create([
+        AuditLog::create([
             'user_id' => $request->user()->id,
             'action' => 'lab_bookings_disabled',
-            'model_type' => LabSpace::class,
+            'model_type' => 'lab_space',
             'model_id' => $space->id,
             'changes' => [
                 'bookings_enabled' => [
@@ -491,10 +555,10 @@ class AdminLabSpaceController extends Controller
         $space->update(['bookings_enabled' => true]);
 
         // Log the action to audit trail
-        \App\Models\AuditLog::create([
+        AuditLog::create([
             'user_id' => $request->user()->id,
             'action' => 'lab_bookings_enabled',
-            'model_type' => LabSpace::class,
+            'model_type' => 'lab_space',
             'model_id' => $space->id,
             'changes' => [
                 'bookings_enabled' => [

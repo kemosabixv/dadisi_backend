@@ -108,6 +108,10 @@ class RoleService implements RoleServiceContract
     public function updateRole(Role $role, UpdateRoleDTO $dto): Role
     {
         try {
+            if ($role->is_immutable) {
+                throw new \Exception("The '{$role->name}' role is a protected system role and cannot be modified.");
+            }
+
             $data = $dto->toArray();
             $oldValues = $role->only(array_keys($data));
             $role->update($data);
@@ -127,6 +131,10 @@ class RoleService implements RoleServiceContract
     public function deleteRole(Role $role): bool
     {
         try {
+            if ($role->is_immutable) {
+                throw new \Exception("The '{$role->name}' role is a protected system role and cannot be deleted.");
+            }
+
             if ($role->users()->exists()) {
                 throw new \Exception('Cannot delete role that has assigned users');
             }
@@ -185,6 +193,11 @@ class RoleService implements RoleServiceContract
     public function removePermissionsFromRole(Role $role, array $permissionNames): array
     {
         try {
+            // Enforcement: staff role MUST have access_admin_panel
+            if ($role->name === 'staff' && in_array('access_admin_panel', $permissionNames)) {
+                throw new \Exception("The 'access_admin_panel' permission is mandatory for the 'staff' role.");
+            }
+
             $oldPermissions = $role->permissions->pluck('name')->toArray();
 
             $role->revokePermissionTo($permissionNames);

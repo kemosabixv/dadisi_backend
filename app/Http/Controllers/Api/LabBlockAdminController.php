@@ -271,7 +271,7 @@ class LabBlockAdminController extends Controller
             $alternativeSlot = $this->bookingService->findAlternativeSlot(
                 spaceId: $space->id,
                 durationHours: $booking->duration_hours,
-                blockToAvoid: $block,
+                blocksToAvoid: $block,
                 excludeBookingId: $booking->id
             );
 

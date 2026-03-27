@@ -19,8 +19,8 @@ class PostResource extends JsonResource
             'status' => $this->status,
             'is_featured' => (bool) $this->is_featured,
             'views_count' => $this->views_count,
-            'featured_image' => $this->getFeaturedImagePath(),
-            'hero_image_path' => $this->getFeaturedImagePath(),
+            'featured_image' => $this->featured_image,
+            'hero_image_path' => $this->featured_image,
             'author' => new UserResource($this->whenLoaded('author')),
             'county_id' => $this->county_id,
             'county' => $this->county ? [

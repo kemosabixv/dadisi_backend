@@ -174,7 +174,7 @@ class LabBookingService implements LabBookingServiceContract
         }
 
         $percentageUsed = 0;
-        if (!$isUnlimited && $limit > 0) {
+        if (! $isUnlimited && $limit > 0) {
             $percentageUsed = ($usedHours / $limit) * 100;
         }
 
@@ -259,7 +259,7 @@ class LabBookingService implements LabBookingServiceContract
 
         if (! $opensAt || ! $closesAt) {
             // Cannot validate opening hours if both are missing
-            return true; 
+            return true;
         }
 
         $openTime = $opensAt->format('H:i');
@@ -555,7 +555,7 @@ class LabBookingService implements LabBookingServiceContract
                 }
 
                 // RE-VALIDATE: Ensure no maintenance or other conflict was created while hold was active
-                if (!$this->checkAvailability($hold->lab_space_id, $hold->starts_at, $hold->ends_at)) {
+                if (! $this->checkAvailability($hold->lab_space_id, $hold->starts_at, $hold->ends_at)) {
                     throw new \Exception('One or more of your selected slots are no longer available due to a scheduled maintenance or conflict. Please select different times.');
                 }
 
@@ -750,10 +750,10 @@ class LabBookingService implements LabBookingServiceContract
                 }
             }
 
-            $logMsg = sprintf("[%s] Day: %s, Allowed: %d, Processed: %d\n", 
-                $currentDate->toDateString(), 
-                $currentDate->format('D'), 
-                $isAllowedDay, 
+            $logMsg = sprintf("[%s] Day: %s, Allowed: %d, Processed: %d\n",
+                $currentDate->toDateString(),
+                $currentDate->format('D'),
+                $isAllowedDay,
                 count($processedSlots)
             );
             file_put_contents(storage_path('logs/recurring_debug.log'), $logMsg, FILE_APPEND);
@@ -1179,15 +1179,15 @@ class LabBookingService implements LabBookingServiceContract
             $bookingsToCancel = $series->bookings()->where('status', '!=', LabBooking::STATUS_CANCELLED)->get();
             $representativeBooking = $bookingsToCancel->first() ?? $series->bookings()->first();
 
-            if (!$representativeBooking) {
-                throw new \Exception("Cannot cancel an empty booking series.");
+            if (! $representativeBooking) {
+                throw new \Exception('Cannot cancel an empty booking series.');
             }
 
             foreach ($bookingsToCancel as $b) {
                 // Future slots are released, past/attended are locked
                 if ($b->starts_at->isFuture() && $b->status !== LabBooking::STATUS_COMPLETED) {
                     $wasQuota = $b->quota_consumed;
-                    
+
                     $b->update([
                         'status' => LabBooking::STATUS_CANCELLED,
                     ]);
@@ -1209,22 +1209,20 @@ class LabBookingService implements LabBookingServiceContract
                 'user_id' => $cancelledBy ? $cancelledBy->id : $series->user_id,
                 'notes' => $reason,
                 'payload' => [
-                    'is_staff_action' => $cancelledBy && ($cancelledBy->hasRole('admin') || $cancelledBy->hasRole('lab_manager') || $cancelledBy->hasRole('lab_supervisor')),
-                    'reason' => $reason
-                ]
+                    'admin_action' => $cancelledBy && ($cancelledBy->hasRole('admin') || $cancelledBy->hasRole('lab_manager') || $cancelledBy->hasRole('lab_supervisor')),
+                ],
             ]);
 
             // PRD Section 10: Handle refunds based on payment type
             $refund = null;
-            $payment = $representativeBooking->payment && $representativeBooking->payment->isPaid() 
-                ? $representativeBooking->payment 
-                : ($series->bookings()->whereHas('payment', fn($q) => $q->where('status', 'paid'))->first()?->payment);
+            $payment = $representativeBooking->payment && $representativeBooking->payment->isPaid()
+                ? $representativeBooking->payment
+                : ($series->bookings()->whereHas('payment', fn ($q) => $q->where('status', 'paid'))->first()?->payment);
 
             if ($payment) {
                 try {
                     // For series, we request total refund via the RefundService which is already series-aware
-                    $refund = $this->refundService->requestLabBookingRefund($representativeBooking, 'Series Cancellation: ' . $reason);
-
+                    $refund = $this->refundService->requestLabBookingRefund($representativeBooking, 'Series Cancellation: '.$reason);
 
                     // Notify User and Staff about the refund request
                     if ($series->user) {
@@ -1234,11 +1232,11 @@ class LabBookingService implements LabBookingServiceContract
                     // Notify Staff
                     $staff = \App\Models\User::role('super_admin')->get();
                     \Illuminate\Support\Facades\Notification::send($staff, new \App\Notifications\LabBookingRefundRequested($representativeBooking, $refund));
-                    
+
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('Refund request failed during series cancellation', [
                         'series_id' => $series->id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
@@ -1292,7 +1290,7 @@ class LabBookingService implements LabBookingServiceContract
 
             $refund = null;
             if ($booking->payment && $booking->payment->isPaid()) {
-                $refund = $this->refundService->requestLabBookingRefund($booking, 'Cancellation: ' . $reason);
+                $refund = $this->refundService->requestLabBookingRefund($booking, 'Cancellation: '.$reason);
             }
 
             return [
@@ -1310,7 +1308,7 @@ class LabBookingService implements LabBookingServiceContract
     public function refundSeriesPreview(BookingSeries $series): array
     {
         $representativeBooking = $series->bookings()->first();
-        if (!$representativeBooking) {
+        if (! $representativeBooking) {
             return [
                 'refundable' => false,
                 'amount' => 0,
@@ -1326,10 +1324,10 @@ class LabBookingService implements LabBookingServiceContract
      */
     public function refundPreview(LabBooking $booking): array
     {
-        if (!$booking->payment || !$booking->payment->isPaid()) {
+        if (! $booking->payment || ! $booking->payment->isPaid()) {
             // Check if any booking in the series has a payment
-            $seriesPayment = $booking->bookingSeries?->bookings()->whereHas('payment', fn($q) => $q->where('status', 'paid'))->first()?->payment;
-            if (!$seriesPayment) {
+            $seriesPayment = $booking->bookingSeries?->bookings()->whereHas('payment', fn ($q) => $q->where('status', 'paid'))->first()?->payment;
+            if (! $seriesPayment) {
                 return [
                     'refundable' => false,
                     'amount' => 0,
@@ -1476,8 +1474,8 @@ class LabBookingService implements LabBookingServiceContract
             ->orderBy('starts_at', 'asc')
             ->first();
 
-        if (!$booking) {
-            throw new \Exception("No active booking found for you in this lab space right now.");
+        if (! $booking) {
+            throw new \Exception('No active booking found for you in this lab space right now.');
         }
 
         return $this->checkIn($booking);
@@ -1521,7 +1519,6 @@ class LabBookingService implements LabBookingServiceContract
 
         return $booking->fresh();
     }
-
 
     /**
      * Mark a booking as no-show.
@@ -1655,19 +1652,21 @@ class LabBookingService implements LabBookingServiceContract
     public function findAlternativeSlot(
         int $spaceId,
         int $durationHours,
-        LabMaintenanceBlock $blockToAvoid,
+        $blocksToAvoid, // LabMaintenanceBlock or Collection
         ?int $excludeBookingId = null
     ): ?array {
         $space = LabSpace::findOrFail($spaceId);
+        $operatingStart = $space->opens_at ? \Carbon\Carbon::parse($space->opens_at)->hour : 8;
+        $operatingEnd = $space->closes_at ? \Carbon\Carbon::parse($space->closes_at)->hour : 20;
 
-        // Operating hours: Dynamic from LabSpace or fallback to 8 AM - 8 PM
-        $operatingStart = $space->opens_at ? (int) Carbon::parse($space->opens_at)->hour : 8;
-        $operatingEnd = $space->closes_at ? (int) Carbon::parse($space->closes_at)->hour : 20;
+        // Normalize blocks to avoid
+        $blocksToAvoid = $blocksToAvoid instanceof \Illuminate\Support\Collection ? $blocksToAvoid : collect([$blocksToAvoid]);
+        $primaryBlock = $blocksToAvoid->first();
 
-        // Start searching from block end time
-        $searchStart = $blockToAvoid->ends_at->copy();
-        // For 180-day window from search start, we go 179 more days (current day + 179)
-        $searchEnd = $searchStart->copy()->addDays(179)->endOfDay(); // End of day 180
+        // Start searching from primary block end time (or first block in series)
+        $searchStart = $primaryBlock->ends_at->copy();
+        // For 180-day window from search start
+        $searchEnd = $searchStart->copy()->addDays(179)->endOfDay();
 
         $currentTime = $searchStart->copy();
 
@@ -1704,15 +1703,25 @@ class LabBookingService implements LabBookingServiceContract
             }
 
             // Check if time slot has any blocks (maintenance/holiday/closure)
+            // 1. Check against the explicit series passed in (avoiding new series members)
+            $seriesConflict = $blocksToAvoid->contains(fn ($b) => 
+                $b->starts_at < $candidateEnd && $b->ends_at > $candidateStart
+            );
+
+            if ($seriesConflict) {
+               $currentTime->addHour();
+               continue;
+            }
+
+            // 2. Check against OTHER existing blocks in DB
             $hasBlockConflict = LabMaintenanceBlock::where('lab_space_id', $spaceId)
                 ->where('starts_at', '<', $candidateEnd)
                 ->where('ends_at', '>', $candidateStart)
+                ->whereNotIn('id', $blocksToAvoid->pluck('id')->filter()->toArray()) 
                 ->exists();
 
             if ($hasBlockConflict) {
-                // Skip to 8 AM next day
                 $currentTime->addDay()->setHour($operatingStart)->setMinute(0)->setSecond(0);
-
                 continue;
             }
 
@@ -1826,7 +1835,7 @@ class LabBookingService implements LabBookingServiceContract
                         ));
                     }
                 } catch (\Exception $e) {
-                    Log::error("Failed to notify user for booking rollover: ".$e->getMessage());
+                    Log::error('Failed to notify user for booking rollover: '.$e->getMessage());
                 }
             } else {
                 // 3. Auto-rollover failed -> Request user intervention
@@ -1853,7 +1862,7 @@ class LabBookingService implements LabBookingServiceContract
                         ));
                     }
                 } catch (\Exception $e) {
-                    Log::error("Failed to notify user for needed reschedule: ".$e->getMessage());
+                    Log::error('Failed to notify user for needed reschedule: '.$e->getMessage());
                 }
             }
         }
@@ -1993,7 +2002,6 @@ class LabBookingService implements LabBookingServiceContract
      *
      * PHASE 2: Quota Commitment Integration
      *
-     * @param  LabBooking  $booking
      * @return bool True if quota was released
      */
     public function releaseBookingQuota(LabBooking $booking): bool
@@ -2011,7 +2019,7 @@ class LabBookingService implements LabBookingServiceContract
         if ($success) {
             $booking->update(['quota_consumed' => false]);
             event(new \App\Events\QuotaRestoredEvent($booking->user, $hours, $booking));
-            
+
             // Notify User about quota restoration
             if ($booking->user) {
                 $booking->user->notify(new \App\Notifications\LabBookingQuotaRestored($booking, $hours));
@@ -2093,7 +2101,7 @@ class LabBookingService implements LabBookingServiceContract
 
             // If we're marking a slot as attended but the booking itself wasn't checked in,
             // we should probably trigger a standard check-in for the booking records.
-            if ($status === \App\Models\AttendanceLog::STATUS_ATTENDED && !$booking->checked_in_at) {
+            if ($status === \App\Models\AttendanceLog::STATUS_ATTENDED && ! $booking->checked_in_at) {
                 $this->checkIn($booking, now(), $staff);
             }
 
@@ -2112,7 +2120,7 @@ class LabBookingService implements LabBookingServiceContract
             $newEnd = Carbon::parse($data['ends_at']);
 
             // 1. Basic availability check
-            if (!$this->checkAvailability($newSpaceId, $newStart, $newEnd, $booking->id)) {
+            if (! $this->checkAvailability($newSpaceId, $newStart, $newEnd, $booking->id)) {
                 return [
                     'success' => false,
                     'message' => 'The selected slot is no longer available.',
@@ -2186,7 +2194,7 @@ class LabBookingService implements LabBookingServiceContract
             'period' => [
                 'start' => $startDate->toDateString(),
                 'end' => $endDate->toDateString(),
-            ]
+            ],
         ];
     }
 
@@ -2198,7 +2206,7 @@ class LabBookingService implements LabBookingServiceContract
         $booking = $rollover->originalBooking;
         $block = $rollover->maintenanceBlock;
 
-        if (!$booking || !$block) {
+        if (! $booking || ! $block) {
             return [
                 'success' => false,
                 'message' => 'Invalid rollover record: missing booking or block reference.',
@@ -2227,7 +2235,7 @@ class LabBookingService implements LabBookingServiceContract
             $rollover->update([
                 'status' => 'rolled_over',
                 'rolled_over_booking_id' => $booking->id,
-                'notes' => ($rollover->notes ? $rollover->notes . "\n" : "") . "Auto-rollover retried successfully by admin.",
+                'notes' => ($rollover->notes ? $rollover->notes."\n" : '').'Auto-rollover retried successfully by admin.',
             ]);
 
             // Notify User
@@ -2237,12 +2245,12 @@ class LabBookingService implements LabBookingServiceContract
                         $booking,
                         $oldStart,
                         $oldEnd,
-                        "Admin retried and found a slot after initial rollover conflict.",
+                        'Admin retried and found a slot after initial rollover conflict.',
                         $block
                     ));
                 }
             } catch (\Exception $e) {
-                Log::error("Failed to notify user for retried rollover: " . $e->getMessage());
+                Log::error('Failed to notify user for retried rollover: '.$e->getMessage());
             }
 
             return [

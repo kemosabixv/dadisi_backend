@@ -31,7 +31,7 @@ class SecureUserResource extends JsonResource
             // Basic profile data - limit what is exposed
             'member_profile' => $this->whenLoaded('memberProfile', function () {
                 return [
-                    'is_staff' => (bool) $this->memberProfile->is_staff,
+                    'can_access_admin' => $this->canAccessAdminPanel(),
                     'first_name' => $this->memberProfile->first_name,
                     'last_name' => $this->memberProfile->last_name,
                 ];

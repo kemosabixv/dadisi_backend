@@ -6,6 +6,8 @@ use App\Models\Donation;
 use App\Models\PlanSubscription;
 use App\Observers\DonationObserver;
 use App\Observers\PlanSubscriptionObserver;
+use App\Observers\UserObserver;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Permission;
@@ -340,6 +342,7 @@ class AppServiceProvider extends ServiceProvider
         // Register model observers for data integrity
         PlanSubscription::observe(PlanSubscriptionObserver::class);
         Donation::observe(DonationObserver::class);
+        User::observe(UserObserver::class);
 
         // Define polymorphic relationship mapping
         \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
@@ -348,6 +351,7 @@ class AppServiceProvider extends ServiceProvider
             'event_order' => \App\Models\EventOrder::class,
             'subscription' => \App\Models\PlanSubscription::class,
             'lab_booking' => \App\Models\LabBooking::class,
+            'lab_space' => \App\Models\LabSpace::class,
         ]);
     }
 }

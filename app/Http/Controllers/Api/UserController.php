@@ -98,7 +98,6 @@ class UserController extends Controller
                 'password' => 'required|string|min:8',
                 'first_name' => 'nullable|string|max:100',
                 'last_name' => 'nullable|string|max:100',
-                'is_staff' => 'nullable|boolean',
                 'roles' => 'nullable|array',
                 'roles.*' => 'string|exists:roles,name',
             ]);
@@ -112,7 +111,6 @@ class UserController extends Controller
             $profileData = [
                 'first_name' => $validated['first_name'] ?? null,
                 'last_name' => $validated['last_name'] ?? null,
-                'is_staff' => $validated['is_staff'] ?? false,
             ];
 
             $user = $this->userService->create($request->user(), $dto, $profileData);

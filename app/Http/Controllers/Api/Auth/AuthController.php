@@ -55,7 +55,6 @@ class AuthController extends Controller
      *          "menu": []
      *      },
      *      "member_profile": {
-     *          "is_staff": false,
      *          "first_name": "Jane",
      *          "last_name": "Doe"
      *      }

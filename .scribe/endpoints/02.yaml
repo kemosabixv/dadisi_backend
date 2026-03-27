@@ -317,7 +317,7 @@ endpoints:
         name: type
         description: ''
         required: false
-        example: video
+        example: image
         type: string
         enumValues:
           - text
@@ -363,7 +363,7 @@ endpoints:
     cleanBodyParameters:
       conversation_id: architecto
       content: architecto
-      type: video
+      type: image
       r2_key: architecto
       file_name: architecto
       file_size: 16
@@ -941,7 +941,7 @@ endpoints:
         name: root_type
         description: ''
         required: true
-        example: personal
+        example: public
         type: string
         enumValues:
           - personal
@@ -951,7 +951,7 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       name: b
-      root_type: personal
+      root_type: public
     fileParameters: []
     responses: []
     responseFields: []
@@ -1009,7 +1009,7 @@ endpoints:
         name: root_type
         description: ''
         required: true
-        example: personal
+        example: public
         type: string
         enumValues:
           - personal
@@ -1042,7 +1042,7 @@ endpoints:
     cleanBodyParameters:
       current_name: architecto
       new_name: architecto
-      root_type: personal
+      root_type: public
     fileParameters: []
     responses: []
     responseFields: []
@@ -1074,14 +1074,14 @@ endpoints:
         name: id
         description: 'The ID of the folder.'
         required: true
-        example: 2
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      id: 2
+      id: 1
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
@@ -1129,14 +1129,14 @@ endpoints:
         name: id
         description: 'The ID of the folder.'
         required: true
-        example: 2
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      id: 2
+      id: 1
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
@@ -1407,7 +1407,7 @@ endpoints:
         name: root_type
         description: ''
         required: false
-        example: personal
+        example: public
         type: string
         enumValues:
           - personal
@@ -1431,7 +1431,7 @@ endpoints:
         name: visibility
         description: ''
         required: false
-        example: public
+        example: shared
         type: string
         enumValues:
           - public
@@ -1444,8 +1444,8 @@ endpoints:
       attached_to: architecto
       attached_to_id: 16
       temporary: false
-      root_type: personal
-      visibility: public
+      root_type: public
+      visibility: shared
     fileParameters:
       file: null
     responses: []

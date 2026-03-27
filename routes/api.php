@@ -864,15 +864,22 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Lab Maintenance Blocks
     Route::get('lab-maintenance', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'index'])->name('admin.lab-maintenance.index');
     Route::post('lab-maintenance', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'store'])->name('admin.lab-maintenance.store');
+    Route::post('lab-maintenance/series', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'storeSeries'])->name('admin.lab-maintenance.series.store');
     Route::post('lab-maintenance/bulk-create', [\App\Http\Controllers\Api\Admin\LabMaintenanceBlockController::class, 'bulkCreate'])->name('admin.lab-maintenance.bulk-create');
     Route::get('lab-maintenance/rollover-reports', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'rolloverReports'])->name('admin.lab-maintenance.rollover-reports');
     Route::post('lab-maintenance/rollover-retry/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'retryRollover'])->name('admin.lab-maintenance.rollover-retry')->whereNumber('id');
     Route::get('lab-maintenance/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'show'])->name('admin.lab-maintenance.show');
     Route::put('lab-maintenance/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'update'])->name('admin.lab-maintenance.update');
+    Route::put('lab-maintenance/series/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'updateSeries'])->name('admin.lab-maintenance.series.update')->whereNumber('id');
+    Route::delete('lab-maintenance/series/{seriesId}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'destroySeries'])->name('admin.lab-maintenance.series.destroy');
+    Route::post('lab-maintenance/{id}/complete', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'complete'])->name('admin.lab-maintenance.complete')->whereNumber('id');
+    Route::post('lab-maintenance/{id}/cancel', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'cancel'])->name('admin.lab-maintenance.cancel')->whereNumber('id');
     Route::delete('lab-maintenance/{id}', [\App\Http\Controllers\Api\Admin\AdminLabMaintenanceController::class, 'destroy'])->name('admin.lab-maintenance.destroy');
 
     // Lab Supervisor Assignments
     Route::get('lab-supervisors', [AdminLabSpaceController::class, 'listAssignments'])->name('admin.lab-supervisors.list');
+    Route::post('lab-supervisors/bulk-assign', [AdminLabSpaceController::class, 'bulkAssignSupervisor'])->name('admin.lab-supervisors.bulk-assign');
+    Route::post('bulk-assign-supervisor', [AdminLabSpaceController::class, 'bulkAssignSupervisor'])->name('admin.lab-supervisors.bulk-assign-alias');
     Route::post('lab-supervisors', [AdminLabSpaceController::class, 'assignSupervisor'])->name('admin.lab-supervisors.assign');
     Route::delete('lab-supervisors/{labSpaceId}/{userId}', [AdminLabSpaceController::class, 'removeSupervisor'])->name('admin.lab-supervisors.remove');
 

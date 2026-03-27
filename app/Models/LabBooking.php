@@ -72,6 +72,7 @@ class LabBooking extends Model
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_NO_SHOW = 'no_show';
     public const STATUS_PENDING_USER_RESOLUTION = 'pending_user_resolution';
+    public const STATUS_ROLLED_OVER = 'confirmed'; // Moved bookings remain 'confirmed' but are tracked via rollovers
 
     public const PAYMENT_METHOD_QUOTA = 'quota';
     public const PAYMENT_METHOD_DIRECT = 'direct';
