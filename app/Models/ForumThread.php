@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ForumThread extends Model
@@ -180,5 +181,24 @@ class ForumThread extends Model
     public function getCategorySlugAttribute(): ?string
     {
         return $this->category?->slug;
+    }
+
+    /**
+     * Media relationship (attached images)
+     */
+    public function media(): MorphToMany
+    {
+        return $this->morphToMany(Media::class, 'attachable', 'media_attachments')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /**
+     * Accessor: featured_image
+     */
+    public function getFeaturedImageAttribute(): ?string
+    {
+        $featured = $this->media()->wherePivot('role', 'featured')->first();
+        return $featured ? $featured->url : null;
     }
 }

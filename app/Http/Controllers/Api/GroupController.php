@@ -20,6 +20,103 @@ class GroupController extends Controller
     public function __construct(private GroupServiceContract $groupService) {}
 
     /**
+     * Store Group
+     * 
+     * @group County Groups
+     * @authenticated
+     */
+    public function store(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            // Staff only check - using simple gate/role check for now
+            if (!$request->user()->is_staff && !$request->user()->hasRole('super_admin')) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized. Only staff can create groups.'], 403);
+            }
+
+            $validated = $request->validate([
+                'name' => 'required|string|max:100|unique:groups,name',
+                'description' => 'required|string|max:1000',
+                'county_id' => 'nullable|exists:counties,id',
+                'is_private' => 'boolean',
+                'is_active' => 'boolean',
+            ]);
+
+            $dto = new \App\DTOs\CreateGroupDTO($validated);
+            $group = $this->groupService->createGroup($dto);
+
+            return response()->json(['success' => true, 'data' => $group], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Failed to create group', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to create group'], 500);
+        }
+    }
+
+    /**
+     * Update Group
+     * 
+     * @group County Groups
+     * @authenticated
+     */
+    public function update(Request $request, string $slug): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $group = \App\Models\Group::where('slug', $slug)->firstOrFail();
+
+            if (!$request->user()->is_staff && !$request->user()->hasRole('super_admin')) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized. Only staff can update groups.'], 403);
+            }
+
+            $validated = $request->validate([
+                'name' => 'sometimes|required|string|max:100|unique:groups,name,' . $group->id,
+                'description' => 'sometimes|required|string|max:1000',
+                'county_id' => 'nullable|exists:counties,id',
+                'is_private' => 'boolean',
+                'is_active' => 'boolean',
+            ]);
+
+            $dto = new \App\DTOs\UpdateGroupDTO($validated);
+            $updatedGroup = $this->groupService->updateGroup($group, $dto);
+
+            return response()->json(['success' => true, 'data' => $updatedGroup]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Group not found'], 404);
+        } catch (\Exception $e) {
+            Log::error('Failed to update group', ['error' => $e->getMessage(), 'slug' => $slug]);
+            return response()->json(['success' => false, 'message' => 'Failed to update group'], 500);
+        }
+    }
+
+    /**
+     * Delete Group
+     * 
+     * @group County Groups
+     * @authenticated
+     */
+    public function destroy(Request $request, string $slug): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $group = \App\Models\Group::where('slug', $slug)->firstOrFail();
+
+            if (!$request->user()->hasRole('super_admin')) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized. Only admins can delete groups.'], 403);
+            }
+
+            $this->groupService->deleteGroup($group);
+
+            return response()->json(['success' => true, 'message' => 'Group deleted successfully.']);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Group not found'], 404);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete group', ['error' => $e->getMessage(), 'slug' => $slug]);
+            return response()->json(['success' => false, 'message' => 'Failed to delete group'], 500);
+        }
+    }
+
+    /**
      * List all county groups.
      *
      * Returns a paginated list of active county groups, ordered by member count.

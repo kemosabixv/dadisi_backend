@@ -11,6 +11,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Notifications\DeletionRequestProcessed;
 
 class BlogTaxonomyService implements BlogTaxonomyServiceContract
 {
@@ -373,6 +374,11 @@ class BlogTaxonomyService implements BlogTaxonomyServiceContract
                     'notes' => "Approved deletion for {$type}: " . $model->name . ". Comment: " . $comment,
                 ]);
 
+                $requester = $model->deletionRequester;
+                if ($requester) {
+                    $requester->notify(new DeletionRequestProcessed($type, $model->name, 'approved', $comment));
+                }
+
                 return $model->delete();
             });
         } catch (\Exception $e) {
@@ -407,11 +413,35 @@ class BlogTaxonomyService implements BlogTaxonomyServiceContract
                     'notes' => "Rejected deletion for {$type}: " . $model->name . ". Comment: " . $comment,
                 ]);
 
+                $requester = $model->deletionRequester;
+                if ($requester) {
+                    $requester->notify(new DeletionRequestProcessed($type, $model->name, 'rejected', $comment));
+                }
+
                 return true;
             });
         } catch (\Exception $e) {
             Log::error('Rejection of deletion failed', ['error' => $e->getMessage(), 'type' => $type, 'id' => $id]);
             throw $e;
         }
+    }
+
+    public function getAffectedItems(string $type, int $id, int $perPage = 15): LengthAwarePaginator
+    {
+        $model = match ($type) {
+            'category' => Category::find($id),
+            'tag' => Tag::find($id),
+            default => null,
+        };
+
+        if (!$model) {
+            return new LengthAwarePaginator([], 0, $perPage);
+        }
+
+        if ($type === 'category') {
+            return $this->getAffectedPostsByCategory($model, $perPage);
+        }
+
+        return $this->getAffectedPostsByTag($model, $perPage);
     }
 }

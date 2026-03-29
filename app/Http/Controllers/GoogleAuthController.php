@@ -131,7 +131,7 @@ class GoogleAuthController extends Controller
                         'subscriber_id' => $user->id,
                         'subscriber_type' => 'App\\Models\\User',
                         'plan_id' => $freePlan->id,
-                        'name' => $freePlan->name,
+                        'name' => $freePlan->display_name,
                         'slug' => $freePlan->slug . '-' . $user->id . '-' . time(),
                         'starts_at' => now(),
                         'ends_at' => null, // Free plan never expires
@@ -161,8 +161,8 @@ class GoogleAuthController extends Controller
             });
         }
 
-        // Ensure memberProfile is loaded for SecureUserResource
-        $user->load('memberProfile');
+        // Ensure memberProfile and roles are loaded for SecureUserResource
+        $user->load(['memberProfile', 'roles']);
 
         // Log the user in via session
         Auth::login($user, true);

@@ -56,7 +56,7 @@ class SubscriptionPaymentFailed extends Notification
         return [
             'type' => 'subscription_payment_failed',
             'title' => 'Payment Failed',
-            'message' => "We couldn't process the payment for your {$plan?->name} subscription.",
+            'message' => "We couldn't process the payment for your {$plan?->display_name} subscription.",
             'subscription_id' => $this->subscription->id,
             'plan_id' => $plan?->id,
             'error' => $this->error,

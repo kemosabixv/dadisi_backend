@@ -19,6 +19,12 @@ class SubscriptionEnhancement extends Model
         'pesapal_account_reference',
         'pesapal_subscription_frequency',
         'last_pesapal_recurring_at',
+        'pesapal_recurring_enabled',
+        'renewal_mode',
+        'renewal_notes',
+        'last_renewal_result',
+        'last_renewal_error',
+        'next_auto_renewal_at',
     ];
 
     protected $casts = [

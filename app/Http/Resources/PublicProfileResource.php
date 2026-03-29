@@ -29,7 +29,7 @@ class PublicProfileResource extends JsonResource
             'email' => $this->email,
             'thread_count' => $this->when($this->show_post_count, $this->thread_count),
             'post_count' => $this->when($this->show_post_count, $this->post_count),
-            'can_access_admin' => $this->canAccessAdminPanel(),
+            'can_access_admin' => $this->can_access_admin,
             'sections' => $this->sections,
         ];
     }

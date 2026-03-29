@@ -9,6 +9,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Auth\Access\AuthorizationException;
+use App\DTOs\CreateGroupDTO;
+use App\DTOs\UpdateGroupDTO;
 
 /**
  * @group Admin Community Groups
@@ -108,13 +110,14 @@ class AdminGroupController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:100|unique:groups,name',
                 'description' => 'nullable|string',
-                'county_id' => 'required|integer|exists:counties,id',
+                'county_id' => 'nullable|integer|exists:counties,id',
                 'is_active' => 'boolean',
                 'is_private' => 'boolean',
                 'image_path' => 'nullable|string',
             ]);
 
-            $group = $this->groupService->createGroup($validated);
+            $dto = CreateGroupDTO::fromArray($validated);
+            $group = $this->groupService->createGroup($dto);
 
             return response()->json([
                 'success' => true,
@@ -158,11 +161,13 @@ class AdminGroupController extends Controller
             $validated = $request->validate([
                 'name' => 'sometimes|string|max:100',
                 'description' => 'nullable|string',
+                'county_id' => 'sometimes|nullable|integer|exists:counties,id',
                 'is_active' => 'boolean',
                 'is_private' => 'boolean',
             ]);
 
-            $updatedGroup = $this->groupService->updateGroup($group, $validated);
+            $dto = UpdateGroupDTO::fromArray($validated);
+            $updatedGroup = $this->groupService->updateGroup($group, $dto);
 
             return response()->json([
                 'success' => true,

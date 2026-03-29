@@ -425,12 +425,10 @@ class RefundService implements RefundServiceContract
 
             $refund->markProcessing();
 
-            // For mock/local environment, auto-complete the refund
-            if (in_array(app()->environment(), ['local', 'testing', 'staging']) ||
-                $refund->gateway === 'mock') {
-
+            // For mock/local environment, auto-complete the refund EXCEPT for gateways that need real sandbox testing (Pesapal)
+            $isDevEnv = in_array(app()->environment(), ['local', 'testing', 'staging']);
+            if ($refund->gateway === 'mock' || ($isDevEnv && $refund->gateway !== 'pesapal')) {
                 $this->completeRefund($refund);
-
             } else {
                 // For real gateways (Pesapal), initiate refund via gateway
                 $this->initiateGatewayRefund($refund);

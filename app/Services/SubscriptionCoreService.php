@@ -269,7 +269,7 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                         'plan_id' => $plan->id,
                         'starts_at' => now(),
                         'ends_at' => $billingPeriod === 'year' ? now()->addYear() : now()->addMonth(),
-                        'name' => $plan->name,
+                        'name' => $plan->display_name,
                         'slug' => $plan->slug . '-' . $user->id . '-' . time(),
                         'status' => 'pending_approval',
                     ]);
@@ -294,7 +294,7 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                     'plan_id' => $plan->id,
                     'starts_at' => now(),
                     'ends_at' => $billingPeriod === 'year' ? now()->addYear() : now()->addMonth(),
-                    'name' => $plan->name,
+                    'name' => $plan->display_name,
                     'slug' => $plan->slug . '-' . $user->id . '-' . time(),
                     'status' => 'pending', // Standard pending status for payment
                 ]);
@@ -323,7 +323,7 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                     'amount' => $amount,
                     'currency' => $data['currency'] ?? 'KES',
                     'gateway' => $paymentGateway,
-                    'description' => $data['description'] ?? 'Subscription Payment - ' . $plan->name,
+                    'description' => $data['description'] ?? 'Subscription Payment - ' . $plan->display_name,
                     'reference' => 'SUB_' . $subscription->id . '_' . time(),
                     'order_reference' => 'ORDER_' . strtoupper(uniqid()),
                     'status' => 'pending',
@@ -345,7 +345,7 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
                     amount: (float) $amount,
                     payment_method: $paymentGateway,
                     currency: $data['currency'] ?? 'KES',
-                    description: $data['description'] ?? 'Subscription Payment - ' . $plan->name,
+                    description: $data['description'] ?? 'Subscription Payment - ' . $plan->display_name,
                     phone: $data['phone'] ?? null,
                     email: $data['email'] ?? $user->email,
                     reference: $payment->reference,
@@ -568,7 +568,7 @@ class SubscriptionCoreService implements SubscriptionCoreServiceContract
 
         return [
             'id' => $plan->id,
-            'name' => is_string($rawName) ? json_decode($rawName, true) ?? $plan->name : $rawName,
+            'name' => $plan->display_name,
             'description' => is_string($rawDescription) ? json_decode($rawDescription, true) ?? $plan->description : $rawDescription,
             'price' => $plan->price,
         ];

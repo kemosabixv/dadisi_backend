@@ -2,6 +2,8 @@
 
 namespace App\DTOs;
 
+use Illuminate\Http\UploadedFile;
+
 /**
  * Create Forum Thread DTO
  *
@@ -11,12 +13,13 @@ class CreateForumThreadDTO
 {
     public function __construct(
         public string $title,
-        public int $category_id,
+        public ?int $category_id = null,
         public ?int $county_id = null,
         public ?int $group_id = null,
         public array $tag_ids = [],
         public bool $is_pinned = false,
         public bool $is_locked = false,
+        public ?UploadedFile $image = null,
     ) {}
 
     /**
@@ -26,12 +29,13 @@ class CreateForumThreadDTO
     {
         return new self(
             title: $data['title'],
-            category_id: (int) $data['category_id'],
+            category_id: isset($data['category_id']) ? (int) $data['category_id'] : null,
             county_id: isset($data['county_id']) ? (int) $data['county_id'] : null,
             group_id: isset($data['group_id']) ? (int) $data['group_id'] : null,
             tag_ids: $data['tag_ids'] ?? [],
             is_pinned: (bool) ($data['is_pinned'] ?? false),
             is_locked: (bool) ($data['is_locked'] ?? false),
+            image: $data['image'] ?? null,
         );
     }
 

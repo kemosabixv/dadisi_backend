@@ -37,4 +37,5 @@ interface BlogTaxonomyServiceContract
     public function listPendingDeletions(?string $type = null): array;
     public function approveDeletion(Authenticatable $actor, string $type, int $id, ?string $comment = null): bool;
     public function rejectDeletion(Authenticatable $actor, string $type, int $id, ?string $comment = null): bool;
+    public function getAffectedItems(string $type, int $id, int $perPage = 15): LengthAwarePaginator;
 }

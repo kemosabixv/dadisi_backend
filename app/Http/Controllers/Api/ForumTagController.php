@@ -148,6 +148,30 @@ class ForumTagController extends Controller
     }
 
     /**
+     * Get threads affected by a tag (for deletion preview).
+     * 
+     * @group Forum Tags
+     * @authenticated
+     * @urlParam tag string required The slug of the tag.
+     */
+    public function affectedThreads(ForumTag $tag): JsonResponse
+    {
+        try {
+            $this->authorize('delete', $tag);
+            $threads = $this->taxonomyService->getAffectedThreads($tag);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $threads
+            ]);
+        } catch (AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Delete a tag (admin only).
      * 
      * @group Forum Tags
@@ -159,7 +183,7 @@ class ForumTagController extends Controller
         try {
             $this->authorize('delete', $tag);
 
-            $tag->delete();
+            $this->taxonomyService->deleteTag($tag);
 
             return response()->json([
                 'success' => true,

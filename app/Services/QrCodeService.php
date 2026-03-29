@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Event;
 use App\Models\EventOrder;
+use App\Models\EventRegistration;
+use App\Models\User;
 use App\Services\Media\MediaService;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;

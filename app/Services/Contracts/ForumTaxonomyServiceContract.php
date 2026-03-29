@@ -59,6 +59,11 @@ interface ForumTaxonomyServiceContract
     public function updateTag(ForumTag $tag, UpdateForumTagDTO $dto): ForumTag;
 
     /**
+     * Get threads affected by a tag.
+     */
+    public function getAffectedThreads(ForumTag $tag): \Illuminate\Support\Collection;
+
+    /**
      * Delete forum tag.
      */
     public function deleteTag(ForumTag $tag): bool;

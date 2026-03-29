@@ -66,6 +66,30 @@ class Plan extends BasePlan
     }
 
     /**
+     * Get the display name safely extracted from translations.
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        $name = $this->name;
+        
+        if (is_array($name)) {
+            return $name['en'] ?? reset($name) ?: 'Plan';
+        }
+
+        if (is_string($name)) {
+            $trimmed = trim($name);
+            if (str_starts_with($trimmed, '{') || str_starts_with($trimmed, '[')) {
+                $decoded = json_decode($name, true);
+                if (is_array($decoded)) {
+                    return $decoded['en'] ?? reset($decoded) ?: 'Plan';
+                }
+            }
+        }
+
+        return (string) ($name ?? 'Plan');
+    }
+
+    /**
      * Scope to return only active plans.
      */
     public function scopeActive($query)

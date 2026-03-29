@@ -80,3 +80,5 @@ tests/tmp/
 .scribe/endpoints/03.yaml
 .scribe/.filehashes
 resources/views/scribe/index.blade.php
+check_groups.php
+test_query.php

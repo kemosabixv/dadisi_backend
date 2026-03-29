@@ -151,7 +151,7 @@ class EventQuotaService
 
         return [
             'has_access' => true,
-            'plan_name' => $plan->name,
+            'plan_name' => $plan->display_name,
             'creation' => [
                 'limit' => $creationLimit === -1 ? null : $creationLimit,
                 'unlimited' => $creationLimit === -1,

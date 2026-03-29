@@ -66,9 +66,19 @@ class MemberProfileResource extends JsonResource
                 if (!$plan) {
                     return null;
                 }
+                $nameStr = $plan->display_name ?? $plan->name ?? null;
+                if (is_array($nameStr)) {
+                    $nameStr = $nameStr['en'] ?? reset($nameStr) ?: 'Plan';
+                } elseif (is_string($nameStr) && str_starts_with(trim($nameStr), '{')) {
+                    $decoded = json_decode($nameStr, true);
+                    if (is_array($decoded)) {
+                        $nameStr = $decoded['en'] ?? reset($decoded) ?: 'Plan';
+                    }
+                }
+
                 return [
                     'id' => $plan->id ?? null,
-                    'name' => $plan->name ?? null,
+                    'name' => $nameStr,
                     'slug' => $plan->slug ?? null,
                     'description' => $plan->description ?? null,
                     'price' => $plan->price ?? null,

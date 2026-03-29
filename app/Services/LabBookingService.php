@@ -180,7 +180,7 @@ class LabBookingService implements LabBookingServiceContract
 
         return [
             'has_access' => true,
-            'plan_name' => $plan->name,
+            'plan_name' => $plan->display_name,
             'limit' => $isUnlimited ? null : $limit,
             'total' => $isUnlimited ? null : $limit,
             'unlimited' => $isUnlimited,

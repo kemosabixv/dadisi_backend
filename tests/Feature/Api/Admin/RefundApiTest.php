@@ -37,9 +37,9 @@ class RefundApiTest extends TestCase
         $this->admin = User::factory()->create(['username' => 'admin_user']);
         $this->admin->assignRole('admin');
 
-        // Finance (has manage_refunds)
+        // Finance Manager (has manage_refunds)
         $this->finance = User::factory()->create(['username' => 'finance_user']);
-        $this->finance->assignRole('finance');
+        $this->finance->assignRole('finance_manager');
 
         // Lab Manager (has admin access role but NOT manage_refunds permission)
         $this->labManager = User::factory()->create(['username' => 'lab_manager_user']);
@@ -84,7 +84,7 @@ class RefundApiTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_finance_can_list_refunds(): void
+    public function test_finance_manager_can_list_refunds(): void
     {
         $response = $this->authenticatedRequest($this->finance, 'GET', '/api/admin/refunds');
         $response->assertStatus(200);
@@ -138,5 +138,87 @@ class RefundApiTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertEquals(Refund::STATUS_REJECTED, $refund->fresh()->status);
+    }
+
+    public function test_initiate_refund_finds_payment_by_confirmation_code(): void
+    {
+        $order = \App\Models\EventOrder::factory()->paid()->create();
+        $payment = Payment::factory()->create([
+            'status' => 'paid',
+            'payable_type' => $order->getMorphClass(),
+            'payable_id' => $order->id,
+            'confirmation_code' => 'MPESA12345',
+            'amount' => 1000,
+        ]);
+
+        $response = $this->authenticatedRequest($this->admin, 'POST', '/api/admin/refunds', [
+            'payment_reference' => 'MPESA12345',
+            'reason' => 'Customer request',
+            'amount' => 500,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+        
+        $this->assertDatabaseHas('refunds', [
+            'payment_id' => $payment->id,
+            'amount' => 1000,
+        ]);
+    }
+
+    public function test_initiate_refund_finds_payment_by_transaction_id(): void
+    {
+        $order = \App\Models\EventOrder::factory()->paid()->create();
+        $payment = Payment::factory()->create([
+            'status' => 'paid',
+            'payable_type' => $order->getMorphClass(),
+            'payable_id' => $order->id,
+            'transaction_id' => 'PESAPAL_TRK_001',
+            'amount' => 2000,
+        ]);
+
+        $response = $this->authenticatedRequest($this->finance, 'POST', '/api/admin/refunds', [
+            'payment_reference' => 'PESAPAL_TRK_001',
+            'reason' => 'Duplicate payment',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('refunds', ['payment_id' => $payment->id]);
+    }
+
+    public function test_initiate_refund_handles_whitespace(): void
+    {
+        $order = \App\Models\EventOrder::factory()->paid()->create();
+        $payment = Payment::factory()->create([
+            'status' => 'paid',
+            'payable_type' => $order->getMorphClass(),
+            'payable_id' => $order->id,
+            'reference' => 'ORD-REF-999',
+        ]);
+
+        $response = $this->authenticatedRequest($this->admin, 'POST', '/api/admin/refunds', [
+            'payment_reference' => '  ORD-REF-999  ',
+            'reason' => 'Testing trim',
+        ]);
+
+        $response->assertStatus(200);
+    }
+
+    public function test_refund_store_returns_success_for_mock_and_test_prefixes(): void
+    {
+        $response = $this->authenticatedRequest($this->admin, 'POST', '/api/admin/refunds', [
+            'payment_reference' => 'TEST-SANDBOX-REF',
+            'reason' => 'UI Mock Testing',
+            'amount' => 100,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Refund processed'
+            ]);
+        
+        // Ensure no actual refund record was created in DB for these mock-success paths
+        $this->assertDatabaseMissing('refunds', ['reason' => 'UI Mock Testing']);
     }
 }

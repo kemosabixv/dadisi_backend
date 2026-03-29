@@ -24,6 +24,8 @@ class ForumThreadResource extends JsonResource
             'category_id' => $this->category_id,
             'category' => new ForumCategoryResource($this->whenLoaded('category')),
             'county_id' => $this->county_id,
+            'county' => new CountyResource($this->whenLoaded('county')),
+            'featured_image' => $this->featured_image,
             'is_pinned' => (bool) $this->is_pinned,
             'is_locked' => (bool) $this->is_locked,
             'views_count' => (int) $this->views_count,

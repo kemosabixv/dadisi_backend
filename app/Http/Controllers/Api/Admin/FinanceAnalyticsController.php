@@ -41,9 +41,16 @@ class FinanceAnalyticsController extends Controller
             $driver = DB::connection()->getDriverName();
             $dateFormat = $this->getDateExpression($period, 'created_at', $driver);
             $refundDateFormat = $this->getDateExpression($period, 'refunded_at', $driver);
+            $excludeTypes = ['test', 'TestPayment', 'App\\Models\\TestPayment'];
             
             $revenueData = Payment::where('status', 'paid')
                 ->where('created_at', '>=', $startDate)
+                ->whereNotIn('payable_type', $excludeTypes)
+                ->where(function ($q) {
+                    $q->where(function ($sq) { $sq->whereNull('reference')->orWhere('reference', 'not like', 'TEST-%'); })
+                      ->where(function ($sq) { $sq->whereNull('transaction_id')->orWhere('transaction_id', 'not like', 'TEST-%'); })
+                      ->where(function ($sq) { $sq->whereNull('confirmation_code')->orWhere('confirmation_code', 'not like', 'TEST-%'); });
+                })
                 ->select([
                     DB::raw("{$dateFormat} as date"),
                     DB::raw('SUM(amount) as total_revenue'),
@@ -55,6 +62,12 @@ class FinanceAnalyticsController extends Controller
 
             $refundData = Payment::where('status', 'refunded')
                 ->where('refunded_at', '>=', $startDate)
+                ->whereNotIn('payable_type', $excludeTypes)
+                ->where(function ($q) {
+                    $q->where(function ($sq) { $sq->whereNull('reference')->orWhere('reference', 'not like', 'TEST-%'); })
+                      ->where(function ($sq) { $sq->whereNull('transaction_id')->orWhere('transaction_id', 'not like', 'TEST-%'); })
+                      ->where(function ($sq) { $sq->whereNull('confirmation_code')->orWhere('confirmation_code', 'not like', 'TEST-%'); });
+                })
                 ->select([
                     DB::raw("{$refundDateFormat} as date"),
                     DB::raw('SUM(amount) as total_refunded'),
@@ -67,6 +80,12 @@ class FinanceAnalyticsController extends Controller
             // Category breakdown
             $categoryData = Payment::where('status', 'paid')
                 ->where('created_at', '>=', $startDate)
+                ->whereNotIn('payable_type', $excludeTypes)
+                ->where(function ($q) {
+                    $q->where(function ($sq) { $sq->whereNull('reference')->orWhere('reference', 'not like', 'TEST-%'); })
+                      ->where(function ($sq) { $sq->whereNull('transaction_id')->orWhere('transaction_id', 'not like', 'TEST-%'); })
+                      ->where(function ($sq) { $sq->whereNull('confirmation_code')->orWhere('confirmation_code', 'not like', 'TEST-%'); });
+                })
                 ->select([
                     'payable_type',
                     DB::raw('SUM(amount) as total'),
@@ -95,10 +114,38 @@ class FinanceAnalyticsController extends Controller
                     'refunds' => $refundData,
                     'categories' => $categoryData,
                     'summary' => [
-                        'gross_revenue' => (float) Payment::where('status', 'paid')->where('created_at', '>=', $startDate)->sum('amount'),
-                        'total_refunded' => (float) Payment::where('status', 'refunded')->where('refunded_at', '>=', $startDate)->sum('amount'),
-                        'net_revenue' => (float) Payment::where('status', 'paid')->where('created_at', '>=', $startDate)->sum('amount') - 
-                                         (float) Payment::where('status', 'refunded')->where('refunded_at', '>=', $startDate)->sum('amount'),
+                        'gross_revenue' => (float) Payment::where('status', 'paid')
+                            ->where('created_at', '>=', $startDate)
+                            ->whereNotIn('payable_type', $excludeTypes)
+                            ->where(function ($q) {
+                                $q->where(function ($sq) { $sq->whereNull('reference')->orWhere('reference', 'not like', 'TEST-%'); })
+                                  ->where(function ($sq) { $sq->whereNull('transaction_id')->orWhere('transaction_id', 'not like', 'TEST-%'); })
+                                  ->where(function ($sq) { $sq->whereNull('confirmation_code')->orWhere('confirmation_code', 'not like', 'TEST-%'); });
+                            })->sum('amount'),
+                        'total_refunded' => (float) Payment::where('status', 'refunded')
+                            ->where('refunded_at', '>=', $startDate)
+                            ->whereNotIn('payable_type', $excludeTypes)
+                            ->where(function ($q) {
+                                $q->where(function ($sq) { $sq->whereNull('reference')->orWhere('reference', 'not like', 'TEST-%'); })
+                                  ->where(function ($sq) { $sq->whereNull('transaction_id')->orWhere('transaction_id', 'not like', 'TEST-%'); })
+                                  ->where(function ($sq) { $sq->whereNull('confirmation_code')->orWhere('confirmation_code', 'not like', 'TEST-%'); });
+                            })->sum('amount'),
+                        'net_revenue' => (float) Payment::where('status', 'paid')
+                            ->where('created_at', '>=', $startDate)
+                            ->whereNotIn('payable_type', $excludeTypes)
+                            ->where(function ($q) {
+                                $q->where(function ($sq) { $sq->whereNull('reference')->orWhere('reference', 'not like', 'TEST-%'); })
+                                  ->where(function ($sq) { $sq->whereNull('transaction_id')->orWhere('transaction_id', 'not like', 'TEST-%'); })
+                                  ->where(function ($sq) { $sq->whereNull('confirmation_code')->orWhere('confirmation_code', 'not like', 'TEST-%'); });
+                            })->sum('amount') - 
+                                          (float) Payment::where('status', 'refunded')
+                            ->where('refunded_at', '>=', $startDate)
+                            ->whereNotIn('payable_type', $excludeTypes)
+                            ->where(function ($q) {
+                                $q->where(function ($sq) { $sq->whereNull('reference')->orWhere('reference', 'not like', 'TEST-%'); })
+                                  ->where(function ($sq) { $sq->whereNull('transaction_id')->orWhere('transaction_id', 'not like', 'TEST-%'); })
+                                  ->where(function ($sq) { $sq->whereNull('confirmation_code')->orWhere('confirmation_code', 'not like', 'TEST-%'); });
+                            })->sum('amount'),
                     ],
                     'period' => $period,
                 ]

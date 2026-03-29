@@ -123,10 +123,23 @@ class ForumTaxonomyService implements ForumTaxonomyServiceContract
     }
 
     /**
+     * Get threads affected by a tag.
+     */
+    public function getAffectedThreads(ForumTag $tag): \Illuminate\Support\Collection
+    {
+        return $tag->threads()->select('forum_threads.id', 'forum_threads.title', 'forum_threads.slug')->get();
+    }
+
+    /**
      * Delete forum tag.
      */
     public function deleteTag(ForumTag $tag): bool
     {
+        // Permanently delete associated threads (cascading)
+        $tag->threads()->each(function($thread) {
+            $thread->delete();
+        });
+
         return $tag->delete();
     }
 }

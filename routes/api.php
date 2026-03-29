@@ -389,6 +389,7 @@ Route::prefix('admin/blog')->middleware(['auth', 'admin'])->group(function () {
 
     // Deletion Reviews (staff only)
     Route::get('deletion-reviews', [\App\Http\Controllers\Api\DeletionReviewController::class, 'index'])->name('admin.blog.deletion-reviews.index');
+    Route::get('deletion-reviews/{type}/{id}/affected', [\App\Http\Controllers\Api\DeletionReviewController::class, 'affected'])->name('admin.blog.deletion-reviews.affected');
     Route::post('deletion-reviews/{type}/{id}/approve', [\App\Http\Controllers\Api\DeletionReviewController::class, 'approve'])->name('admin.blog.deletion-reviews.approve');
     Route::post('deletion-reviews/{type}/{id}/reject', [\App\Http\Controllers\Api\DeletionReviewController::class, 'reject'])->name('admin.blog.deletion-reviews.reject');
 });
@@ -421,6 +422,14 @@ Route::prefix('user/blog')->middleware('auth')->group(function () {
     Route::post('tags', [AuthorBlogController::class, 'storeTag'])->name('user.blog.tags.store');
     Route::put('tags/{tag}', [AuthorBlogController::class, 'updateTag'])->name('user.blog.tags.update');
     Route::post('tags/{tag}/request-delete', [AuthorBlogController::class, 'requestTagDeletion'])->name('user.blog.tags.request-delete');
+});
+
+// User Forum Activity - user's own threads and replies (with monthly quota counts)
+use App\Http\Controllers\Api\UserForumController;
+
+Route::prefix('user/forum')->middleware('auth')->group(function () {
+    Route::get('threads', [UserForumController::class, 'myThreads'])->name('user.forum.threads.index');
+    Route::get('posts', [UserForumController::class, 'myReplies'])->name('user.forum.posts.index');
 });
 
 // Blog Management - User routes (user's own posts)
@@ -678,8 +687,11 @@ Route::get('groups/{slug}/members', [GroupController::class, 'members'])->name('
 
 // Authenticated group actions
 Route::middleware('auth')->group(function () {
+    Route::post('groups', [GroupController::class, 'store'])->name('groups.store');
     Route::post('groups/{slug}/join', [GroupController::class, 'join'])->name('groups.join');
     Route::post('groups/{slug}/leave', [GroupController::class, 'leave'])->name('groups.leave');
+    Route::put('groups/{slug}', [GroupController::class, 'update'])->name('groups.update');
+    Route::delete('groups/{slug}', [GroupController::class, 'destroy'])->name('groups.destroy');
 });
 
 // Forum API Routes
@@ -704,7 +716,8 @@ Route::prefix('forum')->group(function () {
     // Authenticated forum actions
     Route::middleware('auth')->group(function () {
         // Thread CRUD
-        Route::post('categories/{category}/threads', [ForumThreadController::class, 'store'])->name('forum.threads.store');
+        Route::post('threads', [ForumThreadController::class, 'store'])->name('forum.threads.store');
+        Route::post('categories/{category}/threads', [ForumThreadController::class, 'store'])->name('forum.categories.threads.store');
         Route::put('threads/{thread}', [ForumThreadController::class, 'update'])->name('forum.threads.update');
         Route::delete('threads/{thread}', [ForumThreadController::class, 'destroy'])->name('forum.threads.destroy');
 
@@ -733,6 +746,7 @@ Route::prefix('forum')->group(function () {
 
     Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('tags', [ForumTagController::class, 'store'])->name('forum.tags.store');
+        Route::get('tags/{tag}/affected-threads', [ForumTagController::class, 'affectedThreads'])->name('forum.tags.affected-threads');
         Route::put('tags/{tag}', [ForumTagController::class, 'update'])->name('forum.tags.update');
         Route::delete('tags/{tag}', [ForumTagController::class, 'destroy'])->name('forum.tags.destroy');
     });
@@ -900,15 +914,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::put('system-features/{feature}', [\App\Http\Controllers\Api\Admin\SystemFeatureController::class, 'update'])->name('admin.system-features.update');
     Route::post('system-features/{feature}/toggle', [\App\Http\Controllers\Api\Admin\SystemFeatureController::class, 'toggle'])->name('admin.system-features.toggle');
 
-    // Refund Management
-    Route::prefix('refunds')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Api\Admin\RefundController::class, 'index'])->name('admin.refunds.index');
-        Route::get('/stats', [\App\Http\Controllers\Api\Admin\RefundController::class, 'stats'])->name('admin.refunds.stats');
-        Route::get('/{refund}', [\App\Http\Controllers\Api\Admin\RefundController::class, 'show'])->name('admin.refunds.show');
-        Route::post('/{refund}/approve', [\App\Http\Controllers\Api\Admin\RefundController::class, 'approve'])->name('admin.refunds.approve');
-        Route::post('/{refund}/reject', [\App\Http\Controllers\Api\Admin\RefundController::class, 'reject'])->name('admin.refunds.reject');
-        Route::post('/{refund}/process', [\App\Http\Controllers\Api\Admin\RefundController::class, 'process'])->name('admin.refunds.process');
-    });
+
 });
 
 // Event Ticket Orders
@@ -1051,6 +1057,9 @@ Route::prefix('forum')->group(function () {
     Route::get('groups/{slug}/members', [\App\Http\Controllers\Api\GroupController::class, 'members'])->name('forum.groups.members');
 
     Route::middleware('auth')->group(function () {
+        Route::post('groups', [\App\Http\Controllers\Api\GroupController::class, 'store'])->name('forum.groups.store');
+        Route::put('groups/{group:slug}', [\App\Http\Controllers\Api\GroupController::class, 'update'])->name('forum.groups.update');
+        Route::delete('groups/{group:slug}', [\App\Http\Controllers\Api\GroupController::class, 'destroy'])->name('forum.groups.destroy');
         Route::post('groups/{slug}/join', [\App\Http\Controllers\Api\GroupController::class, 'join'])->name('forum.groups.join');
         Route::post('groups/{slug}/leave', [\App\Http\Controllers\Api\GroupController::class, 'leave'])->name('forum.groups.leave');
     });

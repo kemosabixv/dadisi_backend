@@ -223,8 +223,8 @@ class PaymentService implements PaymentServiceContract
                     $updates['method'] = $payment->method ?: ($statusToken->rawDetails['payment_method'] ?? ($statusToken->rawDetails['method'] ?? $payment->method));
                 }
 
-                if (empty($payment->confirmation_code) && ! empty($statusToken->rawDetails['confirmation_code'])) {
-                    $updates['confirmation_code'] = $statusToken->rawDetails['confirmation_code'];
+                if (empty($payment->confirmation_code) && ! empty($statusToken->confirmationCode)) {
+                    $updates['confirmation_code'] = $statusToken->confirmationCode;
                 }
 
                 if (! empty($updates)) {
@@ -525,12 +525,12 @@ class PaymentService implements PaymentServiceContract
                     'status' => 'paid',
                     'paid_at' => now(),
                     'transaction_id' => $transactionId,
-                    'confirmation_code' => $raw['confirmation_code'] ?? null,
+                    'confirmation_code' => $statusToken->confirmationCode ?? null,
                     'external_reference' => $statusToken->merchantReference,
                     'order_reference' => $statusToken->merchantReference, // Required field
                     'payable_type' => 'App\\Models\\PlanSubscription',
                     'payable_id' => $subscription->id,
-                    'description' => 'Recurring Renewal: '.($subscription->plan->name ?? 'Subscription'),
+                    'description' => 'Recurring Renewal: '.($subscription->plan->display_name ?? 'Subscription'),
                     'meta' => array_merge($raw, ['recurring' => true]),
                 ]);
 

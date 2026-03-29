@@ -14,6 +14,7 @@ use App\Models\Group;
 use App\Models\User;
 use App\Models\PlanSubscription;
 use App\Services\Contracts\ForumServiceContract;
+use App\Services\Contracts\MediaServiceContract;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,16 @@ use Illuminate\Support\Str;
  */
 class ThreadService implements ForumServiceContract
 {
+    /**
+     * @var MediaServiceContract
+     */
+    protected $mediaService;
+
+    public function __construct(MediaServiceContract $mediaService)
+    {
+        $this->mediaService = $mediaService;
+    }
+
     /**
      * Get thread by ID
      */
@@ -66,24 +77,29 @@ class ThreadService implements ForumServiceContract
 
         try {
             return DB::transaction(function () use ($author, $dto) {
-                $data = $dto->toArray();
-                $categoryId = $data['category_id'] ?? null;
-
                 $thread = ForumThread::create([
                     'user_id' => $author->getAuthIdentifier(),
-                    'category_id' => $categoryId,
-                    'county_id' => $data['county_id'] ?? null,
-                    'title' => $data['title'],
-                    'slug' => Str::slug($data['title']) . '-' . Str::random(6),
-                    'is_pinned' => false,
-                    'is_locked' => false,
+                    'category_id' => $dto->category_id,
+                    'county_id' => $dto->county_id,
+                    'group_id' => $dto->group_id,
+                    'title' => $dto->title,
+                    'slug' => Str::slug($dto->title) . '-' . Str::random(6),
+                    'is_pinned' => $dto->is_pinned,
+                    'is_locked' => $dto->is_locked,
                     'views_count' => 0,
                     'posts_count' => 0,
                 ]);
 
+                // Handle image upload if present
+                if ($dto->image) {
+                    $media = $this->mediaService->storeFile($author, $dto->image, 'public', ['forum', 'threads']);
+                    $thread->media()->attach($media->id, ['role' => 'featured']);
+                    $media->increment('usage_count');
+                }
+
                 // Sync tags if provided
-                if (!empty($data['tag_ids'])) {
-                    $thread->syncTags($data['tag_ids']);
+                if (!empty($dto->tag_ids)) {
+                    $thread->syncTags($dto->tag_ids);
                 }
 
                 $this->logAudit($author, 'created_thread', ForumThread::class, $thread->id, [
@@ -96,7 +112,7 @@ class ThreadService implements ForumServiceContract
                     'author_id' => $author->getAuthIdentifier(),
                 ]);
 
-                return $thread->load(['user.memberProfile', 'category', 'county']);
+                return $thread->load(['user.memberProfile', 'category', 'county', 'tags', 'media']);
             });
         } catch (\Exception $e) {
             Log::error('Thread creation failed', [
@@ -295,7 +311,7 @@ class ThreadService implements ForumServiceContract
     public function listThreads(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = ForumThread::query()
-            ->with(['user.memberProfile', 'category:id,name,slug', 'lastPost.user:id,username'])
+            ->with(['user.memberProfile', 'category:id,name,slug', 'lastPost.user:id,username', 'tags', 'media', 'county'])
             ->pinnedFirst();
 
         // Filter by category

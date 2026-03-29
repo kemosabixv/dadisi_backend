@@ -47,6 +47,7 @@ class ForumUserController extends Controller
                 'search' => $request->input('search'),
                 'sort' => $request->input('sort', 'post_count'),
                 'per_page' => $request->input('per_page', 20),
+                'role' => $request->input('role'),
             ];
 
             $users = $this->forumUserService->listForumMembers($filters);

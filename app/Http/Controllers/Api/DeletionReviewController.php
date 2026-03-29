@@ -117,4 +117,31 @@ class DeletionReviewController extends Controller
             return response()->json(['success' => false, 'message' => 'Failed to reject deletion'], 500);
         }
     }
+
+    /**
+     * Get Affected Items
+     * 
+     * @group Admin - Deletion Reviews
+     * @authenticated
+     */
+    public function affected(Request $request, string $type, int $id): JsonResponse
+    {
+        try {
+            $perPage = $request->query('per_page', 15);
+            $affected = $this->taxonomyService->getAffectedItems($type, $id, $perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $affected->items(),
+                'meta' => [
+                    'current_page' => $affected->currentPage(),
+                    'last_page' => $affected->lastPage(),
+                    'total' => $affected->total(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('DeletionReviewController affected failed', ['error' => $e->getMessage(), 'type' => $type, 'id' => $id]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve affected items'], 500);
+        }
+    }
 }

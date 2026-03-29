@@ -93,6 +93,8 @@ class MockGatewayAdapter implements PaymentGatewayInterface
             status: strtoupper($res['status'] ?? 'UNKNOWN'),
             amount: (float) ($res['amount'] ?? 0),
             currency: $res['currency'] ?? 'KES',
+            paymentMethod: $res['payment_method'] ?? null,
+            confirmationCode: $res['confirmation_code'] ?? null,
             rawDetails: $res
         );
     }

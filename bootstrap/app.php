@@ -61,15 +61,17 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->dailyAt('02:00')
                 ->withoutOverlapping();
 
-        // Enqueue due renewals (including retries) - Daily
-        $schedule->command('renewals:enqueue-due')
-                ->dailyAt('01:00')
-                ->withoutOverlapping();
-
         // Cleanup orphaned media - Daily
         $schedule->job(new \App\Jobs\CleanupOrphanedMediaJob())
                 ->dailyAt('03:00')
                 ->withoutOverlapping();
+
+        // Mock Renewals (Strictly Staging/Local only)
+        if (!app()->isProduction()) {
+            $schedule->command('mock:process-renewals')
+                    ->everyFiveMinutes()
+                    ->withoutOverlapping();
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         Integration::handles($exceptions);

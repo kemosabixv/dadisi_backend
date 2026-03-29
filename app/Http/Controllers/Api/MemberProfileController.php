@@ -321,7 +321,7 @@ class MemberProfileController extends Controller
         try {
             // If id is provided, fetch specific profile, else current user's
             $profile = $id 
-                ? \App\Models\MemberProfile::with(['user', 'county'])->findOrFail($id)
+                ? \App\Models\MemberProfile::with(['user', 'county', 'subscriptionPlan'])->findOrFail($id)
                 : $this->userService->getCurrentUserProfile();
                 
             $response = ApiResponseDTO::success(new MemberProfileResource($profile));

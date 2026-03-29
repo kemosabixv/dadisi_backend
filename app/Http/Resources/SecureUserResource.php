@@ -7,6 +7,13 @@ use App\Services\UIPermissionService;
 
 class SecureUserResource extends JsonResource
 {
+    /**
+     * Disable the default "data" wrapping for this resource.
+     * 
+     * @var string|null
+     */
+    public static $wrap = null;
+
     public function toArray($request)
     {
         $uiPermissionService = new UIPermissionService($this->resource);

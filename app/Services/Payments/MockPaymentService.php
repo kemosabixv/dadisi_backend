@@ -152,6 +152,7 @@ class MockPaymentService
         $transactionId = $payload['transaction_id'] ?? null;
         $orderTrackingId = $payload['order_tracking_id'] ?? null;
         $status = $payload['status'] ?? 'failed';
+        $notificationType = $payload['notification_type'] ?? 'IPN';
 
         // Find the payment by transaction ID or order tracking ID
         $payment = \App\Models\Payment::where('transaction_id', $transactionId)
@@ -159,9 +160,30 @@ class MockPaymentService
             ->orWhere('order_reference', $orderTrackingId)
             ->first();
 
+        // If this is a recurring payment and we can't find the specific transaction,
+        // we might need to create a new payment record based on the original tracking ID
+        if (!$payment && $notificationType === 'RECURRING') {
+            Log::info('Creating new payment record for mock recurring billing', ['order_tracking_id' => $orderTrackingId]);
+            
+            // Find the original payment to clone details
+            $originalPayment = \App\Models\Payment::where('order_reference', $orderTrackingId)
+                ->orWhere('external_reference', $orderTrackingId)
+                ->first();
+
+            if ($originalPayment) {
+                $payment = $originalPayment->replicate();
+                $payment->transaction_id = $transactionId;
+                $payment->external_reference = $transactionId;
+                $payment->status = 'pending';
+                $payment->paid_at = null;
+                $payment->save();
+            }
+        }
+
         if (!$payment) {
             Log::warning('Payment not found for mock webhook', [
                 'order_reference' => $orderTrackingId,
+                'notification_type' => $notificationType,
             ]);
             return ['status' => 'payment_not_found'];
         }

@@ -57,7 +57,7 @@ class SubscriptionReminder extends Notification
         return [
             'type' => 'subscription_reminder',
             'title' => 'Renewal Reminder',
-            'message' => "Your {$plan?->name} subscription expires in {$this->daysRemaining} days.",
+            'message' => "Your {$plan?->display_name} subscription expires in {$this->daysRemaining} days.",
             'subscription_id' => $this->subscription->id,
             'plan_id' => $plan?->id,
             'days_remaining' => $this->daysRemaining,

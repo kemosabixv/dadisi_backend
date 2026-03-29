@@ -11,9 +11,11 @@ class CreateGroupDTO
 {
     public function __construct(
         public string $name,
-        public int $county_id,
+        public ?int $county_id = null,
         public ?string $description = null,
         public ?string $slug = null,
+        public bool $is_active = true,
+        public bool $is_private = false,
     ) {}
 
     /**
@@ -23,9 +25,11 @@ class CreateGroupDTO
     {
         return new self(
             name: trim($data['name']),
-            county_id: (int) $data['county_id'],
+            county_id: isset($data['county_id']) ? (int) $data['county_id'] : null,
             description: $data['description'] ?? null,
             slug: $data['slug'] ?? null,
+            is_active: $data['is_active'] ?? true,
+            is_private: $data['is_private'] ?? false,
         );
     }
 
@@ -39,6 +43,8 @@ class CreateGroupDTO
             'county_id' => $this->county_id,
             'description' => $this->description,
             'slug' => $this->slug,
+            'is_active' => $this->is_active,
+            'is_private' => $this->is_private,
         ];
     }
 }

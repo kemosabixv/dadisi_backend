@@ -204,6 +204,29 @@ class PesapalGatewayV3Test extends TestCase
     }
 
     #[Test]
+    public function test_query_status_returns_dto_with_formalized_confirmation_code()
+    {
+        Http::fake([
+            'https://cybqa.pesapal.com/pesapalv3/api/Auth/RequestToken' => Http::response([
+                'token' => 'test_token',
+                'status' => '200',
+            ], 200),
+            '**/Transactions/GetTransactionStatus*' => Http::response([
+                'order_tracking_id' => 'order-123',
+                'status' => 'COMPLETED',
+                'status_code' => 1,
+                'confirmation_code' => 'AA11BB22',
+            ], 200),
+        ]);
+
+        $dto = $this->gateway->queryStatus('order-123');
+
+        $this->assertInstanceOf(\App\DTOs\Payments\PaymentStatusDTO::class, $dto);
+        $this->assertEquals('COMPLETED', $dto->status);
+        $this->assertEquals('AA11BB22', $dto->confirmationCode);
+    }
+
+    #[Test]
     public function test_gateway_initializes_with_config()
     {
         $customConfig = [

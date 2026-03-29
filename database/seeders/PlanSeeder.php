@@ -85,7 +85,7 @@ class PlanSeeder extends Seeder
                 'media_storage_limit_mb' => 20,
                 'display_features' => [
                     'Free access to Lab spaces',
-                    'Community forum access',
+                    'Community forum (2 threads / 5 replies per month)',
                     'Basic project dashboard',
                     'County-level networking',
                     'Interactive community sessions',
@@ -112,7 +112,8 @@ class PlanSeeder extends Seeder
                     '15% Event ticket discounts',
                     'Priority waitlist access',
                     '4 Hours/month Lab booking',
-                    'Full platform interaction',
+                    'Personal blogging (2 posts/month)',
+                    'Forum access (10 threads / 50 replies per month)',
                     'Direct collaboration tools',
                 ],
                 'system_features' => [
@@ -139,6 +140,7 @@ class PlanSeeder extends Seeder
                     'Priority waitlist access',
                     '16 Hours/month Lab booking',
                     'Automatic booking approval',
+                    'Premium blogging (10 posts/month)',
                     'Unlimited forum participation',
                     'Advanced dashboard analytics',
                 ],

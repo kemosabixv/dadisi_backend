@@ -188,4 +188,44 @@ class RefundServiceTest extends TestCase
         $this->assertEquals($this->admin->id, $payment->refunded_by);
         $this->assertEquals(Refund::REASON_CANCELLATION, $payment->refund_reason);
     }
+
+    public function test_process_refund_prioritizes_confirmation_code_for_gateway(): void
+    {
+        $payment = Payment::factory()->create([
+            'status' => 'paid',
+            'transaction_id' => 'PESAPAL_TRK_001',
+            'confirmation_code' => 'MPESA_REF_123',
+            'gateway' => 'pesapal',
+        ]);
+
+        $refund = Refund::factory()->create([
+            'payment_id' => $payment->id,
+            'amount' => 1000,
+            'status' => Refund::STATUS_APPROVED,
+        ]);
+
+        // Mock the Gateway and GatewayManager
+        $gatewayMock = $this->createMock(\App\Services\Contracts\PaymentGatewayContract::class);
+        $gatewayManagerMock = $this->createMock(\App\Services\PaymentGateway\GatewayManager::class);
+        
+        $gatewayManagerMock->method('gateway')->with('pesapal')->willReturn($gatewayMock);
+        
+        // Verify that 'refund' is called with 'MPESA_REF_123' (confirmation_code) 
+        // as the first argument, NOT 'PESAPAL_TRK_001'
+        $gatewayMock->expects($this->once())
+            ->method('refund')
+            ->with(
+                $this->equalTo('MPESA_REF_123'), 
+                $this->equalTo(1000), 
+                $this->anything()
+            )
+            ->willReturn(['success' => true, 'refund_id' => 'R-123']);
+
+        $service = new RefundService(
+            $gatewayManagerMock,
+            $this->createMock(\App\Services\Contracts\NotificationServiceContract::class)
+        );
+
+        $service->processRefund($refund);
+    }
 }

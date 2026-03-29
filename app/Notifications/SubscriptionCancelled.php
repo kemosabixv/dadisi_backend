@@ -63,7 +63,7 @@ class SubscriptionCancelled extends Notification
         return [
             'type' => 'subscription_cancelled',
             'title' => 'Subscription Cancelled',
-            'message' => "Your {$plan?->name} subscription has been cancelled.",
+            'message' => "Your {$plan?->display_name} subscription has been cancelled.",
             'subscription_id' => $this->subscription->id,
             'plan_id' => $plan?->id,
             'ends_at' => $this->subscription->ends_at,

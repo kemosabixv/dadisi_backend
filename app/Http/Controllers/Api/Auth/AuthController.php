@@ -119,7 +119,7 @@ class AuthController extends Controller
                     'subscriber_id' => $user->id,
                     'subscriber_type' => 'App\Models\User',
                     'plan_id' => $freePlan->id,
-                    'name' => $freePlan->name,
+                    'name' => $freePlan->display_name,
                     'slug' => $freePlan->slug . '-' . $user->id . '-' . time(),
                     'starts_at' => now(),
                     'ends_at' => null, // Free plan never expires
@@ -280,7 +280,9 @@ class AuthController extends Controller
      * }
      */
     public function getAuthenticatedUser(Request $request) {
-        return $request->user();
+        $user = $request->user();
+        $user->load(['memberProfile', 'roles']);
+        return new \App\Http\Resources\SecureUserResource($user);
     }
 
     /**

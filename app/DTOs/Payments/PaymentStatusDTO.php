@@ -38,6 +38,7 @@ class PaymentStatusDTO
         public float $amount,
         public string $currency = 'KES',
         public ?string $paymentMethod = null,
+        public ?string $confirmationCode = null,
         public ?string $paidAt = null,
         public array $rawDetails = [],
     ) {}

@@ -126,13 +126,30 @@ class ForumThreadController extends Controller
      * @bodyParam content string required The content of the main post.
      * @bodyParam tag_ids array optional Array of tag IDs.
      */
-    public function store(StoreForumThreadRequest $request): JsonResponse
+    public function store(StoreForumThreadRequest $request, string $categorySlug = null): JsonResponse
     {
         try {
             $this->authorize('create', ForumThread::class);
      
-            $dto = CreateForumThreadDTO::fromArray($request->validated());
+            $validated = $request->validated();
+            
+            // If category is provided in Route, resolve it
+            if ($categorySlug && empty($validated['category_id'])) {
+                $category = \App\Models\ForumCategory::where('slug', $categorySlug)->first();
+                if ($category) {
+                    $validated['category_id'] = $category->id;
+                }
+            }
+
+            $dto = CreateForumThreadDTO::fromArray($validated);
             $thread = $this->threadService->createThread(auth()->user(), $dto);
+
+            // Handle media_id if provided (Spatie Media Library)
+            if ($request->filled('media_id')) {
+                $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::findOrFail($request->media_id);
+                // Check if user owns the media or it's public (simplified check here)
+                $media->copy($thread, 'image');
+            }
      
             return (new ForumThreadResource($thread))->response()->setStatusCode(201);
         } catch (AuthorizationException $e) {

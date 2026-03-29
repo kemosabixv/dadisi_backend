@@ -437,7 +437,7 @@ class UserService implements UserServiceContract
             throw new UserException('User not authenticated', 401);
         }
 
-        $profile = \App\Models\MemberProfile::with(['user.subscriptions.plan', 'county'])
+        $profile = \App\Models\MemberProfile::with(['user.subscriptions.plan', 'county', 'subscriptionPlan'])
             ->where('user_id', $user->id)
             ->first();
 

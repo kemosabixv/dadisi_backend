@@ -39,6 +39,13 @@ class ForumUserService implements ForumUserServiceContract
                 $query->where('users.username', 'like', '%' . $filters['search'] . '%');
             }
 
+            // Filter by role (e.g., 'moderator', 'forum_manager')
+            if (!empty($filters['role'])) {
+                $query->whereHas('roles', function ($q) use ($filters) {
+                    $q->where('name', $filters['role']);
+                });
+            }
+
             // Sorting
             $sort = $filters['sort'] ?? 'post_count';
             switch ($sort) {

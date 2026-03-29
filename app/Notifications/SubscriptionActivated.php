@@ -41,7 +41,9 @@ class SubscriptionActivated extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $planName = $this->subscription->plan?->name ?? 'Premium';
+        $plan = $this->subscription->plan;
+        $planName = $plan?->display_name ?? 'Premium';
+
         $displayName = $notifiable->display_name ?? $notifiable->username ?? 'Valued Member';
         
         $mail = (new MailMessage)
@@ -68,8 +70,8 @@ class SubscriptionActivated extends Notification
     public function toArray(object $notifiable): array
     {
         $plan = $this->subscription->plan;
-        $planName = $plan?->name ?? 'Premium';
-        
+        $planName = $plan?->display_name ?? 'Premium';
+
         return [
             'type' => 'subscription_activated',
             'title' => 'Subscription Activated',

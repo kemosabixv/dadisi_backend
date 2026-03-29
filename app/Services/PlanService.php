@@ -52,7 +52,7 @@ class PlanService implements PlanServiceContract
 
             return [
                 'id' => $plan->id,
-                'name' => $this->decodeString($plan->name),
+                'name' => $plan->display_name,
                 'description' => $this->decodeString($plan->description),
                 'base_monthly_price' => (float) $plan->base_monthly_price,
                 'price' => (float) $plan->price,
@@ -289,7 +289,7 @@ class PlanService implements PlanServiceContract
     {
         $data = [
             'id' => $plan->id,
-            'name' => $this->decodeString($plan->name),
+            'name' => $plan->display_name,
             'description' => $this->decodeString($plan->description),
             'pricing' => $plan->pricing,
             'promotions' => $plan->promotions,
@@ -319,15 +319,20 @@ class PlanService implements PlanServiceContract
      */
     private function decodeString(mixed $value): string
     {
-        if (is_string($value)) {
-            $decoded = json_decode($value, true);
-            if (is_array($decoded) && isset($decoded['en'])) {
-                $en = $decoded['en'];
+        if (is_array($value)) {
+            return $value['en'] ?? reset($value) ?: '';
+        }
 
-                return is_string($en) ? $en : (string) $en;
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if (str_starts_with($trimmed, '{') || str_starts_with($trimmed, '[')) {
+                $decoded = json_decode($value, true);
+                if (is_array($decoded)) {
+                    return $decoded['en'] ?? reset($decoded) ?: $value;
+                }
             }
         }
 
-        return (string) $value;
+        return (string) ($value ?? '');
     }
 }

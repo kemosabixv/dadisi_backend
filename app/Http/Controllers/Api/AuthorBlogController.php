@@ -32,8 +32,14 @@ class AuthorBlogController extends Controller
     public function listCategories(Request $request): JsonResponse
     {
         try {
-            // Authors see all categories to select from
-            $categories = Category::orderBy('name')->get();
+            $query = Category::orderBy('name');
+
+            // Optionally filter by ownership for the management dashboard
+            if ($request->boolean('owned')) {
+                $query->where('created_by', $request->user()->id);
+            }
+
+            $categories = $query->get();
             return response()->json(['success' => true, 'data' => $categories]);
         } catch (\Exception $e) {
             Log::error('AuthorBlogController listCategories failed', ['error' => $e->getMessage()]);
@@ -134,7 +140,14 @@ class AuthorBlogController extends Controller
     public function listTags(Request $request): JsonResponse
     {
         try {
-            $tags = Tag::orderBy('name')->get();
+            $query = Tag::orderBy('name');
+
+            // Optionally filter by ownership for the management dashboard
+            if ($request->boolean('owned')) {
+                $query->where('created_by', $request->user()->id);
+            }
+
+            $tags = $query->get();
             return response()->json(['success' => true, 'data' => $tags]);
         } catch (\Exception $e) {
             Log::error('AuthorBlogController listTags failed', ['error' => $e->getMessage()]);

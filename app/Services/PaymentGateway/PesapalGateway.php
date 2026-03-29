@@ -138,6 +138,7 @@ class PesapalGateway implements PaymentGatewayInterface
             amount: (float) ($statusData['amount'] ?? 0),
             currency: $statusData['currency'] ?? 'KES',
             paymentMethod: $statusData['payment_method'] ?? null,
+            confirmationCode: $statusData['confirmation_code'] ?? null,
             rawDetails: $statusData
         );
     }
