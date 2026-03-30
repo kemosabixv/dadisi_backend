@@ -511,7 +511,7 @@ class ThreadService implements ForumServiceContract
      */
     private function applyGroupAutoTags(ForumThread $thread, int $groupId): void
     {
-        $group = Group::find($groupId);
+        $group = Group::with(['county', 'forumTag'])->find($groupId);
         if (!$group) return;
 
         $tagId = null;
@@ -534,29 +534,12 @@ class ThreadService implements ForumServiceContract
             // Increment usage count for the auto-applied tag
             ForumTag::where('id', $tagId)->increment('usage_count');
         }
-    }
-
-    /**
-     * Apply hub-specific auto-tagging and metadata.
-     */
-    private function applyGroupAutoTags(ForumThread $thread, int $groupId): void
-    {
-        $group = Group::with(['county', 'forumTag'])->find($groupId);
-        if (!$group) return;
-
-        // Associate with the group's specific forum tag if defined
-        if ($group->forum_tag_id) {
-            $thread->tags()->syncWithoutDetaching([$group->forum_tag_id]);
-        }
 
         // If the group is linked to a county and the thread isn't explicitly linked,
-        // inherrit the group's county association.
+        // inherit the group's county association.
         if ($group->county_id && !$thread->county_id) {
             $thread->update(['county_id' => $group->county_id]);
         }
-
-        // Fallback: If no explicit forum_tag_id is set, could perform name-based matching
-        // but explicit administrative association is preferred and prioritized.
     }
 
     /**
