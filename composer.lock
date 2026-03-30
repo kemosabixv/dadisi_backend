@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a4a99a67eaa1b2c061ff538b8f99590d",
+    "content-hash": "f1417ad5404e30b8ab4f401f550fe96e",
     "packages": [
         {
             "name": "ashallendesign/laravel-exchange-rates",
@@ -1638,16 +1638,16 @@
         },
         {
             "name": "laragear/webauthn",
-            "version": "v4.0.1",
+            "version": "v4.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Laragear/WebAuthn.git",
-                "reference": "fe805c71e4ebbf0ce6b800e4c010460cdff93258"
+                "reference": "0545a45d623bc420f998d6595377ea26ce4c70dd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Laragear/WebAuthn/zipball/fe805c71e4ebbf0ce6b800e4c010460cdff93258",
-                "reference": "fe805c71e4ebbf0ce6b800e4c010460cdff93258",
+                "url": "https://api.github.com/repos/Laragear/WebAuthn/zipball/0545a45d623bc420f998d6595377ea26ce4c70dd",
+                "reference": "0545a45d623bc420f998d6595377ea26ce4c70dd",
                 "shasum": ""
             },
             "require": {
@@ -1665,7 +1665,7 @@
             },
             "require-dev": {
                 "ext-sodium": "*",
-                "orchestra/testbench": "9.*|10.*"
+                "orchestra/testbench": "^9.16|10.*"
             },
             "suggest": {
                 "paragonie/sodium_compat": "To enable EdDSA 25519 keys from authenticators, if `ext-sodium` is unavailable."
@@ -1724,7 +1724,7 @@
                     "type": "Paypal"
                 }
             ],
-            "time": "2025-05-09T23:25:49+00:00"
+            "time": "2026-01-19T17:57:17+00:00"
         },
         {
             "name": "laravel-notification-channels/webpush",

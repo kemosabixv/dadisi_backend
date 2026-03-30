@@ -17,6 +17,7 @@ class Group extends Model
         'slug',
         'description',
         'county_id',
+        'forum_tag_id',
         'image_path',
         'member_count',
         'is_private',
@@ -45,6 +46,14 @@ class Group extends Model
         return $this->belongsToMany(User::class, 'group_members')
             ->withPivot('role', 'joined_at')
             ->withTimestamps();
+    }
+
+    /**
+     * Get the forum tag associated with this hub (group).
+     */
+    public function forumTag(): BelongsTo
+    {
+        return $this->belongsTo(ForumTag::class, 'forum_tag_id');
     }
 
     /**

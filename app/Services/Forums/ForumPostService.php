@@ -41,8 +41,8 @@ class ForumPostService implements ForumPostServiceContract
      */
     public function createPost(Authenticatable $author, ForumThread $thread, CreateForumPostDTO $dto): ForumPost
     {
-        // Check feature-gating quota for non-staff users
-        if ($author instanceof User && !$author->isStaffMember()) {
+        // Check feature-gating quota for non-staff/non-moderator users
+        if ($author instanceof User && !$author->isStaffMember() && !$author->hasPermissionTo('moderate_forum')) {
             $this->validateReplyQuota($author);
         }
 

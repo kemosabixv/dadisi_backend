@@ -16,6 +16,7 @@ class StoreForumThreadRequest extends FormRequest
         return [
             'category_id' => 'nullable|exists:forum_categories,id',
             'county_id' => 'nullable|exists:counties,id',
+            'group_id' => 'nullable|exists:groups,id',
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'exists:forum_tags,id',
             'title' => 'required|string|max:255',

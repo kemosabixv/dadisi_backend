@@ -30,117 +30,69 @@ class ForumThreadsSeeder extends Seeder
         $topics = [
             // General
             [
-                'title' => 'Welcome to the new Dadisi Community Forum!',
-                'content' => "We are excited to launch this new space for our community members to connect, share ideas, and collaborate on projects. \n\nPlease read the community guidelines before posting.",
+                'title' => 'Welcome to the Dadisi Community Hub!',
+                'content' => "Welcome to the official Dadisi Community Forum! 🌟 This is your central space for collaboration, learning, and local impact across Kenya.\n\nOur mission is to foster a supportive environment where community members can share technical knowledge, coordinate local projects, and stay updated with official announcements. We encourage you to participate actively and help us build a vibrant ecosystem for social and technological innovation.\n\n**Please take a moment to:**\n1. Read our Community Guidelines (pinned in General).\n2. Update your profile with your interests and county.\n3. Introduce yourself in the 'Introduce Yourself' thread!\n\nWe're thrilled to have you here!",
                 'category_slug' => 'announcements',
                 'pinned' => true,
                 'locked' => true,
             ],
             [
-                'title' => 'Introduce Yourself Here',
-                'content' => "New to the platform? Tell us a bit about yourself, your background, and what you're working on!",
+                'title' => 'Introduce Yourself & Share Your Journey',
+                'content' => "Welcome to the family! 🤝 We believe every member brings unique value to this community. Whether you're a seasoned developer, a local activist, or just starting your journey, we want to hear from you!\n\n**Tell us about:**\n- Your background and skills.\n- What motivated you to join Dadisi.\n- Any projects you're currently working on or dreaming of.\n- Your favorite thing about your county.\n\nDon't be shy—let's build something great together!",
                 'category_slug' => 'general-discussion',
                 'pinned' => true,
             ],
             // Tech
             [
-                'title' => 'Best tools for remote collaboration in 2025?',
-                'content' => "I'm looking for recommendations for project management tools that work well with spotty internet connections. What are you all using?",
+                'title' => 'Optimal Remote Collaboration Tools for 2025',
+                'content' => "With the rise of distributed work, finding the right tools is more critical than ever—especially in areas with varying internet connectivity. 💻\n\nI'm looking for recommendations for project management and communication tools that:\n- Have excellent offline capabilities.\n- Are lightweight and perform well on mobile data.\n- Support seamless synchronization when back online.\n\nCurrently, I'm exploring Obsidian for notes and Trello for tasks. What are your 'must-have' tools for staying productive while working remotely in Kenya?",
                 'category_slug' => 'technical-support',
             ],
             [
-                'title' => 'Sharing my React learning resources',
-                'content' => "Here is a list of free resources I found helpful while learning frontend development:\n- MDN Docs\n- FreeCodeCamp\n- React Patterns\n\nFeel free to add yours!",
+                'title' => 'Curated React & Modern Web Development Resources',
+                'content' => "Learning frontend development can be overwhelming with the constant shift in technologies. 🚀 I've compiled a list of high-quality, free resources that helped me master React and modern CSS:\n\n- **Documentation:** [Official React Docs](https://react.dev) - Always start here!\n- **Interactive Learning:** [FreeCodeCamp](https://www.freecodecamp.org) - Great for fundamental JavaScript.\n- **Design Systems:** [shadcn/ui](https://ui.shadcn.com) - Beautifully designed components.\n- **Community:** [Stack Overflow](https://stackoverflow.com) - For when you get stuck.\n\nWhat other resources have been game-changers for you? Share them below!",
                 'category_slug' => 'resources-learning',
             ],
             // County Specific (simulating local hubs)
             [
-                'title' => 'Tech Meetup in Nairobi CBD',
-                'content' => "Hey everyone, we're planning a small meetup for developers in Nairobi next Saturday. Who's interested?",
+                'title' => 'Nairobi Tech Hub: Monthly Founders Meetup',
+                'content' => "Calling all innovators in the Nairobi metropolitan area! 🏙️ We're organizing a monthly meetup to discuss the challenges and triumphs of building startups in the heart of CBD.\n\n**Details:**\n- **Date:** Last Saturday of the month.\n- **Focus:** Networking, pitch practice, and resource sharing.\n- **Venue:** Rotating between different innovation hubs in Nairobi.\n\nIf you're interested in joining the coordination committee or just want to attend, drop a comment below!",
                 'category_slug' => 'events-meetups',
                 'county_name' => 'Nairobi',
             ],
             [
-                'title' => 'Mombasa Coastal Cleanup Project',
-                'content' => "Looking for volunteers to help coordinate the monthly beach cleanup. We need people to help with logistics and social media.",
+                'title' => 'Mombasa Coastal Conservation & Blue Economy Initiative',
+                'content' => "Protecting our beautiful coastline is a shared responsibility. 🌊 We are launching a community-led project to monitor coral reef health and coordinate monthly beach plastic cleanups.\n\nWe are looking for:\n- **Volunteers:** For physical cleanup efforts.\n- **Techies:** To help build a simple data collection app for reef health.\n- **Sponsors:** For equipment (gloves, bags, educational materials).\n\nLet's work together to preserve the beauty of Mombasa for generations to come!",
                 'category_slug' => 'projects-collaboration',
                 'county_name' => 'Mombasa',
             ],
             [
-                'title' => 'Kisumu Lakeside Innovation Hub',
-                'content' => "Excited to announce a new co-working space opening near the lake! Perfect for remote workers and startups. Grand opening next month.",
+                'title' => 'Kisumu Lakes Economy: Digital Transformation for Fishermen',
+                'content' => "Exciting news! We are piloting a digital marketplace to help Kisumu's fisherman connect directly with buyers, ensuring fairer prices and fresher produce. 🐟\n\nWe need help with:\n- Gathering feedback from local cooperatives.\n- Training sessions for mobile app usage.\n- Logistics coordination for local distribution.\n\nIf you're passionate about leveraging technology for local economic growth, we need your expertise!",
                 'category_slug' => 'announcements',
                 'county_name' => 'Kisumu',
             ],
             [
-                'title' => 'Nakuru Agricultural Tech Workshop',
-                'content' => "We're organizing a workshop on drone technology for farming. Free entry for all Nakuru residents. Register now!",
+                'title' => 'Nakuru AgTech: Precision Farming Workshop',
+                'content' => "Agriculture is the backbone of Nakuru, and tech is the catalyst for its future. 🚜 Join us for a hands-on workshop dedicated to precision farming techniques using low-cost IoT sensors.\n\n**Topics covered:**\n- Soil moisture monitoring.\n- Weather pattern analysis via mobile apps.\n- Drone mapping for large-scale farms.\n\nThis is a free event for all registered Nakuru farmers. Let's modernize our fields!",
                 'category_slug' => 'events-meetups',
                 'county_name' => 'Nakuru',
             ],
             [
-                'title' => 'Uasin Gishu Youth Coding Bootcamp',
-                'content' => "Free 3-month coding bootcamp for youth aged 18-25 in Eldoret. Learn web development and get job placement support.",
+                'title' => 'Eldoret Innovation: Coding Bootcamp for High School Graduates',
+                'content' => "Turning Eldoret into a tech power hub! 🏃‍♂️💨 We are offering a fully-funded, 3-month intensive coding bootcamp for recent high school graduates in Uasin Gishu.\n\nCurriculum includes:\n- HTML, CSS, and Tailwind CSS.\n- JavaScript and React fundamentals.\n- Soft skills for the global digital economy.\n\nApplications are now open. Help us spread the word to the energetic youth of Eldoret!",
                 'category_slug' => 'resources-learning',
                 'county_name' => 'Uasin Gishu',
             ],
             [
-                'title' => 'Kiambu Community Garden Project',
-                'content' => "Looking for volunteers to help establish a community vegetable garden in Thika. All produce will be shared with local families.",
-                'category_slug' => 'projects-collaboration',
-                'county_name' => 'Kiambu',
-            ],
-            [
-                'title' => 'Machakos Tech Ladies Meetup',
-                'content' => "Monthly meetup for women in tech in Machakos County. Share experiences, network, and learn from each other!",
+                'title' => 'Machakos Creative Arts: Digital Media Masterclass',
+                'content' => "Machakos is home to incredible talent! 🎨 We're hosting a masterclass on digital storytelling and content creation for local artists and filmmakers.\n\nLearn how to:\n- Monetize your creative work online.\n- Use professional editing tools on a budget.\n- Build a strong personal brand on social media.\n\nSeats are limited, so reserve yours today!",
                 'category_slug' => 'events-meetups',
                 'county_name' => 'Machakos',
             ],
             [
-                'title' => 'Nyeri Coffee Farmers Digital Literacy',
-                'content' => "Training program to help coffee farmers use mobile apps for market prices and weather updates. Register your interest!",
-                'category_slug' => 'resources-learning',
-                'county_name' => 'Nyeri',
-            ],
-            [
-                'title' => 'Garissa Solar Energy Initiative',
-                'content' => "Community solar panel installation project for schools in Garissa. Looking for technical volunteers and sponsors.",
-                'category_slug' => 'projects-collaboration',
-                'county_name' => 'Garissa',
-            ],
-            [
-                'title' => 'Kakamega Forest Conservation Tech',
-                'content' => "Using IoT sensors to monitor wildlife in Kakamega Forest. Any developers interested in contributing to the project?",
-                'category_slug' => 'technical-support',
-                'county_name' => 'Kakamega',
-            ],
-            [
-                'title' => 'Kilifi Beach Tourism App Development',
-                'content' => "Building a mobile app to promote local tourism in Kilifi. Need designers and developers to join the team!",
-                'category_slug' => 'projects-collaboration',
-                'county_name' => 'Kilifi',
-            ],
-            [
-                'title' => 'Baringo Water Management System',
-                'content' => "Implementing smart water meters in Baringo to help with conservation. Looking for community feedback on the pilot program.",
-                'category_slug' => 'announcements',
-                'county_name' => 'Baringo',
-            ],
-            [
-                'title' => 'Bomet Tea Farmers Cooperative Forum',
-                'content' => "Discussion thread for tea farmers in Bomet. Share tips, market updates, and connect with fellow farmers.",
-                'category_slug' => 'general-discussion',
-                'county_name' => 'Bomet',
-            ],
-            [
-                'title' => 'Kajiado Maasai Cultural Tech Initiative',
-                'content' => "Preserving Maasai heritage through digital storytelling. Looking for content creators and translators.",
-                'category_slug' => 'projects-collaboration',
-                'county_name' => 'Kajiado',
-            ],
-            [
-                'title' => 'Turkana Renewable Energy Discussion',
-                'content' => "Let's discuss the wind power projects in Turkana and their impact on local communities.",
+                'title' => 'Turkana Renewable Energy: Community Impact Discussion',
+                'content' => "The wind and sun of Turkana are powering the nation. 🌬️☀️ But how is this benefiting the local community? Let's have an open and constructive discussion about renewable energy projects in our county.\n\nGoals of this thread:\n- Share first-hand experiences of living near energy projects.\n- Discuss opportunities for local employment and skill development.\n- Identify areas where community-based tech solutions can improve basic services.\n\nYour voice matters—join the conversation.",
                 'category_slug' => 'general-discussion',
                 'county_name' => 'Turkana',
             ],
@@ -173,31 +125,27 @@ class ForumThreadsSeeder extends Seeder
                     'group_id' => $groupId,
                     'user_id' => $user->id,
                     'title' => $topicData['title'],
+                    'content' => $topicData['content'],
                     'is_pinned' => $topicData['pinned'] ?? false,
                     'is_locked' => $topicData['locked'] ?? false,
                     'views_count' => rand(10, 500),
                 ]
             );
 
-            // Create Initial Post (OP) if not exists
-            if ($thread->posts()->count() === 0) {
-                $thread->posts()->create([
-                    'user_id' => $user->id,
-                    'content' => $topicData['content'],
-                ]);
-
-                // Create Random Replies
-                if (!($topicData['locked'] ?? false)) {
-                    $replyCount = rand(2, 8);
-                    for ($i = 0; $i < $replyCount; $i++) {
-                        $replier = $users->random();
-                        $thread->posts()->create([
-                            'user_id' => $replier->id,
-                            'content' => $this->getRandomReply(),
-                        ]);
-                    }
+            // Create Random Replies if thread is empty (excluding OP)
+            if (!($topicData['locked'] ?? false)) {
+                $replyCount = rand(2, 8);
+                for ($i = 0; $i < $replyCount; $i++) {
+                    $replier = $users->random();
+                    $thread->posts()->create([
+                        'user_id' => $replier->id,
+                        'content' => $this->getRandomReply(),
+                    ]);
                 }
             }
+
+            // Sync stats
+            $thread->refreshPostStats();
         }
     }
 

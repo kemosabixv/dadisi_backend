@@ -26,7 +26,7 @@ class CreateLabBookingRequest extends FormRequest
             'lab_space_id' => ['required', 'exists:lab_spaces,id'],
             'starts_at' => ['required', 'date', 'after:now'],
             'ends_at' => ['required', 'date', 'after:starts_at'],
-            'purpose' => ['required', 'string', 'min:10', 'max:1000'],
+            'purpose' => ['nullable', 'string', 'max:1000'],
             'title' => ['nullable', 'string', 'max:255'],
             'slot_type' => ['nullable', Rule::in(['hourly', 'half_day', 'full_day'])],
             'payment_method' => ['nullable', Rule::in(['card', 'mpesa', 'quota'])],

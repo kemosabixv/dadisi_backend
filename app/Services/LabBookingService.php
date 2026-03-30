@@ -722,7 +722,14 @@ class LabBookingService implements LabBookingServiceContract
         $currentDate = Carbon::parse($params['start_date']);
 
         // Validate time is possible at all for this lab
-        $this->validateDiscoveryTime($space, $startTime, $durationMinutes);
+        $validation = $this->validateDiscoveryTime($space, $startTime, $durationMinutes);
+        if (!$validation['valid']) {
+            return [
+                'success' => false,
+                'message' => $validation['message'],
+                'options' => []
+            ];
+        }
 
         $processedSlots = [];
         $skippedDates = [];
@@ -2057,10 +2064,11 @@ class LabBookingService implements LabBookingServiceContract
     }
 
     /**
+    /**
      * Validate that a given time window is possible at all for a space.
-     * Throws ValidationException if fundamentally impossible.
+     * Returns a validation result [valid => bool, message => ?string].
      */
-    protected function validateDiscoveryTime(LabSpace $space, string $startTime, int $durationMinutes): void
+    protected function validateDiscoveryTime(LabSpace $space, string $startTime, int $durationMinutes): array
     {
         $openTime = Carbon::createFromFormat('H:i', $space->opens_at->format('H:i'));
         $closeTime = Carbon::createFromFormat('H:i', $space->closes_at->format('H:i'));
@@ -2072,10 +2080,13 @@ class LabBookingService implements LabBookingServiceContract
             $msg = "The requested time ({$startTime} - ".$requestedEnd->format('H:i').') ';
             $msg .= "is outside the lab's operating hours (".$openTime->format('H:i').' - '.$closeTime->format('H:i').').';
 
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'start_time' => [$msg],
-            ]);
+            return [
+                'valid' => false,
+                'message' => $msg
+            ];
         }
+
+        return ['valid' => true, 'message' => null];
     }
 
     /**

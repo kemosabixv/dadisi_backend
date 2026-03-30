@@ -70,8 +70,8 @@ class ThreadService implements ForumServiceContract
      */
     public function createThread(Authenticatable $author, CreateForumThreadDTO $dto): ForumThread
     {
-        // Check feature-gating quota for non-staff users
-        if ($author instanceof User && !$author->isStaffMember()) {
+        // Check feature-gating quota for non-staff/non-moderator users
+        if ($author instanceof User && !$author->isStaffMember() && !$author->hasPermissionTo('moderate_forum')) {
             $this->validateThreadQuota($author);
         }
 
@@ -83,6 +83,7 @@ class ThreadService implements ForumServiceContract
                     'county_id' => $dto->county_id,
                     'group_id' => $dto->group_id,
                     'title' => $dto->title,
+                    'content' => $dto->content,
                     'slug' => Str::slug($dto->title) . '-' . Str::random(6),
                     'is_pinned' => $dto->is_pinned,
                     'is_locked' => $dto->is_locked,
@@ -97,7 +98,12 @@ class ThreadService implements ForumServiceContract
                     $media->increment('usage_count');
                 }
 
-                // Sync tags if provided
+                // Handle auto-tagging for Hub (Group) associated threads
+                if ($dto->group_id) {
+                    $this->applyGroupAutoTags($thread, $dto->group_id);
+                }
+
+                // Sync tags if provided (manually by user)
                 if (!empty($dto->tag_ids)) {
                     $thread->syncTags($dto->tag_ids);
                 }
@@ -498,6 +504,59 @@ class ThreadService implements ForumServiceContract
                 );
             }
         }
+    }
+
+    /**
+     * Apply auto-tags based on the hub (group) association.
+     */
+    private function applyGroupAutoTags(ForumThread $thread, int $groupId): void
+    {
+        $group = Group::find($groupId);
+        if (!$group) return;
+
+        $tagId = null;
+
+        // 1. Prioritize explicit mapping
+        if ($group->forum_tag_id) {
+            $tagId = $group->forum_tag_id;
+        } 
+        // 2. Fallback to name-based match
+        else {
+            $matchingTag = ForumTag::where('name', $group->name)->first();
+            if ($matchingTag) {
+                $tagId = $matchingTag->id;
+            }
+        }
+
+        if ($tagId) {
+            $thread->tags()->syncWithoutDetaching([$tagId]);
+            
+            // Increment usage count for the auto-applied tag
+            ForumTag::where('id', $tagId)->increment('usage_count');
+        }
+    }
+
+    /**
+     * Apply hub-specific auto-tagging and metadata.
+     */
+    private function applyGroupAutoTags(ForumThread $thread, int $groupId): void
+    {
+        $group = Group::with(['county', 'forumTag'])->find($groupId);
+        if (!$group) return;
+
+        // Associate with the group's specific forum tag if defined
+        if ($group->forum_tag_id) {
+            $thread->tags()->syncWithoutDetaching([$group->forum_tag_id]);
+        }
+
+        // If the group is linked to a county and the thread isn't explicitly linked,
+        // inherrit the group's county association.
+        if ($group->county_id && !$thread->county_id) {
+            $thread->update(['county_id' => $group->county_id]);
+        }
+
+        // Fallback: If no explicit forum_tag_id is set, could perform name-based matching
+        // but explicit administrative association is preferred and prioritized.
     }
 
     /**

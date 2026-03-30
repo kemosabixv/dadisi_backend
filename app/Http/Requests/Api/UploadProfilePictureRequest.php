@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Log;
 
 class UploadProfilePictureRequest extends FormRequest
 {
@@ -35,6 +36,24 @@ class UploadProfilePictureRequest extends FormRequest
             'profile_picture.mimes' => 'Profile picture must be a JPEG, PNG, JPG, GIF, or SVG file.',
             'profile_picture.max' => 'Profile picture cannot exceed 5 MB.',
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator)
+    {
+        if ($validator->fails()) {
+            $file = $this->file('profile_picture');
+            Log::warning('[UploadProfilePictureRequest] Validation failed', [
+                'mime_type' => $file?->getMimeType(),
+                'original_name' => $file?->getClientOriginalName(),
+                'client_mime_type' => $file?->getClientMimeType(),
+                'extension' => $file?->getClientOriginalExtension(),
+                'size' => $file?->getSize(),
+                'errors' => $validator->errors()->toArray(),
+            ]);
+        }
     }
 
     /**

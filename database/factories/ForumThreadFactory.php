@@ -30,6 +30,7 @@ class ForumThreadFactory extends Factory
             'county_id' => null,
             'group_id' => null,
             'title' => $title,
+            'content' => $this->faker->paragraphs(3, true),
             'slug' => Str::slug($title) . '-' . Str::random(6),
             'is_pinned' => false,
             'is_locked' => false,

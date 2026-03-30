@@ -18,11 +18,13 @@ use Illuminate\Notifications\Notifiable;
 use Laravelcm\Subscriptions\Models\Subscription;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 use Spatie\Permission\Traits\HasRoles;
+use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
+use Laragear\WebAuthn\WebAuthnAuthentication;
 
-class User extends Authenticatable
+class User extends Authenticatable implements WebAuthnAuthenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasPushSubscriptions, HasRoles, Notifiable, SoftDeletes;
+    use HasFactory, HasPushSubscriptions, HasRoles, Notifiable, SoftDeletes, WebAuthnAuthentication;
 
     /**
      * Guard name for Spatie Permission.
@@ -100,11 +102,20 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if the user has any registered WebAuthn credentials (passkeys).
+     */
+    public function getHasPasskeysAttribute(): bool
+    {
+        return $this->webauthnCredentials()->exists();
+    }
+
+    /**
      * The accessors to append to the model's array form.
      */
     protected $appends = [
         'profile_picture_url',
         'display_name',
+        'has_passkeys',
     ];
 
     /**
@@ -331,6 +342,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'id' => 'integer',
             'active_subscription_id' => 'integer',
+            'two_factor_enabled' => 'boolean',
         ];
     }
 

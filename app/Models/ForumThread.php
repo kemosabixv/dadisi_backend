@@ -21,6 +21,7 @@ class ForumThread extends Model
         'category_id',
         'title',
         'slug',
+        'content',
         'is_pinned',
         'is_locked',
         'last_post_id',

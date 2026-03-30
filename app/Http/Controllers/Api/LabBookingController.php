@@ -142,7 +142,7 @@ class LabBookingController extends Controller
                 'slots' => 'required|array|min:1',
                 'slots.*.starts_at' => 'required|date|after:now',
                 'slots.*.ends_at' => 'required|date|after:slots.*.starts_at',
-                'purpose' => 'required|string|max:500',
+                'purpose' => 'nullable|string|max:500',
                 'title' => 'nullable|string|max:255',
                 'guest_name' => 'nullable|string|max:255',
                 'guest_email' => 'nullable|email|max:255',
@@ -204,7 +204,7 @@ class LabBookingController extends Controller
     public function discoverRecurring(Request $request): JsonResponse
     {
         try {
-            $validated = $request->validate([
+            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
                 'lab_space_id' => 'required|integer|exists:lab_spaces,id',
                 'target_count' => 'required|integer|min:1|max:100',
                 'days_of_week' => 'required|array',
@@ -214,18 +214,33 @@ class LabBookingController extends Controller
                 'start_date' => 'required|date|after_or_equal:today',
             ]);
 
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid parameters',
+                    'errors' => $validator->errors()
+                ], 200);
+            }
+
+            $validated = $validator->validated();
+
             $options = $this->bookingService->discoverRecurringSlots(
                 $validated['lab_space_id'],
                 $validated,
                 Auth::user()
             );
 
+            // Handle validation result within success response
+            if (isset($options['success']) && $options['success'] === false) {
+                return response()->json($options, 200);
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $options,
             ]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 200);
         }
     }
 
@@ -235,7 +250,7 @@ class LabBookingController extends Controller
     public function discoverFlexible(Request $request): JsonResponse
     {
         try {
-            $validated = $request->validate([
+            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
                 'lab_space_id' => 'required|integer|exists:lab_spaces,id',
                 'target_hours' => 'required|numeric|min:0.5',
                 'preferred_days' => 'nullable|array',
@@ -248,18 +263,33 @@ class LabBookingController extends Controller
                 'preferred_end_time' => 'nullable|string|regex:/^\d{2}:\d{2}$/',
             ]);
 
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid parameters',
+                    'errors' => $validator->errors()
+                ], 200);
+            }
+
+            $validated = $validator->validated();
+
             $options = $this->bookingService->discoverFlexibleSlots(
                 $validated['lab_space_id'],
                 $validated,
                 Auth::user()
             );
 
+            // Handle validation result within success response
+            if (isset($options['success']) && $options['success'] === false) {
+                return response()->json($options, 200);
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $options,
             ]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 200);
         }
     }
 
@@ -534,7 +564,7 @@ class LabBookingController extends Controller
                 'lab_space_id' => 'required|integer|exists:lab_spaces,id',
                 'starts_at' => 'required|date|after:now',
                 'ends_at' => 'required|date|after:starts_at',
-                'purpose' => 'required|string|max:500',
+                'purpose' => 'nullable|string|max:500',
                 'title' => 'nullable|string|max:255',
                 'guest_name' => 'required|string|max:255',
                 'guest_email' => 'required|email|max:255',

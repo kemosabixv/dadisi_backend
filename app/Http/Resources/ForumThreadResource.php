@@ -18,7 +18,7 @@ class ForumThreadResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'slug' => $this->slug,
-            'content' => $this->posts?->first()?->content,
+            'content' => $this->content,
             'user_id' => $this->user_id,
             'user' => new UserResource($this->whenLoaded('user')),
             'category_id' => $this->category_id,

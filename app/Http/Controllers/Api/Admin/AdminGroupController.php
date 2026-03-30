@@ -25,6 +25,49 @@ class AdminGroupController extends Controller
     }
 
     /**
+     * Get statistics for groups dashboard.
+     * 
+     * Returns total counts for various group categories.
+     * 
+     * @group Admin Community Groups
+     * @authenticated
+     * 
+     * @response 200 {
+     *   "success": true,
+     *   "data": {
+     *     "total": 50,
+     *     "active": 45,
+     *     "county_specific": 40,
+     *     "global": 10
+     *   }
+     * }
+     */
+    public function stats(): JsonResponse
+    {
+        try {
+            $this->authorize('viewAny', Group::class);
+
+            $stats = [
+                'total' => Group::count(),
+                'active' => Group::where('is_active', true)->count(),
+                'county_specific' => Group::whereNotNull('county_id')->count(),
+                'global' => Group::whereNull('county_id')->count(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $stats
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching group stats: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch group statistics.'
+            ], 500);
+        }
+    }
+
+    /**
      * List all groups for administration.
      * 
      * Returns a paginated list of community groups with member counts.
@@ -111,6 +154,7 @@ class AdminGroupController extends Controller
                 'name' => 'required|string|max:100|unique:groups,name',
                 'description' => 'nullable|string',
                 'county_id' => 'nullable|integer|exists:counties,id',
+                'forum_tag_id' => 'nullable|integer|exists:forum_tags,id',
                 'is_active' => 'boolean',
                 'is_private' => 'boolean',
                 'image_path' => 'nullable|string',
@@ -159,11 +203,13 @@ class AdminGroupController extends Controller
             $this->authorize('update', $group);
 
             $validated = $request->validate([
-                'name' => 'sometimes|string|max:100',
+                'name' => 'nullable|string|max:100|unique:groups,name,' . $group->id,
                 'description' => 'nullable|string',
-                'county_id' => 'sometimes|nullable|integer|exists:counties,id',
+                'county_id' => 'nullable|integer|exists:counties,id',
+                'forum_tag_id' => 'nullable|integer|exists:forum_tags,id',
                 'is_active' => 'boolean',
                 'is_private' => 'boolean',
+                'image_path' => 'nullable|string',
             ]);
 
             $dto = UpdateGroupDTO::fromArray($validated);

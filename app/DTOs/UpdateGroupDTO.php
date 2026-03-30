@@ -12,6 +12,7 @@ class UpdateGroupDTO
     public function __construct(
         public ?string $name = null,
         public ?int $county_id = null,
+        public ?int $forum_tag_id = null,
         public ?string $description = null,
         public ?string $slug = null,
         public ?bool $is_active = null,
@@ -26,6 +27,7 @@ class UpdateGroupDTO
         return new self(
             name: isset($data['name']) ? trim($data['name']) : null,
             county_id: array_key_exists('county_id', $data) ? ($data['county_id'] !== null ? (int) $data['county_id'] : null) : null,
+            forum_tag_id: array_key_exists('forum_tag_id', $data) ? ($data['forum_tag_id'] !== null ? (int) $data['forum_tag_id'] : null) : null,
             description: $data['description'] ?? null,
             slug: $data['slug'] ?? null,
             is_active: isset($data['is_active']) ? (bool)$data['is_active'] : null,
@@ -51,6 +53,7 @@ class UpdateGroupDTO
         // Wait, if I want to support setting it to null, I need to know if it was in the input.
         
         $data['county_id'] = $this->county_id;
+        $data['forum_tag_id'] = $this->forum_tag_id;
 
         if ($this->description !== null) {
             $data['description'] = $this->description;
@@ -69,8 +72,8 @@ class UpdateGroupDTO
         }
 
         return array_filter($data, function($value, $key) {
-            // Allow county_id to be null, but others must be non-null to be included
-            if ($key === 'county_id') return true;
+            // Allow county_id and forum_tag_id to be null, but others must be non-null to be included
+            if ($key === 'county_id' || $key === 'forum_tag_id') return true;
             return $value !== null;
         }, ARRAY_FILTER_USE_BOTH);
     }

@@ -65,24 +65,52 @@ class MediaService implements MediaServiceContract
         $hash = hash_file('sha256', $file->getRealPath());
 
         return DB::transaction(function () use ($user, $file, $metadata, $type, $mimeType, $hash, $rootType) {
-            // 1. Check if the physical file exists (CAS)
+            // 1. Check if the physical file exists (CAS) and is present on disk
             $mediaFile = MediaFile::where('hash', $hash)->first();
+            $path = 'blobs/'.substr($hash, 0, 2).'/'.substr($hash, 2, 2).'/'.$hash;
+            $existsOnDisk = $mediaFile && Storage::disk('r2')->exists($mediaFile->path);
 
-            if (! $mediaFile) {
-                // Upload to R2
-                $path = 'blobs/'.substr($hash, 0, 2).'/'.substr($hash, 2, 2).'/'.$hash;
-                if (! Storage::disk('r2')->put($path, file_get_contents($file->getRealPath()))) {
+            Log::info('[MediaService] CAS Check', [
+                'hash' => $hash,
+                'media_file_exists' => (bool) $mediaFile,
+                'exists_on_disk' => $existsOnDisk,
+                'target_path' => $path
+            ]);
+
+            if (! $mediaFile || ! $existsOnDisk) {
+                Log::debug('[MediaService] Initiating R2 upload', [
+                    'hash' => $hash,
+                    'reason' => !$mediaFile ? 'record_missing' : 'file_missing_on_disk'
+                ]);
+
+                // Upload to R2 if record missing OR file missing from storage
+                $content = file_get_contents($file->getRealPath());
+                $uploadSuccess = Storage::disk('r2')->put($path, $content);
+
+                if (!$uploadSuccess) {
+                    Log::error('[MediaService] R2 Put Failed', [
+                        'hash' => $hash,
+                        'path' => $path,
+                        'size' => $file->getSize()
+                    ]);
                     throw MediaException::storageError('Failed to store file in R2');
                 }
 
-                $mediaFile = MediaFile::create([
-                    'hash' => $hash,
-                    'disk' => 'r2',
-                    'path' => $path,
-                    'size' => $file->getSize(),
-                    'mime_type' => $mimeType,
-                    'ref_count' => 0,
-                ]);
+                Log::info('[MediaService] R2 Put Success', ['hash' => $hash, 'path' => $path]);
+
+                if (! $mediaFile) {
+                    $mediaFile = MediaFile::create([
+                        'hash' => $hash,
+                        'disk' => 'r2',
+                        'path' => $path,
+                        'size' => $file->getSize(),
+                        'mime_type' => $mimeType,
+                        'ref_count' => 0,
+                    ]);
+                } else {
+                    // Update existing record with the standard path if it was different or missing
+                    $mediaFile->update(['path' => $path, 'disk' => 'r2']);
+                }
             }
 
             // 2. Increment physical reference count
@@ -310,7 +338,20 @@ class MediaService implements MediaServiceContract
         $mimeType = $file->getMimeType();
         $type = $this->getFileType($mimeType);
 
+        Log::info('[MediaService] Validating file', [
+            'mime_type' => $mimeType,
+            'original_name' => $file->getClientOriginalName(),
+            'size' => $file->getSize(),
+            'detected_type' => $type,
+            'user_id' => $user?->getAuthIdentifier(),
+        ]);
+
         if (! $type) {
+            Log::warning('[MediaService] Unsupported file type detected', [
+                'mime_type' => $mimeType,
+                'allowed_mimes' => self::ALLOWED_MIMES,
+            ]);
+
             return ['valid' => false, 'type' => null, 'error' => "Unsupported type: {$mimeType}"];
         }
 
@@ -563,21 +604,45 @@ class MediaService implements MediaServiceContract
 
             return DB::transaction(function () use ($user, $tempPath, $hash, $size, $mimeType, $type, $fileName, $uploadId, $metadata, $rootType) {
                 $mediaFile = MediaFile::where('hash', $hash)->first();
+                $path = 'blobs/'.substr($hash, 0, 2).'/'.substr($hash, 2, 2).'/'.$hash;
+                $existsOnDisk = $mediaFile && Storage::disk('r2')->exists($mediaFile->path);
 
-                if (! $mediaFile) {
-                    $path = 'blobs/'.substr($hash, 0, 2).'/'.substr($hash, 2, 2).'/'.$hash;
+                Log::info('[MediaService] Multipart CAS Check', [
+                    'hash' => $hash,
+                    'media_file_exists' => (bool) $mediaFile,
+                    'exists_on_disk' => $existsOnDisk,
+                    'target_path' => $path
+                ]);
+
+                if (! $mediaFile || ! $existsOnDisk) {
+                    Log::debug('[MediaService] Initiating Multipart R2 upload', [
+                        'hash' => $hash,
+                        'reason' => !$mediaFile ? 'record_missing' : 'file_missing_on_disk'
+                    ]);
+
                     if (! Storage::disk('r2')->put($path, file_get_contents($tempPath))) {
+                        Log::error('[MediaService] Multipart R2 Put Failed', [
+                            'hash' => $hash,
+                            'path' => $path,
+                            'size' => $size
+                        ]);
                         throw MediaException::storageError('Failed to store assembled file in R2');
                     }
 
-                    $mediaFile = MediaFile::create([
-                        'hash' => $hash,
-                        'disk' => 'r2',
-                        'path' => $path,
-                        'size' => $size,
-                        'mime_type' => $mimeType,
-                        'ref_count' => 0,
-                    ]);
+                    Log::info('[MediaService] Multipart R2 Put Success', ['hash' => $hash, 'path' => $path]);
+
+                    if (! $mediaFile) {
+                        $mediaFile = MediaFile::create([
+                            'hash' => $hash,
+                            'disk' => 'r2',
+                            'path' => $path,
+                            'size' => $size,
+                            'mime_type' => $mimeType,
+                            'ref_count' => 0,
+                        ]);
+                    } else {
+                        $mediaFile->update(['path' => $path, 'disk' => 'r2']);
+                    }
                 }
 
                 $mediaFile->increment('ref_count');

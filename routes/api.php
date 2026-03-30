@@ -518,6 +518,9 @@ Route::prefix('subscriptions')->middleware('auth')->group(function () {
 Route::prefix('admin/finance')->middleware(['auth', 'admin'])->group(function () {
     Route::get('analytics', [FinanceAnalyticsController::class, 'stats'])->name('admin.finance.analytics');
 
+    Route::get('groups/stats', [AdminGroupController::class, 'stats']);
+    Route::apiResource('groups', AdminGroupController::class);
+
     Route::apiResource('payments', AdminPaymentController::class)
         ->only(['index', 'show'])
         ->names([
@@ -901,6 +904,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('forum/stats', [\App\Http\Controllers\Api\Admin\ForumStatsController::class, 'index'])->name('admin.forum.stats');
 
     // Forum Groups Management
+    Route::get('groups/stats', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'stats'])->name('admin.groups.stats');
     Route::get('groups', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'index'])->name('admin.groups.index');
     Route::post('groups', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'store'])->name('admin.groups.store');
     Route::put('groups/{group}', [\App\Http\Controllers\Api\Admin\AdminGroupController::class, 'update'])->name('admin.groups.update');

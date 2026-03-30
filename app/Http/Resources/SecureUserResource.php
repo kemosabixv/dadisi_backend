@@ -25,6 +25,8 @@ class SecureUserResource extends JsonResource
             'email_verified_at' => $this->email_verified_at,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'two_factor_enabled' => $this->two_factor_enabled,
+            'has_passkeys' => $this->has_passkeys,
             
             // Expose UI capabilities
             'ui_permissions' => $uiPermissionService->getUIPermissions(),

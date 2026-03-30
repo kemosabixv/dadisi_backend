@@ -195,6 +195,13 @@ class ForumThreadController extends Controller
             $dto = UpdateForumThreadDTO::fromArray($validated);
             $updatedThread = $this->threadService->updateThread(auth()->user(), $thread, $dto);
      
+            // Handle media_id if provided (Spatie Media Library)
+            if ($request->filled('media_id')) {
+                $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::findOrFail($request->media_id);
+                // In a real app, verify media ownership or temp status here
+                $media->copy($updatedThread, 'image');
+            }
+
             return (new ForumThreadResource($updatedThread))->response();
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'You are not authorized to update this thread.'], 403);

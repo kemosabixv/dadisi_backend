@@ -13,6 +13,7 @@ class CreateForumThreadDTO
 {
     public function __construct(
         public string $title,
+        public string $content,
         public ?int $category_id = null,
         public ?int $county_id = null,
         public ?int $group_id = null,
@@ -29,6 +30,7 @@ class CreateForumThreadDTO
     {
         return new self(
             title: $data['title'],
+            content: $data['content'],
             category_id: isset($data['category_id']) ? (int) $data['category_id'] : null,
             county_id: isset($data['county_id']) ? (int) $data['county_id'] : null,
             group_id: isset($data['group_id']) ? (int) $data['group_id'] : null,
@@ -46,6 +48,7 @@ class CreateForumThreadDTO
     {
         return [
             'title' => $this->title,
+            'content' => $this->content,
             'category_id' => $this->category_id,
             'county_id' => $this->county_id,
             'group_id' => $this->group_id,
