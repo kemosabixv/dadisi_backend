@@ -85,8 +85,8 @@ class SecurityHeadersMiddleware
             // Default fallback
             "default-src 'self'",
 
-            // Scripts - allow self, inline (needed for Next.js), TinyMCE, and Builder.io
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tiny.cloud https://cdn.builder.io",
+            // Scripts - allow self, inline (needed for Next.js), TinyMCE, and Builder.io, and OneSignal
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tiny.cloud https://cdn.builder.io https://cdn.onesignal.com",
 
             // Styles - allow self, inline (needed for Tailwind), Google Fonts, and TinyMCE
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud",
@@ -97,8 +97,8 @@ class SecurityHeadersMiddleware
             // Fonts - allow self, Google Fonts, and TinyMCE
             "font-src 'self' https://fonts.gstatic.com https://cdn.tiny.cloud",
 
-            // API connections - allow self, API, frontend, localhost, exchange rate API, Sentry, and TinyMCE
-            "connect-src 'self' {$apiUrl} {$frontendUrl} http://localhost:8000 http://127.0.0.1:8000 https://api.exchangerate-api.com https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://cdn.tiny.cloud",
+            // API connections - allow self, API, frontend, localhost, exchange rate API, Sentry, TinyMCE, and OneSignal
+            "connect-src 'self' {$apiUrl} {$frontendUrl} http://localhost:8000 http://127.0.0.1:8000 https://api.exchangerate-api.com https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://cdn.tiny.cloud https://onesignal.com",
 
             // Workers - allow blob for Sentry Replay
             "worker-src 'self' blob:",
