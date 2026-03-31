@@ -197,7 +197,32 @@ class AdminGroupController extends Controller
      *   "message": "Group updated successfully."
      * }
      */
-    public function update(Request $request, Group $group): JsonResponse
+    public function show(Group $group): JsonResponse
+    {
+        try {
+            $this->authorize('view', $group);
+
+            $group->load(['county', 'forumTag']);
+            $group->loadCount(['members', 'forumThreads']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $group
+            ]);
+        } catch (AuthorizationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve community group', [
+                'error' => $e->getMessage(),
+                'group_id' => $group->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'Failed to retrieve group'], 500);
+        }
+    }
+
+    /**
+     * Update a group.
     {
         try {
             $this->authorize('update', $group);

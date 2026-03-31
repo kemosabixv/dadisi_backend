@@ -19,33 +19,32 @@ return new class extends Migration
         }
 
         // Migrate data: Copy the content of the first post into the thread content column
-        // We use a subquery that handles the case where multiple first posts might be found (shouldn't happen)
+        // Database agnostic approach (works in MySQL and SQLite)
         DB::statement("
-            UPDATE forum_threads t
-            JOIN (
-                SELECT thread_id, content, id as post_id
-                FROM (
-                    SELECT thread_id, content, id,
-                    ROW_NUMBER() OVER(PARTITION BY thread_id ORDER BY id ASC) as rn
-                    FROM forum_posts
-                ) p WHERE rn = 1
-            ) fp ON t.id = fp.thread_id
-            SET t.content = fp.content
-            WHERE t.content IS NULL
+            UPDATE forum_threads 
+            SET content = (
+                SELECT content 
+                FROM forum_posts 
+                WHERE forum_posts.thread_id = forum_threads.id 
+                ORDER BY id ASC 
+                LIMIT 1
+            )
+            WHERE content IS NULL
         ");
 
         // Ensure no NULLs before modifying column (for zombie threads)
         DB::table('forum_threads')->whereNull('content')->update(['content' => '(No description)']);
 
         // Cleanup: Delete the first-posts as they are now redundant
+        // Database agnostic approach (works in MySQL and SQLite)
         DB::statement("
             DELETE FROM forum_posts 
             WHERE id IN (
-                SELECT post_id FROM (
-                    SELECT id as post_id,
-                    ROW_NUMBER() OVER(PARTITION BY thread_id ORDER BY id ASC) as rn
+                SELECT id FROM (
+                    SELECT MIN(id) as id
                     FROM forum_posts
-                ) p WHERE rn = 1
+                    GROUP BY thread_id
+                ) as ids_to_delete
             )
         ");
 

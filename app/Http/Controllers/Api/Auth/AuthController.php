@@ -210,14 +210,23 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        // Check if 2FA is enabled
+        // Detect enabled MFA factors
+        $supportedMethods = [];
         if ($user->two_factor_enabled) {
-            // Logout immediately if 2FA is required, session will be established after TOTP
+            $supportedMethods[] = 'totp';
+        }
+        if ($user->has_passkeys) {
+            $supportedMethods[] = 'webauthn';
+        }
+
+        if (!empty($supportedMethods)) {
+            // Logout immediately if MFA is required, session will be established after factor verification
             Auth::logout();
             return response()->json([
-                'requires_2fa' => true,
+                'requires_mfa' => true,
+                'supported_methods' => $supportedMethods,
                 'email' => $user->email,
-                'message' => 'Two-factor authentication required.',
+                'message' => 'Multi-factor authentication required.',
             ], 200);
         }
 

@@ -138,4 +138,14 @@ class Media extends Model
     {
         return $this->file?->getUrl() ?? '';
     }
+
+    /**
+     * Get the full URL of the media file.
+     *
+     * @return string|null
+     */
+    public function getMediaUrl(): ?string
+    {
+        return $this->url;
+    }
 }

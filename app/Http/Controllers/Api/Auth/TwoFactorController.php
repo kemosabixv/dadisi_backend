@@ -7,6 +7,7 @@ use App\Http\Resources\SecureUserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 /**
@@ -194,6 +195,7 @@ class TwoFactorController extends Controller
         $request->validate([
             'email' => 'required|email',
             'code' => 'required|string',
+            'remember' => 'boolean|nullable',
         ]);
 
         $user = \App\Models\User::where('email', $request->email)->first();
@@ -224,7 +226,7 @@ class TwoFactorController extends Controller
         }
 
         // Login the user via session
-        Auth::login($user);
+        Auth::login($user, (bool) $request->input('remember', false));
 
         return response()->json([
             'user' => new SecureUserResource($user),

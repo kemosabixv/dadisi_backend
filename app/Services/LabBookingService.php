@@ -193,6 +193,16 @@ class LabBookingService implements LabBookingServiceContract
     }
 
     /**
+     * Retrieve a hold by its reference token.
+     */
+    public function getHoldByReference(string $reference): ?\App\Models\SlotHold
+    {
+        return \App\Models\SlotHold::where('reference', $reference)
+            ->where('expires_at', '>', now())
+            ->first();
+    }
+
+    /**
      * Get used hours for the current month.
      */
     protected function getUsedHoursThisMonth(User $user): float
@@ -218,12 +228,45 @@ class LabBookingService implements LabBookingServiceContract
     }
 
     /**
+     * Pre-fetch all availability data for a space within a range.
+     * Optimization to avoid N+1 queries during discovery/initiation.
+     */
+    public function preFetchAvailabilityData(int $spaceId, Carbon $start, Carbon $end): array
+    {
+        return [
+            'closures' => \App\Models\LabClosure::where(function ($q) use ($spaceId) {
+                    $q->where('lab_space_id', $spaceId)->orWhereNull('lab_space_id');
+                })
+                ->where('start_date', '<=', $end->toDateString())
+                ->where('end_date', '>=', $start->toDateString())
+                ->get(),
+            'maintenance' => \App\Models\LabMaintenanceBlock::where('lab_space_id', $spaceId)
+                ->overlapping($start, $end)
+                ->get(),
+            'bookings' => LabBooking::where('lab_space_id', $spaceId)
+                ->whereNotIn('status', [LabBooking::STATUS_CANCELLED, LabBooking::STATUS_REJECTED])
+                ->overlapping($start, $end)
+                ->get(),
+            'holds' => \App\Models\SlotHold::where('lab_space_id', $spaceId)
+                ->where('expires_at', '>', now())
+                ->where(function ($q) use ($start, $end) {
+                    $q->where('starts_at', '<', $end)
+                        ->where('ends_at', '>', $start);
+                })
+                ->get(),
+        ];
+    }
+
+    /**
      * Check if a time slot is available for a lab space, considering capacity.
      *
-     * @param  LabSpace  $space
+     * @param  int  $spaceId
+     * @param  Carbon  $start
+     * @param  Carbon  $end
      * @param  int|null  $excludeBookingId  Exclude this booking when checking (for updates)
+     * @param  array|null  $context  Optional pre-fetched context for batch optimization
      */
-    public function checkAvailability(int $spaceId, Carbon $start, Carbon $end, ?int $excludeBookingId = null): bool
+    public function checkAvailability(int $spaceId, Carbon $start, Carbon $end, ?int $excludeBookingId = null, ?array $context = null): bool
     {
         $space = LabSpace::findOrFail($spaceId);
 
@@ -233,21 +276,36 @@ class LabBookingService implements LabBookingServiceContract
         }
 
         // 2. Check Lab Closures (Holidays/Maintenance)
-        $hasClosure = \App\Models\LabClosure::where(function ($q) use ($spaceId) {
-            $q->where('lab_space_id', $spaceId)->orWhereNull('lab_space_id');
-        })
-            ->where('start_date', '<=', $end->toDateString())
-            ->where('end_date', '>=', $start->toDateString())
-            ->exists();
+        $hasClosure = false;
+        if ($context && isset($context['closures'])) {
+            $hasClosure = $context['closures']->contains(function ($closure) use ($start, $end) {
+                return $closure->start_date <= $end->toDateString() && 
+                       $closure->end_date >= $start->toDateString();
+            });
+        } else {
+            $hasClosure = \App\Models\LabClosure::where(function ($q) use ($spaceId) {
+                $q->where('lab_space_id', $spaceId)->orWhereNull('lab_space_id');
+            })
+                ->where('start_date', '<=', $end->toDateString())
+                ->where('end_date', '>=', $start->toDateString())
+                ->exists();
+        }
 
         if ($hasClosure) {
             return false;
         }
 
         // 3. Check Maintenance Blocks
-        $hasMaintenance = \App\Models\LabMaintenanceBlock::where('lab_space_id', $spaceId)
-            ->overlapping($start, $end)
-            ->exists();
+        $hasMaintenance = false;
+        if ($context && isset($context['maintenance'])) {
+            $hasMaintenance = $context['maintenance']->contains(function ($block) use ($start, $end) {
+                return $block->starts_at < $end && $block->ends_at > $start;
+            });
+        } else {
+            $hasMaintenance = \App\Models\LabMaintenanceBlock::where('lab_space_id', $spaceId)
+                ->overlapping($start, $end)
+                ->exists();
+        }
 
         if ($hasMaintenance) {
             return false;
@@ -273,21 +331,36 @@ class LabBookingService implements LabBookingServiceContract
         }
 
         // 4. Capacity Check (Peak Occupancy) including Slot Holds
-        $overlapping = LabBooking::where('lab_space_id', $spaceId)
-            ->whereNotIn('status', [LabBooking::STATUS_CANCELLED, LabBooking::STATUS_REJECTED])
-            ->overlapping($start, $end)
-            ->when($excludeBookingId, function ($query, $id) {
-                return $query->where('id', '!=', $id);
-            })
-            ->get();
+        $overlapping = null;
+        if ($context && isset($context['bookings'])) {
+            $overlapping = $context['bookings']->filter(function ($b) use ($start, $end, $excludeBookingId) {
+                if ($excludeBookingId && $b->id === $excludeBookingId) return false;
+                return $b->starts_at < $end && $b->ends_at > $start;
+            });
+        } else {
+            $overlapping = LabBooking::where('lab_space_id', $spaceId)
+                ->whereNotIn('status', [LabBooking::STATUS_CANCELLED, LabBooking::STATUS_REJECTED])
+                ->overlapping($start, $end)
+                ->when($excludeBookingId, function ($query, $id) {
+                    return $query->where('id', '!=', $id);
+                })
+                ->get();
+        }
 
-        $overlappingHolds = \App\Models\SlotHold::where('lab_space_id', $spaceId)
-            ->where('expires_at', '>', now())
-            ->where(function ($q) use ($start, $end) {
-                $q->where('starts_at', '<', $end)
-                    ->where('ends_at', '>', $start);
-            })
-            ->get();
+        $overlappingHolds = null;
+        if ($context && isset($context['holds'])) {
+            $overlappingHolds = $context['holds']->filter(function ($h) use ($start, $end) {
+                return $h->starts_at < $end && $h->ends_at > $start;
+            });
+        } else {
+            $overlappingHolds = \App\Models\SlotHold::where('lab_space_id', $spaceId)
+                ->where('expires_at', '>', now())
+                ->where(function ($q) use ($start, $end) {
+                    $q->where('starts_at', '<', $end)
+                        ->where('ends_at', '>', $start);
+                })
+                ->get();
+        }
 
         if ($overlapping->isEmpty() && $overlappingHolds->isEmpty()) {
             return true;
@@ -359,6 +432,10 @@ class LabBookingService implements LabBookingServiceContract
             $endTime = Carbon::parse($slots[0]['ends_at'])->format('H:i');
             $durationMinutes = Carbon::parse($slots[0]['starts_at'])->diffInMinutes(Carbon::parse($slots[0]['ends_at']));
 
+            // Performance: Pre-fetch for the range (approx 1 year max or count based)
+            $prefetchEnd = $currentDate->copy()->addMonths(12);
+            $context = $this->preFetchAvailabilityData($space->id, $currentDate, $prefetchEnd);
+
             // Extract recurrence pattern if provided
             $daysOfWeek = $data['metadata']['days_of_week'] ?? null; // e.g., ['Mon', 'Wed']
 
@@ -377,7 +454,7 @@ class LabBookingService implements LabBookingServiceContract
                     }
                 }
 
-                if ($isAllowedDay && $this->checkAvailability($space->id, $start, $end)) {
+                if ($isAllowedDay && $this->checkAvailability($space->id, $start, $end, null, $context)) {
                     $processedSlots[] = ['starts_at' => $start, 'ends_at' => $end];
                     $totalHours += ($durationMinutes / 60);
                 }
@@ -647,6 +724,9 @@ class LabBookingService implements LabBookingServiceContract
         $availableDays = [];
         $current = $startDate->copy();
 
+        // Performance: Pre-fetch for the entire discovery range
+        $context = $this->preFetchAvailabilityData($spaceId, $startDate, $endDate);
+
         while ($current->lte($endDate)) {
             // Skip non-operating days
             if (! $this->isOperatingDay($space, $current)) {
@@ -661,7 +741,7 @@ class LabBookingService implements LabBookingServiceContract
                 continue;
             }
 
-            $candidates = $this->getCandidateSlotsForDay($space, $current, $maxDailyHours, $preferredStart, $preferredEnd);
+            $candidates = $this->getCandidateSlotsForDay($space, $current, $maxDailyHours, $preferredStart, $preferredEnd, $context);
             if (! empty($candidates)) {
                 $availableDays[] = [
                     'date' => $current->toDateString(),
@@ -736,6 +816,10 @@ class LabBookingService implements LabBookingServiceContract
         $maxAttempts = 365; // Max 1 year scan
         $attempts = 0;
 
+        // Performance: Pre-fetch for the range
+        $prefetchEnd = $currentDate->copy()->addMonths(12);
+        $context = $this->preFetchAvailabilityData($spaceId, $currentDate, $prefetchEnd);
+
         while (count($processedSlots) < $targetCount && $attempts < $maxAttempts) {
             $attempts++;
             $start = $currentDate->copy()->setTimeFrom(Carbon::parse($startTime));
@@ -766,20 +850,18 @@ class LabBookingService implements LabBookingServiceContract
             file_put_contents(storage_path('logs/recurring_debug.log'), $logMsg, FILE_APPEND);
 
             if ($isAllowedDay) {
-                // Check if this specific day has a closure (holiday/maintenance)
-                $isClosed = \App\Models\LabClosure::where(function ($q) use ($spaceId) {
-                    $q->where('lab_space_id', $spaceId)->orWhereNull('lab_space_id');
-                })
-                    ->where('start_date', '<=', $currentDate->toDateString())
-                    ->where('end_date', '>=', $currentDate->toDateString())
-                    ->exists();
+                // Check if this specific day has a closure (holiday/maintenance) - use context
+                $isClosed = $context['closures']->contains(function ($closure) use ($currentDate) {
+                    return $closure->start_date <= $currentDate->toDateString() && 
+                           $closure->end_date >= $currentDate->toDateString();
+                });
 
                 if ($isClosed) {
                     $skippedDates[] = [
                         'date' => $currentDate->toDateString(),
                         'reason' => 'closure',
                     ];
-                } elseif ($this->checkAvailability($space->id, $start, $end)) {
+                } elseif ($this->checkAvailability($space->id, $start, $end, null, $context)) {
                     $processedSlots[] = [
                         'starts_at' => $start,
                         'ends_at' => $end,
@@ -822,7 +904,7 @@ class LabBookingService implements LabBookingServiceContract
         ];
     }
 
-    protected function getCandidateSlotsForDay(LabSpace $space, Carbon $date, float $limit, ?string $preStart = null, ?string $preEnd = null): array
+    protected function getCandidateSlotsForDay(LabSpace $space, Carbon $date, float $limit, ?string $preStart = null, ?string $preEnd = null, ?array $context = null): array
     {
         $open = Carbon::createFromFormat('H:i', $space->opens_at->format('H:i'))->setTimezone($date->timezone);
         $close = Carbon::createFromFormat('H:i', $space->closes_at->format('H:i'))->setTimezone($date->timezone);
@@ -853,7 +935,7 @@ class LabBookingService implements LabBookingServiceContract
                 $checkEnd = $end->copy();
             }
 
-            if ($this->checkAvailability($space->id, $currentStart, $checkEnd)) {
+            if ($this->checkAvailability($space->id, $currentStart, $checkEnd, null, $context)) {
                 return [['starts_at' => $currentStart->toDateTimeString(), 'ends_at' => $checkEnd->toDateTimeString(), 'hours' => $currentStart->diffInMinutes($checkEnd) / 60]];
             }
             $currentStart->addHour();
@@ -996,11 +1078,12 @@ class LabBookingService implements LabBookingServiceContract
         }
 
         // 2. Initial Availability Check (Pre-Transaction)
-        $isAvailableInitially = $this->checkAvailability($space->id, $startsAt, $endsAt);
+        $context = $this->preFetchAvailabilityData($space->id, $startsAt, $endsAt);
+        $isAvailableInitially = $this->checkAvailability($space->id, $startsAt, $endsAt, null, $context);
 
-        return DB::transaction(function () use ($user, $space, $startsAt, $endsAt, $durationHours, $isAvailableInitially, $data) {
+        return DB::transaction(function () use ($user, $space, $startsAt, $endsAt, $durationHours, $isAvailableInitially, $data, $context) {
             // 3. Lock & Re-Check Availability (Post-Transaction/Race Detection)
-            $isAvailableNow = $this->checkAvailability($space->id, $startsAt, $endsAt);
+            $isAvailableNow = $this->checkAvailability($space->id, $startsAt, $endsAt, null, $context);
 
             if (! $isAvailableNow) {
                 $isRaceCondition = $isAvailableInitially;
@@ -1083,10 +1166,11 @@ class LabBookingService implements LabBookingServiceContract
         $space = LabSpace::findOrFail($data['lab_space_id']);
 
         // Availability Check
-        $isAvailableInitially = $this->checkAvailability($space->id, $startsAt, $endsAt);
+        $context = $this->preFetchAvailabilityData($space->id, $startsAt, $endsAt);
+        $isAvailableInitially = $this->checkAvailability($space->id, $startsAt, $endsAt, null, $context);
 
-        return DB::transaction(function () use ($space, $startsAt, $endsAt, $durationHours, $isAvailableInitially, $data) {
-            $isAvailableNow = $this->checkAvailability($space->id, $startsAt, $endsAt);
+        return DB::transaction(function () use ($space, $startsAt, $endsAt, $durationHours, $isAvailableInitially, $data, $context) {
+            $isAvailableNow = $this->checkAvailability($space->id, $startsAt, $endsAt, null, $context);
 
             if (! $isAvailableNow) {
                 $isRaceCondition = $isAvailableInitially;

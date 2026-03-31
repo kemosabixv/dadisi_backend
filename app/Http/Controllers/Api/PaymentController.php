@@ -446,27 +446,44 @@ class PaymentController extends Controller
     private function getPaymentRedirectResponse(\App\Models\Payment $payment, string $frontendUrl): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         $type = $payment->payable_type;
+        $payableId = $payment->payable_id;
 
-        if ($type === 'event_order' || $type === 'App\\Models\\EventOrder') {
-            $order = \App\Models\EventOrder::find($payment->payable_id);
+        Log::info('Generating payment redirect response', [
+            'payable_type' => $type,
+            'payable_id' => $payableId,
+            'frontend_url' => $frontendUrl
+        ]);
+
+        if ($type === 'event_order' || $type === 'App\Models\EventOrder') {
+            $order = \App\Models\EventOrder::find($payableId);
             $ref = $order?->reference ?? $payment->order_reference;
-
-            return redirect($frontendUrl.'/checkout/events/success?reference='.$ref);
+            $redirectUrl = $frontendUrl.'/checkout/events/success?reference='.$ref;
+            Log::info('Redirecting to event order success page', ['url' => $redirectUrl, 'ref' => $ref]);
+            return redirect($redirectUrl);
         }
 
-        if ($type === 'donation' || $type === 'App\\Models\\Donation') {
-            $donation = \App\Models\Donation::find($payment->payable_id);
+        if ($type === 'donation' || $type === 'App\Models\Donation') {
+            $donation = \App\Models\Donation::find($payableId);
             $ref = $donation?->reference ?? $payment->order_reference;
 
             // For guest donations, redirect to public donations page
             $path = $payment->payer_id ? '/dashboard/donations' : '/donations';
-
-            return redirect($frontendUrl.$path.'?payment=success&reference='.$ref);
+            $redirectUrl = $frontendUrl.$path.'?payment=success&reference='.$ref;
+            Log::info('Redirecting to donation success page', ['url' => $redirectUrl]);
+            return redirect($redirectUrl);
         }
 
+        if ($type === 'subscription' || $type === 'App\Models\PlanSubscription') {
+            $redirectUrl = $frontendUrl.'/dashboard/billing/success?payment_id='.$payment->id;
+            Log::info('Redirecting to subscription success page', ['url' => $redirectUrl]);
+            return redirect($redirectUrl);
+        }
+
+        Log::warning('No matching payable type for redirect, returning generic success view', ['payable_type' => $type]);
         return response()->view('mock-payment-success', [
             'payment' => $payment,
             'message' => 'Payment completed successfully!',
+            'frontend_url' => $frontendUrl,
         ]);
     }
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AdminGroupController;
 use App\Http\Controllers\Api\Admin\AdminPaymentController;
 use App\Http\Controllers\Api\Admin\FinanceAnalyticsController;
 use App\Http\Controllers\Api\Admin\ReconciliationController;
@@ -828,6 +829,7 @@ Route::prefix('bookings')->middleware('auth')->group(function () {
     Route::post('/initiate', [LabBookingController::class, 'initiate'])->name('lab-bookings.initiate');
     Route::post('/confirm', [LabBookingController::class, 'confirm'])->name('lab-bookings.confirm');
     Route::post('/renew-hold', [LabBookingController::class, 'renewHold'])->name('lab-bookings.renew-hold');
+    Route::get('/holds/{reference}', [LabBookingController::class, 'getHold'])->name('lab-bookings.get-hold');
 
     // Booking Series (Container-centric)
     Route::post('/series/{id}/cancel', [BookingSeriesController::class, 'cancel'])->name('booking-series.cancel');

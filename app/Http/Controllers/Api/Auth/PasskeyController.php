@@ -9,46 +9,35 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Laragear\WebAuthn\Http\Requests\AttestationRequest;
+use Laragear\WebAuthn\Http\Requests\AttestedRequest;
+use Laragear\WebAuthn\Http\Requests\AssertionRequest;
+use Laragear\WebAuthn\Http\Requests\AssertedRequest;
 
 /**
  * @group Authentication
  * @subgroup Passkeys (WebAuthn)
  * 
  * Passkey authentication using WebAuthn/FIDO2.
- * Requires the laragear/webauthn package to be installed.
  */
 class PasskeyController extends Controller
 {
     /**
-     * Get Registration Options
-     *
-     * Returns the options needed to register a new passkey.
-     * The frontend uses these options with the WebAuthn API.
-     *
+     * Get Registration Options.
+     * 
+     * Prepares the challenge for passkey registration.
+     * 
+     * @group Authentication
+     * @subgroup Passkeys (WebAuthn)
      * @authenticated
-     * @response 200 {
-     *   "challenge": "base64-encoded-challenge",
-     *   "rp": { "name": "Dadisi", "id": "dadisilab.com" },
-     *   "user": { "id": "base64-user-id", "name": "user@example.com", "displayName": "User" },
-     *   "pubKeyCredParams": [...],
-     *   "timeout": 60000,
-     *   "attestation": "none",
-     *   "authenticatorSelection": { "residentKey": "preferred", "userVerification": "preferred" }
-     * }
+     * 
+     * @bodyParam name string The user-friendly name for this passkey. Example: My MacBook
      */
-    public function registerOptions(Request $request): JsonResponse
+    public function registerOptions(AttestationRequest $request)
     {
         try {
-            $user = $request->user();
-
-            // Check if WebAuthn is available
-            if (!class_exists(\Laragear\WebAuthn\WebAuthn::class)) {
-                return response()->json([
-                    'message' => 'WebAuthn is not configured. Please install laragear/webauthn package.',
-                ], 501);
-            }
-
-            return \Laragear\WebAuthn\WebAuthn::prepareAttestation($user);
+            return $request->fastRegistration()->toCreate();
         } catch (\Exception $e) {
             Log::error('Failed to prepare passkey registration', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Failed to prepare registration'], 500);
@@ -56,49 +45,30 @@ class PasskeyController extends Controller
     }
 
     /**
-     * Register Passkey
-     *
-     * Registers a new passkey after the user completes the WebAuthn ceremony.
-     *
+     * Register Passkey.
+     * 
+     * Completes the passkey registration by saving the public key.
+     * 
+     * @group Authentication
+     * @subgroup Passkeys (WebAuthn)
      * @authenticated
-     * @bodyParam name string required A friendly name for this passkey. Example: iPhone 15 Pro
-     * @bodyParam id string required The credential ID from WebAuthn. Example: base64-credential-id
-     * @bodyParam rawId string required The raw credential ID. Example: base64-raw-id
-     * @bodyParam response object required The authenticator response containing attestationObject and clientDataJSON.
-     * @bodyParam type string required Must be "public-key". Example: public-key
-     * @response 201 {
-     *   "message": "Passkey registered successfully.",
-     *   "passkey": {
-     *     "id": 1,
-     *     "name": "iPhone 15 Pro",
-     *     "created_at": "2025-12-20T10:00:00Z"
-     *   }
-     * }
+     * 
+     * @bodyParam id string required The credential ID.
+     * @bodyParam rawId string required The raw credential ID.
+     * @bodyParam type string required The credential type (public-key).
+     * @bodyParam response object required The authenticator response.
+     * @bodyParam clientExtensionResults object required The client extension results.
      */
-    public function register(Request $request): JsonResponse
+    public function register(AttestedRequest $request): JsonResponse
     {
         try {
-            $request->validate([
-                'name' => 'required|string|max:255',
-            ]);
+            $credential = $request->save();
 
-            $user = $request->user();
-
-            // Check if WebAuthn is available
-            if (!class_exists(\Laragear\WebAuthn\WebAuthn::class)) {
-                return response()->json([
-                    'message' => 'WebAuthn is not configured. Please install laragear/webauthn package.',
-                ], 501);
+            // Set the user-friendly name if provided
+            if ($request->has('name')) {
+                $credential->name = $request->name;
+                $credential->save();
             }
-
-            $credential = \Laragear\WebAuthn\WebAuthn::validateAttestation(
-                $request->all(),
-                $user
-            );
-
-            // Set the user-friendly name
-            $credential->name = $request->name;
-            $credential->save();
 
             return response()->json([
                 'message' => 'Passkey registered successfully.',
@@ -119,22 +89,11 @@ class PasskeyController extends Controller
 
     /**
      * List Passkeys
-     *
-     * Returns all passkeys registered for the authenticated user.
-     *
-     * @authenticated
-     * @response 200 {
-     *   "passkeys": [
-     *     { "id": 1, "name": "iPhone 15 Pro", "created_at": "2025-12-20T10:00:00Z", "last_used_at": "2025-12-22T09:00:00Z" },
-     *     { "id": 2, "name": "Yubikey 5C", "created_at": "2025-12-21T14:00:00Z", "last_used_at": null }
-     *   ]
-     * }
      */
     public function index(Request $request)
     {
         $user = $request->user();
 
-        // Query webauthn_credentials table directly if package not installed
         $passkeys = DB::table('webauthn_credentials')
             ->where('user_id', $user->id)
             ->select('id', 'name', 'created_at', 'updated_at as last_used_at')
@@ -148,19 +107,8 @@ class PasskeyController extends Controller
 
     /**
      * Delete Passkey
-     *
-     * Removes a passkey from the user's account.
-     *
-     * @authenticated
-     * @urlParam id integer required The passkey ID. Example: 1
-     * @response 200 {
-     *   "message": "Passkey removed successfully."
-     * }
-     * @response 404 {
-     *   "message": "Passkey not found."
-     * }
      */
-    public function destroy(Request $request, int $id)
+    public function destroy(Request $request, string $id)
     {
         $user = $request->user();
 
@@ -181,23 +129,17 @@ class PasskeyController extends Controller
     }
 
     /**
-     * Get Authentication Options
-     *
-     * Returns the options needed to authenticate with a passkey.
-     * Used on the login page when the user wants to sign in with a passkey.
-     *
+     * Get Authentication Options.
+     * 
+     * Prepares the challenge for passkey authentication.
+     * 
+     * @group Authentication
+     * @subgroup Passkeys (WebAuthn)
+     * @unauthenticated
+     * 
      * @bodyParam email string required The user's email address. Example: user@example.com
-     * @response 200 {
-     *   "challenge": "base64-encoded-challenge",
-     *   "timeout": 60000,
-     *   "rpId": "dadisilab.com",
-     *   "allowCredentials": [...]
-     * }
-     * @response 404 {
-     *   "message": "No passkeys found for this user."
-     * }
      */
-    public function authenticateOptions(Request $request)
+    public function authenticateOptions(AssertionRequest $request)
     {
         $request->validate([
             'email' => 'required|email',
@@ -211,7 +153,6 @@ class PasskeyController extends Controller
             ], 404);
         }
 
-        // Check if user has any passkeys
         $hasPasskeys = DB::table('webauthn_credentials')
             ->where('user_id', $user->id)
             ->exists();
@@ -222,62 +163,49 @@ class PasskeyController extends Controller
             ], 404);
         }
 
-        // Check if WebAuthn is available
-        if (!class_exists(\Laragear\WebAuthn\WebAuthn::class)) {
-            return response()->json([
-                'message' => 'WebAuthn is not configured. Please install laragear/webauthn package.',
-            ], 501);
-        }
-
-        return \Laragear\WebAuthn\WebAuthn::prepareAssertion($user);
+        return $request->toVerify($user);
     }
 
     /**
-     * Authenticate with Passkey
-     *
-     * Validates the passkey assertion and logs the user in.
-     *
-     * @bodyParam id string required The credential ID. Example: base64-credential-id
-     * @bodyParam rawId string required The raw credential ID. Example: base64-raw-id
+     * Authenticate with Passkey.
+     * 
+     * Verifies the passkey challenge and logs the user in.
+     * 
+     * @group Authentication
+     * @subgroup Passkeys (WebAuthn)
+     * @unauthenticated
+     * 
+     * @bodyParam id string required The credential ID.
+     * @bodyParam rawId string required The raw credential ID.
+     * @bodyParam type string required The credential type (public-key).
      * @bodyParam response object required The authenticator response.
-     * @bodyParam type string required Must be "public-key". Example: public-key
-     * @response 200 {
-     *   "user": {
-     *     "id": 2,
-     *     "username": "jane_doe",
-     *     "email": "jane.doe@example.com"
-     *   }
-     * }
-     * @response 422 {
-     *   "message": "Passkey authentication failed."
-     * }
+     * @bodyParam clientExtensionResults object required The client extension results.
+     * @bodyParam remember boolean Whether to remember the session. Example: true
      */
-    public function authenticate(Request $request)
+    public function authenticate(AssertedRequest $request)
     {
-        // Check if WebAuthn is available
-        if (!class_exists(\Laragear\WebAuthn\WebAuthn::class)) {
-            return response()->json([
-                'message' => 'WebAuthn is not configured. Please install laragear/webauthn package.',
-            ], 501);
-        }
-
         try {
-            $credential = \Laragear\WebAuthn\WebAuthn::validateAssertion($request->all());
-            $user = $credential->user;
+            $remember = (bool) $request->input('remember', false);
+            
+            if ($request->login($remember)) {
+                $user = $request->user();
+                // Update last used timestamp
+                DB::table('webauthn_credentials')
+                    ->where('id', $request->input('id'))
+                    ->update(['updated_at' => now()]);
 
-            // Update last used timestamp
-            $credential->touch();
-
-            // Login the user via session
-            Auth::login($user, true);
+                return response()->json([
+                    'user' => new SecureUserResource($user),
+                ]);
+            }
 
             return response()->json([
-                'user' => new SecureUserResource($user),
-            ]);
+                'message' => 'Passkey authentication failed.',
+            ], 422);
 
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Passkey authentication failed: ' . $e->getMessage(),
+                'message' => 'Passkey authentication error: ' . $e->getMessage(),
             ], 422);
         }
     }

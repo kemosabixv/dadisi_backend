@@ -175,6 +175,35 @@ class LabBookingController extends Controller
     }
 
     /**
+     * Get an existing hold by reference (Resume Session).
+     */
+    public function getHold(string $reference): JsonResponse
+    {
+        try {
+            $hold = $this->bookingService->getHoldByReference($reference);
+
+            if (! $hold) {
+                return response()->json(['success' => false, 'message' => 'Hold not found or expired.'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'reference' => $hold->reference,
+                    'lab_space_id' => $hold->lab_space_id,
+                    'starts_at' => $hold->starts_at,
+                    'ends_at' => $hold->ends_at,
+                    'expires_at' => $hold->expires_at,
+                    'metadata' => $hold->metadata,
+                    'is_expired' => $hold->expires_at->isPast(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Confirm a booking (Two-Phase: Phase 2 - Lock).
      */
     public function confirm(Request $request): JsonResponse

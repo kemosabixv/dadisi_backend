@@ -106,7 +106,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      */
     public function getHasPasskeysAttribute(): bool
     {
-        return $this->webauthnCredentials()->exists();
+        return $this->webAuthnCredentials()->exists();
     }
 
     /**
