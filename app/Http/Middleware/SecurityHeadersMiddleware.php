@@ -100,8 +100,8 @@ class SecurityHeadersMiddleware
             // API connections - allow self, API, frontend, localhost, exchange rate API, Sentry, TinyMCE, and OneSignal
             "connect-src 'self' {$apiUrl} {$frontendUrl} http://localhost:8000 http://127.0.0.1:8000 https://api.exchangerate-api.com https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://cdn.tiny.cloud https://onesignal.com",
 
-            // Workers - allow blob for Sentry Replay
-            "worker-src 'self' blob:",
+            // Workers - allow blob for Sentry Replay and OneSignal
+            "worker-src 'self' blob: https://cdn.onesignal.com",
 
             // Forms
             "form-action 'self' {$apiUrl} {$frontendUrl}",
