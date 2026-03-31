@@ -14,19 +14,25 @@ class SubscriptionActivated extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', \App\Channels\SupabaseChannel::class, \NotificationChannels\WebPush\WebPushChannel::class];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class, \NotificationChannels\OneSignal\OneSignalChannel::class];
     }
 
     /**
-     * Get the WebPush representation of the notification.
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
      */
-    public function toWebPush($notifiable, $notification)
+    public function toOneSignal($notifiable)
     {
-        return (new \NotificationChannels\WebPush\WebPushMessage)
-            ->title('Subscription Activated')
-            ->icon('/logo.png')
-            ->body('Your subscription has been activated successfully! Enjoy your premium benefits.')
-            ->action('View Subscription', 'view_subscription');
+        $planName = $this->subscription->plan?->display_name ?? 'Premium';
+
+        return \NotificationChannels\OneSignal\OneSignalMessage::create()
+            ->setSubject('Subscription Activated!')
+            ->setBody("Your {$planName} subscription is now active. Enjoy your benefits!")
+            ->setUrl(config('app.frontend_url') . '/dashboard/subscription')
+            ->setData('type', 'subscription_activated')
+            ->setData('subscription_id', $this->subscription->id);
     }
 
     /**

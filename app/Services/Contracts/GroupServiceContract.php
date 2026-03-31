@@ -73,9 +73,19 @@ interface GroupServiceContract
      *
      * @param Group $group
      * @param Authenticatable $user
+     * @return string The status of the join request (active or pending)
+     */
+    public function joinGroup(Group $group, Authenticatable $user): string;
+
+    /**
+     * Update member status (approve/reject)
+     *
+     * @param Group $group
+     * @param int $userId
+     * @param string $status
      * @return bool
      */
-    public function joinGroup(Group $group, Authenticatable $user): bool;
+    public function updateMemberStatus(Group $group, int $userId, string $status): bool;
 
     /**
      * Leave a group

@@ -104,7 +104,7 @@ class SecurityHeadersMiddleware
             "worker-src 'self' blob:",
 
             // Forms
-            "form-action 'self'",
+            "form-action 'self' {$apiUrl} {$frontendUrl}",
 
             // Frames - prevent embedding except for TinyMCE dialogs
             "frame-ancestors 'none'",

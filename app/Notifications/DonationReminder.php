@@ -7,6 +7,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class DonationReminder extends Notification implements ShouldQueue
 {
@@ -26,7 +28,32 @@ class DonationReminder extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        $channels = ['mail'];
+
+        if (isset($notifiable->id)) {
+            $channels[] = 'database';
+            $channels[] = OneSignalChannel::class;
+        }
+
+        return $channels;
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $campaignTitle = $this->donation->campaign?->title ?? 'General Fund';
+
+        return OneSignalMessage::create()
+            ->setSubject('Donation Reminder')
+            ->setBody("You have a pending donation to {$campaignTitle}. Complete it now to support our mission!")
+            ->setUrl(config('app.frontend_url') . '/donations/checkout/' . $this->donation->reference)
+            ->setData('type', 'donation_reminder')
+            ->setData('donation_id', $this->donation->id);
     }
 
     /**

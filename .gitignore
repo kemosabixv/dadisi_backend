@@ -89,3 +89,4 @@ test_query.php
 .scribe/endpoints.cache/02.yaml
 .scribe/endpoints.cache/03.yaml
 .scribe/.filehashes
+resources/views/scribe/index.blade.php

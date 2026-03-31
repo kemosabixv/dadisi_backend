@@ -15,16 +15,23 @@ class SubscriptionReminder extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', \App\Channels\SupabaseChannel::class, \NotificationChannels\WebPush\WebPushChannel::class];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class, \NotificationChannels\OneSignal\OneSignalChannel::class];
     }
 
-    public function toWebPush($notifiable, $notification)
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
     {
-        return (new \NotificationChannels\WebPush\WebPushMessage)
-            ->title('Subscription Renewal Reminder')
-            ->icon('/logo.png')
-            ->body("Your subscription expires in {$this->daysRemaining} days. Renew now to keep your benefits.")
-            ->action('Renew Now', 'renew_subscription');
+        return \NotificationChannels\OneSignal\OneSignalMessage::create()
+            ->setSubject('Subscription Renewal Reminder')
+            ->setBody("Your subscription expires in {$this->daysRemaining} days. Renew now to keep your benefits.")
+            ->setUrl(config('app.frontend_url') . '/dashboard/subscription')
+            ->setData('type', 'subscription_reminder')
+            ->setData('subscription_id', $this->subscription->id);
     }
 
     public function toSupabase(object $notifiable): array

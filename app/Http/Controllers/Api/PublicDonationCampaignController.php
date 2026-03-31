@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\CreateDonationDTO;
 use App\Exceptions\DonationCampaignException;
 use App\Exceptions\DonationException;
 use App\Http\Controllers\Controller;
@@ -103,7 +104,7 @@ class PublicDonationCampaignController extends Controller
 
             $user = $request->user();
             
-            $donationData = [
+            $dto = CreateDonationDTO::fromArray([
                 'donor_name' => $validated['first_name'] . ' ' . $validated['last_name'],
                 'donor_email' => $validated['email'],
                 'donor_phone' => $validated['phone_number'] ?? null,
@@ -113,9 +114,9 @@ class PublicDonationCampaignController extends Controller
                 'notes' => $validated['message'] ?? null,
                 'campaign_id' => $campaign->id,
                 'is_anonymous' => $validated['is_anonymous'] ?? false,
-            ];
+            ]);
 
-            $donation = $this->donationService->createDonation($user, $donationData);
+            $donation = $this->donationService->createDonation($user, $dto);
             $redirectUrl = config('app.frontend_url') . '/donations/checkout/' . $donation->reference;
 
             return response()->json([

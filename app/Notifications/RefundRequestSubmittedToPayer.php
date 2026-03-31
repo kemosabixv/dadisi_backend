@@ -8,8 +8,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Channels\SupabaseChannel;
-use NotificationChannels\WebPush\WebPushChannel;
-use NotificationChannels\WebPush\WebPushMessage;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class RefundRequestSubmittedToPayer extends Notification implements ShouldQueue
 {
@@ -25,7 +25,25 @@ class RefundRequestSubmittedToPayer extends Notification implements ShouldQueue
             return ['mail'];
         }
 
-        return ['database', 'mail', SupabaseChannel::class, WebPushChannel::class];
+        return ['database', 'mail', SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $amountStr = "{$this->refund->currency} " . number_format($this->refund->amount, 2);
+        
+        return OneSignalMessage::create()
+            ->setSubject('Refund Request Received')
+            ->setBody("We've received your refund request for {$amountStr}.")
+            ->setUrl($this->refund->tracking_url)
+            ->setData('type', 'refund_request_submitted_payer')
+            ->setData('refund_id', $this->refund->id);
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -69,12 +87,5 @@ class RefundRequestSubmittedToPayer extends Notification implements ShouldQueue
         return $data;
     }
 
-    public function toWebPush($notifiable, $notification)
-    {
-        return (new WebPushMessage)
-            ->title('Refund Request Received')
-            ->icon('/logo.png')
-            ->body("We've received your refund request for {$this->refund->currency} " . number_format($this->refund->amount, 2) . ".")
-            ->action('View Dashboard', 'view_dashboard');
-    }
+
 }

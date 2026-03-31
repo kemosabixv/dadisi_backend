@@ -16,20 +16,26 @@ class DonationReceived extends Notification
     public function via(object $notifiable): array
     {
         return $notifiable instanceof \App\Models\User 
-            ? ['mail', 'database', \App\Channels\SupabaseChannel::class, \NotificationChannels\WebPush\WebPushChannel::class] 
+            ? ['mail', 'database', \App\Channels\SupabaseChannel::class, \NotificationChannels\OneSignal\OneSignalChannel::class] 
             : ['mail'];
     }
 
     /**
-     * Get the WebPush representation of the notification.
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
      */
-    public function toWebPush($notifiable, $notification)
+    public function toOneSignal($notifiable)
     {
-        return (new \NotificationChannels\WebPush\WebPushMessage)
-            ->title('Donation Received')
-            ->icon('/logo.png')
-            ->body("Thank you for your donation of {$this->donation->currency} " . number_format((float) $this->donation->amount, 2) . "!")
-            ->action('View Donation', 'view_donation');
+        $amount = number_format((float) $this->donation->amount, 2);
+        
+        return \NotificationChannels\OneSignal\OneSignalMessage::create()
+            ->setSubject('Donation Received')
+            ->setBody("Thank you for your donation of {$this->donation->currency} {$amount}!")
+            ->setUrl(config('app.frontend_url') . '/dashboard/donations')
+            ->setData('type', 'donation_received')
+            ->setData('donation_id', $this->donation->id);
     }
 
     /**

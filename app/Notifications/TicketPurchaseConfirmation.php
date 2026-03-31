@@ -14,7 +14,25 @@ class TicketPurchaseConfirmation extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class, \NotificationChannels\OneSignal\OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $event = $this->order->event;
+        
+        return \NotificationChannels\OneSignal\OneSignalMessage::create()
+            ->setSubject('Ticket Confirmed')
+            ->setBody("Your ticket for {$event->title} is confirmed!")
+            ->setUrl(config('app.frontend_url') . "/dashboard/events")
+            ->setData('type', 'ticket_purchase')
+            ->setData('order_id', $this->order->id);
     }
 
     /**

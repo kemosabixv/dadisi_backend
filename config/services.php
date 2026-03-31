@@ -62,4 +62,9 @@ return [
         'table' => env('SUPABASE_NOTIFICATIONS_TABLE', 'realtime_notifications_dev'),
     ],
 
+    'onesignal' => [
+        'app_id' => env('ONESIGNAL_APP_ID'),
+        'rest_api_key' => env('ONESIGNAL_REST_API_KEY'),
+    ],
+
 ];

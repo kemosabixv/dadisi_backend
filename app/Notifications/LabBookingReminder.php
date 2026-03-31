@@ -7,7 +7,10 @@ use App\Models\LabBooking;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 /**
  * Sent 1 day before a lab session as a reminder.
@@ -24,7 +27,7 @@ class LabBookingReminder extends Notification implements ShouldQueue
         if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
             return ['mail'];
         }
-        return ['mail', 'database', SupabaseChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -79,5 +82,24 @@ class LabBookingReminder extends Notification implements ShouldQueue
         $data = $this->toArray($notifiable);
         $data['recipient_type'] = 'user';
         return $data;
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $space = $this->booking->labSpace;
+        $startTime = $this->booking->starts_at->format('g:i A');
+
+        return OneSignalMessage::create()
+            ->setSubject("Reminder: Lab Session Tomorrow")
+            ->setBody("Your session at {$space->name} starts tomorrow at {$startTime}.")
+            ->setUrl(config('app.frontend_url') . '/dashboard/bookings')
+            ->setData('type', 'lab_booking_reminder')
+            ->setData('booking_id', $this->booking->id);
     }
 }

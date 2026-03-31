@@ -16,19 +16,23 @@ class StudentApprovalRejected extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail', SupabaseChannel::class, \NotificationChannels\WebPush\WebPushChannel::class];
+        return ['database', 'mail', SupabaseChannel::class, \NotificationChannels\OneSignal\OneSignalChannel::class];
     }
 
     /**
-     * Get the WebPush representation of the notification.
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
      */
-    public function toWebPush($notifiable, $notification)
+    public function toOneSignal($notifiable)
     {
-        return (new \NotificationChannels\WebPush\WebPushMessage)
-            ->title('Student Status Requested Rejected')
-            ->icon('/logo.png')
-            ->body('Your student status request has been rejected. Please review the reason in your dashboard or contact support.')
-            ->action('View Status', 'view_status');
+        return \NotificationChannels\OneSignal\OneSignalMessage::create()
+            ->setSubject('Student Status Rejected')
+            ->setBody("Your student status request for {$this->approvalRequest->student_institution} has been rejected.")
+            ->setUrl(config('app.frontend_url') . '/dashboard/membership')
+            ->setData('type', 'student_approval_rejected')
+            ->setData('request_id', $this->approvalRequest->id);
     }
 
     public function toMail(object $notifiable): MailMessage

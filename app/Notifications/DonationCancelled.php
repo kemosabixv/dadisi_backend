@@ -7,6 +7,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class DonationCancelled extends Notification implements ShouldQueue
 {
@@ -32,9 +34,26 @@ class DonationCancelled extends Notification implements ShouldQueue
         if ($notifiable instanceof \App\Models\User || isset($notifiable->id)) {
             $channels[] = 'database';
             $channels[] = \App\Channels\SupabaseChannel::class;
+            $channels[] = OneSignalChannel::class;
         }
         
         return $channels;
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        return OneSignalMessage::create()
+            ->setSubject('Donation Cancelled')
+            ->setBody('Your donation attempt has been successfully cancelled.')
+            ->setUrl(config('app.frontend_url') . '/donations')
+            ->setData('type', 'donation_cancelled')
+            ->setData('donation_id', $this->donation->id);
     }
 
     /**

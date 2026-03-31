@@ -8,6 +8,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Channels\SupabaseChannel;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class RefundRejected extends Notification implements ShouldQueue
 {
@@ -23,7 +25,25 @@ class RefundRejected extends Notification implements ShouldQueue
         if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
             return ['mail'];
         }
-        return ['mail', 'database', SupabaseChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $title = $this->refund->refundable_title;
+        
+        return OneSignalMessage::create()
+            ->setSubject('Refund Request Rejected')
+            ->setBody("Your refund request for {$title} was rejected. Please check your dashboard for details.")
+            ->setUrl(config('app.frontend_url') . '/support')
+            ->setData('type', 'refund_rejected')
+            ->setData('refund_id', $this->refund->id);
     }
 
     public function toMail(object $notifiable): MailMessage

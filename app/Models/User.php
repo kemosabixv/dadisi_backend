@@ -13,18 +13,17 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 // use Laravel\Sanctum\HasApiTokens;
-use Laravelcm\Subscriptions\Models\Subscription;
-use NotificationChannels\WebPush\HasPushSubscriptions;
-use Spatie\Permission\Traits\HasRoles;
-use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
 use Laragear\WebAuthn\WebAuthnAuthentication;
+use Laravelcm\Subscriptions\Models\Subscription;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements WebAuthnAuthenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasPushSubscriptions, HasRoles, Notifiable, SoftDeletes, WebAuthnAuthentication;
+    use HasFactory, HasRoles, Notifiable, SoftDeletes, WebAuthnAuthentication;
 
     /**
      * Guard name for Spatie Permission.
@@ -54,7 +53,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
     public function getProfilePictureUrlAttribute(): ?string
     {
-        if (!$this->profile_picture_path) {
+        if (! $this->profile_picture_path) {
             return null;
         }
 
@@ -237,8 +236,6 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      *
      * Grace period: After subscription anniversary (ends_at has passed), quota is NOT replenished
      * until user renews or upgrades to another plan with quota.
-     *
-     * @return PlanSubscription|null
      */
     public function activeLabSubscription(): ?PlanSubscription
     {
@@ -249,14 +246,15 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                 // Exclude grace period: only active subscriptions on/before/at anniversary
                 // Grace period starts AFTER anniversary, so include anniversary date (>=)
                 $query->whereNull('ends_at')      // Indefinite subscription
-                      ->orWhere('ends_at', '>=', now()->startOfDay());  // Include anniversary date, exclude after midnight
+                    ->orWhere('ends_at', '>=', now()->startOfDay());  // Include anniversary date, exclude after midnight
             })
             ->with(['plan.systemFeatures'])
             ->get()
             ->first(function ($subscription) {
                 // Verify plan actually has lab_hours_monthly feature with value > 0
                 $quotaHours = $subscription->plan?->getFeatureValue('lab_hours_monthly');
-                return $quotaHours && (int)$quotaHours > 0;
+
+                return $quotaHours && (int) $quotaHours > 0;
             });
     }
 
@@ -491,5 +489,14 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function eventOrders(): HasMany
     {
         return $this->hasMany(EventOrder::class);
+    }
+
+    /**
+     * Route notifications for the OneSignal channel.
+     */
+    public function routeNotificationForOneSignal(): ?string
+    {
+        // OneSignal uses external_id or player_id. We'll use the user ID.
+        return (string) $this->id;
     }
 }

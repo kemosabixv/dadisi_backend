@@ -46,6 +46,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/password/email', [AuthController::class, 'sendPasswordResetLinkEmail'])->middleware('throttle:5,1')->name('password.email');
     Route::post('/password/reset', [AuthController::class, 'resetPassword'])->name('password.reset');
     Route::post('/password/change', [AuthController::class, 'changePassword'])->middleware('auth')->name('password.change');
+    Route::post('/password/set', [AuthController::class, 'setPassword'])->middleware('auth')->name('password.set');
 
     // Email verification routes
     Route::post('send-verification', [EmailVerificationController::class, 'send'])
@@ -518,9 +519,17 @@ Route::prefix('subscriptions')->middleware('auth')->group(function () {
 // Admin Finance routes
 Route::prefix('admin/finance')->middleware(['auth', 'admin'])->group(function () {
     Route::get('analytics', [FinanceAnalyticsController::class, 'stats'])->name('admin.finance.analytics');
-
     Route::get('groups/stats', [AdminGroupController::class, 'stats']);
+});
+
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+    Route::post('groups/{group}/members/{user}/approve', [AdminGroupController::class, 'approveMember'])->name('admin.groups.members.approve');
+    Route::post('groups/{group}/members/{user}/reject', [AdminGroupController::class, 'rejectMember'])->name('admin.groups.members.reject');
     Route::apiResource('groups', AdminGroupController::class);
+});
+
+Route::prefix('admin/finance')->middleware(['auth', 'admin'])->group(function () {
+
 
     Route::apiResource('payments', AdminPaymentController::class)
         ->only(['index', 'show'])

@@ -4,6 +4,8 @@ namespace App\Notifications;
 
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class StorageQuotaExceeded extends Notification
 {
@@ -25,7 +27,22 @@ class StorageQuotaExceeded extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        return OneSignalMessage::create()
+            ->setSubject('Storage Quota Exceeded')
+            ->setBody("You have reached your limit of {$this->limitMB}MB. New uploads are blocked.")
+            ->setUrl(config('app.frontend_url') . '/dashboard/media')
+            ->setData('type', 'quota_exceeded');
     }
 
     /**

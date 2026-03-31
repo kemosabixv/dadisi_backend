@@ -6,8 +6,8 @@ use App\Models\Refund;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Channels\SupabaseChannel;
-use NotificationChannels\WebPush\WebPushChannel;
-use NotificationChannels\WebPush\WebPushMessage;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 /**
  * Notification sent to admins when a refund request is submitted.
@@ -20,20 +20,26 @@ class RefundRequestSubmitted extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database', SupabaseChannel::class, WebPushChannel::class];
+        return ['database', SupabaseChannel::class, OneSignalChannel::class];
     }
 
     /**
-     * Get the WebPush representation of the notification.
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
      */
-    public function toWebPush($notifiable, $notification)
+    public function toOneSignal($notifiable)
     {
         $requester = $this->getRequesterName();
-        return (new WebPushMessage)
-            ->title('New Refund Request')
-            ->icon('/logo.png')
-            ->body("{$requester} has submitted a refund request for {$this->refund->currency} " . number_format($this->refund->amount, 2) . ".")
-            ->action('Review Request', 'review_refund');
+        $amount = number_format($this->refund->amount, 2);
+
+        return OneSignalMessage::create()
+            ->setSubject('New Refund Request')
+            ->setBody("{$requester} submitted a refund request for {$this->refund->currency} {$amount}.")
+            ->setUrl(config('app.frontend_url') . '/admin/finance/refunds')
+            ->setData('type', 'refund_request_submitted')
+            ->setData('refund_id', $this->refund->id);
     }
 
     public function toMail(object $notifiable): MailMessage

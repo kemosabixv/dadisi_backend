@@ -223,6 +223,11 @@ class AdminGroupController extends Controller
 
     /**
      * Update a group.
+     * 
+     * @group Admin Community Groups
+     * @authenticated
+     */
+    public function update(Request $request, Group $group): JsonResponse
     {
         try {
             $this->authorize('update', $group);
@@ -371,6 +376,52 @@ class AdminGroupController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['success' => false, 'message' => 'Failed to remove member'], 500);
+        }
+    }
+
+    /**
+     * Approve a member join request.
+     * 
+     * @group Admin Community Groups
+     * @authenticated
+     */
+    public function approveMember(Request $request, Group $group, int $userId): JsonResponse
+    {
+        try {
+            $this->authorize('manageMembers', $group);
+
+            $this->groupService->updateMemberStatus($group, $userId, 'active');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Member approved successfully.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to approve member', ['error' => $e->getMessage(), 'group_id' => $group->id, 'user_id' => $userId]);
+            return response()->json(['success' => false, 'message' => 'Failed to approve member'], 500);
+        }
+    }
+
+    /**
+     * Reject a member join request.
+     * 
+     * @group Admin Community Groups
+     * @authenticated
+     */
+    public function rejectMember(Request $request, Group $group, int $userId): JsonResponse
+    {
+        try {
+            $this->authorize('manageMembers', $group);
+
+            $this->groupService->updateMemberStatus($group, $userId, 'rejected');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Member request rejected.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to reject member', ['error' => $e->getMessage(), 'group_id' => $group->id, 'user_id' => $userId]);
+            return response()->json(['success' => false, 'message' => 'Failed to reject member'], 500);
         }
     }
 }

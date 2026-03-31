@@ -5,6 +5,9 @@ namespace App\Notifications;
 use App\Models\Media;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Channels\SupabaseChannel;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class SecureShareCreated extends Notification
 {
@@ -25,7 +28,23 @@ class SecureShareCreated extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        return OneSignalMessage::create()
+            ->setSubject('Secure Share Link Created')
+            ->setBody("A secure share link has been created for your file: {$this->media->file_name}")
+            ->setUrl(config('app.url') . '/api/media/shared/' . $this->media->share_token)
+            ->setData('type', 'media_share_created')
+            ->setData('media_id', $this->media->id);
     }
 
     /**

@@ -9,6 +9,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Channels\SupabaseChannel;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class BookingRescheduledNotification extends Notification implements ShouldQueue
 {
@@ -24,7 +27,32 @@ class BookingRescheduledNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $newTime = $this->booking->starts_at->format('M j, H:i');
+        
+        return OneSignalMessage::create()
+            ->setSubject('Booking Rescheduled')
+            ->setBody("Your booking at {$this->booking->labSpace->name} has been rescheduled to {$newTime}.")
+            ->setUrl(config('app.frontend_url') . "/dashboard/bookings/{$this->booking->id}")
+            ->setData('type', 'lab_booking_rescheduled')
+            ->setData('booking_id', $this->booking->id);
+    }
+
+    public function toSupabase(object $notifiable): array
+    {
+        $data = $this->toDatabase($notifiable);
+        $data['recipient_type'] = 'user';
+        return $data;
     }
 
     public function toMail(object $notifiable): MailMessage

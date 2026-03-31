@@ -5,7 +5,10 @@ namespace App\Notifications;
 use App\Channels\SupabaseChannel;
 use App\Models\LabBooking;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 /**
  * Sent when a lab booking is confirmed (payment success or free booking).
@@ -21,7 +24,7 @@ class LabBookingConfirmation extends Notification
         if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
             return ['mail'];
         }
-        return ['mail', 'database', SupabaseChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -91,5 +94,24 @@ class LabBookingConfirmation extends Notification
         $data = $this->toArray($notifiable);
         $data['recipient_type'] = 'user';
         return $data;
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $space = $this->booking->labSpace;
+        $startsAt = $this->booking->starts_at->format('M j \a\t g:i A');
+
+        return OneSignalMessage::create()
+            ->setSubject("Booking Confirmed: {$space->name}")
+            ->setBody("Your lab session on {$startsAt} is confirmed.")
+            ->setUrl(config('app.frontend_url') . '/dashboard/bookings')
+            ->setData('type', 'lab_booking_confirmed')
+            ->setData('booking_id', $this->booking->id);
     }
 }

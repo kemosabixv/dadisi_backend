@@ -6,6 +6,8 @@ use App\Channels\SupabaseChannel;
 use App\Models\LabBooking;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class LabBookingCancelledByStaff extends Notification
 {
@@ -19,7 +21,23 @@ class LabBookingCancelledByStaff extends Notification
         if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
             return ['mail'];
         }
-        return ['mail', 'database', SupabaseChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        return OneSignalMessage::create()
+            ->setSubject('Booking Cancelled')
+            ->setBody("Your booking for {$this->booking->labSpace->name} was cancelled by staff. Reason: {$this->reason}")
+            ->setUrl(config('app.frontend_url') . '/dashboard/bookings')
+            ->setData('type', 'lab_booking_cancelled_by_staff')
+            ->setData('booking_id', $this->booking->id);
     }
 
     public function toMail(object $notifiable): MailMessage

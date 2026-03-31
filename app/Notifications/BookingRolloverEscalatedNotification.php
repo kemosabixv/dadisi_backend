@@ -7,6 +7,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Channels\SupabaseChannel;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class BookingRolloverEscalatedNotification extends Notification implements ShouldQueue
 {
@@ -18,7 +21,30 @@ class BookingRolloverEscalatedNotification extends Notification implements Shoul
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        return OneSignalMessage::create()
+            ->setSubject('Booking Escalation Alert')
+            ->setBody("A lab booking rollover for {$this->rollover->originalBooking->labSpace->name} has been escalated.")
+            ->setUrl(config('app.frontend_url') . "/admin/lab-maintenance/rollovers/" . $this->rollover->id)
+            ->setData('type', 'rollover_escalation')
+            ->setData('rollover_id', $this->rollover->id);
+    }
+
+    public function toSupabase(object $notifiable): array
+    {
+        $data = $this->toDatabase($notifiable);
+        $data['recipient_type'] = 'admin'; // This is a staff notification
+        return $data;
     }
 
     public function toMail(object $notifiable): MailMessage

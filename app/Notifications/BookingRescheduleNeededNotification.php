@@ -8,6 +8,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Channels\SupabaseChannel;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class BookingRescheduleNeededNotification extends Notification implements ShouldQueue
 {
@@ -20,7 +23,30 @@ class BookingRescheduleNeededNotification extends Notification implements Should
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        return OneSignalMessage::create()
+            ->setSubject('Action Required: Reschedule Lab Booking')
+            ->setBody("Conflict detected with maintenance at {$this->booking->labSpace->name}. Please select a new slot.")
+            ->setUrl(config('app.frontend_url') . "/bookings/{$this->booking->id}/resolve-conflict")
+            ->setData('type', 'lab_booking_reschedule_needed')
+            ->setData('booking_id', $this->booking->id);
+    }
+
+    public function toSupabase(object $notifiable): array
+    {
+        $data = $this->toDatabase($notifiable);
+        $data['recipient_type'] = 'user';
+        return $data;
     }
 
     public function toMail(object $notifiable): MailMessage

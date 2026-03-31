@@ -7,12 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GroupMember extends Model
 {
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
         'group_id',
         'user_id',
         'role',
+        'status',
         'joined_at',
     ];
 

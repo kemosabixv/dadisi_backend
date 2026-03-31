@@ -15,7 +15,25 @@ class EventRegistrationConfirmation extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class, \NotificationChannels\OneSignal\OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $event = $this->registration->event;
+        
+        return \NotificationChannels\OneSignal\OneSignalMessage::create()
+            ->setSubject('RSVP Confirmed')
+            ->setBody("You're registered for {$event->title}!")
+            ->setUrl(config('app.frontend_url') . "/dashboard/events")
+            ->setData('type', 'event_registration')
+            ->setData('registration_id', $this->registration->id);
     }
 
     /**

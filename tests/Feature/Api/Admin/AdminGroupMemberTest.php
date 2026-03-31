@@ -63,6 +63,8 @@ class AdminGroupMemberTest extends TestCase
             ]);
         }
 
+        $moderator->givePermissionTo('manage_groups');
+
         $this->actingAs($moderator, 'web');
         $response = $this->getJson("/api/admin/groups/{$group->id}/members");
 
@@ -86,5 +88,61 @@ class AdminGroupMemberTest extends TestCase
             ]);
 
         $response->assertStatus(200);
+    }
+
+    public function test_superadmin_can_approve_pending_member()
+    {
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole('super_admin');
+
+        $group = Group::factory()->create(['is_private' => true]);
+        $user = User::factory()->create();
+        MemberProfile::factory()->create(['user_id' => $user->id]);
+        
+        $group->members()->attach($user->id, [
+            'role' => 'member',
+            'status' => 'pending',
+            'joined_at' => now(),
+        ]);
+
+        $this->actingAs($superAdmin, 'web');
+        $response = $this->postJson("/api/admin/groups/{$group->id}/members/{$user->id}/approve");
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('group_members', [
+            'group_id' => $group->id,
+            'user_id' => $user->id,
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_superadmin_can_reject_pending_member()
+    {
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole('super_admin');
+
+        $group = Group::factory()->create(['is_private' => true]);
+        $user = User::factory()->create();
+        MemberProfile::factory()->create(['user_id' => $user->id]);
+        
+        $group->members()->attach($user->id, [
+            'role' => 'member',
+            'status' => 'pending',
+            'joined_at' => now(),
+        ]);
+
+        $this->actingAs($superAdmin, 'web');
+        $response = $this->postJson("/api/admin/groups/{$group->id}/members/{$user->id}/reject");
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('group_members', [
+            'group_id' => $group->id,
+            'user_id' => $user->id,
+            'status' => 'rejected',
+        ]);
     }
 }

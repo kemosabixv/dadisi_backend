@@ -6,6 +6,8 @@ use App\Models\Donation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class DonationInitiated extends Notification
 {
@@ -31,9 +33,28 @@ class DonationInitiated extends Notification
         if ($notifiable instanceof \App\Models\User || isset($notifiable->id)) {
             $channels[] = 'database';
             $channels[] = \App\Channels\SupabaseChannel::class;
+            $channels[] = OneSignalChannel::class;
         }
         
         return $channels;
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $campaignTitle = $this->donation->campaign?->title ?? 'General Fund';
+        
+        return OneSignalMessage::create()
+            ->setSubject('Donation Pending')
+            ->setBody("You started a donation to {$campaignTitle}. Would you like to complete it?")
+            ->setUrl(config('app.frontend_url') . '/donations/checkout/' . $this->donation->reference)
+            ->setData('type', 'donation_initiated')
+            ->setData('donation_id', $this->donation->id);
     }
 
     /**

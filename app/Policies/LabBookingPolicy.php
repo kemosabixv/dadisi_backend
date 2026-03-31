@@ -43,8 +43,9 @@ class LabBookingPolicy
      * Determine whether the user can view a specific booking.
      * Users can view their own bookings or with view_all_lab_bookings permission.
      */
-    public function view(User $user, LabBooking $labBooking): bool
+    public function view(?User $user, LabBooking $labBooking): bool
     {
+        if (!$user) return false;
         return $user->id === $labBooking->user_id 
             || $user->can('view_all_lab_bookings')
             || $this->isAssignedSupervisor($user, $labBooking);
@@ -54,11 +55,21 @@ class LabBookingPolicy
      * Determine whether the user can create bookings.
      * Requires authentication and eligible subscription.
      */
-    public function create(User $user): bool
+    public function create(?User $user): bool
     {
+        if (!$user) return false;
         // Check if user has eligible subscription for lab booking
         $quotaStatus = $this->bookingService->getQuotaStatus($user);
         return $quotaStatus['has_access'] ?? false;
+    }
+
+    /**
+     * Determine whether guests can create bookings.
+     */
+    public function guestStore(?User $user): bool
+    {
+        // Public endpoint, anyone can access (validation/payment handled in service)
+        return true;
     }
 
     /**

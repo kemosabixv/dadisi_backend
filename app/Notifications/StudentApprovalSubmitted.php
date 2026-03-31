@@ -21,20 +21,25 @@ class StudentApprovalSubmitted extends Notification
     public function via(object $notifiable): array
     {
         // Database first to ensure notification is stored even if pusher/supabase fails
-        return ['database', \App\Channels\SupabaseChannel::class, \NotificationChannels\WebPush\WebPushChannel::class];
+        return ['database', \App\Channels\SupabaseChannel::class, \NotificationChannels\OneSignal\OneSignalChannel::class];
     }
 
     /**
-     * Get the WebPush representation of the notification.
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
      */
-    public function toWebPush($notifiable, $notification)
+    public function toOneSignal($notifiable)
     {
         $userName = $this->approvalRequest->user->username ?? 'A member';
-        return (new \NotificationChannels\WebPush\WebPushMessage)
-            ->title('New Student Approval Request')
-            ->icon('/logo.png')
-            ->body("{$userName} has submitted a student approval request for {$this->approvalRequest->student_institution}.")
-            ->action('Review Request', 'review_approval');
+        
+        return \NotificationChannels\OneSignal\OneSignalMessage::create()
+            ->setSubject('New Student Approval')
+            ->setBody("{$userName} submitted a request for {$this->approvalRequest->student_institution}.")
+            ->setUrl(config('app.frontend_url') . '/admin/membership/approvals')
+            ->setData('type', 'student_approval_submitted')
+            ->setData('request_id', $this->approvalRequest->id);
     }
 
     public function toMail(object $notifiable): MailMessage

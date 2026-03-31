@@ -8,6 +8,9 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\EventRegistration;
 use App\Models\EventOrder;
+use App\Channels\SupabaseChannel;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class EventWaitlistJoined extends Notification implements ShouldQueue
 {
@@ -22,7 +25,25 @@ class EventWaitlistJoined extends Notification implements ShouldQueue
         if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
             return ['mail'];
         }
-        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $event = $this->model->event;
+        
+        return OneSignalMessage::create()
+            ->setSubject('Waitlist Joined')
+            ->setBody("You have been added to the waitlist for {$event->title}.")
+            ->setUrl(config('app.frontend_url') . "/dashboard/events")
+            ->setData('type', 'event_waitlist_joined')
+            ->setData('event_id', $event->id);
     }
 
     public function toMail(object $notifiable): MailMessage

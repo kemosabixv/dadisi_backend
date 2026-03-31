@@ -6,6 +6,8 @@ use App\Channels\SupabaseChannel;
 use App\Models\Refund;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class RefundProcessed extends Notification
 {
@@ -14,13 +16,29 @@ class RefundProcessed extends Notification
         protected Refund $refund
     ) {}
 
-    public function via(object $notifiable): array
-    {
         if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
             return ['mail'];
         }
 
-        return ['mail', 'database', SupabaseChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $amount = number_format($this->refund->amount, 2);
+        
+        return OneSignalMessage::create()
+            ->setSubject('Refund Processed')
+            ->setBody("Your refund of {$this->refund->currency} {$amount} for {$this->refund->refundable_title} has been processed.")
+            ->setUrl(config('app.frontend_url') . '/dashboard')
+            ->setData('type', 'refund_processed')
+            ->setData('refund_id', $this->refund->id);
     }
 
     public function toMail(object $notifiable): MailMessage

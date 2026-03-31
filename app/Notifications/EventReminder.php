@@ -19,7 +19,30 @@ class EventReminder extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', \App\Channels\SupabaseChannel::class];
+        return ['mail', 'database', \App\Channels\SupabaseChannel::class, \NotificationChannels\OneSignal\OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $timeText = match ($this->reminderType) {
+            '24h' => 'tomorrow',
+            '1h' => 'in 1 hour',
+            'starting' => 'starting now',
+            default => 'soon',
+        };
+
+        return \NotificationChannels\OneSignal\OneSignalMessage::create()
+            ->setSubject("Reminder: {$this->event->title}")
+            ->setBody("{$this->event->title} is {$timeText}!")
+            ->setUrl(config('app.frontend_url') . "/events/{$this->event->slug}")
+            ->setData('type', 'event_reminder')
+            ->setData('event_id', $this->event->id);
     }
 
     public function toMail(object $notifiable): MailMessage

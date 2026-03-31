@@ -115,14 +115,48 @@ class GroupService implements GroupServiceContract
     /**
      * @inheritDoc
      */
-    public function joinGroup(Group $group, Authenticatable $user): bool
+    public function joinGroup(Group $group, Authenticatable $user): string
     {
-        if ($group->members()->where('user_id', $user->getAuthIdentifier())->exists()) {
-            return true;
+        $userId = $user->getAuthIdentifier();
+        $membership = $group->members()->where('user_id', $userId)->first();
+        
+        if ($membership) {
+            return $membership->pivot->status;
         }
 
-        $group->members()->attach($user->getAuthIdentifier());
-        $group->updateMemberCount();
+        $status = $group->is_private ? 'pending' : 'active';
+        
+        $group->members()->attach($userId, [
+            'status' => $status,
+            'role' => 'member',
+            'joined_at' => now(),
+        ]);
+
+        if ($status === 'active') {
+            $group->updateMemberCount();
+        }
+
+        return $status;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function updateMemberStatus(Group $group, int $userId, string $status): bool
+    {
+        $membership = $group->members()->where('user_id', $userId)->first();
+        
+        if (!$membership) {
+            return false;
+        }
+
+        $group->members()->updateExistingPivot($userId, [
+            'status' => $status,
+        ]);
+
+        if ($status === 'active') {
+            $group->updateMemberCount();
+        }
 
         return true;
     }

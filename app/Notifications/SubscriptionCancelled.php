@@ -5,6 +5,9 @@ namespace App\Notifications;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Carbon\Carbon;
+use App\Channels\SupabaseChannel;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class SubscriptionCancelled extends Notification
 {
@@ -15,16 +18,25 @@ class SubscriptionCancelled extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', \App\Channels\SupabaseChannel::class, \NotificationChannels\WebPush\WebPushChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
     }
 
-    public function toWebPush($notifiable, $notification)
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
     {
-        return (new \NotificationChannels\WebPush\WebPushMessage)
-            ->title('Subscription Cancelled')
-            ->icon('/logo.png')
-            ->body('Your subscription has been cancelled. You will retain access until the end of your billing period.')
-            ->action('View Subscription', 'view_subscription');
+        $planName = $this->subscription->plan?->display_name ?? 'Premium';
+        
+        return OneSignalMessage::create()
+            ->setSubject('Subscription Cancelled')
+            ->setBody("Your {$planName} subscription has been cancelled. You will retain access until the end of your billing period.")
+            ->setUrl(config('app.frontend_url') . "/dashboard/subscription")
+            ->setData('type', 'subscription_cancelled')
+            ->setData('subscription_id', $this->subscription->id);
     }
 
     public function toSupabase(object $notifiable): array

@@ -6,8 +6,8 @@ use App\Models\Refund;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Channels\SupabaseChannel;
-use NotificationChannels\WebPush\WebPushChannel;
-use NotificationChannels\WebPush\WebPushMessage;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 /**
  * Notification sent to users/guests when a refund has been successfully completed.
@@ -24,16 +24,25 @@ class RefundRequestCompleted extends Notification
             return ['mail'];
         }
 
-        return ['database', 'mail', SupabaseChannel::class, WebPushChannel::class];
+        return ['database', 'mail', SupabaseChannel::class, OneSignalChannel::class];
     }
 
-    public function toWebPush($notifiable, $notification)
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
     {
-        return (new WebPushMessage)
-            ->title('Refund Completed')
-            ->icon('/logo.png')
-            ->body("Your refund of {$this->refund->currency} " . number_format($this->refund->amount, 2) . " has been successfully processed.")
-            ->action('View Dashboard', 'view_dashboard');
+        $amount = number_format($this->refund->amount, 2);
+
+        return OneSignalMessage::create()
+            ->setSubject('Refund Completed')
+            ->setBody("Your refund of {$this->refund->currency} {$amount} has been successfully processed.")
+            ->setUrl(config('app.frontend_url') . '/dashboard')
+            ->setData('type', 'refund_request_completed')
+            ->setData('refund_id', $this->refund->id);
     }
 
     public function toMail(object $notifiable): MailMessage

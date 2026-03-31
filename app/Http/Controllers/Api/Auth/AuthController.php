@@ -497,4 +497,51 @@ class AuthController extends Controller
         
         return new \App\Http\Resources\SecureUserResource($user);
     }
+
+    /**
+     * Set Initial Password
+     *
+     * Allows a user who registered via OAuth (Google) and has no password to set one for the first time.
+     * This endpoint does not require a current password.
+     *
+     * @authenticated
+     * @bodyParam password string required The new password (min 8 chars, mixed case, numbers, special chars). Example: NewPass123!@#
+     * @bodyParam password_confirmation string required Must match the password field. Example: NewPass123!@#
+     *
+     * @response 200 {
+     *   "message": "Password set successfully."
+     * }
+     * @response 400 {
+     *   "message": "Password has already been set for this account. Use change-password instead."
+     * }
+     */
+    public function setPassword(Request $request)
+    {
+        $user = $request->user();
+
+        if (!is_null($user->password)) {
+            return response()->json(['message' => 'Password has already been set for this account. Use change-password instead.'], 400);
+        }
+
+        $request->validate([
+            'password' => [
+                'required',
+                'min:8',
+                'confirmed',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d\S]{8,}$/'
+            ],
+        ], [
+            'password.required' => 'The password field is required.',
+            'password.min' => 'The password must be at least 8 characters long.',
+            'password.confirmed' => 'The password confirmation does not match.',
+            'password.regex' => 'The password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.',
+        ]);
+
+        $user->forceFill([
+            'password' => Hash::make($request->input('password')),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        return response()->json(['message' => 'Password set successfully.'], 200);
+    }
 }

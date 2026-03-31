@@ -209,9 +209,12 @@ class GroupController extends Controller
             }]);
 
             $userId = $request->user()?->id;
-            $group->is_member = $userId
-                ? $group->members()->where('user_id', $userId)->exists()
-                : false;
+            $membership = $userId
+                ? $group->members()->where('user_id', $userId)->first()
+                : null;
+
+            $group->is_member = $membership && $membership->pivot->status === 'active';
+            $group->membership_status = $membership ? $membership->pivot->status : null;
 
             // Get recent discussions associated with this group
             $recentDiscussions = $group->forumThreads()
@@ -235,10 +238,12 @@ class GroupController extends Controller
                     'member_count' => $group->member_count,
                     'thread_count' => $threadCount,
                     'is_member' => $group->is_member,
+                    'membership_status' => $group->membership_status,
                     'members' => $group->members->map(fn ($m) => [
                         'id' => $m->id,
                         'username' => $m->username,
                         'profile_picture' => $m->profile_picture_path,
+                        'status' => $m->pivot->status,
                         'joined_at' => $m->pivot->joined_at,
                     ]),
                     'recent_discussions' => $recentDiscussions,
@@ -271,21 +276,13 @@ class GroupController extends Controller
             $group = \App\Models\Group::where('slug', $slug)->active()->firstOrFail();
             $user = $request->user();
 
-            if ($group->hasMember($user)) {
-                return response()->json(['message' => 'You are already a member of this group.'], 422);
+            $status = $this->groupService->joinGroup($group, $user);
+
+            if ($status === 'pending') {
+                return response()->json(['message' => 'Join request sent. Waiting for approval.', 'status' => 'pending']);
             }
 
-            // Private groups require invitation - users cannot self-join
-            if ($group->is_private) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This is a private group. You must be invited to join.',
-                ], 403);
-            }
-
-            $this->groupService->joinGroup($group, $user);
-
-            return response()->json(['message' => 'Successfully joined the group.']);
+            return response()->json(['message' => 'Successfully joined the group.', 'status' => 'active']);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['success' => false, 'message' => 'Group not found'], 404);
         } catch (\Exception $e) {

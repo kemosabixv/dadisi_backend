@@ -7,6 +7,9 @@ use App\Models\LabBooking;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
+
 /**
  * Sent when a lab booking payment session is initiated.
  * Contains the payment link so guests/users can resume if interrupted.
@@ -24,7 +27,23 @@ class LabBookingInitiated extends Notification
         if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
             return ['mail'];
         }
-        return ['mail', 'database', SupabaseChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        return OneSignalMessage::create()
+            ->setSubject('Complete Your Lab Booking')
+            ->setBody("You have a pending booking for {$this->booking->labSpace->name}. Complete payment to confirm.")
+            ->setUrl($this->paymentUrl)
+            ->setData('type', 'lab_booking_initiated')
+            ->setData('booking_id', $this->booking->id);
     }
 
     public function toMail(object $notifiable): MailMessage

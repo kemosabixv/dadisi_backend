@@ -20,7 +20,23 @@ class LabBookingRefundSubmitted extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', SupabaseChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, \NotificationChannels\OneSignal\OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        return \NotificationChannels\OneSignal\OneSignalMessage::create()
+            ->setSubject('Refund Request Received')
+            ->setBody("Your refund request for lab booking #" . ($this->booking->booking_reference ?: $this->booking->id) . " has been submitted.")
+            ->setUrl(config('app.frontend_url') . "/dashboard/bookings")
+            ->setData('type', 'lab_booking_refund_submitted')
+            ->setData('booking_id', $this->booking->id);
     }
 
     public function toMail(object $notifiable): MailMessage

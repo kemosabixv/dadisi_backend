@@ -6,6 +6,8 @@ use App\Models\ChatMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class NewMessageNotification extends Notification
 {
@@ -25,7 +27,7 @@ class NewMessageNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database']; // Add 'mail' or 'webpush' if needed
+        return ['database', OneSignalChannel::class];
     }
 
     /**
@@ -45,5 +47,21 @@ class NewMessageNotification extends Notification
             'link' => '/dashboard/chat?conversation=' . $this->message->conversation_id,
             'type' => 'chat_message',
         ];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        return OneSignalMessage::create()
+            ->setSubject('New message from ' . $this->message->sender->username)
+            ->setBody(\Illuminate\Support\Str::limit($this->message->content, 100))
+            ->setUrl(config('app.frontend_url') . '/dashboard/chat?conversation=' . $this->message->conversation_id)
+            ->setData('type', 'chat_message')
+            ->setData('conversation_id', $this->message->conversation_id);
     }
 }

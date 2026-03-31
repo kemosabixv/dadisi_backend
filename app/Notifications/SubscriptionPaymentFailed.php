@@ -4,6 +4,9 @@ namespace App\Notifications;
 
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Channels\SupabaseChannel;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class SubscriptionPaymentFailed extends Notification
 {
@@ -14,16 +17,25 @@ class SubscriptionPaymentFailed extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', \App\Channels\SupabaseChannel::class, \NotificationChannels\WebPush\WebPushChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
     }
 
-    public function toWebPush($notifiable, $notification)
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
     {
-        return (new \NotificationChannels\WebPush\WebPushMessage)
-            ->title('Subscription Payment Failed')
-            ->icon('/logo.png')
-            ->body('We were unable to process your subscription payment. Please check your payment details.')
-            ->action('Retry Payment', 'retry_payment');
+        $planName = $this->subscription->plan?->display_name ?? 'Premium';
+        
+        return OneSignalMessage::create()
+            ->setSubject('Payment Failed')
+            ->setBody("We were unable to process the payment for your {$planName} subscription. Please update your details.")
+            ->setUrl(config('app.frontend_url') . "/dashboard/subscription")
+            ->setData('type', 'subscription_payment_failed')
+            ->setData('subscription_id', $this->subscription->id);
     }
 
     public function toSupabase(object $notifiable): array

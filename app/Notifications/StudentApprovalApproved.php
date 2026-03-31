@@ -15,19 +15,23 @@ class StudentApprovalApproved extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail', SupabaseChannel::class, \NotificationChannels\WebPush\WebPushChannel::class];
+        return ['database', 'mail', SupabaseChannel::class, \NotificationChannels\OneSignal\OneSignalChannel::class];
     }
 
     /**
-     * Get the WebPush representation of the notification.
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
      */
-    public function toWebPush($notifiable, $notification)
+    public function toOneSignal($notifiable)
     {
-        return (new \NotificationChannels\WebPush\WebPushMessage)
-            ->title('Student Status Approved')
-            ->icon('/logo.png')
-            ->body('Congratulations! Your student status has been approved. You now have access to student-exclusive perks.')
-            ->action('View Dashboard', 'view_dashboard');
+        return \NotificationChannels\OneSignal\OneSignalMessage::create()
+            ->setSubject('Student Status Approved')
+            ->setBody("Congratulations! Your student status for {$this->approvalRequest->student_institution} has been approved.")
+            ->setUrl(config('app.frontend_url') . '/dashboard')
+            ->setData('type', 'student_approval_approved')
+            ->setData('request_id', $this->approvalRequest->id);
     }
 
     public function toMail(object $notifiable): MailMessage

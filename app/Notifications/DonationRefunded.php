@@ -7,6 +7,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class DonationRefunded extends Notification implements ShouldQueue
 {
@@ -32,6 +34,7 @@ class DonationRefunded extends Notification implements ShouldQueue
         if ($this->donation->user_id) {
             $channels[] = 'database';
             $channels[] = \App\Channels\SupabaseChannel::class;
+            $channels[] = OneSignalChannel::class;
         }
         
         return $channels;
@@ -75,5 +78,23 @@ class DonationRefunded extends Notification implements ShouldQueue
         $data = $this->toArray($notifiable);
         $data['recipient_type'] = 'user';
         return $data;
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $amount = number_format((float) $this->donation->amount, 2);
+        
+        return OneSignalMessage::create()
+            ->setSubject('Donation Refunded')
+            ->setBody("A refund of {$this->donation->currency} {$amount} has been processed.")
+            ->setUrl(config('app.frontend_url') . '/dashboard/donations')
+            ->setData('type', 'donation_refunded')
+            ->setData('donation_id', $this->donation->id);
     }
 }

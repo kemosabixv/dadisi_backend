@@ -8,6 +8,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class NewCommentNotification extends Notification implements ShouldQueue
 {
@@ -32,7 +34,7 @@ class NewCommentNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail', \App\Channels\SupabaseChannel::class];
+        return ['database', 'mail', \App\Channels\SupabaseChannel::class, OneSignalChannel::class];
     }
 
     /**
@@ -77,6 +79,23 @@ class NewCommentNotification extends Notification implements ShouldQueue
             'commenter_id' => $this->comment->user_id,
             'commenter_name' => $this->comment->user->username,
             'message' => $this->comment->user->username . ' commented on your post.',
+            'link' => '/blog/' . $this->post->slug,
         ];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        return OneSignalMessage::create()
+            ->setSubject('New Comment on: ' . $this->post->title)
+            ->setBody($this->comment->user->username . ' left a comment on your post.')
+            ->setUrl(config('app.frontend_url') . '/blog/' . $this->post->slug)
+            ->setData('type', 'new_comment')
+            ->setData('post_slug', $this->post->slug);
     }
 }

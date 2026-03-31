@@ -8,6 +8,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class NewLikeNotification extends Notification implements ShouldQueue
 {
@@ -33,7 +35,7 @@ class NewLikeNotification extends Notification implements ShouldQueue
     public function via(object $notifiable): array
     {
         // Only send database notification for likes to avoid spamming email
-        return ['database', \App\Channels\SupabaseChannel::class];
+        return ['database', \App\Channels\SupabaseChannel::class, OneSignalChannel::class];
     }
 
     /**
@@ -64,6 +66,25 @@ class NewLikeNotification extends Notification implements ShouldQueue
             'voter_id' => $this->like->user_id,
             'voter_name' => $this->like->user->username,
             'message' => $this->like->user->username . ' ' . $action . ' your post.',
+            'link' => '/blog/' . $this->post->slug,
         ];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $action = $this->like->type === 'like' ? 'liked' : 'disliked';
+
+        return OneSignalMessage::create()
+            ->setSubject('New ' . ucfirst($this->like->type) . ' on your Post')
+            ->setBody($this->like->user->username . ' ' . $action . ' your post: ' . $this->post->title)
+            ->setUrl(config('app.frontend_url') . '/blog/' . $this->post->slug)
+            ->setData('type', 'new_vote')
+            ->setData('post_slug', $this->post->slug);
     }
 }

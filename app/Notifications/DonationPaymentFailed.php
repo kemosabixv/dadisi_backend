@@ -5,6 +5,8 @@ namespace App\Notifications;
 use App\Models\Donation;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 class DonationPaymentFailed extends Notification
 {
@@ -22,13 +24,32 @@ class DonationPaymentFailed extends Notification
     {
         $channels = ['mail'];
 
-        // Only use db/supabase if the notifiable is a User (has an ID)
+        // Only use db/supabase/onesignal if the notifiable is a User (has an ID)
         if (isset($notifiable->id)) {
             $channels[] = 'database';
             $channels[] = \App\Channels\SupabaseChannel::class;
+            $channels[] = OneSignalChannel::class;
         }
-
+        
         return $channels;
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $amount = number_format($this->donation->amount, 2);
+        
+        return OneSignalMessage::create()
+            ->setSubject('Payment Failed')
+            ->setBody("We couldn't process your donation of {$this->donation->currency} {$amount}.")
+            ->setUrl(config('app.frontend_url') . '/donations/checkout/' . $this->donation->reference)
+            ->setData('type', 'donation_payment_failed')
+            ->setData('donation_id', $this->donation->id);
     }
 
     /**

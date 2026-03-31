@@ -95,6 +95,9 @@
                                                                                 <li class="tocify-item level-2" data-unique="authentication-POSTapi-auth-password-change">
                                 <a href="#authentication-POSTapi-auth-password-change">Change Password</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="authentication-POSTapi-auth-password-set">
+                                <a href="#authentication-POSTapi-auth-password-set">Set Initial Password</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="authentication-POSTapi-auth-send-verification">
                                 <a href="#authentication-POSTapi-auth-send-verification">Send Verification Email</a>
                             </li>
@@ -865,20 +868,11 @@ Passkey authentication using WebAuthn/FIDO2.</a>
                                                     <li class="tocify-item level-2" data-unique="admin-community-groups-GETapi-admin-finance-groups-stats">
                                 <a href="#admin-community-groups-GETapi-admin-finance-groups-stats">Get statistics for groups dashboard.</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="admin-community-groups-GETapi-admin-finance-groups">
-                                <a href="#admin-community-groups-GETapi-admin-finance-groups">List all groups for administration.</a>
+                                                                                <li class="tocify-item level-2" data-unique="admin-community-groups-POSTapi-admin-groups--group_id--members--user--approve">
+                                <a href="#admin-community-groups-POSTapi-admin-groups--group_id--members--user--approve">Approve a member join request.</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="admin-community-groups-POSTapi-admin-finance-groups">
-                                <a href="#admin-community-groups-POSTapi-admin-finance-groups">Create a new community group.</a>
-                            </li>
-                                                                                <li class="tocify-item level-2" data-unique="admin-community-groups-GETapi-admin-finance-groups--id-">
-                                <a href="#admin-community-groups-GETapi-admin-finance-groups--id-">Update a group.</a>
-                            </li>
-                                                                                <li class="tocify-item level-2" data-unique="admin-community-groups-DELETEapi-admin-finance-groups--id-">
-                                <a href="#admin-community-groups-DELETEapi-admin-finance-groups--id-">Update a group.</a>
-                            </li>
-                                                                                <li class="tocify-item level-2" data-unique="admin-community-groups-GETapi-admin-groups-stats">
-                                <a href="#admin-community-groups-GETapi-admin-groups-stats">Get statistics for groups dashboard.</a>
+                                                                                <li class="tocify-item level-2" data-unique="admin-community-groups-POSTapi-admin-groups--group_id--members--user--reject">
+                                <a href="#admin-community-groups-POSTapi-admin-groups--group_id--members--user--reject">Reject a member join request.</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="admin-community-groups-GETapi-admin-groups">
                                 <a href="#admin-community-groups-GETapi-admin-groups">List all groups for administration.</a>
@@ -886,8 +880,20 @@ Passkey authentication using WebAuthn/FIDO2.</a>
                                                                                 <li class="tocify-item level-2" data-unique="admin-community-groups-POSTapi-admin-groups">
                                 <a href="#admin-community-groups-POSTapi-admin-groups">Create a new community group.</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="admin-community-groups-GETapi-admin-groups--id-">
+                                <a href="#admin-community-groups-GETapi-admin-groups--id-">Update a group.</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="admin-community-groups-PUTapi-admin-groups--id-">
+                                <a href="#admin-community-groups-PUTapi-admin-groups--id-">Update a group.</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="admin-community-groups-DELETEapi-admin-groups--id-">
-                                <a href="#admin-community-groups-DELETEapi-admin-groups--id-">Update a group.</a>
+                                <a href="#admin-community-groups-DELETEapi-admin-groups--id-">Delete a group.</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="admin-community-groups-GETapi-admin-groups-stats">
+                                <a href="#admin-community-groups-GETapi-admin-groups-stats">Get statistics for groups dashboard.</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="admin-community-groups-PUTapi-admin-groups--id-">
+                                <a href="#admin-community-groups-PUTapi-admin-groups--id-">Update a group.</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="admin-community-groups-GETapi-admin-groups--group_id--members">
                                 <a href="#admin-community-groups-GETapi-admin-groups--group_id--members">List group members for management.</a>
@@ -3415,6 +3421,181 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </div>
         </form>
 
+                    <h2 id="authentication-POSTapi-auth-password-set">Set Initial Password</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Allows a user who registered via OAuth (Google) and has no password to set one for the first time.
+This endpoint does not require a current password.</p>
+
+<span id="example-requests-POSTapi-auth-password-set">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/auth/password/set" \
+    --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"password\": \"NewPass123!@#\",
+    \"password_confirmation\": \"NewPass123!@#\"
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/auth/password/set"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_AUTH_KEY}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "password": "NewPass123!@#",
+    "password_confirmation": "NewPass123!@#"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-auth-password-set">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Password set successfully.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Example response (400):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Password has already been set for this account. Use change-password instead.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-auth-password-set" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-auth-password-set"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-auth-password-set"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-auth-password-set" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-auth-password-set">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-auth-password-set" data-method="POST"
+      data-path="api/auth/password/set"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-auth-password-set', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-auth-password-set"
+                    onclick="tryItOut('POSTapi-auth-password-set');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-auth-password-set"
+                    onclick="cancelTryOut('POSTapi-auth-password-set');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-auth-password-set"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/auth/password/set</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-auth-password-set"
+               value="Bearer {YOUR_AUTH_KEY}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_AUTH_KEY}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-auth-password-set"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-auth-password-set"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>password</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="password"                data-endpoint="POSTapi-auth-password-set"
+               value="NewPass123!@#"
+               data-component="body">
+    <br>
+<p>The new password (min 8 chars, mixed case, numbers, special chars). Example: <code>NewPass123!@#</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>password_confirmation</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="password_confirmation"                data-endpoint="POSTapi-auth-password-set"
+               value="NewPass123!@#"
+               data-component="body">
+    <br>
+<p>Must match the password field. Example: <code>NewPass123!@#</code></p>
+        </div>
+        </form>
+
                     <h2 id="authentication-POSTapi-auth-send-verification">Send Verification Email</h2>
 
 <p>
@@ -4490,7 +4671,7 @@ Call this after successful password authentication.</p>
     --data "{
     \"email\": \"user@example.com\",
     \"code\": \"123456\",
-    \"remember\": true
+    \"remember\": false
 }"
 </code></pre></div>
 
@@ -4508,7 +4689,7 @@ const headers = {
 let body = {
     "email": "user@example.com",
     "code": "123456",
-    "remember": true
+    "remember": false
 };
 
 fetch(url, {
@@ -4654,7 +4835,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 
@@ -6636,13 +6817,13 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"public_bio\": \"Bio-technologist and community leader.\",
     \"show_email\": false,
     \"show_location\": false,
-    \"show_join_date\": true,
+    \"show_join_date\": false,
     \"show_post_count\": true,
-    \"show_interests\": false,
-    \"show_occupation\": false,
+    \"show_interests\": true,
+    \"show_occupation\": true,
     \"sub_county\": \"Westlands\",
     \"ward\": \"Kitisuru\",
-    \"display_full_name\": false,
+    \"display_full_name\": true,
     \"display_age\": false,
     \"prefix\": \"bngzmiyvdljnikhw\",
     \"public_role\": \"a\",
@@ -6653,7 +6834,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             \"year\": \"2023\"
         }
     ],
-    \"experience_visible\": false,
+    \"experience_visible\": true,
     \"education_visible\": true,
     \"skills\": [
         \"PCR\",
@@ -6700,13 +6881,13 @@ let body = {
     "public_bio": "Bio-technologist and community leader.",
     "show_email": false,
     "show_location": false,
-    "show_join_date": true,
+    "show_join_date": false,
     "show_post_count": true,
-    "show_interests": false,
-    "show_occupation": false,
+    "show_interests": true,
+    "show_occupation": true,
     "sub_county": "Westlands",
     "ward": "Kitisuru",
-    "display_full_name": false,
+    "display_full_name": true,
     "display_age": false,
     "prefix": "bngzmiyvdljnikhw",
     "public_role": "a",
@@ -6717,7 +6898,7 @@ let body = {
             "year": "2023"
         }
     ],
-    "experience_visible": false,
+    "experience_visible": true,
     "education_visible": true,
     "skills": [
         "PCR",
@@ -7090,7 +7271,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>show_post_count</code></b>&nbsp;&nbsp;
@@ -7132,7 +7313,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>show_occupation</code></b>&nbsp;&nbsp;
@@ -7153,7 +7334,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>sub_county</code></b>&nbsp;&nbsp;
@@ -7196,7 +7377,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>display_age</code></b>&nbsp;&nbsp;
@@ -7271,7 +7452,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>education</code></b>&nbsp;&nbsp;
@@ -7577,7 +7758,7 @@ Replaces any existing picture.</p>
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "profile_picture=@C:\Users\pasca\AppData\Local\Temp\php5665.tmp" </code></pre></div>
+    --form "profile_picture=@C:\Users\pasca\AppData\Local\Temp\php25F1.tmp" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -7707,7 +7888,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>The image file (jpeg, png, jpg, gif). Max 2MB. Example: <code>C:\Users\pasca\AppData\Local\Temp\php5665.tmp</code></p>
+<p>The image file (jpeg, png, jpg, gif). Max 2MB. Example: <code>C:\Users\pasca\AppData\Local\Temp\php25F1.tmp</code></p>
         </div>
         </form>
 
@@ -7999,7 +8180,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "profile_picture=@C:\Users\pasca\AppData\Local\Temp\php57EE.tmp" </code></pre></div>
+    --form "profile_picture=@C:\Users\pasca\AppData\Local\Temp\php26BE.tmp" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -8129,7 +8310,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Profile picture image file (JPEG, PNG, GIF, SVG, WebP, max 5MB). Must be an image. Must not be greater than 5120 kilobytes. Example: <code>C:\Users\pasca\AppData\Local\Temp\php57EE.tmp</code></p>
+<p>Profile picture image file (JPEG, PNG, GIF, SVG, WebP, max 5MB). Must be an image. Must not be greater than 5120 kilobytes. Example: <code>C:\Users\pasca\AppData\Local\Temp\php26BE.tmp</code></p>
         </div>
         </form>
 
@@ -25519,7 +25700,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/admin/finance/payments/16" \
+    --get "http://localhost:8000/api/admin/finance/payments/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -25527,7 +25708,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/admin/finance/payments/16"
+    "http://localhost:8000/api/admin/finance/payments/1"
 );
 
 const headers = {
@@ -25648,10 +25829,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="id"                data-endpoint="GETapi-admin-finance-payments--id-"
-               value="16"
+               value="1"
                data-component="url">
     <br>
-<p>The ID of the payment. Example: <code>16</code></p>
+<p>The ID of the payment. Example: <code>1</code></p>
             </div>
                     </form>
 
@@ -25669,7 +25850,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/admin/finance/payments/16/refund" \
+    "http://localhost:8000/api/admin/finance/payments/1/refund" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -25681,7 +25862,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/admin/finance/payments/16/refund"
+    "http://localhost:8000/api/admin/finance/payments/1/refund"
 );
 
 const headers = {
@@ -25791,10 +25972,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="payment_id"                data-endpoint="POSTapi-admin-finance-payments--payment_id--refund"
-               value="16"
+               value="1"
                data-component="url">
     <br>
-<p>The ID of the payment. Example: <code>16</code></p>
+<p>The ID of the payment. Example: <code>1</code></p>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
@@ -27058,8 +27239,8 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"slot_start_time\": \"2026-03-31T12:35:29\",
-    \"status\": \"attended\",
+    \"slot_start_time\": \"2026-03-31T18:27:08\",
+    \"status\": \"pending\",
     \"notes\": \"b\"
 }"
 </code></pre></div>
@@ -27076,8 +27257,8 @@ const headers = {
 };
 
 let body = {
-    "slot_start_time": "2026-03-31T12:35:29",
-    "status": "attended",
+    "slot_start_time": "2026-03-31T18:27:08",
+    "status": "pending",
     "notes": "b"
 };
 
@@ -27179,10 +27360,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="slot_start_time"                data-endpoint="POSTapi-admin-lab-bookings--id--slot-attendance"
-               value="2026-03-31T12:35:29"
+               value="2026-03-31T18:27:08"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-31T12:35:29</code></p>
+<p>Must be a valid date. Example: <code>2026-03-31T18:27:08</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>status</code></b>&nbsp;&nbsp;
@@ -27190,10 +27371,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="status"                data-endpoint="POSTapi-admin-lab-bookings--id--slot-attendance"
-               value="attended"
+               value="pending"
                data-component="body">
     <br>
-<p>Example: <code>attended</code></p>
+<p>Example: <code>pending</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>attended</code></li> <li><code>no_show</code></li> <li><code>pending</code></li></ul>
         </div>
@@ -28189,7 +28370,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"rule\": {
         \"freq\": \"weekly\",
         \"seeds\": [],
-        \"until\": \"2026-03-31T12:35:29\"
+        \"until\": \"2026-03-31T18:27:08\"
     }
 }"
 </code></pre></div>
@@ -28213,7 +28394,7 @@ let body = {
     "rule": {
         "freq": "weekly",
         "seeds": [],
-        "until": "2026-03-31T12:35:29"
+        "until": "2026-03-31T18:27:08"
     }
 };
 
@@ -28399,10 +28580,10 @@ Must be one of:
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="rule.until"                data-endpoint="POSTapi-admin-lab-maintenance-series"
-               value="2026-03-31T12:35:29"
+               value="2026-03-31T18:27:08"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-31T12:35:29</code></p>
+<p>Must be a valid date. Example: <code>2026-03-31T18:27:08</code></p>
                     </div>
                                     </details>
         </div>
@@ -28864,7 +29045,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"title\": \"architecto\",
     \"reason\": \"architecto\",
     \"completion_report\": \"b\",
-    \"status\": \"completed\",
+    \"status\": \"scheduled\",
     \"starts_at\": \"architecto\",
     \"ends_at\": \"architecto\"
 }"
@@ -28885,7 +29066,7 @@ let body = {
     "title": "architecto",
     "reason": "architecto",
     "completion_report": "b",
-    "status": "completed",
+    "status": "scheduled",
     "starts_at": "architecto",
     "ends_at": "architecto"
 };
@@ -29032,10 +29213,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="status"                data-endpoint="PUTapi-admin-lab-maintenance--id-"
-               value="completed"
+               value="scheduled"
                data-component="body">
     <br>
-<p>Example: <code>completed</code></p>
+<p>Example: <code>scheduled</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>scheduled</code></li> <li><code>in_progress</code></li> <li><code>completed</code></li> <li><code>cancelled</code></li></ul>
         </div>
@@ -29087,7 +29268,7 @@ Must be one of:
     \"rule\": {
         \"freq\": \"yearly\",
         \"seeds\": [],
-        \"until\": \"2026-03-31T12:35:29\"
+        \"until\": \"2026-03-31T18:27:08\"
     }
 }"
 </code></pre></div>
@@ -29110,7 +29291,7 @@ let body = {
     "rule": {
         "freq": "yearly",
         "seeds": [],
-        "until": "2026-03-31T12:35:29"
+        "until": "2026-03-31T18:27:08"
     }
 };
 
@@ -29289,10 +29470,10 @@ Must be one of:
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="rule.until"                data-endpoint="PUTapi-admin-lab-maintenance-series--id-"
-               value="2026-03-31T12:35:29"
+               value="2026-03-31T18:27:08"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-31T12:35:29</code></p>
+<p>Must be a valid date. Example: <code>2026-03-31T18:27:08</code></p>
                     </div>
                                     </details>
         </div>
@@ -36516,21 +36697,21 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="admin-community-groups-GETapi-admin-finance-groups">List all groups for administration.</h2>
+                    <h2 id="admin-community-groups-POSTapi-admin-groups--group_id--members--user--approve">Approve a member join request.</h2>
 
 <p>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>Returns a paginated list of community groups with member counts.</p>
 
-<span id="example-requests-GETapi-admin-finance-groups">
+
+<span id="example-requests-POSTapi-admin-groups--group_id--members--user--approve">
 <blockquote>Example request:</blockquote>
 
 
 <div class="bash-example">
-    <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/admin/finance/groups?search=Technology&amp;active=1&amp;per_page=20" \
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/admin/groups/1/members/architecto/approve" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -36538,294 +36719,61 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/admin/finance/groups"
-);
-
-const params = {
-    "search": "Technology",
-    "active": "1",
-    "per_page": "20",
-};
-Object.keys(params)
-    .forEach(key =&gt; url.searchParams.append(key, params[key]));
-
-const headers = {
-    "Authorization": "Bearer {YOUR_AUTH_KEY}",
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-fetch(url, {
-    method: "GET",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-GETapi-admin-finance-groups">
-            <blockquote>
-            <p>Example response (200):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;success&quot;: true,
-    &quot;data&quot;: [
-        {
-            &quot;id&quot;: 1,
-            &quot;name&quot;: &quot;Tech Enthusiasts&quot;,
-            &quot;slug&quot;: &quot;tech-enthusiasts&quot;,
-            &quot;description&quot;: &quot;A group for tech lovers&quot;,
-            &quot;is_active&quot;: true,
-            &quot;members_count&quot;: 50,
-            &quot;county&quot;: {
-                &quot;id&quot;: 1,
-                &quot;name&quot;: &quot;Nairobi&quot;
-            }
-        }
-    ],
-    &quot;meta&quot;: {
-        &quot;current_page&quot;: 1,
-        &quot;last_page&quot;: 3,
-        &quot;total&quot;: 60
-    }
-}</code>
- </pre>
-    </span>
-<span id="execution-results-GETapi-admin-finance-groups" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-GETapi-admin-finance-groups"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-GETapi-admin-finance-groups"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-GETapi-admin-finance-groups" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-GETapi-admin-finance-groups">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-GETapi-admin-finance-groups" data-method="GET"
-      data-path="api/admin/finance/groups"
-      data-authed="1"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('GETapi-admin-finance-groups', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-GETapi-admin-finance-groups"
-                    onclick="tryItOut('GETapi-admin-finance-groups');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-GETapi-admin-finance-groups"
-                    onclick="cancelTryOut('GETapi-admin-finance-groups');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-GETapi-admin-finance-groups"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-green">GET</small>
-            <b><code>api/admin/finance/groups</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Authorization" class="auth-value"               data-endpoint="GETapi-admin-finance-groups"
-               value="Bearer {YOUR_AUTH_KEY}"
-               data-component="header">
-    <br>
-<p>Example: <code>Bearer {YOUR_AUTH_KEY}</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="GETapi-admin-finance-groups"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="GETapi-admin-finance-groups"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                            <h4 class="fancy-heading-panel"><b>Query Parameters</b></h4>
-                                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>search</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
-<i>optional</i> &nbsp;
-                <input type="text" style="display: none"
-                              name="search"                data-endpoint="GETapi-admin-finance-groups"
-               value="Technology"
-               data-component="query">
-    <br>
-<p>Filter groups by name. Example: <code>Technology</code></p>
-            </div>
-                                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>active</code></b>&nbsp;&nbsp;
-<small>boolean</small>&nbsp;
-<i>optional</i> &nbsp;
-                <label data-endpoint="GETapi-admin-finance-groups" style="display: none">
-            <input type="radio" name="active"
-                   value="1"
-                   data-endpoint="GETapi-admin-finance-groups"
-                   data-component="query"             >
-            <code>true</code>
-        </label>
-        <label data-endpoint="GETapi-admin-finance-groups" style="display: none">
-            <input type="radio" name="active"
-                   value="0"
-                   data-endpoint="GETapi-admin-finance-groups"
-                   data-component="query"             >
-            <code>false</code>
-        </label>
-    <br>
-<p>Filter by active status. Example: <code>true</code></p>
-            </div>
-                                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>per_page</code></b>&nbsp;&nbsp;
-<small>integer</small>&nbsp;
-<i>optional</i> &nbsp;
-                <input type="number" style="display: none"
-               step="any"               name="per_page"                data-endpoint="GETapi-admin-finance-groups"
-               value="20"
-               data-component="query">
-    <br>
-<p>Results per page. Example: <code>20</code></p>
-            </div>
-                </form>
-
-                    <h2 id="admin-community-groups-POSTapi-admin-finance-groups">Create a new community group.</h2>
-
-<p>
-<small class="badge badge-darkred">requires authentication</small>
-</p>
-
-
-
-<span id="example-requests-POSTapi-admin-finance-groups">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/admin/finance/groups" \
-    --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json" \
-    --data "{
-    \"name\": \"Biotech Hub\",
-    \"description\": \"Eius et animi quos velit et.\",
-    \"county_id\": 1,
-    \"is_active\": false,
-    \"is_private\": false
-}"
-</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/admin/finance/groups"
+    "http://localhost:8000/api/admin/groups/1/members/architecto/approve"
 );
 
 const headers = {
     "Authorization": "Bearer {YOUR_AUTH_KEY}",
     "Content-Type": "application/json",
     "Accept": "application/json",
-};
-
-let body = {
-    "name": "Biotech Hub",
-    "description": "Eius et animi quos velit et.",
-    "county_id": 1,
-    "is_active": false,
-    "is_private": false
 };
 
 fetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify(body),
 }).then(response =&gt; response.json());</code></pre></div>
 
 </span>
 
-<span id="example-responses-POSTapi-admin-finance-groups">
-            <blockquote>
-            <p>Example response (201):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;success&quot;: true,
-    &quot;data&quot;: {
-        &quot;id&quot;: 1,
-        &quot;name&quot;: &quot;Biotech Hub&quot;
-    },
-    &quot;message&quot;: &quot;Group created successfully.&quot;
-}</code>
- </pre>
-    </span>
-<span id="execution-results-POSTapi-admin-finance-groups" hidden>
+<span id="example-responses-POSTapi-admin-groups--group_id--members--user--approve">
+</span>
+<span id="execution-results-POSTapi-admin-groups--group_id--members--user--approve" hidden>
     <blockquote>Received response<span
-                id="execution-response-status-POSTapi-admin-finance-groups"></span>:
+                id="execution-response-status-POSTapi-admin-groups--group_id--members--user--approve"></span>:
     </blockquote>
-    <pre class="json"><code id="execution-response-content-POSTapi-admin-finance-groups"
+    <pre class="json"><code id="execution-response-content-POSTapi-admin-groups--group_id--members--user--approve"
       data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
 </span>
-<span id="execution-error-POSTapi-admin-finance-groups" hidden>
+<span id="execution-error-POSTapi-admin-groups--group_id--members--user--approve" hidden>
     <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-POSTapi-admin-finance-groups">
+    <pre><code id="execution-error-message-POSTapi-admin-groups--group_id--members--user--approve">
 
 Tip: Check that you&#039;re properly connected to the network.
 If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
-<form id="form-POSTapi-admin-finance-groups" data-method="POST"
-      data-path="api/admin/finance/groups"
+<form id="form-POSTapi-admin-groups--group_id--members--user--approve" data-method="POST"
+      data-path="api/admin/groups/{group_id}/members/{user}/approve"
       data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('POSTapi-admin-finance-groups', this);">
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-admin-groups--group_id--members--user--approve', this);">
     <h3>
         Request&nbsp;&nbsp;&nbsp;
                     <button type="button"
                     style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-POSTapi-admin-finance-groups"
-                    onclick="tryItOut('POSTapi-admin-finance-groups');">Try it out ⚡
+                    id="btn-tryout-POSTapi-admin-groups--group_id--members--user--approve"
+                    onclick="tryItOut('POSTapi-admin-groups--group_id--members--user--approve');">Try it out ⚡
             </button>
             <button type="button"
                     style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-POSTapi-admin-finance-groups"
-                    onclick="cancelTryOut('POSTapi-admin-finance-groups');" hidden>Cancel 🛑
+                    id="btn-canceltryout-POSTapi-admin-groups--group_id--members--user--approve"
+                    onclick="cancelTryOut('POSTapi-admin-groups--group_id--members--user--approve');" hidden>Cancel 🛑
             </button>&nbsp;&nbsp;
             <button type="submit"
                     style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-POSTapi-admin-finance-groups"
+                    id="btn-executetryout-POSTapi-admin-groups--group_id--members--user--approve"
                     data-initial-text="Send Request 💥"
                     data-loading-text="⏱ Sending..."
                     hidden>Send Request 💥
@@ -36833,7 +36781,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-black">POST</small>
-            <b><code>api/admin/finance/groups</code></b>
+            <b><code>api/admin/groups/{group_id}/members/{user}/approve</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -36841,7 +36789,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-admin-finance-groups"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-admin-groups--group_id--members--user--approve"
                value="Bearer {YOUR_AUTH_KEY}"
                data-component="header">
     <br>
@@ -36852,7 +36800,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="POSTapi-admin-finance-groups"
+                              name="Content-Type"                data-endpoint="POSTapi-admin-groups--group_id--members--user--approve"
                value="application/json"
                data-component="header">
     <br>
@@ -36863,234 +36811,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="POSTapi-admin-finance-groups"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
-        <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>name</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="name"                data-endpoint="POSTapi-admin-finance-groups"
-               value="Biotech Hub"
-               data-component="body">
-    <br>
-<p>The name of the group. Example: <code>Biotech Hub</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>description</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
-<i>optional</i> &nbsp;
-                <input type="text" style="display: none"
-                              name="description"                data-endpoint="POSTapi-admin-finance-groups"
-               value="Eius et animi quos velit et."
-               data-component="body">
-    <br>
-<p>The description of the group. Example: <code>Eius et animi quos velit et.</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>county_id</code></b>&nbsp;&nbsp;
-<small>integer</small>&nbsp;
- &nbsp;
-                <input type="number" style="display: none"
-               step="any"               name="county_id"                data-endpoint="POSTapi-admin-finance-groups"
-               value="1"
-               data-component="body">
-    <br>
-<p>The county ID this group belongs to. Example: <code>1</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
-<small>boolean</small>&nbsp;
-<i>optional</i> &nbsp;
-                <label data-endpoint="POSTapi-admin-finance-groups" style="display: none">
-            <input type="radio" name="is_active"
-                   value="true"
-                   data-endpoint="POSTapi-admin-finance-groups"
-                   data-component="body"             >
-            <code>true</code>
-        </label>
-        <label data-endpoint="POSTapi-admin-finance-groups" style="display: none">
-            <input type="radio" name="is_active"
-                   value="false"
-                   data-endpoint="POSTapi-admin-finance-groups"
-                   data-component="body"             >
-            <code>false</code>
-        </label>
-    <br>
-<p>Enable/disable the group. Default: true. Example: <code>false</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>is_private</code></b>&nbsp;&nbsp;
-<small>boolean</small>&nbsp;
-<i>optional</i> &nbsp;
-                <label data-endpoint="POSTapi-admin-finance-groups" style="display: none">
-            <input type="radio" name="is_private"
-                   value="true"
-                   data-endpoint="POSTapi-admin-finance-groups"
-                   data-component="body"             >
-            <code>true</code>
-        </label>
-        <label data-endpoint="POSTapi-admin-finance-groups" style="display: none">
-            <input type="radio" name="is_private"
-                   value="false"
-                   data-endpoint="POSTapi-admin-finance-groups"
-                   data-component="body"             >
-            <code>false</code>
-        </label>
-    <br>
-<p>Set group as private. Default: false. Example: <code>false</code></p>
-        </div>
-        </form>
-
-                    <h2 id="admin-community-groups-GETapi-admin-finance-groups--id-">Update a group.</h2>
-
-<p>
-<small class="badge badge-darkred">requires authentication</small>
-</p>
-
-
-
-<span id="example-requests-GETapi-admin-finance-groups--id-">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/admin/finance/groups/1" \
-    --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json" \
-    --data "{
-    \"name\": \"Science Club\",
-    \"description\": \"Eius et animi quos velit et.\",
-    \"is_active\": false,
-    \"is_private\": false
-}"
-</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/admin/finance/groups/1"
-);
-
-const headers = {
-    "Authorization": "Bearer {YOUR_AUTH_KEY}",
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-let body = {
-    "name": "Science Club",
-    "description": "Eius et animi quos velit et.",
-    "is_active": false,
-    "is_private": false
-};
-
-fetch(url, {
-    method: "GET",
-    headers,
-    body: JSON.stringify(body),
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-GETapi-admin-finance-groups--id-">
-            <blockquote>
-            <p>Example response (200):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;success&quot;: true,
-    &quot;data&quot;: {
-        &quot;id&quot;: 1,
-        &quot;name&quot;: &quot;Science Club&quot;
-    },
-    &quot;message&quot;: &quot;Group updated successfully.&quot;
-}</code>
- </pre>
-    </span>
-<span id="execution-results-GETapi-admin-finance-groups--id-" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-GETapi-admin-finance-groups--id-"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-GETapi-admin-finance-groups--id-"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-GETapi-admin-finance-groups--id-" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-GETapi-admin-finance-groups--id-">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-GETapi-admin-finance-groups--id-" data-method="GET"
-      data-path="api/admin/finance/groups/{id}"
-      data-authed="1"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('GETapi-admin-finance-groups--id-', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-GETapi-admin-finance-groups--id-"
-                    onclick="tryItOut('GETapi-admin-finance-groups--id-');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-GETapi-admin-finance-groups--id-"
-                    onclick="cancelTryOut('GETapi-admin-finance-groups--id-');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-GETapi-admin-finance-groups--id-"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-green">GET</small>
-            <b><code>api/admin/finance/groups/{id}</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Authorization" class="auth-value"               data-endpoint="GETapi-admin-finance-groups--id-"
-               value="Bearer {YOUR_AUTH_KEY}"
-               data-component="header">
-    <br>
-<p>Example: <code>Bearer {YOUR_AUTH_KEY}</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="GETapi-admin-finance-groups--id-"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="GETapi-admin-finance-groups--id-"
+                              name="Accept"                data-endpoint="POSTapi-admin-groups--group_id--members--user--approve"
                value="application/json"
                data-component="header">
     <br>
@@ -37098,294 +36819,44 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
                     <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
+                <b style="line-height: 2;"><code>group_id</code></b>&nbsp;&nbsp;
 <small>integer</small>&nbsp;
  &nbsp;
                 <input type="number" style="display: none"
-               step="any"               name="id"                data-endpoint="GETapi-admin-finance-groups--id-"
+               step="any"               name="group_id"                data-endpoint="POSTapi-admin-groups--group_id--members--user--approve"
                value="1"
                data-component="url">
     <br>
 <p>The ID of the group. Example: <code>1</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>group</code></b>&nbsp;&nbsp;
-<small>integer</small>&nbsp;
- &nbsp;
-                <input type="number" style="display: none"
-               step="any"               name="group"                data-endpoint="GETapi-admin-finance-groups--id-"
-               value="1"
-               data-component="url">
-    <br>
-<p>The group ID. Example: <code>1</code></p>
-            </div>
-                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
-        <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>name</code></b>&nbsp;&nbsp;
+                <b style="line-height: 2;"><code>user</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
-<i>optional</i> &nbsp;
-                <input type="text" style="display: none"
-                              name="name"                data-endpoint="GETapi-admin-finance-groups--id-"
-               value="Science Club"
-               data-component="body">
-    <br>
-<p>The name of the group. Example: <code>Science Club</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>description</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
-<i>optional</i> &nbsp;
-                <input type="text" style="display: none"
-                              name="description"                data-endpoint="GETapi-admin-finance-groups--id-"
-               value="Eius et animi quos velit et."
-               data-component="body">
-    <br>
-<p>The description of the group. Example: <code>Eius et animi quos velit et.</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
-<small>boolean</small>&nbsp;
-<i>optional</i> &nbsp;
-                <label data-endpoint="GETapi-admin-finance-groups--id-" style="display: none">
-            <input type="radio" name="is_active"
-                   value="true"
-                   data-endpoint="GETapi-admin-finance-groups--id-"
-                   data-component="body"             >
-            <code>true</code>
-        </label>
-        <label data-endpoint="GETapi-admin-finance-groups--id-" style="display: none">
-            <input type="radio" name="is_active"
-                   value="false"
-                   data-endpoint="GETapi-admin-finance-groups--id-"
-                   data-component="body"             >
-            <code>false</code>
-        </label>
-    <br>
-<p>Enable/disable the group. Example: <code>false</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>is_private</code></b>&nbsp;&nbsp;
-<small>boolean</small>&nbsp;
-<i>optional</i> &nbsp;
-                <label data-endpoint="GETapi-admin-finance-groups--id-" style="display: none">
-            <input type="radio" name="is_private"
-                   value="true"
-                   data-endpoint="GETapi-admin-finance-groups--id-"
-                   data-component="body"             >
-            <code>true</code>
-        </label>
-        <label data-endpoint="GETapi-admin-finance-groups--id-" style="display: none">
-            <input type="radio" name="is_private"
-                   value="false"
-                   data-endpoint="GETapi-admin-finance-groups--id-"
-                   data-component="body"             >
-            <code>false</code>
-        </label>
-    <br>
-<p>Set group as private. Example: <code>false</code></p>
-        </div>
-        </form>
-
-                    <h2 id="admin-community-groups-DELETEapi-admin-finance-groups--id-">Update a group.</h2>
-
-<p>
-<small class="badge badge-darkred">requires authentication</small>
-</p>
-
-<p>{
-try {
-$this-&gt;authorize('update', $group);</p>
-<p>$validated = $request-&gt;validate([
-'name' =&gt; 'nullable|string|max:100|unique:groups,name,' . $group-&gt;id,
-'description' =&gt; 'nullable|string',
-'county_id' =&gt; 'nullable|integer|exists:counties,id',
-'forum_tag_id' =&gt; 'nullable|integer|exists:forum_tags,id',
-'is_active' =&gt; 'boolean',
-'is_private' =&gt; 'boolean',
-'image_path' =&gt; 'nullable|string',
-]);</p>
-<p>$dto = UpdateGroupDTO::fromArray($validated);
-$updatedGroup = $this-&gt;groupService-&gt;updateGroup($group, $dto);</p>
-<p>return response()-&gt;json([
-'success' =&gt; true,
-'data' =&gt; $updatedGroup,
-'message' =&gt; 'Group updated successfully.',
-]);
-} catch (AuthorizationException $e) {
-throw $e;
-} catch (\Exception $e) {
-Log::error('Failed to update community group', [
-'error' =&gt; $e-&gt;getMessage(),
-'group_id' =&gt; $group-&gt;id,
-'trace' =&gt; $e-&gt;getTraceAsString()
-]);
-return response()-&gt;json(['success' =&gt; false, 'message' =&gt; 'Failed to update group'], 500);
-}
-}</p>
-<p>Delete a group.</p>
-
-<span id="example-requests-DELETEapi-admin-finance-groups--id-">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:8000/api/admin/finance/groups/1" \
-    --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/admin/finance/groups/1"
-);
-
-const headers = {
-    "Authorization": "Bearer {YOUR_AUTH_KEY}",
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-fetch(url, {
-    method: "DELETE",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-DELETEapi-admin-finance-groups--id-">
-            <blockquote>
-            <p>Example response (200):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;success&quot;: true,
-    &quot;message&quot;: &quot;Group deleted successfully.&quot;
-}</code>
- </pre>
-    </span>
-<span id="execution-results-DELETEapi-admin-finance-groups--id-" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-DELETEapi-admin-finance-groups--id-"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-DELETEapi-admin-finance-groups--id-"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-DELETEapi-admin-finance-groups--id-" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-DELETEapi-admin-finance-groups--id-">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-DELETEapi-admin-finance-groups--id-" data-method="DELETE"
-      data-path="api/admin/finance/groups/{id}"
-      data-authed="1"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('DELETEapi-admin-finance-groups--id-', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-DELETEapi-admin-finance-groups--id-"
-                    onclick="tryItOut('DELETEapi-admin-finance-groups--id-');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-DELETEapi-admin-finance-groups--id-"
-                    onclick="cancelTryOut('DELETEapi-admin-finance-groups--id-');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-DELETEapi-admin-finance-groups--id-"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-red">DELETE</small>
-            <b><code>api/admin/finance/groups/{id}</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
-&nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Authorization" class="auth-value"               data-endpoint="DELETEapi-admin-finance-groups--id-"
-               value="Bearer {YOUR_AUTH_KEY}"
-               data-component="header">
-    <br>
-<p>Example: <code>Bearer {YOUR_AUTH_KEY}</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="DELETEapi-admin-finance-groups--id-"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="DELETEapi-admin-finance-groups--id-"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
-                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
-<small>integer</small>&nbsp;
- &nbsp;
-                <input type="number" style="display: none"
-               step="any"               name="id"                data-endpoint="DELETEapi-admin-finance-groups--id-"
-               value="1"
+                              name="user"                data-endpoint="POSTapi-admin-groups--group_id--members--user--approve"
+               value="architecto"
                data-component="url">
     <br>
-<p>The ID of the group. Example: <code>1</code></p>
-            </div>
-                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>group</code></b>&nbsp;&nbsp;
-<small>integer</small>&nbsp;
- &nbsp;
-                <input type="number" style="display: none"
-               step="any"               name="group"                data-endpoint="DELETEapi-admin-finance-groups--id-"
-               value="1"
-               data-component="url">
-    <br>
-<p>The group ID. Example: <code>1</code></p>
+<p>Example: <code>architecto</code></p>
             </div>
                     </form>
 
-                    <h2 id="admin-community-groups-GETapi-admin-groups-stats">Get statistics for groups dashboard.</h2>
+                    <h2 id="admin-community-groups-POSTapi-admin-groups--group_id--members--user--reject">Reject a member join request.</h2>
 
 <p>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>Returns total counts for various group categories.</p>
 
-<span id="example-requests-GETapi-admin-groups-stats">
+
+<span id="example-requests-POSTapi-admin-groups--group_id--members--user--reject">
 <blockquote>Example request:</blockquote>
 
 
 <div class="bash-example">
-    <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/admin/groups/stats" \
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/admin/groups/1/members/architecto/reject" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -37393,7 +36864,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/admin/groups/stats"
+    "http://localhost:8000/api/admin/groups/1/members/architecto/reject"
 );
 
 const headers = {
@@ -37403,74 +36874,59 @@ const headers = {
 };
 
 fetch(url, {
-    method: "GET",
+    method: "POST",
     headers,
 }).then(response =&gt; response.json());</code></pre></div>
 
 </span>
 
-<span id="example-responses-GETapi-admin-groups-stats">
-            <blockquote>
-            <p>Example response (200):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;success&quot;: true,
-    &quot;data&quot;: {
-        &quot;total&quot;: 50,
-        &quot;active&quot;: 45,
-        &quot;county_specific&quot;: 40,
-        &quot;global&quot;: 10
-    }
-}</code>
- </pre>
-    </span>
-<span id="execution-results-GETapi-admin-groups-stats" hidden>
+<span id="example-responses-POSTapi-admin-groups--group_id--members--user--reject">
+</span>
+<span id="execution-results-POSTapi-admin-groups--group_id--members--user--reject" hidden>
     <blockquote>Received response<span
-                id="execution-response-status-GETapi-admin-groups-stats"></span>:
+                id="execution-response-status-POSTapi-admin-groups--group_id--members--user--reject"></span>:
     </blockquote>
-    <pre class="json"><code id="execution-response-content-GETapi-admin-groups-stats"
+    <pre class="json"><code id="execution-response-content-POSTapi-admin-groups--group_id--members--user--reject"
       data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
 </span>
-<span id="execution-error-GETapi-admin-groups-stats" hidden>
+<span id="execution-error-POSTapi-admin-groups--group_id--members--user--reject" hidden>
     <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-GETapi-admin-groups-stats">
+    <pre><code id="execution-error-message-POSTapi-admin-groups--group_id--members--user--reject">
 
 Tip: Check that you&#039;re properly connected to the network.
 If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
-<form id="form-GETapi-admin-groups-stats" data-method="GET"
-      data-path="api/admin/groups/stats"
+<form id="form-POSTapi-admin-groups--group_id--members--user--reject" data-method="POST"
+      data-path="api/admin/groups/{group_id}/members/{user}/reject"
       data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('GETapi-admin-groups-stats', this);">
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-admin-groups--group_id--members--user--reject', this);">
     <h3>
         Request&nbsp;&nbsp;&nbsp;
                     <button type="button"
                     style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-GETapi-admin-groups-stats"
-                    onclick="tryItOut('GETapi-admin-groups-stats');">Try it out ⚡
+                    id="btn-tryout-POSTapi-admin-groups--group_id--members--user--reject"
+                    onclick="tryItOut('POSTapi-admin-groups--group_id--members--user--reject');">Try it out ⚡
             </button>
             <button type="button"
                     style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-GETapi-admin-groups-stats"
-                    onclick="cancelTryOut('GETapi-admin-groups-stats');" hidden>Cancel 🛑
+                    id="btn-canceltryout-POSTapi-admin-groups--group_id--members--user--reject"
+                    onclick="cancelTryOut('POSTapi-admin-groups--group_id--members--user--reject');" hidden>Cancel 🛑
             </button>&nbsp;&nbsp;
             <button type="submit"
                     style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-GETapi-admin-groups-stats"
+                    id="btn-executetryout-POSTapi-admin-groups--group_id--members--user--reject"
                     data-initial-text="Send Request 💥"
                     data-loading-text="⏱ Sending..."
                     hidden>Send Request 💥
             </button>
             </h3>
             <p>
-            <small class="badge badge-green">GET</small>
-            <b><code>api/admin/groups/stats</code></b>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/admin/groups/{group_id}/members/{user}/reject</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -37478,7 +36934,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Authorization" class="auth-value"               data-endpoint="GETapi-admin-groups-stats"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-admin-groups--group_id--members--user--reject"
                value="Bearer {YOUR_AUTH_KEY}"
                data-component="header">
     <br>
@@ -37489,7 +36945,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="GETapi-admin-groups-stats"
+                              name="Content-Type"                data-endpoint="POSTapi-admin-groups--group_id--members--user--reject"
                value="application/json"
                data-component="header">
     <br>
@@ -37500,13 +36956,36 @@ You can check the Dev Tools console for debugging information.</code></pre>
 &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="GETapi-admin-groups-stats"
+                              name="Accept"                data-endpoint="POSTapi-admin-groups--group_id--members--user--reject"
                value="application/json"
                data-component="header">
     <br>
 <p>Example: <code>application/json</code></p>
             </div>
-                        </form>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>group_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="group_id"                data-endpoint="POSTapi-admin-groups--group_id--members--user--reject"
+               value="1"
+               data-component="url">
+    <br>
+<p>The ID of the group. Example: <code>1</code></p>
+            </div>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>user</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="user"                data-endpoint="POSTapi-admin-groups--group_id--members--user--reject"
+               value="architecto"
+               data-component="url">
+    <br>
+<p>Example: <code>architecto</code></p>
+            </div>
+                    </form>
 
                     <h2 id="admin-community-groups-GETapi-admin-groups">List all groups for administration.</h2>
 
@@ -37939,43 +37418,390 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </div>
         </form>
 
-                    <h2 id="admin-community-groups-DELETEapi-admin-groups--id-">Update a group.</h2>
+                    <h2 id="admin-community-groups-GETapi-admin-groups--id-">Update a group.</h2>
 
 <p>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>{
-try {
-$this-&gt;authorize('update', $group);</p>
-<p>$validated = $request-&gt;validate([
-'name' =&gt; 'nullable|string|max:100|unique:groups,name,' . $group-&gt;id,
-'description' =&gt; 'nullable|string',
-'county_id' =&gt; 'nullable|integer|exists:counties,id',
-'forum_tag_id' =&gt; 'nullable|integer|exists:forum_tags,id',
-'is_active' =&gt; 'boolean',
-'is_private' =&gt; 'boolean',
-'image_path' =&gt; 'nullable|string',
-]);</p>
-<p>$dto = UpdateGroupDTO::fromArray($validated);
-$updatedGroup = $this-&gt;groupService-&gt;updateGroup($group, $dto);</p>
-<p>return response()-&gt;json([
-'success' =&gt; true,
-'data' =&gt; $updatedGroup,
-'message' =&gt; 'Group updated successfully.',
-]);
-} catch (AuthorizationException $e) {
-throw $e;
-} catch (\Exception $e) {
-Log::error('Failed to update community group', [
-'error' =&gt; $e-&gt;getMessage(),
-'group_id' =&gt; $group-&gt;id,
-'trace' =&gt; $e-&gt;getTraceAsString()
-]);
-return response()-&gt;json(['success' =&gt; false, 'message' =&gt; 'Failed to update group'], 500);
-}
-}</p>
-<p>Delete a group.</p>
+
+
+<span id="example-requests-GETapi-admin-groups--id-">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/admin/groups/1" \
+    --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"name\": \"Science Club\",
+    \"description\": \"Eius et animi quos velit et.\",
+    \"is_active\": false,
+    \"is_private\": false
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/admin/groups/1"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_AUTH_KEY}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "name": "Science Club",
+    "description": "Eius et animi quos velit et.",
+    "is_active": false,
+    "is_private": false
+};
+
+fetch(url, {
+    method: "GET",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-admin-groups--id-">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;data&quot;: {
+        &quot;id&quot;: 1,
+        &quot;name&quot;: &quot;Science Club&quot;
+    },
+    &quot;message&quot;: &quot;Group updated successfully.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-admin-groups--id-" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-admin-groups--id-"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-admin-groups--id-"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-admin-groups--id-" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-admin-groups--id-">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-admin-groups--id-" data-method="GET"
+      data-path="api/admin/groups/{id}"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-admin-groups--id-', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-admin-groups--id-"
+                    onclick="tryItOut('GETapi-admin-groups--id-');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-admin-groups--id-"
+                    onclick="cancelTryOut('GETapi-admin-groups--id-');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-admin-groups--id-"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/admin/groups/{id}</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-admin-groups--id-"
+               value="Bearer {YOUR_AUTH_KEY}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_AUTH_KEY}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-admin-groups--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-admin-groups--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="id"                data-endpoint="GETapi-admin-groups--id-"
+               value="1"
+               data-component="url">
+    <br>
+<p>The ID of the group. Example: <code>1</code></p>
+            </div>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>group</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="group"                data-endpoint="GETapi-admin-groups--id-"
+               value="1"
+               data-component="url">
+    <br>
+<p>The group ID. Example: <code>1</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>name</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+                <input type="text" style="display: none"
+                              name="name"                data-endpoint="GETapi-admin-groups--id-"
+               value="Science Club"
+               data-component="body">
+    <br>
+<p>The name of the group. Example: <code>Science Club</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>description</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+                <input type="text" style="display: none"
+                              name="description"                data-endpoint="GETapi-admin-groups--id-"
+               value="Eius et animi quos velit et."
+               data-component="body">
+    <br>
+<p>The description of the group. Example: <code>Eius et animi quos velit et.</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+                <label data-endpoint="GETapi-admin-groups--id-" style="display: none">
+            <input type="radio" name="is_active"
+                   value="true"
+                   data-endpoint="GETapi-admin-groups--id-"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="GETapi-admin-groups--id-" style="display: none">
+            <input type="radio" name="is_active"
+                   value="false"
+                   data-endpoint="GETapi-admin-groups--id-"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Enable/disable the group. Example: <code>false</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>is_private</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+                <label data-endpoint="GETapi-admin-groups--id-" style="display: none">
+            <input type="radio" name="is_private"
+                   value="true"
+                   data-endpoint="GETapi-admin-groups--id-"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="GETapi-admin-groups--id-" style="display: none">
+            <input type="radio" name="is_private"
+                   value="false"
+                   data-endpoint="GETapi-admin-groups--id-"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Set group as private. Example: <code>false</code></p>
+        </div>
+        </form>
+
+                    <h2 id="admin-community-groups-PUTapi-admin-groups--id-">Update a group.</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
+
+<span id="example-requests-PUTapi-admin-groups--id-">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PUT \
+    "http://localhost:8000/api/admin/groups/1" \
+    --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/admin/groups/1"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_AUTH_KEY}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+fetch(url, {
+    method: "PUT",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-PUTapi-admin-groups--id-">
+</span>
+<span id="execution-results-PUTapi-admin-groups--id-" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-PUTapi-admin-groups--id-"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PUTapi-admin-groups--id-"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PUTapi-admin-groups--id-" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-PUTapi-admin-groups--id-">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-PUTapi-admin-groups--id-" data-method="PUT"
+      data-path="api/admin/groups/{id}"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PUTapi-admin-groups--id-', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PUTapi-admin-groups--id-"
+                    onclick="tryItOut('PUTapi-admin-groups--id-');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PUTapi-admin-groups--id-"
+                    onclick="cancelTryOut('PUTapi-admin-groups--id-');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PUTapi-admin-groups--id-"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-darkblue">PUT</small>
+            <b><code>api/admin/groups/{id}</code></b>
+        </p>
+            <p>
+            <small class="badge badge-purple">PATCH</small>
+            <b><code>api/admin/groups/{id}</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="PUTapi-admin-groups--id-"
+               value="Bearer {YOUR_AUTH_KEY}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_AUTH_KEY}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PUTapi-admin-groups--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PUTapi-admin-groups--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="id"                data-endpoint="PUTapi-admin-groups--id-"
+               value="1"
+               data-component="url">
+    <br>
+<p>The ID of the group. Example: <code>1</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="admin-community-groups-DELETEapi-admin-groups--id-">Delete a group.</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
 
 <span id="example-requests-DELETEapi-admin-groups--id-">
 <blockquote>Example request:</blockquote>
@@ -38121,6 +37947,277 @@ You can check the Dev Tools console for debugging information.</code></pre>
                data-component="url">
     <br>
 <p>The group ID. Example: <code>1</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="admin-community-groups-GETapi-admin-groups-stats">Get statistics for groups dashboard.</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Returns total counts for various group categories.</p>
+
+<span id="example-requests-GETapi-admin-groups-stats">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/admin/groups/stats" \
+    --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/admin/groups/stats"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_AUTH_KEY}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-admin-groups-stats">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;data&quot;: {
+        &quot;total&quot;: 50,
+        &quot;active&quot;: 45,
+        &quot;county_specific&quot;: 40,
+        &quot;global&quot;: 10
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-admin-groups-stats" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-admin-groups-stats"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-admin-groups-stats"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-admin-groups-stats" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-admin-groups-stats">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-admin-groups-stats" data-method="GET"
+      data-path="api/admin/groups/stats"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-admin-groups-stats', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-admin-groups-stats"
+                    onclick="tryItOut('GETapi-admin-groups-stats');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-admin-groups-stats"
+                    onclick="cancelTryOut('GETapi-admin-groups-stats');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-admin-groups-stats"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/admin/groups/stats</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-admin-groups-stats"
+               value="Bearer {YOUR_AUTH_KEY}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_AUTH_KEY}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-admin-groups-stats"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-admin-groups-stats"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="admin-community-groups-PUTapi-admin-groups--id-">Update a group.</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
+
+<span id="example-requests-PUTapi-admin-groups--id-">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PUT \
+    "http://localhost:8000/api/admin/groups/1" \
+    --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/admin/groups/1"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_AUTH_KEY}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+fetch(url, {
+    method: "PUT",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-PUTapi-admin-groups--id-">
+</span>
+<span id="execution-results-PUTapi-admin-groups--id-" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-PUTapi-admin-groups--id-"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PUTapi-admin-groups--id-"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PUTapi-admin-groups--id-" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-PUTapi-admin-groups--id-">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-PUTapi-admin-groups--id-" data-method="PUT"
+      data-path="api/admin/groups/{id}"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PUTapi-admin-groups--id-', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PUTapi-admin-groups--id-"
+                    onclick="tryItOut('PUTapi-admin-groups--id-');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PUTapi-admin-groups--id-"
+                    onclick="cancelTryOut('PUTapi-admin-groups--id-');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PUTapi-admin-groups--id-"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-darkblue">PUT</small>
+            <b><code>api/admin/groups/{id}</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="PUTapi-admin-groups--id-"
+               value="Bearer {YOUR_AUTH_KEY}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_AUTH_KEY}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PUTapi-admin-groups--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PUTapi-admin-groups--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="id"                data-endpoint="PUTapi-admin-groups--id-"
+               value="1"
+               data-component="url">
+    <br>
+<p>The ID of the group. Example: <code>1</code></p>
             </div>
                     </form>
 
@@ -39153,7 +39250,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/admin/events?status=published&amp;event_type=workshop&amp;featured=1&amp;organizer_id=1&amp;search=Tech&amp;sort_by=starts_at&amp;sort_dir=desc&amp;upcoming=1&amp;type=in_person&amp;timeframe=all&amp;per_page=15" \
+    --get "http://localhost:8000/api/admin/events?status=published&amp;event_type=workshop&amp;featured=1&amp;organizer_id=1&amp;search=Tech&amp;sort_by=starts_at&amp;sort_dir=desc&amp;upcoming=1&amp;type=in_person&amp;timeframe=upcoming&amp;per_page=15" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -39174,7 +39271,7 @@ const params = {
     "sort_dir": "desc",
     "upcoming": "1",
     "type": "in_person",
-    "timeframe": "all",
+    "timeframe": "upcoming",
     "per_page": "15",
 };
 Object.keys(params)
@@ -39422,10 +39519,10 @@ Must be one of:
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="timeframe"                data-endpoint="GETapi-admin-events"
-               value="all"
+               value="upcoming"
                data-component="query">
     <br>
-<p>Example: <code>all</code></p>
+<p>Example: <code>upcoming</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>upcoming</code></li> <li><code>past</code></li> <li><code>all</code></li></ul>
             </div>
@@ -39503,7 +39600,7 @@ Must be one of:
     \"promo_codes\": [
         {
             \"code\": \"khwaykcmyuwpwlvq\",
-            \"discount_type\": \"fixed\",
+            \"discount_type\": \"percentage\",
             \"discount_value\": 22,
             \"usage_limit\": 30,
             \"ticket_id\": 16,
@@ -39568,7 +39665,7 @@ let body = {
     "promo_codes": [
         {
             "code": "khwaykcmyuwpwlvq",
-            "discount_type": "fixed",
+            "discount_type": "percentage",
             "discount_value": 22,
             "usage_limit": 30,
             "ticket_id": 16,
@@ -40140,10 +40237,10 @@ Must be one of:
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="promo_codes.0.discount_type"                data-endpoint="POSTapi-admin-events"
-               value="fixed"
+               value="percentage"
                data-component="body">
     <br>
-<p>This field is required when <code>promo_codes</code> is present. Example: <code>fixed</code></p>
+<p>This field is required when <code>promo_codes</code> is present. Example: <code>percentage</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>percentage</code></li> <li><code>fixed</code></li></ul>
                     </div>
@@ -40430,7 +40527,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             \"discount_value\": 50,
             \"usage_limit\": 73,
             \"ticket_id\": 16,
-            \"is_active\": true
+            \"is_active\": false
         }
     ]
 }"
@@ -40495,7 +40592,7 @@ let body = {
             "discount_value": 50,
             "usage_limit": 73,
             "ticket_id": 16,
-            "is_active": true
+            "is_active": false
         }
     ]
 };
@@ -41177,7 +41274,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
                     </div>
                                     </details>
         </div>
@@ -42768,7 +42865,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/admin/audit-logs/16" \
+    --get "http://localhost:8000/api/admin/audit-logs/1" \
     --header "Authorization: Bearer {YOUR_AUTH_KEY}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -42776,7 +42873,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/admin/audit-logs/16"
+    "http://localhost:8000/api/admin/audit-logs/1"
 );
 
 const headers = {
@@ -42903,10 +43000,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="auditLog_id"                data-endpoint="GETapi-admin-audit-logs--auditLog_id-"
-               value="16"
+               value="1"
                data-component="url">
     <br>
-<p>The ID of the auditLog. Example: <code>16</code></p>
+<p>The ID of the auditLog. Example: <code>1</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -48404,7 +48501,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Exploring biopolymers derived from agricultural waste as a sustainable alternative to conventional plastics in local markets.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 3,
@@ -48559,7 +48656,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 20,
@@ -48604,7 +48701,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Understanding the role of the human microbiome in health and disease. Why diet and genetics play a crucial role in our bacterial makeup.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 5,
@@ -48775,7 +48872,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 19,
@@ -48820,7 +48917,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;How nanotechnology is enabling earlier and more precise cancer diagnostics through targeted biosensors and imaging agents.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 5,
@@ -48991,7 +49088,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 18,
@@ -49036,7 +49133,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;A deep dive into monoclonal antibodies and their use in treating chronic diseases and emerging infections in the region.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 6,
@@ -49207,7 +49304,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 17,
@@ -49252,7 +49349,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 5,
@@ -49423,7 +49520,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 16,
@@ -49468,7 +49565,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Using enzymes and microorganisms for industrial processes, reducing emissions and increasing efficiency in local factories.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 3,
@@ -49655,7 +49752,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 15,
@@ -49700,7 +49797,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Exploring the unique biodiversity of the Indian Ocean for potential bioactive compounds and new pharmaceutical leads.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 6,
@@ -49871,7 +49968,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 14,
@@ -49916,7 +50013,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Targeting oil spills and heavy metal contamination with specialized microorganisms. A biotechnical approach to environmental restoration.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 7,
@@ -49931,12 +50028,12 @@ vary: Origin
                 &quot;phone&quot;: null,
                 &quot;google_id&quot;: null,
                 &quot;email_verified_at&quot;: &quot;2026-03-31T12:16:16.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: false,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;two_factor_secret&quot;: &quot;eyJpdiI6IkhvSEJ3WlE1SjV2eWR2N3ZGakRycUE9PSIsInZhbHVlIjoiSk1PTDYwZG9VWmpFUFNpL1NBd01IZE9kRU5EeHZmOUFHVHJGaXVudVRUbz0iLCJtYWMiOiIxZGUxY2UyOGY3MTMyMmU0NmM3NDFiOWUxODliM2FmMTViNDczOTY4MWU0NDg5ODZlYzMwOTJiNGU3YzMwMzE2IiwidGFnIjoiIn0=&quot;,
+                &quot;two_factor_enabled&quot;: true,
+                &quot;two_factor_recovery_codes&quot;: &quot;eyJpdiI6IlBDYW4zaWorRGpnSlR4V2RFQlRtS1E9PSIsInZhbHVlIjoidGdFUWNsUXpUWWNDcnVvZTRmNXdXeFpzbktRdmw2N1VET0s2bjZ3L0pxVWpBS01meXZpNHlHTjBNMjc0bUgyWFZqd0Mzckk4Unpvc3M1RzVTdC9HQWwyZDR4aHdJamtUaXNPTEs3VTB6Z05CNEppTWNXY0FMM1A2bm9NM1J2cHF1clNsbmh6VXdqRS9SbmJGOU1qUjQra3VRaGxRb0xzZWQzRFRSNFVnNzZ6VmdpclliV2JtVE9VSGRlOU9pV2lPdnQ2dlFvVWh3N296Tlh0Si91VWU0Um1qdkcxT25nVUhaeU5hcHc1b0lyZE1SN2VINDM5OFNON2IvTkVrRGNDN1VBTFdlTytjUEN1QnRvaVYyNEhUdFE9PSIsIm1hYyI6ImI4Mjc0YzgxNzQ4ZjVkNTY2ZjZkY2FjZmQ1NDNkYTAxYzJiZDVjYjlhOGNiYmUyZTgwNjRiNTBjNDY0Mjg2NjQiLCJ0YWciOiIifQ==&quot;,
+                &quot;two_factor_confirmed_at&quot;: &quot;2026-03-31 12:57:12&quot;,
                 &quot;created_at&quot;: &quot;2026-03-31T12:16:16.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-31T12:17:00.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-31T12:57:12.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;active_subscription_id&quot;: null,
                 &quot;plan_id&quot;: null,
@@ -50101,7 +50198,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 13,
@@ -50146,7 +50243,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Computational tools are allowing us to model brain activity like never before. Exploring the intersection of neuroscience and big data.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 3,
@@ -50161,12 +50258,12 @@ vary: Origin
                 &quot;phone&quot;: null,
                 &quot;google_id&quot;: null,
                 &quot;email_verified_at&quot;: &quot;2026-03-31T12:16:16.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: false,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;two_factor_secret&quot;: &quot;eyJpdiI6IkhvSEJ3WlE1SjV2eWR2N3ZGakRycUE9PSIsInZhbHVlIjoiSk1PTDYwZG9VWmpFUFNpL1NBd01IZE9kRU5EeHZmOUFHVHJGaXVudVRUbz0iLCJtYWMiOiIxZGUxY2UyOGY3MTMyMmU0NmM3NDFiOWUxODliM2FmMTViNDczOTY4MWU0NDg5ODZlYzMwOTJiNGU3YzMwMzE2IiwidGFnIjoiIn0=&quot;,
+                &quot;two_factor_enabled&quot;: true,
+                &quot;two_factor_recovery_codes&quot;: &quot;eyJpdiI6IlBDYW4zaWorRGpnSlR4V2RFQlRtS1E9PSIsInZhbHVlIjoidGdFUWNsUXpUWWNDcnVvZTRmNXdXeFpzbktRdmw2N1VET0s2bjZ3L0pxVWpBS01meXZpNHlHTjBNMjc0bUgyWFZqd0Mzckk4Unpvc3M1RzVTdC9HQWwyZDR4aHdJamtUaXNPTEs3VTB6Z05CNEppTWNXY0FMM1A2bm9NM1J2cHF1clNsbmh6VXdqRS9SbmJGOU1qUjQra3VRaGxRb0xzZWQzRFRSNFVnNzZ6VmdpclliV2JtVE9VSGRlOU9pV2lPdnQ2dlFvVWh3N296Tlh0Si91VWU0Um1qdkcxT25nVUhaeU5hcHc1b0lyZE1SN2VINDM5OFNON2IvTkVrRGNDN1VBTFdlTytjUEN1QnRvaVYyNEhUdFE9PSIsIm1hYyI6ImI4Mjc0YzgxNzQ4ZjVkNTY2ZjZkY2FjZmQ1NDNkYTAxYzJiZDVjYjlhOGNiYmUyZTgwNjRiNTBjNDY0Mjg2NjQiLCJ0YWciOiIifQ==&quot;,
+                &quot;two_factor_confirmed_at&quot;: &quot;2026-03-31 12:57:12&quot;,
                 &quot;created_at&quot;: &quot;2026-03-31T12:16:16.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-31T12:17:00.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-31T12:57:12.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;active_subscription_id&quot;: null,
                 &quot;plan_id&quot;: null,
@@ -50331,7 +50428,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 12,
@@ -50376,7 +50473,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;How DNA profiling has revolutionized the criminal justice system in Kenya. A look at current forensic labs and future capabilities.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 2,
@@ -50391,12 +50488,12 @@ vary: Origin
                 &quot;phone&quot;: null,
                 &quot;google_id&quot;: null,
                 &quot;email_verified_at&quot;: &quot;2026-03-31T12:16:16.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: false,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;two_factor_secret&quot;: &quot;eyJpdiI6IkhvSEJ3WlE1SjV2eWR2N3ZGakRycUE9PSIsInZhbHVlIjoiSk1PTDYwZG9VWmpFUFNpL1NBd01IZE9kRU5EeHZmOUFHVHJGaXVudVRUbz0iLCJtYWMiOiIxZGUxY2UyOGY3MTMyMmU0NmM3NDFiOWUxODliM2FmMTViNDczOTY4MWU0NDg5ODZlYzMwOTJiNGU3YzMwMzE2IiwidGFnIjoiIn0=&quot;,
+                &quot;two_factor_enabled&quot;: true,
+                &quot;two_factor_recovery_codes&quot;: &quot;eyJpdiI6IlBDYW4zaWorRGpnSlR4V2RFQlRtS1E9PSIsInZhbHVlIjoidGdFUWNsUXpUWWNDcnVvZTRmNXdXeFpzbktRdmw2N1VET0s2bjZ3L0pxVWpBS01meXZpNHlHTjBNMjc0bUgyWFZqd0Mzckk4Unpvc3M1RzVTdC9HQWwyZDR4aHdJamtUaXNPTEs3VTB6Z05CNEppTWNXY0FMM1A2bm9NM1J2cHF1clNsbmh6VXdqRS9SbmJGOU1qUjQra3VRaGxRb0xzZWQzRFRSNFVnNzZ6VmdpclliV2JtVE9VSGRlOU9pV2lPdnQ2dlFvVWh3N296Tlh0Si91VWU0Um1qdkcxT25nVUhaeU5hcHc1b0lyZE1SN2VINDM5OFNON2IvTkVrRGNDN1VBTFdlTytjUEN1QnRvaVYyNEhUdFE9PSIsIm1hYyI6ImI4Mjc0YzgxNzQ4ZjVkNTY2ZjZkY2FjZmQ1NDNkYTAxYzJiZDVjYjlhOGNiYmUyZTgwNjRiNTBjNDY0Mjg2NjQiLCJ0YWciOiIifQ==&quot;,
+                &quot;two_factor_confirmed_at&quot;: &quot;2026-03-31 12:57:12&quot;,
                 &quot;created_at&quot;: &quot;2026-03-31T12:16:16.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-31T12:17:00.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-31T12:57:12.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;active_subscription_id&quot;: null,
                 &quot;plan_id&quot;: null,
@@ -50529,7 +50626,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 11,
@@ -50574,7 +50671,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Pharmacogenomics allows doctors to prescribe the right drug at the right dose. Why this is the next frontier for healthcare investment in Africa.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 4,
@@ -50745,7 +50842,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 10,
@@ -50790,7 +50887,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;As a student researcher, I&#039;ve seen the potential of stem cells in tissue engineering. This post summarizes the key takeaways from the recent Nairobi Biotech Summit.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 4,
@@ -50945,7 +51042,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 9,
@@ -50990,7 +51087,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:50.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Following the success of COVID-19 vaccines, mRNA technology is being targeted at Malaria and HIV. A look at the regional manufacturing hubs.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 4,
@@ -51161,7 +51258,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 7,
@@ -51206,7 +51303,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 3,
@@ -51377,7 +51474,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 6,
@@ -51422,7 +51519,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 4,
@@ -51609,7 +51706,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 5,
@@ -51654,7 +51751,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;Genetically Modified Organisms offer solutions to drought and pests. We look at the latest developments in Bt Cotton and drought-resistant maize.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 5,
@@ -51825,7 +51922,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/9b/07/9b07382bdf4328331ffbcf1a5041c4e89737bd9a0a74fe1f5759db8f031bb1e7&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 4,
@@ -51870,7 +51967,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:48.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:48.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;With the cost of sequencing dropping rapidly, personalized medicine is becoming a reality. We analyze what this means for population health in Kenya.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 2,
@@ -51885,12 +51982,12 @@ vary: Origin
                 &quot;phone&quot;: null,
                 &quot;google_id&quot;: null,
                 &quot;email_verified_at&quot;: &quot;2026-03-31T12:16:16.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: false,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;two_factor_secret&quot;: &quot;eyJpdiI6IkhvSEJ3WlE1SjV2eWR2N3ZGakRycUE9PSIsInZhbHVlIjoiSk1PTDYwZG9VWmpFUFNpL1NBd01IZE9kRU5EeHZmOUFHVHJGaXVudVRUbz0iLCJtYWMiOiIxZGUxY2UyOGY3MTMyMmU0NmM3NDFiOWUxODliM2FmMTViNDczOTY4MWU0NDg5ODZlYzMwOTJiNGU3YzMwMzE2IiwidGFnIjoiIn0=&quot;,
+                &quot;two_factor_enabled&quot;: true,
+                &quot;two_factor_recovery_codes&quot;: &quot;eyJpdiI6IlBDYW4zaWorRGpnSlR4V2RFQlRtS1E9PSIsInZhbHVlIjoidGdFUWNsUXpUWWNDcnVvZTRmNXdXeFpzbktRdmw2N1VET0s2bjZ3L0pxVWpBS01meXZpNHlHTjBNMjc0bUgyWFZqd0Mzckk4Unpvc3M1RzVTdC9HQWwyZDR4aHdJamtUaXNPTEs3VTB6Z05CNEppTWNXY0FMM1A2bm9NM1J2cHF1clNsbmh6VXdqRS9SbmJGOU1qUjQra3VRaGxRb0xzZWQzRFRSNFVnNzZ6VmdpclliV2JtVE9VSGRlOU9pV2lPdnQ2dlFvVWh3N296Tlh0Si91VWU0Um1qdkcxT25nVUhaeU5hcHc1b0lyZE1SN2VINDM5OFNON2IvTkVrRGNDN1VBTFdlTytjUEN1QnRvaVYyNEhUdFE9PSIsIm1hYyI6ImI4Mjc0YzgxNzQ4ZjVkNTY2ZjZkY2FjZmQ1NDNkYTAxYzJiZDVjYjlhOGNiYmUyZTgwNjRiNTBjNDY0Mjg2NjQiLCJ0YWciOiIifQ==&quot;,
+                &quot;two_factor_confirmed_at&quot;: &quot;2026-03-31 12:57:12&quot;,
                 &quot;created_at&quot;: &quot;2026-03-31T12:16:16.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-31T12:17:00.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-31T12:57:12.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;active_subscription_id&quot;: null,
                 &quot;plan_id&quot;: null,
@@ -52055,7 +52152,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 2,
@@ -52100,7 +52197,7 @@ vary: Origin
             &quot;created_at&quot;: &quot;2026-03-31T12:16:48.000000Z&quot;,
             &quot;updated_at&quot;: &quot;2026-03-31T12:16:48.000000Z&quot;,
             &quot;deleted_at&quot;: null,
-            &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+            &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
             &quot;content&quot;: &quot;&lt;p&gt;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving treatments for genetic disorders.&lt;/p&gt;&quot;,
             &quot;is_published&quot;: true,
             &quot;likes_count&quot;: 4,
@@ -52115,12 +52212,12 @@ vary: Origin
                 &quot;phone&quot;: null,
                 &quot;google_id&quot;: null,
                 &quot;email_verified_at&quot;: &quot;2026-03-31T12:16:16.000000Z&quot;,
-                &quot;two_factor_secret&quot;: null,
-                &quot;two_factor_enabled&quot;: false,
-                &quot;two_factor_recovery_codes&quot;: null,
-                &quot;two_factor_confirmed_at&quot;: null,
+                &quot;two_factor_secret&quot;: &quot;eyJpdiI6IkhvSEJ3WlE1SjV2eWR2N3ZGakRycUE9PSIsInZhbHVlIjoiSk1PTDYwZG9VWmpFUFNpL1NBd01IZE9kRU5EeHZmOUFHVHJGaXVudVRUbz0iLCJtYWMiOiIxZGUxY2UyOGY3MTMyMmU0NmM3NDFiOWUxODliM2FmMTViNDczOTY4MWU0NDg5ODZlYzMwOTJiNGU3YzMwMzE2IiwidGFnIjoiIn0=&quot;,
+                &quot;two_factor_enabled&quot;: true,
+                &quot;two_factor_recovery_codes&quot;: &quot;eyJpdiI6IlBDYW4zaWorRGpnSlR4V2RFQlRtS1E9PSIsInZhbHVlIjoidGdFUWNsUXpUWWNDcnVvZTRmNXdXeFpzbktRdmw2N1VET0s2bjZ3L0pxVWpBS01meXZpNHlHTjBNMjc0bUgyWFZqd0Mzckk4Unpvc3M1RzVTdC9HQWwyZDR4aHdJamtUaXNPTEs3VTB6Z05CNEppTWNXY0FMM1A2bm9NM1J2cHF1clNsbmh6VXdqRS9SbmJGOU1qUjQra3VRaGxRb0xzZWQzRFRSNFVnNzZ6VmdpclliV2JtVE9VSGRlOU9pV2lPdnQ2dlFvVWh3N296Tlh0Si91VWU0Um1qdkcxT25nVUhaeU5hcHc1b0lyZE1SN2VINDM5OFNON2IvTkVrRGNDN1VBTFdlTytjUEN1QnRvaVYyNEhUdFE9PSIsIm1hYyI6ImI4Mjc0YzgxNzQ4ZjVkNTY2ZjZkY2FjZmQ1NDNkYTAxYzJiZDVjYjlhOGNiYmUyZTgwNjRiNTBjNDY0Mjg2NjQiLCJ0YWciOiIifQ==&quot;,
+                &quot;two_factor_confirmed_at&quot;: &quot;2026-03-31 12:57:12&quot;,
                 &quot;created_at&quot;: &quot;2026-03-31T12:16:16.000000Z&quot;,
-                &quot;updated_at&quot;: &quot;2026-03-31T12:17:00.000000Z&quot;,
+                &quot;updated_at&quot;: &quot;2026-03-31T12:57:12.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
                 &quot;active_subscription_id&quot;: null,
                 &quot;plan_id&quot;: null,
@@ -52269,7 +52366,7 @@ vary: Origin
                     &quot;share_token&quot;: null,
                     &quot;expires_at&quot;: null,
                     &quot;allow_download&quot;: true,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                     &quot;pivot&quot;: {
                         &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                         &quot;attachable_id&quot;: 1,
@@ -52445,7 +52542,7 @@ vary: Origin
         &quot;created_at&quot;: &quot;2026-03-31T12:16:48.000000Z&quot;,
         &quot;updated_at&quot;: &quot;2026-03-31T12:16:48.000000Z&quot;,
         &quot;deleted_at&quot;: null,
-        &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+        &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
         &quot;content&quot;: &quot;&lt;p&gt;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving treatments for genetic disorders.&lt;/p&gt;&quot;,
         &quot;is_published&quot;: true,
         &quot;likes_count&quot;: 4,
@@ -52597,7 +52694,7 @@ vary: Origin
                 &quot;share_token&quot;: null,
                 &quot;expires_at&quot;: null,
                 &quot;allow_download&quot;: true,
-                &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                 &quot;pivot&quot;: {
                     &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                     &quot;attachable_id&quot;: 1,
@@ -52642,7 +52739,7 @@ vary: Origin
                 &quot;created_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
                 &quot;updated_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
-                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                 &quot;content&quot;: &quot;&lt;p&gt;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&lt;/p&gt;&quot;,
                 &quot;is_published&quot;: true,
                 &quot;likes_count&quot;: 4,
@@ -52811,7 +52908,7 @@ vary: Origin
                         &quot;share_token&quot;: null,
                         &quot;expires_at&quot;: null,
                         &quot;allow_download&quot;: true,
-                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                        &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                         &quot;pivot&quot;: {
                             &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                             &quot;attachable_id&quot;: 5,
@@ -52856,7 +52953,7 @@ vary: Origin
                 &quot;created_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
                 &quot;updated_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
-                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                 &quot;content&quot;: &quot;&lt;p&gt;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&lt;/p&gt;&quot;,
                 &quot;is_published&quot;: true,
                 &quot;likes_count&quot;: 3,
@@ -53009,7 +53106,7 @@ vary: Origin
                         &quot;share_token&quot;: null,
                         &quot;expires_at&quot;: null,
                         &quot;allow_download&quot;: true,
-                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                        &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                         &quot;pivot&quot;: {
                             &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                             &quot;attachable_id&quot;: 6,
@@ -53054,7 +53151,7 @@ vary: Origin
                 &quot;created_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
                 &quot;updated_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
-                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                 &quot;content&quot;: &quot;&lt;p&gt;Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.&lt;/p&gt;&quot;,
                 &quot;is_published&quot;: true,
                 &quot;likes_count&quot;: 5,
@@ -53207,7 +53304,7 @@ vary: Origin
                         &quot;share_token&quot;: null,
                         &quot;expires_at&quot;: null,
                         &quot;allow_download&quot;: true,
-                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                         &quot;pivot&quot;: {
                             &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                             &quot;attachable_id&quot;: 16,
@@ -53796,7 +53893,7 @@ vary: Origin
         &quot;created_at&quot;: &quot;2026-03-31T12:16:48.000000Z&quot;,
         &quot;updated_at&quot;: &quot;2026-03-31T12:16:48.000000Z&quot;,
         &quot;deleted_at&quot;: null,
-        &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+        &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
         &quot;content&quot;: &quot;&lt;p&gt;CRISPR-Cas9 has transformed our ability to edit genomes precisely. This article explores how gene therapy is moving from experimental phases to life-saving treatments for genetic disorders.&lt;/p&gt;&quot;,
         &quot;is_published&quot;: true,
         &quot;likes_count&quot;: 4,
@@ -53948,7 +54045,7 @@ vary: Origin
                 &quot;share_token&quot;: null,
                 &quot;expires_at&quot;: null,
                 &quot;allow_download&quot;: true,
-                &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                 &quot;pivot&quot;: {
                     &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                     &quot;attachable_id&quot;: 1,
@@ -53993,7 +54090,7 @@ vary: Origin
                 &quot;created_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
                 &quot;updated_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
-                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                 &quot;content&quot;: &quot;&lt;p&gt;Synthetic biology combines engineering and biology to build new biological parts. From biofuels to bioplastics, the possibilities are endless.&lt;/p&gt;&quot;,
                 &quot;is_published&quot;: true,
                 &quot;likes_count&quot;: 4,
@@ -54162,7 +54259,7 @@ vary: Origin
                         &quot;share_token&quot;: null,
                         &quot;expires_at&quot;: null,
                         &quot;allow_download&quot;: true,
-                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                        &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                         &quot;pivot&quot;: {
                             &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                             &quot;attachable_id&quot;: 5,
@@ -54207,7 +54304,7 @@ vary: Origin
                 &quot;created_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
                 &quot;updated_at&quot;: &quot;2026-03-31T12:16:49.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
-                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                 &quot;content&quot;: &quot;&lt;p&gt;Big data meets biology. Learn how computational tools are helping scientists understand complex biological systems.&lt;/p&gt;&quot;,
                 &quot;is_published&quot;: true,
                 &quot;likes_count&quot;: 3,
@@ -54360,7 +54457,7 @@ vary: Origin
                         &quot;share_token&quot;: null,
                         &quot;expires_at&quot;: null,
                         &quot;allow_download&quot;: true,
-                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                        &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                         &quot;pivot&quot;: {
                             &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                             &quot;attachable_id&quot;: 6,
@@ -54405,7 +54502,7 @@ vary: Origin
                 &quot;created_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
                 &quot;updated_at&quot;: &quot;2026-03-31T12:16:51.000000Z&quot;,
                 &quot;deleted_at&quot;: null,
-                &quot;featured_image&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                &quot;featured_image&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                 &quot;content&quot;: &quot;&lt;p&gt;Investigating the potential of third-generation biofuels from algae to provide sustainable energy solutions for the transport sector.&lt;/p&gt;&quot;,
                 &quot;is_published&quot;: true,
                 &quot;likes_count&quot;: 5,
@@ -54558,7 +54655,7 @@ vary: Origin
                         &quot;share_token&quot;: null,
                         &quot;expires_at&quot;: null,
                         &quot;allow_download&quot;: true,
-                        &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
+                        &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/90/b9/90b92e0098c72a0d44e92db2d2b39dfb950ec54c1c68469e4895df72d8f103f6&quot;,
                         &quot;pivot&quot;: {
                             &quot;attachable_type&quot;: &quot;App\\Models\\Post&quot;,
                             &quot;attachable_id&quot;: 16,
@@ -58059,7 +58156,7 @@ vary: Origin
             &quot;donor_count&quot;: 6,
             &quot;is_goal_reached&quot;: false,
             &quot;currency&quot;: &quot;KES&quot;,
-            &quot;hero_image_url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/ad/3e/ad3ec9571be2b09cedc61db2a119eba4ee3e207b610172c3c75d47f2858b2fbf&quot;,
+            &quot;hero_image_url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/ad/3e/ad3ec9571be2b09cedc61db2a119eba4ee3e207b610172c3c75d47f2858b2fbf&quot;,
             &quot;featured_media_id&quot;: 29,
             &quot;gallery_media_ids&quot;: [],
             &quot;media&quot;: [
@@ -58067,7 +58164,7 @@ vary: Origin
                     &quot;id&quot;: 29,
                     &quot;file_name&quot;: &quot;stem-education.png&quot;,
                     &quot;file_path&quot;: null,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/ad/3e/ad3ec9571be2b09cedc61db2a119eba4ee3e207b610172c3c75d47f2858b2fbf&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/ad/3e/ad3ec9571be2b09cedc61db2a119eba4ee3e207b610172c3c75d47f2858b2fbf&quot;,
                     &quot;original_url&quot;: null,
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
                     &quot;size&quot;: null
@@ -58098,7 +58195,7 @@ vary: Origin
             &quot;donor_count&quot;: 4,
             &quot;is_goal_reached&quot;: false,
             &quot;currency&quot;: &quot;KES&quot;,
-            &quot;hero_image_url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/6b/27/6b278376b1b2e6d661bbcdc40c93adf4413549e8f19a174ae39811412d61bfde&quot;,
+            &quot;hero_image_url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/6b/27/6b278376b1b2e6d661bbcdc40c93adf4413549e8f19a174ae39811412d61bfde&quot;,
             &quot;featured_media_id&quot;: 32,
             &quot;gallery_media_ids&quot;: [],
             &quot;media&quot;: [
@@ -58106,7 +58203,7 @@ vary: Origin
                     &quot;id&quot;: 32,
                     &quot;file_name&quot;: &quot;medical-outreach.png&quot;,
                     &quot;file_path&quot;: null,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/6b/27/6b278376b1b2e6d661bbcdc40c93adf4413549e8f19a174ae39811412d61bfde&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/6b/27/6b278376b1b2e6d661bbcdc40c93adf4413549e8f19a174ae39811412d61bfde&quot;,
                     &quot;original_url&quot;: null,
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
                     &quot;size&quot;: null
@@ -58137,7 +58234,7 @@ vary: Origin
             &quot;donor_count&quot;: 10,
             &quot;is_goal_reached&quot;: false,
             &quot;currency&quot;: &quot;KES&quot;,
-            &quot;hero_image_url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+            &quot;hero_image_url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
             &quot;featured_media_id&quot;: 31,
             &quot;gallery_media_ids&quot;: [],
             &quot;media&quot;: [
@@ -58145,7 +58242,7 @@ vary: Origin
                     &quot;id&quot;: 31,
                     &quot;file_name&quot;: &quot;tech-hub.png&quot;,
                     &quot;file_path&quot;: null,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/86/b2/86b2121a659ec16fb114729581ebf0ca9ea012f79979ef85348766541324aff3&quot;,
                     &quot;original_url&quot;: null,
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
                     &quot;size&quot;: null
@@ -58176,7 +58273,7 @@ vary: Origin
             &quot;donor_count&quot;: 7,
             &quot;is_goal_reached&quot;: false,
             &quot;currency&quot;: &quot;KES&quot;,
-            &quot;hero_image_url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/8e/73/8e73ed2c2e9bf682de271934de6cb76991d88be3b85b2a73134bb7c811701b1a&quot;,
+            &quot;hero_image_url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/8e/73/8e73ed2c2e9bf682de271934de6cb76991d88be3b85b2a73134bb7c811701b1a&quot;,
             &quot;featured_media_id&quot;: 30,
             &quot;gallery_media_ids&quot;: [],
             &quot;media&quot;: [
@@ -58184,7 +58281,7 @@ vary: Origin
                     &quot;id&quot;: 30,
                     &quot;file_name&quot;: &quot;clean-water.png&quot;,
                     &quot;file_path&quot;: null,
-                    &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/8e/73/8e73ed2c2e9bf682de271934de6cb76991d88be3b85b2a73134bb7c811701b1a&quot;,
+                    &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/8e/73/8e73ed2c2e9bf682de271934de6cb76991d88be3b85b2a73134bb7c811701b1a&quot;,
                     &quot;original_url&quot;: null,
                     &quot;mime_type&quot;: &quot;image/jpeg&quot;,
                     &quot;size&quot;: null
@@ -58347,7 +58444,7 @@ vary: Origin
         &quot;donor_count&quot;: 6,
         &quot;is_goal_reached&quot;: false,
         &quot;currency&quot;: &quot;KES&quot;,
-        &quot;hero_image_url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/ad/3e/ad3ec9571be2b09cedc61db2a119eba4ee3e207b610172c3c75d47f2858b2fbf&quot;,
+        &quot;hero_image_url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/ad/3e/ad3ec9571be2b09cedc61db2a119eba4ee3e207b610172c3c75d47f2858b2fbf&quot;,
         &quot;featured_media_id&quot;: 29,
         &quot;gallery_media_ids&quot;: [],
         &quot;media&quot;: [
@@ -58355,7 +58452,7 @@ vary: Origin
                 &quot;id&quot;: 29,
                 &quot;file_name&quot;: &quot;stem-education.png&quot;,
                 &quot;file_path&quot;: null,
-                &quot;url&quot;: &quot;https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev/blobs/ad/3e/ad3ec9571be2b09cedc61db2a119eba4ee3e207b610172c3c75d47f2858b2fbf&quot;,
+                &quot;url&quot;: &quot;https://pub-fbd3b4ee6b5a4866adadeaa9d6b43c35.r2.dev/blobs/ad/3e/ad3ec9571be2b09cedc61db2a119eba4ee3e207b610172c3c75d47f2858b2fbf&quot;,
                 &quot;original_url&quot;: null,
                 &quot;mime_type&quot;: &quot;image/jpeg&quot;,
                 &quot;size&quot;: null
@@ -61826,7 +61923,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"name\": \"b\",
-    \"root_type\": \"personal\"
+    \"root_type\": \"public\"
 }"
 </code></pre></div>
 
@@ -61843,7 +61940,7 @@ const headers = {
 
 let body = {
     "name": "b",
-    "root_type": "personal"
+    "root_type": "public"
 };
 
 fetch(url, {
@@ -61954,10 +62051,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="root_type"                data-endpoint="POSTapi-folders"
-               value="personal"
+               value="public"
                data-component="body">
     <br>
-<p>Example: <code>personal</code></p>
+<p>Example: <code>public</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>personal</code></li> <li><code>public</code></li></ul>
         </div>
@@ -62942,9 +63039,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --form "attached_to=architecto"\
     --form "attached_to_id=16"\
     --form "temporary="\
-    --form "root_type=personal"\
-    --form "visibility=private"\
-    --form "file=@C:\Users\pasca\AppData\Local\Temp\php5FC0.tmp" </code></pre></div>
+    --form "root_type=public"\
+    --form "visibility=public"\
+    --form "file=@C:\Users\pasca\AppData\Local\Temp\php3B23.tmp" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -62961,8 +63058,8 @@ const body = new FormData();
 body.append('attached_to', 'architecto');
 body.append('attached_to_id', '16');
 body.append('temporary', '');
-body.append('root_type', 'personal');
-body.append('visibility', 'private');
+body.append('root_type', 'public');
+body.append('visibility', 'public');
 body.append('file', document.querySelector('input[name="file"]').files[0]);
 
 fetch(url, {
@@ -63054,7 +63151,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>The file to upload (image, audio, video, pdf, gif). Example: <code>C:\Users\pasca\AppData\Local\Temp\php5FC0.tmp</code></p>
+<p>The file to upload (image, audio, video, pdf, gif). Example: <code>C:\Users\pasca\AppData\Local\Temp\php3B23.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>attached_to</code></b>&nbsp;&nbsp;
@@ -63105,10 +63202,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="root_type"                data-endpoint="POSTapi-media"
-               value="personal"
+               value="public"
                data-component="body">
     <br>
-<p>Example: <code>personal</code></p>
+<p>Example: <code>public</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>personal</code></li> <li><code>public</code></li></ul>
         </div>
@@ -63129,10 +63226,10 @@ Must be one of:
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="visibility"                data-endpoint="POSTapi-media"
-               value="private"
+               value="public"
                data-component="body">
     <br>
-<p>Example: <code>private</code></p>
+<p>Example: <code>public</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>public</code></li> <li><code>private</code></li> <li><code>shared</code></li></ul>
         </div>
@@ -63531,7 +63628,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"root_type\": \"personal\"
+    \"root_type\": \"public\"
 }"
 </code></pre></div>
 
@@ -63547,7 +63644,7 @@ const headers = {
 };
 
 let body = {
-    "root_type": "personal"
+    "root_type": "public"
 };
 
 fetch(url, {
@@ -63660,10 +63757,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <i>optional</i> &nbsp;
                 <input type="text" style="display: none"
                               name="root_type"                data-endpoint="POSTapi-media-bulk-move"
-               value="personal"
+               value="public"
                data-component="body">
     <br>
-<p>Example: <code>personal</code></p>
+<p>Example: <code>public</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>personal</code></li> <li><code>public</code></li></ul>
         </div>
@@ -63841,7 +63938,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
     --form "chunk_index=16"\
-    --form "chunk=@C:\Users\pasca\AppData\Local\Temp\php5FE1.tmp" </code></pre></div>
+    --form "chunk=@C:\Users\pasca\AppData\Local\Temp\php3B63.tmp" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -63959,7 +64056,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be a file. Example: <code>C:\Users\pasca\AppData\Local\Temp\php5FE1.tmp</code></p>
+<p>Must be a file. Example: <code>C:\Users\pasca\AppData\Local\Temp\php3B63.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>chunk_index</code></b>&nbsp;&nbsp;
@@ -64921,14 +65018,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:8000/api/registrations/16" \
+    "http://localhost:8000/api/registrations/1" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/registrations/16"
+    "http://localhost:8000/api/registrations/1"
 );
 
 const headers = {
@@ -65021,10 +65118,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="id"                data-endpoint="DELETEapi-registrations--id-"
-               value="16"
+               value="1"
                data-component="url">
     <br>
-<p>The ID of the registration. Example: <code>16</code></p>
+<p>The ID of the registration. Example: <code>1</code></p>
             </div>
                     </form>
 
@@ -72448,7 +72545,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --form "title=architecto"\
     --form "content=architecto"\
     --form "media_id=16"\
-    --form "image=@C:\Users\pasca\AppData\Local\Temp\php640A.tmp" </code></pre></div>
+    --form "image=@C:\Users\pasca\AppData\Local\Temp\php4D57.tmp" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -72639,7 +72736,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>C:\Users\pasca\AppData\Local\Temp\php640A.tmp</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>C:\Users\pasca\AppData\Local\Temp\php4D57.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>media_id</code></b>&nbsp;&nbsp;
@@ -72678,7 +72775,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --form "title=architecto"\
     --form "content=architecto"\
     --form "media_id=16"\
-    --form "image=@C:\Users\pasca\AppData\Local\Temp\php641A.tmp" </code></pre></div>
+    --form "image=@C:\Users\pasca\AppData\Local\Temp\php4DA6.tmp" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -72881,7 +72978,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>C:\Users\pasca\AppData\Local\Temp\php641A.tmp</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>C:\Users\pasca\AppData\Local\Temp\php4DA6.tmp</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>media_id</code></b>&nbsp;&nbsp;

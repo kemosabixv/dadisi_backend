@@ -6,6 +6,8 @@ use App\Channels\SupabaseChannel;
 use App\Models\LabBooking;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\OneSignal\OneSignalChannel;
+use NotificationChannels\OneSignal\OneSignalMessage;
 
 /**
  * Sent to users when their lab booking quota has been restored.
@@ -19,7 +21,25 @@ class LabBookingQuotaRestored extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', SupabaseChannel::class];
+        return ['mail', 'database', SupabaseChannel::class, OneSignalChannel::class];
+    }
+
+    /**
+     * Get the OneSignal representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return \NotificationChannels\OneSignal\OneSignalMessage
+     */
+    public function toOneSignal($notifiable)
+    {
+        $hours = number_format($this->hoursRestored, 1);
+        
+        return OneSignalMessage::create()
+            ->setSubject('Lab Quota Restored')
+            ->setBody("Good news! {$hours} hours have been restored to your lab quota.")
+            ->setUrl(config('app.frontend_url') . '/dashboard/membership')
+            ->setData('type', 'lab_booking_quota_restored')
+            ->setData('booking_id', $this->booking->id);
     }
 
     public function toMail(object $notifiable): MailMessage
