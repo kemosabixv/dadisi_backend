@@ -41,7 +41,7 @@ class AdminPaymentControllerTest extends TestCase
         // Assign roles retrieved from database (web guard)
         $superAdminRole = \Spatie\Permission\Models\Role::findByName('super_admin', 'web');
         $adminRole = \Spatie\Permission\Models\Role::findByName('admin', 'web');
-        $financeRole = \Spatie\Permission\Models\Role::findByName('finance', 'web');
+        $financeRole = \Spatie\Permission\Models\Role::findByName('finance_manager', 'web');
 
         $this->superAdmin->assignRole($superAdminRole);
         $this->admin->assignRole($adminRole);

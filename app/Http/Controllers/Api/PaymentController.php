@@ -447,6 +447,7 @@ class PaymentController extends Controller
     {
         $type = $payment->payable_type;
         $payableId = $payment->payable_id;
+        $frontendUrl = rtrim($frontendUrl, '/');
 
         Log::info('Generating payment redirect response', [
             'payable_type' => $type,
@@ -466,15 +467,14 @@ class PaymentController extends Controller
             $donation = \App\Models\Donation::find($payableId);
             $ref = $donation?->reference ?? $payment->order_reference;
 
-            // For guest donations, redirect to public donations page
-            $path = $payment->payer_id ? '/dashboard/donations' : '/donations';
-            $redirectUrl = $frontendUrl.$path.'?payment=success&reference='.$ref;
+            // Use the specific donation checkout reference page
+            $redirectUrl = $frontendUrl.'/donations/checkout/'.$ref;
             Log::info('Redirecting to donation success page', ['url' => $redirectUrl]);
             return redirect($redirectUrl);
         }
 
         if ($type === 'subscription' || $type === 'App\Models\PlanSubscription') {
-            $redirectUrl = $frontendUrl.'/dashboard/billing/success?payment_id='.$payment->id;
+            $redirectUrl = $frontendUrl.'/dashboard/subscription?payment=success&payment_id='.$payment->id;
             Log::info('Redirecting to subscription success page', ['url' => $redirectUrl]);
             return redirect($redirectUrl);
         }

@@ -273,6 +273,7 @@ class RolesPermissionsSeeder extends Seeder
                 'view_lab_rollovers',
                 'retry_lab_rollovers',
                 'manage_refunds',
+                'manage_payments',
             ],
             'super_admin' => [], // Gets all via syncPermissions logic below
         ];
