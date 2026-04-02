@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Media;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -121,13 +120,6 @@ class Event extends Model
         return $this->hasMany(Speaker::class);
     }
 
-    /**
-     * Get all tags for this event
-     */
-    public function tags(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(EventTag::class, 'event_tag', 'event_id', 'tag_id');
-    }
 
     /**
      * Get all event orders for this event

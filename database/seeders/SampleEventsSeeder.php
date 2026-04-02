@@ -5,13 +5,12 @@ namespace Database\Seeders;
 use App\Models\County;
 use App\Models\Event;
 use App\Models\EventCategory;
-use App\Models\EventTag;
-use App\Models\Speaker;
-use App\Models\Ticket;
-use App\Models\User;
-use App\Services\Media\MediaService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\Ticket;
+use App\Models\Speaker;
+use App\Services\Contracts\MediaServiceContract as MediaService;
 use Illuminate\Support\Str;
 
 class SampleEventsSeeder extends Seeder
@@ -29,7 +28,6 @@ class SampleEventsSeeder extends Seeder
         }
 
         $categories = EventCategory::all()->keyBy('slug');
-        $tags = EventTag::all()->keyBy('slug');
 
         // Get or create an organizer user
         $organizer = User::where('email', 'admin@dadisilab.com')->first();
@@ -72,10 +70,9 @@ class SampleEventsSeeder extends Seeder
                 'featured' => true,
                 'starts_at' => $now->copy()->addWeeks(2)->setTime(9, 0),
                 'ends_at' => $now->copy()->addWeeks(2)->setTime(17, 0),
-                'tags' => ['in-person', 'free', 'beginner'],
                 'tickets' => [
                     ['name' => 'General Admission', 'price' => 0, 'capacity' => 100],
-                    ['name' => 'VIP (Includes Lunch)', 'price' => 500, 'capacity' => 50],
+                    ['name' => 'VIP (Limited)', 'price' => 0, 'capacity' => 50],
                 ],
                 'speakers' => [
                     ['name' => 'Dr. Amani Ochieng', 'designation' => 'Lead Scientist', 'company' => 'Dadisi Labs', 'bio' => 'Molecular biologist with 15 years of experience in community science education.'],
@@ -96,7 +93,6 @@ class SampleEventsSeeder extends Seeder
                 'featured' => false,
                 'starts_at' => $now->copy()->addWeeks(3)->setTime(10, 0),
                 'ends_at' => $now->copy()->addWeeks(3)->setTime(16, 0),
-                'tags' => ['in-person', 'paid', 'advanced', 'workshop'],
                 'tickets' => [
                     ['name' => 'Early Bird', 'price' => 1200, 'capacity' => 10, 'available_until' => $now->copy()->addWeeks(2)],
                     ['name' => 'Regular', 'price' => 1500, 'capacity' => 20],
@@ -119,7 +115,6 @@ class SampleEventsSeeder extends Seeder
                 'featured' => false,
                 'starts_at' => $now->copy()->addWeeks(1)->setTime(14, 0),
                 'ends_at' => $now->copy()->addWeeks(1)->setTime(18, 0),
-                'tags' => ['online', 'paid', 'beginner'],
                 'tickets' => [
                     ['name' => 'Standard Access', 'price' => 1000, 'capacity' => 150],
                     ['name' => 'Premium (Recording + Certificate)', 'price' => 2000, 'capacity' => 50],
@@ -141,7 +136,6 @@ class SampleEventsSeeder extends Seeder
                 'featured' => false,
                 'starts_at' => $now->copy()->addWeeks(4)->setTime(7, 0),
                 'ends_at' => $now->copy()->addWeeks(4)->setTime(12, 0),
-                'tags' => ['in-person', 'free', 'beginner'],
                 'tickets' => [
                     ['name' => 'Free Entry', 'price' => 0, 'capacity' => 50],
                 ],
@@ -161,7 +155,6 @@ class SampleEventsSeeder extends Seeder
                 'featured' => false,
                 'starts_at' => $now->copy()->addWeeks(5)->setTime(9, 0),
                 'ends_at' => $now->copy()->addWeeks(5)->setTime(17, 0),
-                'tags' => ['online', 'paid', 'advanced'],
                 'tickets' => [
                     ['name' => 'Full Day Access', 'price' => 2500, 'capacity' => 100],
                 ],
@@ -182,7 +175,6 @@ class SampleEventsSeeder extends Seeder
                 'featured' => true,
                 'starts_at' => $now->copy()->addWeeks(2)->addDays(1)->setTime(9, 0),
                 'ends_at' => $now->copy()->addWeeks(2)->addDays(1)->setTime(15, 0),
-                'tags' => ['in-person', 'beginner', 'workshop'],
                 'tickets' => [
                     ['name' => 'Student Ticket', 'price' => 200, 'capacity' => 40],
                 ],
@@ -203,7 +195,6 @@ class SampleEventsSeeder extends Seeder
                 'featured' => false,
                 'starts_at' => $now->copy()->subWeeks(1)->setTime(18, 0),
                 'ends_at' => $now->copy()->subWeeks(1)->setTime(20, 0),
-                'tags' => ['in-person', 'free'],
                 'tickets' => [
                     ['name' => 'Free Entry', 'price' => 0, 'capacity' => 80],
                 ],
@@ -224,7 +215,6 @@ class SampleEventsSeeder extends Seeder
                 'featured_until' => $now->copy()->addMonths(2),
                 'starts_at' => $now->copy()->addWeeks(6)->setTime(8, 0),
                 'ends_at' => $now->copy()->addWeeks(6)->setTime(18, 0),
-                'tags' => ['hybrid', 'paid', 'conference'],
                 'tickets' => [
                     ['name' => 'Online Pass', 'price' => 500, 'capacity' => 300],
                     ['name' => 'In-Person Standard', 'price' => 1500, 'capacity' => 150],
@@ -249,7 +239,6 @@ class SampleEventsSeeder extends Seeder
                 'featured' => false,
                 'starts_at' => $now->copy()->addWeeks(3)->addDays(2)->setTime(8, 0),
                 'ends_at' => $now->copy()->addWeeks(3)->addDays(2)->setTime(16, 0),
-                'tags' => ['in-person', 'free', 'beginner'],
                 'tickets' => [
                     ['name' => 'Health Screening Pass', 'price' => 0, 'capacity' => 200],
                 ],
@@ -327,17 +316,6 @@ class SampleEventsSeeder extends Seeder
                 }
             }
 
-            // Attach tags
-            if (! empty($eventData['tags'])) {
-                $tagIds = [];
-                foreach ($eventData['tags'] as $tagSlug) {
-                    $tag = $tags->get($tagSlug);
-                    if ($tag) {
-                        $tagIds[] = $tag->id;
-                    }
-                }
-                $event->tags()->syncWithoutDetaching($tagIds);
-            }
 
             // Create tickets
             if (! empty($eventData['tickets'])) {

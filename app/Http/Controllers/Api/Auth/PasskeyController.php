@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Laragear\WebAuthn\Http\Requests\AttestationRequest;
 use Laragear\WebAuthn\Http\Requests\AttestedRequest;
 use Laragear\WebAuthn\Http\Requests\AssertionRequest;
@@ -70,13 +71,27 @@ class PasskeyController extends Controller
                 $credential->save();
             }
 
+            $message = 'Passkey registered successfully.';
+            $recoveryCodes = [];
+
+            // Recovery logic only if MFA is enabled or being enabled
+            $user = $request->user();
+            if ($user->two_factor_enabled && $user->passkeys()->count() === 1 && empty($user->two_factor_recovery_codes)) {
+                $recoveryCodes = $this->generateRecoveryCodes();
+                $user->forceFill([
+                    'two_factor_recovery_codes' => encrypt(json_encode($recoveryCodes)),
+                ])->save();
+                $message .= ' Recovery codes have been generated for your account.';
+            }
+
             return response()->json([
-                'message' => 'Passkey registered successfully.',
+                'message' => $message,
                 'passkey' => [
                     'id' => $credential->id,
                     'name' => $credential->name,
                     'created_at' => $credential->created_at->toIso8601String(),
                 ],
+                'recovery_codes' => $recoveryCodes,
             ], 201);
 
         } catch (\Exception $e) {
@@ -141,28 +156,20 @@ class PasskeyController extends Controller
      */
     public function authenticateOptions(AssertionRequest $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-        ]);
+        // For discoverable credentials (resident keys), the email is optional in the challenge phase.
+        // If provided, we filter by user. If not, the authenticator will provide the user list.
+        $email = $request->input('email');
+        $user = $email ? User::where('email', $email)->first() : null;
 
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user) {
+        // If email was provided but user not found, 404
+        if ($email && !$user) {
             return response()->json([
-                'message' => 'No passkeys found for this user.',
+                'message' => 'No account found with this email.',
             ], 404);
         }
 
-        $hasPasskeys = DB::table('webauthn_credentials')
-            ->where('user_id', $user->id)
-            ->exists();
-
-        if (!$hasPasskeys) {
-            return response()->json([
-                'message' => 'No passkeys found for this user.',
-            ], 404);
-        }
-
+        // Return the challenge options. 
+        // Laragear/WebAuthn handle the 'null' user case for discoverable credentials.
         return $request->toVerify($user);
     }
 
@@ -194,8 +201,12 @@ class PasskeyController extends Controller
                     ->where('id', $request->input('id'))
                     ->update(['updated_at' => now()]);
 
+                // Mark session as MFA satisfied since Passkey is 2FA inherent
+                session()->put('auth.mfa_satisfied', true);
+
                 return response()->json([
                     'user' => new SecureUserResource($user),
+                    'requires_mfa' => false, // Override any password-based MFA requirement
                 ]);
             }
 
@@ -208,5 +219,15 @@ class PasskeyController extends Controller
                 'message' => 'Passkey authentication error: ' . $e->getMessage(),
             ], 422);
         }
+    }
+
+    /**
+     * Generate a set of recovery codes.
+     */
+    protected function generateRecoveryCodes(int $count = 8): array
+    {
+        return array_map(function () {
+            return Str::random(10) . '-' . Str::random(10);
+        }, range(1, $count));
     }
 }

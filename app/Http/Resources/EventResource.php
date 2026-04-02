@@ -91,7 +91,6 @@ class EventResource extends JsonResource
             'tickets' => TicketResource::collection($this->whenLoaded('tickets')),
             'speakers' => SpeakerResource::collection($this->whenLoaded('speakers')),
             'promo_codes' => PromoCodeResource::collection($this->whenLoaded('promoCodes')),
-            'tags' => EventTagResource::collection($this->whenLoaded('tags')),
             'registrations_count' => $this->when(isset($this->registrations_count), $this->registrations_count),
             'waitlist_count' => $this->when(isset($this->waitlist_count), $this->waitlist_count),
             'created_at' => $this->created_at,

@@ -213,10 +213,12 @@ class AuthController extends Controller
         // Detect enabled MFA factors
         $supportedMethods = [];
         if ($user->two_factor_enabled) {
-            $supportedMethods[] = 'totp';
-        }
-        if ($user->has_passkeys) {
-            $supportedMethods[] = 'webauthn';
+            if ($user->two_factor_secret) {
+                $supportedMethods[] = 'totp';
+            }
+            if ($user->has_passkeys) {
+                $supportedMethods[] = 'webauthn';
+            }
         }
 
         if (!empty($supportedMethods)) {
@@ -224,7 +226,7 @@ class AuthController extends Controller
             Auth::logout();
             return response()->json([
                 'requires_mfa' => true,
-                'supported_methods' => $supportedMethods,
+                'supportedMethods' => $supportedMethods,
                 'email' => $user->email,
                 'message' => 'Multi-factor authentication required.',
             ], 200);

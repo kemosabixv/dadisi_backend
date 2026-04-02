@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\EventCategory;
-use App\Models\EventTag;
 use Illuminate\Support\Str;
 
 class EventManagementSeeder extends Seeder
@@ -37,14 +36,5 @@ class EventManagementSeeder extends Seeder
             );
         }
 
-        // 2. Seed Tags
-        $tags = ['Online', 'In-person', 'Beginner', 'Advanced', 'Free', 'Paid', 'Hybrid', 'Workshop', 'Conference'];
-
-        foreach ($tags as $tagName) {
-            EventTag::firstOrCreate(
-                ['slug' => Str::slug($tagName)],
-                ['name' => $tagName]
-            );
-        }
     }
 }

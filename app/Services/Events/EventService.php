@@ -65,11 +65,6 @@ class EventService implements EventServiceContract
                 }
             }
 
-            // Handle Tags
-            if (! empty($data['tag_ids'])) {
-                $event->tags()->sync($data['tag_ids']);
-            }
-
             // Handle Media
             if (! empty($data['featured_media_id'])) {
                 $media = Media::find($data['featured_media_id']);
@@ -120,7 +115,7 @@ class EventService implements EventServiceContract
                 'event_id' => $event->id,
             ]);
 
-            return $event->load(['organizer', 'category', 'county', 'tickets', 'speakers', 'tags', 'promoCodes']);
+            return $event->load(['organizer', 'category', 'county', 'tickets', 'speakers', 'promoCodes']);
         } catch (\Exception $e) {
             Log::error('Event creation failed', [
                 'actor_id' => $actor->getAuthIdentifier(),
@@ -160,6 +155,41 @@ class EventService implements EventServiceContract
                 $oldValues = $event->toArray();
 
                 $event->update($data);
+
+                // Smart Ticket Management: When event is set to Free (price = 0)
+                if (array_key_exists('price', $data) && $data['price'] == 0 && ($oldValues['price'] ?? 0) > 0) {
+                    // 1. Deactivate ALL paid tickets
+                    $event->tickets()->where('price', '>', 0)->update(['is_active' => false]);
+
+                    // 2. Ensure at least one FREE ticket exists and is active
+                    $hasActiveFreeTicket = $event->tickets()
+                        ->where('price', 0)
+                        ->where('is_active', true)
+                        ->exists();
+
+                    if (!$hasActiveFreeTicket) {
+                        // Look for an existing deactivated free ticket to reactivate
+                        $deactivatedFreeTicket = $event->tickets()
+                            ->where('price', 0)
+                            ->where('is_active', false)
+                            ->first();
+
+                        if ($deactivatedFreeTicket) {
+                            $deactivatedFreeTicket->update(['is_active' => true]);
+                        } else {
+                            // Create a new General Admission ticket
+                            $event->tickets()->create([
+                                'name' => 'General Admission',
+                                'description' => 'Standard free entry to the event.',
+                                'price' => 0,
+                                'currency' => $event->currency ?? 'KES',
+                                'quantity' => $event->capacity,
+                                'available' => $event->capacity,
+                                'is_active' => true,
+                            ]);
+                        }
+                    }
+                }
 
                 $changes = [];
                 foreach ($data as $key => $value) {
@@ -277,10 +307,7 @@ class EventService implements EventServiceContract
                     }
                 }
 
-                // Handle Tags
-                if (isset($data['tag_ids'])) {
-                    $event->tags()->sync($data['tag_ids']);
-                }
+                // Tags removed as per request
 
                 // Handle Media
                 if (isset($data['featured_media_id'])) {
@@ -308,7 +335,7 @@ class EventService implements EventServiceContract
                 }
             }
 
-            return $event->load(['organizer', 'category', 'county', 'tickets', 'speakers', 'tags', 'promoCodes']);
+            return $event->load(['organizer', 'category', 'county', 'tickets', 'speakers', 'promoCodes']);
         } catch (\Exception $e) {
             Log::error('Event update failed', [
                 'actor_id' => $actor->getAuthIdentifier(),
@@ -338,7 +365,6 @@ class EventService implements EventServiceContract
                 'county',
                 'tickets',
                 'speakers',
-                'tags',
                 'media',
                 'promoCodes',
             ])
@@ -380,12 +406,6 @@ class EventService implements EventServiceContract
         if ($filters->category) {
             $query->whereHas('category', function ($q) use ($filters) {
                 $q->where('slug', $filters->category);
-            });
-        }
-
-        if ($filters->tag) {
-            $query->whereHas('tags', function ($q) use ($filters) {
-                $q->where('slug', $filters->tag);
             });
         }
 
@@ -446,7 +466,7 @@ class EventService implements EventServiceContract
     {
         try {
             return Event::where('slug', $slug)
-                ->with(['organizer', 'registrations', 'category', 'county', 'tags', 'tickets', 'speakers'])
+                ->with(['organizer', 'registrations', 'category', 'county', 'tickets', 'speakers'])
                 ->firstOrFail();
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             throw EventException::notFoundBySlug($slug);

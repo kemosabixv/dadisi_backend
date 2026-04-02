@@ -32,6 +32,10 @@ class EventOrderResource extends JsonResource
             'guest_email' => $this->guest_email,
             'guest_phone' => $this->guest_phone,
             'created_at' => $this->created_at->toIso8601String(),
+            'promo_discount' => $this->promo_discount_amount,
+            'subscriber_discount' => $this->subscriber_discount_amount,
+            'original_amount' => $this->original_amount,
+            'total_discount' => $this->total_discount,
             
             // Relationships
             'qr_code_url' => $this->qr_code_path ? url('storage/' . $this->qr_code_path) : null,

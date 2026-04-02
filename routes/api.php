@@ -617,11 +617,13 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {  // P
 });
 
 // Event Management - Public routes
-use App\Http\Controllers\Api\EventController;
-use App\Http\Controllers\Api\RegistrationController;
-use App\Http\Controllers\Api\SpeakerController;
 use App\Http\Controllers\Api\TicketController;
+use App\Http\Controllers\Api\EventRegistrationBenefitsController;
+use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\SpeakerController;
+use App\Http\Controllers\Api\RegistrationController;
 
+Route::get('events/registration-benefits', EventRegistrationBenefitsController::class)->name('events.registration-benefits');
 Route::get('events', [EventController::class, 'index'])->name('events.index');
 Route::get('events/{slug}', [EventController::class, 'show'])->name('events.show');
 Route::get('events/{event}/validate-promo', [EventController::class, 'validatePromo'])->name('events.validate-promo');
@@ -678,16 +680,13 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::post('events/{event}/attendance/scan', [\App\Http\Controllers\Api\Admin\AdminEventAttendanceController::class, 'scan'])->name('admin.events.attendance.scan');
 });
 
-// Event Categories & Tags
+// Event Categories
 use App\Http\Controllers\Api\EventCategoryController;
-use App\Http\Controllers\Api\EventTagController;
 
 Route::get('event-categories', [EventCategoryController::class, 'index'])->name('event-categories.index');
-Route::get('event-tags', [EventTagController::class, 'index'])->name('event-tags.index');
 
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::apiResource('event-categories', EventCategoryController::class)->except(['index']);
-    Route::apiResource('event-tags', EventTagController::class)->only(['store', 'destroy']);
 });
 
 // Groups (County-based networking hubs)
