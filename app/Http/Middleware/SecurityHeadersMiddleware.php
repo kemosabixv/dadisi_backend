@@ -86,7 +86,7 @@ class SecurityHeadersMiddleware
             "default-src 'self'",
 
             // Scripts - allow self, inline (needed for Next.js), TinyMCE, and Builder.io, and OneSignal
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tiny.cloud https://cdn.builder.io https://cdn.onesignal.com",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tiny.cloud https://cdn.builder.io https://cdn.onesignal.com https://api.onesignal.com",
 
             // Styles - allow self, inline (needed for Tailwind), Google Fonts, and TinyMCE
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud",
