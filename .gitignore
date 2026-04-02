@@ -59,7 +59,7 @@ test_output.txt
 .env.prod current
 .gitignore
 /storage
-.scribe/*
+/.scribe/
 .env.prod
 .env.dev
 .scribe/endpoints/00.yaml
@@ -90,3 +90,11 @@ test_query.php
 .scribe/endpoints.cache/03.yaml
 .scribe/.filehashes
 resources/views/scribe/index.blade.php
+.scribe/endpoints.cache/02.yaml
+.scribe/endpoints.cache/03.yaml
+.scribe/.filehashes
+.scribe/intro.md
+.scribe/endpoints/02.yaml
+.scribe/endpoints/03.yaml
+.scribe/endpoints.cache/02.yaml
+.scribe/endpoints.cache/03.yaml

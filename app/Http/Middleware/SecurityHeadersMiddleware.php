@@ -92,7 +92,7 @@ class SecurityHeadersMiddleware
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud",
 
             // Images - allow self, data URIs, blob, localhost, HTTPS sources, TinyMCE, and R2 storage
-            "img-src 'self' data: blob: http://localhost:8000 http://127.0.0.1:8000 https: https://cdn.tiny.cloud https://pub-b8aa4c23b1a44c1e9746f44877e8a888.r2.dev",
+            "img-src 'self' data: blob: http://localhost:8000 http://127.0.0.1:8000 https: https://cdn.tiny.cloud " . config('filesystems.disks.r2.url', ''),
 
             // Fonts - allow self, Google Fonts, and TinyMCE
             "font-src 'self' https://fonts.gstatic.com https://cdn.tiny.cloud",
