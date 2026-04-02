@@ -374,7 +374,7 @@ class UserService implements UserServiceContract
             ]);
 
             // Update user with virtual path for backward compatibility or future use
-            $user->update(['profile_picture_path' => $media->file_path]);
+            $user->update(['profile_picture_path' => $media->file?->path]);
 
             Log::info("Profile picture uploaded via MediaService for user {$user->id}");
 
