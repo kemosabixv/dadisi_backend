@@ -89,7 +89,7 @@ class SecurityHeadersMiddleware
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tiny.cloud https://cdn.builder.io https://cdn.onesignal.com https://api.onesignal.com",
 
             // Styles - allow self, inline (needed for Tailwind), Google Fonts, and TinyMCE
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud https://onesignal.com",
 
             // Images - allow self, data URIs, blob, localhost, HTTPS sources, TinyMCE, and R2 storage
             "img-src 'self' data: blob: http://localhost:8000 http://127.0.0.1:8000 https: https://cdn.tiny.cloud " . config('filesystems.disks.r2.url', ''),
