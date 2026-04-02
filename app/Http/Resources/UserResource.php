@@ -39,6 +39,7 @@ class UserResource extends JsonResource
             'updated_at' => $this->updated_at,
             'deleted_at' => $this->when($isAdmin, $this->deleted_at),
             'profile_picture_url' => $this->profile_picture_url,
+            'has_password' => $this->has_password,
 
             // Roles for display
             'roles' => $this->whenLoaded('roles', function () {

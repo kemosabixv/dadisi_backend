@@ -102,7 +102,7 @@ class GoogleAuthController extends Controller
                     'username' => $generatedUsername,
                     'email' => $email,
                     'google_id' => $googleUser->getId(),
-                    'password' => bcrypt(str()->random(12)),
+                    'password' => null,
                     'email_verified_at' => now(),
                     'name' => $fullName,
                 ]);

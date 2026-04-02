@@ -109,12 +109,21 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     }
 
     /**
+     * Check if the user has a local password set (for OAuth migration).
+     */
+    public function getHasPasswordAttribute(): bool
+    {
+        return !is_null($this->password);
+    }
+
+    /**
      * The accessors to append to the model's array form.
      */
     protected $appends = [
         'profile_picture_url',
         'display_name',
         'has_passkeys',
+        'has_password',
     ];
 
     /**
