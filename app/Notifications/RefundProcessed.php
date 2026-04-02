@@ -16,6 +16,8 @@ class RefundProcessed extends Notification
         protected Refund $refund
     ) {}
 
+    public function via($notifiable)
+    {
         if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
             return ['mail'];
         }

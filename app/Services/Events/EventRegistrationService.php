@@ -324,14 +324,14 @@ class EventRegistrationService implements EventRegistrationServiceContract
                 // If it was confirmed and paid, trigger refund request
                 if ($oldStatus === 'confirmed' && $registration->order && $registration->order->isPaid()) {
                     try {
+                        // Mark the order as cancelled immediately to satisfy RefundService policy
+                        $registration->order->update(['status' => 'cancelled']);
+
                         $refund = $this->refundService->requestEventOrderRefund(
                             $registration->order,
                             $reason ?: 'Account cancellation',
                             $customerNotes
                         );
-
-                        // Mark the order as cancelled immediately to free up global capacity
-                        $registration->order->update(['status' => 'cancelled']);
                         
                         // Notify staff of new request
                         $staff = \App\Models\User::permission('manage_refunds')->get();
@@ -562,6 +562,9 @@ class EventRegistrationService implements EventRegistrationServiceContract
                     // Trigger refund if needed (consistent with single cancel)
                     if ($oldStatus === 'confirmed' && $reg->order && $reg->order->isPaid()) {
                         try {
+                            // Mark order as cancelled first to satisfy policy
+                            $reg->order->update(['status' => 'cancelled']);
+                            
                             $this->refundService->requestEventOrderRefund($reg->order, $reason ?? 'Bulk cancellation');
                         } catch (\Exception $re) {
                             Log::warning('Bulk refund request failed', ['registration_id' => $reg->id]);

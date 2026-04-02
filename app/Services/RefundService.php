@@ -113,6 +113,11 @@ class RefundService implements RefundServiceContract
             throw new \Exception('A refund is already pending for this order.');
         }
 
+        // 4. Ensure order is cancelled
+        if ($order->status !== 'cancelled' && $order->status !== 'refunded') {
+            throw new \Exception('Event registration must be cancelled before a refund can be initiated.');
+        }
+
         // Check cancellation deadline (Skip if requested by admin in admin panel context)
         // Note: For now we'll implement the check globally, and the UI will prevent users.
         // If staff uses the API directly, we might want an override flag, but let's stick to the plan.
@@ -199,9 +204,9 @@ class RefundService implements RefundServiceContract
             throw new \Exception("Refund eligibility period has expired ({$threshold} days since payment).");
         }
 
-        // 4. Ensure subscription is cancelled
-        if (! $subscription->canceled() && $subscription->status !== 'cancelled') {
-            throw new \Exception('Subscription must be cancelled before a refund can be initiated.');
+        // 4. Ensure subscription is cancelled or expired
+        if (! $subscription->canceled() && $subscription->status !== 'cancelled' && $subscription->status !== 'expired') {
+            throw new \Exception('Subscription must be cancelled or expired before a refund can be initiated.');
         }
 
         // Refund is always full
@@ -233,6 +238,11 @@ class RefundService implements RefundServiceContract
         $preview = $this->getLabBookingRefundPreview($booking);
         if (! $preview['is_eligible']) {
             throw new \Exception($preview['explanation'] ?? 'This booking is not eligible for a refund.');
+        }
+
+        // 4. Ensure booking is cancelled or expired
+        if ($booking->status !== 'cancelled' && $booking->status !== 'expired' && $booking->status !== 'rejected') {
+            throw new \Exception('Lab booking must be cancelled or rejected before a refund can be initiated.');
         }
 
         $payment = $booking->payment()->where('status', 'paid')->first() ?? $booking->payment;
