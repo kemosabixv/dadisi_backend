@@ -41,7 +41,9 @@ class OccupancyService
     public function getSlotOccupancy(
         LabSpace $space,
         Carbon $slotStart,
-        Carbon $slotEnd
+        Carbon $slotEnd,
+        $prefetchedBookings = null,
+        $prefetchedHolds = null
     ): array {
         // Get capacity from slots_per_hour (new flexible capacity field)
         // Falls back to capacity field if slots_per_hour not set (null or 0)
@@ -52,14 +54,42 @@ class OccupancyService
 
         // Count confirmed and completed bookings that overlap this time slot
         // Pending bookings don't count toward occupancy
-        $currentCount = LabBooking::where('lab_space_id', $space->id)
-            ->where('starts_at', '<', $slotEnd)
-            ->where('ends_at', '>', $slotStart)
-            ->whereIn('status', [
-                LabBooking::STATUS_CONFIRMED,
-                LabBooking::STATUS_COMPLETED,
-            ])
-            ->count();
+        if ($prefetchedBookings !== null) {
+            $currentCount = $prefetchedBookings->filter(function ($booking) use ($slotStart, $slotEnd) {
+                return $booking->starts_at < $slotEnd &&
+                       $booking->ends_at > $slotStart &&
+                       in_array($booking->status, [
+                           LabBooking::STATUS_CONFIRMED,
+                           LabBooking::STATUS_COMPLETED,
+                       ]);
+            })->count();
+        } else {
+            $currentCount = LabBooking::where('lab_space_id', $space->id)
+                ->where('starts_at', '<', $slotEnd)
+                ->where('ends_at', '>', $slotStart)
+                ->whereIn('status', [
+                    LabBooking::STATUS_CONFIRMED,
+                    LabBooking::STATUS_COMPLETED,
+                ])
+                ->count();
+        }
+
+        // Count active slot holds (temporary locks during checkout)
+        if ($prefetchedHolds !== null) {
+            $holdCount = $prefetchedHolds->filter(function ($hold) use ($slotStart, $slotEnd) {
+                return $hold->starts_at < $slotEnd &&
+                       $hold->ends_at > $slotStart &&
+                       $hold->expires_at > now();
+            })->count();
+        } else {
+            $holdCount = \App\Models\SlotHold::where('lab_space_id', $space->id)
+                ->where('starts_at', '<', $slotEnd)
+                ->where('ends_at', '>', $slotStart)
+                ->where('expires_at', '>', now())
+                ->count();
+        }
+
+        $currentCount += $holdCount;
 
         // Calculate available slots
         $available = max(0, $capacity - $currentCount);

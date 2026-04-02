@@ -1632,11 +1632,19 @@ class LabBookingService implements LabBookingServiceContract
         // Ensure end date includes the entire day
         $endDateTime = $end->copy()->endOfDay();
 
-        // Get all bookings in range
+        // Get all relevant bookings in range for occupancy and display
+        // We include ALL statuses initially, and filter for occupancy calculation inside generateDaySlots
         $bookings = LabBooking::where('lab_space_id', $space->id)
             ->where('starts_at', '<', $endDateTime)
             ->where('ends_at', '>', $start)
             ->whereNotIn('status', [LabBooking::STATUS_CANCELLED, LabBooking::STATUS_REJECTED])
+            ->get();
+
+        // Get all active slot holds in range
+        $holds = \App\Models\SlotHold::where('lab_space_id', $space->id)
+            ->where('starts_at', '<', $endDateTime)
+            ->where('ends_at', '>', $start)
+            ->where('expires_at', '>', now())
             ->get();
 
         // Get all maintenance blocks in range
@@ -1653,7 +1661,7 @@ class LabBookingService implements LabBookingServiceContract
         while ($current <= $endDate) {
             $date = $current->format('Y-m-d');
             $events[$date] = [
-                'hours' => $this->generateDaySlots($space, $current, $blocks, $bookings),
+                'hours' => $this->generateDaySlots($space, $current, $blocks, $bookings, $holds),
             ];
             $current->addDay();
         }
@@ -1667,7 +1675,7 @@ class LabBookingService implements LabBookingServiceContract
      * Returns occupancy information for each hour including available positions and capacity.
      * Uses flexible operating hours (opens_at/closes_at) and flexible capacity (slots_per_hour).
      */
-    private function generateDaySlots(LabSpace $space, Carbon $date, $blocks, $bookings): array
+    private function generateDaySlots(LabSpace $space, Carbon $date, $blocks, $bookings, $holds = null): array
     {
         $daySlots = [];
 
@@ -1710,8 +1718,8 @@ class LabBookingService implements LabBookingServiceContract
                 continue;
             }
 
-            // Get occupancy data for this slot
-            $occupancy = $this->occupancyService->getSlotOccupancy($space, $hourStart, $hourEnd);
+            // Get occupancy data for this slot using pre-fetched bookings (O(1) query complexity)
+            $occupancy = $this->occupancyService->getSlotOccupancy($space, $hourStart, $hourEnd, $bookings, $holds);
 
             // Count overlapping bookings (legacy field for backward compatibility)
             $bookedCount = $bookings->filter(fn ($b) => $b->starts_at < $hourEnd && $b->ends_at > $hourStart
