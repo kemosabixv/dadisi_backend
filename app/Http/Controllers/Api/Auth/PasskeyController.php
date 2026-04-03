@@ -63,12 +63,14 @@ class PasskeyController extends Controller
     public function register(AttestedRequest $request): JsonResponse
     {
         try {
-            $credential = $request->save();
+            $credentialName = $request->input('name', 'Passkey');
+            $id = $request->save(['name' => $credentialName]);
 
-            // Set the user-friendly name if provided
-            if ($request->has('name')) {
-                $credential->name = $request->name;
-                $credential->save();
+            // Get the credential model instance
+            $credential = \Laragear\WebAuthn\Models\WebAuthnCredential::find($id);
+
+            if (!$credential) {
+                throw new \Exception('Failed to retrieve registered passkey.');
             }
 
             $message = 'Passkey registered successfully.';
