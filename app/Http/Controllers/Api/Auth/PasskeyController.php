@@ -78,7 +78,12 @@ class PasskeyController extends Controller
 
             // Recovery logic only if MFA is enabled or being enabled
             $user = $request->user();
-            if ($user->two_factor_enabled && $user->passkeys()->count() === 1 && empty($user->two_factor_recovery_codes)) {
+            $passkeyCount = DB::table('webauthn_credentials')
+                ->where('authenticatable_id', $user->id)
+                ->where('authenticatable_type', $user->getMorphClass())
+                ->count();
+
+            if ($user->two_factor_enabled && $passkeyCount === 1 && empty($user->two_factor_recovery_codes)) {
                 $recoveryCodes = $this->generateRecoveryCodes();
                 $user->forceFill([
                     'two_factor_recovery_codes' => encrypt(json_encode($recoveryCodes)),
@@ -110,9 +115,11 @@ class PasskeyController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $morphClass = $user->getMorphClass();
 
         $passkeys = DB::table('webauthn_credentials')
-            ->where('user_id', $user->id)
+            ->where('authenticatable_id', $user->id)
+            ->where('authenticatable_type', $morphClass)
             ->select('id', 'name', 'created_at', 'updated_at as last_used_at')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -128,10 +135,12 @@ class PasskeyController extends Controller
     public function destroy(Request $request, string $id)
     {
         $user = $request->user();
+        $morphClass = $user->getMorphClass();
 
         $deleted = DB::table('webauthn_credentials')
             ->where('id', $id)
-            ->where('user_id', $user->id)
+            ->where('authenticatable_id', $user->id)
+            ->where('authenticatable_type', $morphClass)
             ->delete();
 
         if (!$deleted) {
