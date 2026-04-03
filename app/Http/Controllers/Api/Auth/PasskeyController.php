@@ -205,7 +205,7 @@ class PasskeyController extends Controller
         try {
             $remember = (bool) $request->input('remember', false);
             
-            if ($request->login($remember)) {
+            if ($request->login('web', $remember)) {
                 $user = $request->user();
                 // Update last used timestamp
                 DB::table('webauthn_credentials')
