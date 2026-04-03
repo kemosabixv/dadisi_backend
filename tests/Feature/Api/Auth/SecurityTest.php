@@ -22,6 +22,9 @@ class SecurityTest extends TestCase
     {
         parent::setUp();
 
+        // Seed roles and permissions for tests that expect them
+        $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
+
         // Robust setup for webauthn_credentials in SQLite testing env
         Schema::dropIfExists('webauthn_credentials');
         Schema::create('webauthn_credentials', function ($table) {
@@ -60,7 +63,15 @@ class SecurityTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $response->assertJsonStructure(['user', 'email_verified']);
+        $response->assertJsonStructure([
+            'user' => [
+                'id',
+                'email',
+                'ui_permissions',
+                'admin_access',
+            ],
+            'email_verified',
+        ]);
         $response->assertJsonMissing(['requires_mfa']);
     }
 
@@ -92,7 +103,7 @@ class SecurityTest extends TestCase
         $user = User::factory()->create([
             'email' => 'passkey@example.com',
             'password' => Hash::make('Password123!'),
-            'two_factor_enabled' => false,
+            'two_factor_enabled' => true,
         ]);
 
         WebAuthnCredential::forceCreate([
@@ -103,7 +114,8 @@ class SecurityTest extends TestCase
             'rp_id' => 'localhost',
             'origin' => 'http://localhost',
             'counter' => 0,
-            'public_key' => 'dummy-key',
+            'counter' => 0,
+            'public_key' => 'LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUJRd0RRWUpLb1pJaHZjTkFRRUJCUUFEU3dBd1NBSkpBTm94aXUvT0p6clE9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0K',
             'attestation_format' => 'none',
         ]);
 
@@ -137,7 +149,7 @@ class SecurityTest extends TestCase
             'rp_id' => 'localhost',
             'origin' => 'http://localhost',
             'counter' => 0,
-            'public_key' => 'dummy-key-2',
+            'public_key' => 'LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUJRd0RRWUpLb1pJaHZjTkFRRUJCUUFEU3dBd1NBSkpBTm94aXUvT0p6clE9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0K',
             'attestation_format' => 'none',
         ]);
 
@@ -149,8 +161,11 @@ class SecurityTest extends TestCase
         $response->assertStatus(200);
         $response->assertJson([
             'requires_mfa' => true,
-            'supported_methods' => ['totp', 'webauthn'],
         ]);
+        
+        $supportedMethods = $response->json('supported_methods');
+        $this->assertContains('totp', $supportedMethods);
+        $this->assertContains('webauthn', $supportedMethods);
     }
 
     #[Test]

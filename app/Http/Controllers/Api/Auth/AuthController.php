@@ -226,7 +226,7 @@ class AuthController extends Controller
             Auth::logout();
             return response()->json([
                 'requires_mfa' => true,
-                'supportedMethods' => $supportedMethods,
+                'supported_methods' => $supportedMethods,
                 'email' => $user->email,
                 'message' => 'Multi-factor authentication required.',
             ], 200);
