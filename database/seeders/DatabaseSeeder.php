@@ -81,6 +81,7 @@ class DatabaseSeeder extends Seeder
             LabBookingSeeder::class,
             LabMaintenanceSeeder::class,
             GroupMembersSeeder::class,
+            PrivateGroupsSeeder::class,
             E2ETestSeeder::class,
         ]);
     }

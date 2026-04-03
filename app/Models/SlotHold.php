@@ -21,12 +21,16 @@ class SlotHold extends Model
         'user_id',
         'guest_email',
         'series_id',
+        'total_price',
+        'paid_amount',
     ];
 
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'expires_at' => 'datetime',
+        'total_price' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
     ];
 
     public function labSpace(): BelongsTo

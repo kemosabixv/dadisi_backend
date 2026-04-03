@@ -117,4 +117,44 @@ interface LabBookingServiceContract
      * Resolve a booking conflict manually by selecting a new slot.
      */
     public function resolveConflict(LabBooking $booking, array $data): array;
+
+    /**
+     * Initiate a booking by creating slot holds.
+     */
+    public function initiateBooking(?User $user, array $data): array;
+
+    /**
+     * Confirm a booking (Stage 2).
+     */
+    public function confirmBooking(string $reference, ?string $paymentId, string $paymentMethod): array;
+
+    /**
+     * Confirm a guest booking.
+     */
+    public function confirmGuest(string $reference, string $paymentId, string $paymentMethod, array $guestData): array;
+
+    /**
+     * Renew a slot hold.
+     */
+    public function renewHold(string $reference): array;
+
+    /**
+     * Get hold by reference.
+     */
+    public function getHoldByReference(string $reference): ?\App\Models\SlotHold;
+
+    /**
+     * Pre-fetch availability data for a range.
+     */
+    public function preFetchAvailabilityData(int $spaceId, Carbon $start, Carbon $end): array;
+
+    /**
+     * Discover recurring slots.
+     */
+    public function discoverRecurringSlots(int $spaceId, array $data, ?User $user): array;
+
+    /**
+     * Discover flexible slots.
+     */
+    public function discoverFlexibleSlots(int $spaceId, array $data, ?User $user): array;
 }

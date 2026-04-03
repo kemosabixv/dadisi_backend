@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         // Lab Booking Service
-        $this->app->bind(
+        $this->app->singleton(
             \App\Services\Contracts\LabBookingServiceContract::class,
             \App\Services\LabBookingService::class
         );

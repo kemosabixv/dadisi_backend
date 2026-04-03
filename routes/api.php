@@ -824,6 +824,15 @@ Route::prefix('spaces/{space}/blocks')
 Route::post('bookings/guest', [LabBookingController::class, 'guestStore'])->name('lab-bookings.guest-store');
 Route::post('bookings/guest-cancel', [LabBookingController::class, 'guestCancel'])->name('lab-bookings.guest-cancel');
 
+// Two-Phase Booking (Publicly accessible for both guests and authenticated users)
+Route::prefix('bookings')->group(function () {
+    Route::post('/initiate', [LabBookingController::class, 'initiate'])->name('lab-bookings.initiate');
+    Route::post('/confirm', [LabBookingController::class, 'confirm'])->name('lab-bookings.confirm');
+    Route::post('/confirm/guest', [LabBookingController::class, 'confirmGuest'])->name('lab-bookings.confirm-guest');
+    Route::post('/renew-hold', [LabBookingController::class, 'renewHold'])->name('lab-bookings.renew-hold');
+    Route::get('/holds/{reference}', [LabBookingController::class, 'getHold'])->name('lab-bookings.get-hold');
+});
+
 // Discovery Engine (Publicly accessible for guest previews)
 Route::get('bookings/discover/recurring', [LabBookingController::class, 'discoverRecurring'])->name('lab-bookings.discover-recurring');
 Route::get('bookings/discover/flexible', [LabBookingController::class, 'discoverFlexible'])->name('lab-bookings.discover-flexible');
@@ -833,11 +842,7 @@ Route::prefix('bookings')->middleware('auth')->group(function () {
     Route::get('/quota', [LabBookingController::class, 'quotaStatus'])->name('lab-bookings.quota');
     Route::get('/', [LabBookingController::class, 'index'])->name('lab-bookings.index');
 
-    // Two-Phase Booking
-    Route::post('/initiate', [LabBookingController::class, 'initiate'])->name('lab-bookings.initiate');
-    Route::post('/confirm', [LabBookingController::class, 'confirm'])->name('lab-bookings.confirm');
-    Route::post('/renew-hold', [LabBookingController::class, 'renewHold'])->name('lab-bookings.renew-hold');
-    Route::get('/holds/{reference}', [LabBookingController::class, 'getHold'])->name('lab-bookings.get-hold');
+    // Two-Phase Booking - Legacy/Internal refs (Already handled by public prefix above if needed)
 
     // Booking Series (Container-centric)
     Route::post('/series/{id}/cancel', [BookingSeriesController::class, 'cancel'])->name('booking-series.cancel');

@@ -19,10 +19,27 @@ use Illuminate\Support\Facades\Log;
 
 class LabBookingService implements LabBookingServiceContract
 {
+    /**
+     * Cache for LabSpace models to implement the Identity Map pattern.
+     */
+    private array $spaceCache = [];
+
     public function __construct(
         private OccupancyService $occupancyService,
         private RefundServiceContract $refundService
     ) {}
+
+    /**
+     * Get a LabSpace by ID using the Identity Map pattern.
+     */
+    protected function getSpace(int $id): LabSpace
+    {
+        if (! isset($this->spaceCache[$id])) {
+            $this->spaceCache[$id] = LabSpace::findOrFail($id);
+        }
+
+        return $this->spaceCache[$id];
+    }
 
     /**
      * Get the user's current plan.
@@ -266,9 +283,12 @@ class LabBookingService implements LabBookingServiceContract
      * @param  int|null  $excludeBookingId  Exclude this booking when checking (for updates)
      * @param  array|null  $context  Optional pre-fetched context for batch optimization
      */
-    public function checkAvailability(int $spaceId, Carbon $start, Carbon $end, ?int $excludeBookingId = null, ?array $context = null): bool
+    public function checkAvailability(int|LabSpace $space, Carbon $start, Carbon $end, ?int $excludeBookingId = null, ?array $context = null): bool
     {
-        $space = LabSpace::findOrFail($spaceId);
+        if (is_int($space)) {
+            $space = $this->getSpace($space);
+        }
+        $spaceId = $space->id;
 
         // 1. Check if lab is active/available
         if (! $space->is_available) {
@@ -427,39 +447,40 @@ class LabBookingService implements LabBookingServiceContract
             $processedSlots = [];
             $totalHours = 0;
 
-            $currentDate = Carbon::parse($slots[0]['starts_at']);
-            $startTime = $currentDate->format('H:i');
-            $endTime = Carbon::parse($slots[0]['ends_at'])->format('H:i');
-            $durationMinutes = Carbon::parse($slots[0]['starts_at'])->diffInMinutes(Carbon::parse($slots[0]['ends_at']));
+            $startTimeStr = $slots[0]['starts_at'] instanceof Carbon ? $slots[0]['starts_at']->format('H:i') : Carbon::parse($slots[0]['starts_at'])->format('H:i');
+            $endTimeStr = $slots[0]['ends_at'] instanceof Carbon ? $slots[0]['ends_at']->format('H:i') : Carbon::parse($slots[0]['ends_at'])->format('H:i');
+            $durationMinutes = $slots[0]['starts_at'] instanceof Carbon 
+                ? $slots[0]['starts_at']->diffInMinutes($slots[0]['ends_at']) 
+                : Carbon::parse($slots[0]['starts_at'])->diffInMinutes(Carbon::parse($slots[0]['ends_at']));
 
-            // Performance: Pre-fetch for the range (approx 1 year max or count based)
+            $currentDate = $slots[0]['starts_at'] instanceof Carbon ? $slots[0]['starts_at']->copy() : Carbon::parse($slots[0]['starts_at']);
+
+            // Performance: Pre-fetch for the range
             $prefetchEnd = $currentDate->copy()->addMonths(12);
             $context = $this->preFetchAvailabilityData($space->id, $currentDate, $prefetchEnd);
 
-            // Extract recurrence pattern if provided
-            $daysOfWeek = $data['metadata']['days_of_week'] ?? null; // e.g., ['Mon', 'Wed']
+            // Extract recurrence pattern
+            $daysOfWeek = $data['metadata']['days_of_week'] ?? null;
 
             while (count($processedSlots) < $targetCount) {
-                $start = $currentDate->copy()->setTimeFrom(Carbon::parse($startTime));
-                $end = $start->copy()->addMinutes($durationMinutes);
-
-                // Skip & Append Strategy (PRD Section 3.2)
-                // 1. Check if the lab is open on this day
-                // 2. Check if this day is in the recurrence pattern
-                $isAllowedDay = true;
+                // Efficiency: Skip to next allowed day if pattern exists
                 if ($daysOfWeek) {
-                    $dayName = $currentDate->format('D'); // Mon, Tue, etc.
+                    $dayName = $currentDate->format('D');
                     if (! in_array($dayName, $daysOfWeek)) {
-                        $isAllowedDay = false;
+                        $currentDate->addDay();
+                        continue;
                     }
                 }
 
-                if ($isAllowedDay && $this->checkAvailability($space->id, $start, $end, null, $context)) {
+                $start = $currentDate->copy()->setTimeFrom(Carbon::parse($startTimeStr));
+                $end = $start->copy()->addMinutes($durationMinutes);
+
+                // Use the prefetched context strictly
+                if ($this->checkAvailability($space, $start, $end, null, $context)) {
                     $processedSlots[] = ['starts_at' => $start, 'ends_at' => $end];
                     $totalHours += ($durationMinutes / 60);
                 }
 
-                // Move to next day (always addDay, the loop above will skip days not in pattern or unavailable)
                 $currentDate->addDay();
 
                 if (count($processedSlots) < $targetCount && $currentDate->diffInDays(Carbon::parse($slots[0]['starts_at'])) > 365) {
@@ -472,21 +493,11 @@ class LabBookingService implements LabBookingServiceContract
                 } // Hard safety
             }
 
-            $holds = [];
-            foreach ($processedSlots as $slot) {
-                $hold = \App\Models\SlotHold::create([
-                    'reference' => $reference,
-                    'lab_space_id' => $space->id,
-                    'starts_at' => $slot['starts_at'],
-                    'ends_at' => $slot['ends_at'],
-                    'expires_at' => now()->addMinutes(15),
-                    'user_id' => $user?->id,
-                    'guest_email' => $user ? null : $data['guest_email'] ?? null,
-                ]);
-                $holds[] = $hold;
-            }
+            // Quota handling for yearly subscribers (PRD Section 3.2)
+            $priceData = $this->calculateBookingPriceWithCommitments($user, $space, $processedSlots);
 
-            // Create a pending series
+            $holds = [];
+            // 1. Create a pending series
             $series = \App\Models\BookingSeries::create([
                 'user_id' => $user?->id,
                 'lab_space_id' => $space->id,
@@ -502,13 +513,27 @@ class LabBookingService implements LabBookingServiceContract
                 ]),
             ]);
 
-            // Link holds to series
-            foreach ($holds as $hold) {
-                $hold->update(['series_id' => $series->id]);
+            // 2. Create the holds
+            $holds = [];
+            foreach ($processedSlots as $slot) {
+                $hold = \App\Models\SlotHold::create([
+                    'reference' => $reference,
+                    'lab_space_id' => $space->id,
+                    'starts_at' => $slot['starts_at'],
+                    'ends_at' => $slot['ends_at'],
+                    'expires_at' => now()->addMinutes(15),
+                    'user_id' => $user?->id,
+                    'guest_email' => $user ? null : $data['guest_email'] ?? null,
+                    'series_id' => $series->id,
+                    'total_price' => $priceData['total_price'],
+                    'paid_amount' => $priceData['total_price'],
+                ]);
+                $holds[] = $hold;
             }
 
-            // Quota handling for yearly subscribers (PRD Section 3.2)
-            $priceData = $this->calculateBookingPriceWithCommitments($user, $space, $processedSlots);
+            // Holds already linked in loop above
+
+            // Price data already calculated above
 
             return [
                 'success' => true,
@@ -816,6 +841,8 @@ class LabBookingService implements LabBookingServiceContract
         $maxAttempts = 365; // Max 1 year scan
         $attempts = 0;
 
+        $operatingDays = $space->operating_days ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
         // Performance: Pre-fetch for the range
         $prefetchEnd = $currentDate->copy()->addMonths(12);
         $context = $this->preFetchAvailabilityData($spaceId, $currentDate, $prefetchEnd);
@@ -825,31 +852,12 @@ class LabBookingService implements LabBookingServiceContract
             $start = $currentDate->copy()->setTimeFrom(Carbon::parse($startTime));
             $end = $start->copy()->addMinutes($durationMinutes);
 
+            $dayName = $currentDate->format('D');
+            $isOperatingDay = in_array($dayName, $operatingDays);
+            $isAllowedDay = !$daysOfWeek || in_array($dayName, $daysOfWeek);
+
             // Skip non-operating days without recording as skipped (unless explicitly requested)
-            file_put_contents(storage_path('logs/recurring_debug.log'), "About to call discoverRecurringSlots\n", FILE_APPEND);
-            if (! $this->isOperatingDay($space, $currentDate)) {
-                $currentDate->addDay();
-
-                continue;
-            }
-
-            $isAllowedDay = true;
-            if ($daysOfWeek) {
-                $dayName = $currentDate->format('D');
-                if (! in_array($dayName, $daysOfWeek)) {
-                    $isAllowedDay = false;
-                }
-            }
-
-            $logMsg = sprintf("[%s] Day: %s, Allowed: %d, Processed: %d\n",
-                $currentDate->toDateString(),
-                $currentDate->format('D'),
-                $isAllowedDay,
-                count($processedSlots)
-            );
-            file_put_contents(storage_path('logs/recurring_debug.log'), $logMsg, FILE_APPEND);
-
-            if ($isAllowedDay) {
+            if ($isOperatingDay && $isAllowedDay) {
                 // Check if this specific day has a closure (holiday/maintenance) - use context
                 $isClosed = $context['closures']->contains(function ($closure) use ($currentDate) {
                     return $closure->start_date <= $currentDate->toDateString() && 
@@ -935,7 +943,7 @@ class LabBookingService implements LabBookingServiceContract
                 $checkEnd = $end->copy();
             }
 
-            if ($this->checkAvailability($space->id, $currentStart, $checkEnd, null, $context)) {
+            if ($this->checkAvailability($space, $currentStart, $checkEnd, null, $context)) {
                 return [['starts_at' => $currentStart->toDateTimeString(), 'ends_at' => $checkEnd->toDateTimeString(), 'hours' => $currentStart->diffInMinutes($checkEnd) / 60]];
             }
             $currentStart->addHour();
@@ -2299,6 +2307,91 @@ class LabBookingService implements LabBookingServiceContract
                 'end' => $endDate->toDateString(),
             ],
         ];
+    }
+
+    /**
+     * Confirm a guest booking (Stage 2).
+     */
+    public function confirmGuest(string $reference, string $paymentId, string $paymentMethod, array $guestData = []): array
+    {
+        return DB::transaction(function () use ($reference, $paymentId, $paymentMethod, $guestData) {
+            $hold = \App\Models\SlotHold::where('reference', $reference)
+                ->where('expires_at', '>', now())
+                ->first();
+
+            if (! $hold) {
+                return [
+                    'success' => false,
+                    'message' => 'Your session has expired. Please start your booking again.',
+                ];
+            }
+
+            // checkAvailability for the entire range (double check)
+            if (! $this->checkAvailability($hold->lab_space_id, $hold->starts_at, $hold->ends_at)) {
+                return [
+                    'success' => false,
+                    'message' => 'One or more of your selected slots are no longer available.',
+                ];
+            }
+
+            // Create the booking
+            $booking = LabBooking::create([
+                'lab_space_id' => $hold->lab_space_id,
+                'booking_series_id' => $hold->series_id,
+                'guest_name' => $guestData['name'] ?? 'Guest',
+                'guest_email' => $guestData['email'] ?? null,
+                'starts_at' => $hold->starts_at,
+                'ends_at' => $hold->ends_at,
+                'status' => LabBooking::STATUS_CONFIRMED,
+                'payment_method' => $paymentMethod,
+                'total_price' => $hold->total_price,
+                'paid_amount' => $hold->total_price,
+                'booking_reference' => $reference,
+                'quota_consumed' => false, // Guests always pay
+                'purpose' => $hold->metadata['purpose'] ?? 'Lab Session',
+            ]);
+
+            // Create Payment record
+            \App\Models\Payment::create([
+                'payable_type' => 'lab_booking',
+                'payable_id' => $booking->id,
+                'payer_id' => null,
+                'amount' => $hold->total_price,
+                'currency' => $hold->currency ?? 'KES',
+                'status' => 'paid',
+                'method' => $paymentMethod,
+                'transaction_id' => $paymentId,
+                'external_reference' => $paymentId,
+                'order_reference' => 'BK-GUEST-' . strtoupper(substr(uniqid(), -8)),
+                'paid_at' => now(),
+                'description' => "Guest Lab Booking: {$booking->labSpace->name}",
+            ]);
+
+            // Update series status
+            if ($booking->booking_series_id) {
+                \App\Models\BookingSeries::where('id', $booking->booking_series_id)
+                    ->update(['status' => \App\Models\BookingSeries::STATUS_CONFIRMED]);
+            }
+
+            // Release the hold
+            $hold->delete();
+
+            // Notify Guest
+            if ($booking->guest_email) {
+                try {
+                    \Illuminate\Support\Facades\Notification::route('mail', $booking->guest_email)
+                        ->notify(new \App\Notifications\LabBookingConfirmation($booking));
+                } catch (\Exception $e) {
+                    Log::error('Failed to notify guest for booking confirmation: '.$e->getMessage());
+                }
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Booking confirmed successfully!',
+                'booking' => $booking->load('labSpace'),
+            ];
+        });
     }
 
     /**

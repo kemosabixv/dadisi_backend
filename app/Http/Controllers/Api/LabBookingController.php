@@ -228,6 +228,35 @@ class LabBookingController extends Controller
     }
 
     /**
+     * Confirm a guest booking (Unauthenticated).
+     */
+    public function confirmGuest(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'reference' => 'required|string',
+                'payment_id' => 'nullable|string',
+                'payment_method' => 'required|string',
+                'guest_data' => 'required|array',
+                'guest_data.name' => 'required|string|max:255',
+                'guest_data.email' => 'required|email|max:255',
+                'guest_data.phone' => 'nullable|string|max:20',
+            ]);
+
+            $result = $this->bookingService->confirmGuest(
+                $validated['reference'],
+                $validated['payment_id'] ?? 'GUEST_BYPASS',
+                $validated['payment_method'],
+                $validated['guest_data']
+            );
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
      * Discover occurrences for recurring bookings with skip & append preview.
      */
     public function discoverRecurring(Request $request): JsonResponse

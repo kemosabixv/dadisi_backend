@@ -11,7 +11,7 @@ class EnqueueDueRenewals extends Command
      *
      * @var string
      */
-    protected $signature = 'app:enqueue-due-renewals';
+    protected $signature = 'renewals:enqueue-due';
 
     /**
      * The console command description.

@@ -5,7 +5,6 @@ namespace App\Notifications;
 use App\Channels\SupabaseChannel;
 use App\Models\LabBooking;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\OneSignal\OneSignalChannel;
 use NotificationChannels\OneSignal\OneSignalMessage;
