@@ -21,7 +21,7 @@ class LabSpaceSeeder extends Seeder
                 'slug' => 'wet-lab',
                 'type' => 'wet_lab',
                 'description' => 'A fully equipped wet laboratory designed for biological, chemical, and biochemical research. Features include fume hoods, biosafety cabinets, PCR machines, centrifuges, and specialized workbenches for handling liquids, chemicals, and biological samples safely.',
-                'capacity' => 6,
+                'capacity' => 1,
                 'hourly_rate' => 500.00,
                 'equipment_list' => [
                     'Fume hoods (3)',
@@ -50,14 +50,14 @@ class LabSpaceSeeder extends Seeder
                 'opens_at' => '09:00',
                 'closes_at' => '17:00',
                 'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-                'slots_per_hour' => 1,
+                'timezone' => 'Africa/Nairobi',
             ],
             [
                 'name' => 'Dry Lab',
                 'slug' => 'dry-lab',
                 'type' => 'dry_lab',
                 'description' => 'A computational and analytical laboratory focused on data analysis, bioinformatics, software development, and theoretical research. Equipped with high-performance computing workstations, large displays for data visualization, and collaborative workspace areas.',
-                'capacity' => 10,
+                'capacity' => 2,
                 'hourly_rate' => 300.00,
                 'equipment_list' => [
                     'High-performance computing workstations (10)',
@@ -84,14 +84,14 @@ class LabSpaceSeeder extends Seeder
                 'opens_at' => '09:00',
                 'closes_at' => '20:00',
                 'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-                'slots_per_hour' => 2,
+                'timezone' => 'Africa/Nairobi',
             ],
             [
                 'name' => 'Greenhouse',
                 'slug' => 'greenhouse',
                 'type' => 'greenhouse',
                 'description' => 'A controlled environment greenhouse for plant science, agricultural research, and sustainability projects. Features automated climate control, irrigation systems, and dedicated areas for seedling propagation, growth experiments, and vertical farming research.',
-                'capacity' => 4,
+                'capacity' => 1,
                 'hourly_rate' => 400.00,
                 'equipment_list' => [
                     'Automated climate control system',
@@ -120,14 +120,14 @@ class LabSpaceSeeder extends Seeder
                 'opens_at' => '06:00',
                 'closes_at' => '18:00',
                 'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-                'slots_per_hour' => 1,
+                'timezone' => 'Africa/Nairobi',
             ],
             [
                 'name' => 'Mobile Lab Unit',
                 'slug' => 'mobile-lab-unit',
                 'type' => 'mobile_lab',
                 'description' => 'A fully equipped mobile laboratory unit designed for field research, community outreach, and off-site experiments. Can be deployed to remote locations for environmental sampling, field testing, and educational demonstrations. Booking includes the vehicle and basic equipment setup.',
-                'capacity' => 4,
+                'capacity' => 1,
                 'hourly_rate' => 450.00,
                 'equipment_list' => [
                     'Mobile lab vehicle',
@@ -156,7 +156,7 @@ class LabSpaceSeeder extends Seeder
                 'opens_at' => '07:00',
                 'closes_at' => '19:00',
                 'operating_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-                'slots_per_hour' => 1,
+                'timezone' => 'Africa/Nairobi',
             ],
         ];
 

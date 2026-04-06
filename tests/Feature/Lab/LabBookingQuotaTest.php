@@ -11,6 +11,9 @@ use App\Models\User;
 use App\Services\LabBookingService;
 use App\Services\QuotaService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 /**
@@ -42,14 +45,28 @@ class LabBookingQuotaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Http::fake();
+        
+        // Mock ExchangeRateService to prevent Guzzle network calls
+        $mockExchange = $this->createMock(\App\Services\Contracts\ExchangeRateServiceContract::class);
+        $mockExchange->method('kesToUSD')->willReturn(0.0);
+        $mockExchange->method('getCurrentUSDRate')->willReturn(130.0);
+        $this->app->instance(\App\Services\Contracts\ExchangeRateServiceContract::class, $mockExchange);
 
         $this->bookingService = app(LabBookingService::class);
         $this->quotaService = app(QuotaService::class);
+        Notification::fake();
 
-        // Create lab space
+        // Grant access_admin_panel to user
+        $adminPermission = \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'access_admin_panel', 'guard_name' => 'web']);
+        $this->user = User::factory()->create();
+        $this->user->givePermissionTo($adminPermission);
+
+        // Create lab space with UTC for legacy test compatibility
         $this->lab = LabSpace::factory()->create([
             'name' => 'Test Lab',
             'slug' => 'test-lab',
+            'timezone' => 'UTC',
         ]);
 
         // Create plan with 50 hours/month quota
@@ -62,9 +79,6 @@ class LabBookingQuotaTest extends TestCase
             'billing_cycle' => 'monthly',
             'status' => 'active',
         ]);
-
-        // Create user and subscription
-        $this->user = User::factory()->create();
 
         // Create SystemFeature and attach to plan with value of 50 hours
         $systemFeature = \App\Models\SystemFeature::create([

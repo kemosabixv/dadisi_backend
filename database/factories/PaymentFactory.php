@@ -12,7 +12,7 @@ class PaymentFactory extends Factory
     public function definition(): array
     {
         return [
-            'payable_type' => 'App\\Models\\EventOrder',
+            'payable_type' => 'event_order',
             'payable_id' => 1,
             'payer_id' => \App\Models\User::factory(),
             'amount' => $this->faker->randomFloat(2, 100, 5000),

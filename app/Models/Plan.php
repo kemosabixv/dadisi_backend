@@ -148,7 +148,10 @@ class Plan extends BasePlan
      */
     public function getFeatureValue(string $slug, $default = null)
     {
-        $feature = $this->systemFeatures()->where('slug', $slug)->first();
+        // Use eager-loaded collection if available, otherwise hit database
+        $feature = $this->relationLoaded('systemFeatures')
+            ? $this->systemFeatures->firstWhere('slug', $slug)
+            : $this->systemFeatures()->where('slug', $slug)->first();
 
         if ($feature) {
             $value = $feature->pivot->value;

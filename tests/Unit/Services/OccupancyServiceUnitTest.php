@@ -8,10 +8,11 @@ use App\Services\OccupancyService;
 use Carbon\Carbon;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-
 /**
- * Standalone unit tests for OccupancyService
- * These tests verify the calculation logic without database interactions
+ * Handles real-time occupancy tracking and capacity calculations for lab spaces.
+ * Calculates how many booking slots are available vs full for each time slot.
+ *
+ * Uses `capacity` field for both physical limit and booking slots per hour.
  */
 class OccupancyServiceUnitTest extends TestCase
 {
@@ -96,19 +97,15 @@ class OccupancyServiceUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_handles_fallback_capacity_slots_per_hour()
+    public function it_handles_capacity_validation()
     {
-        // Test the fallback logic: slots_per_hour ?? capacity ?? 1
+        // Test the capacity logic: capacity ?? 1
         
-        // Case 1: slots_per_hour exists
-        $capacity = max(1, 3);
-        $this->assertEquals(3, $capacity);
-        
-        // Case 2: capacity fallback
+        // Case 1: capacity exists
         $capacity = max(1, 5);
         $this->assertEquals(5, $capacity);
         
-        // Case 3: default to 1
+        // Case 2: default to 1
         $capacity = max(1, 0);
         $this->assertEquals(1, $capacity);
     }

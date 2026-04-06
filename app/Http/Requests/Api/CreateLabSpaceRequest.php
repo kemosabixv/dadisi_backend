@@ -42,6 +42,7 @@ class CreateLabSpaceRequest extends FormRequest
             'is_available' => ['nullable', 'boolean'],
             'available_from' => ['nullable', 'date_format:H:i'],
             'available_until' => ['nullable', 'date_format:H:i'],
+            'timezone' => ['required', 'string', 'timezone'],
             'featured_media_id' => ['nullable', 'integer', 'exists:media,id'],
             'gallery_media_ids' => ['nullable', 'array'],
             'gallery_media_ids.*' => ['integer', 'exists:media,id'],

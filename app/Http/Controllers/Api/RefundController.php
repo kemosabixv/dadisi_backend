@@ -62,7 +62,7 @@ class RefundController extends Controller
                         'message' => 'The provided email does not match our records for this reference.'
                     ], Response::HTTP_FORBIDDEN);
                 }
-                
+
                 // For EventOrders, we want to trigger the full cancellation flow 
                 // which includes waitlist promotion and notifications.
                 $registrations = $order->registrations;

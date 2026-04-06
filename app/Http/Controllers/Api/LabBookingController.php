@@ -146,9 +146,11 @@ class LabBookingController extends Controller
                 'title' => 'nullable|string|max:255',
                 'guest_name' => 'nullable|string|max:255',
                 'guest_email' => 'nullable|email|max:255',
+                'timezone' => 'nullable|string',
             ]);
 
-            $result = $this->bookingService->initiateBooking(Auth::user(), $validated);
+            $timezone = $validated['timezone'] ?? 'Africa/Nairobi';
+            $result = $this->bookingService->initiateBooking(Auth::user(), $validated, $timezone);
 
             return response()->json([
                 'success' => true,
@@ -826,6 +828,8 @@ class LabBookingController extends Controller
             return response()->json(['success' => false, 'message' => 'Invalid QR Code'], 404);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to check in via token', ['error' => $e->getMessage(), 'user_id' => Auth::id()]);
+
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
     }
 

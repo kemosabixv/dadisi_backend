@@ -76,8 +76,8 @@ class LabBookingInitiateTest extends TestCase
             'lab_space_id' => $lab->id,
             'slots' => [
                 [
-                    'starts_at' => Carbon::now()->addDay()->setHour(10)->toDateTimeString(),
-                    'ends_at' => Carbon::now()->addDay()->setHour(12)->toDateTimeString(),
+                    'starts_at' => Carbon::now()->next('Monday')->setHour(10)->toDateTimeString(),
+                    'ends_at' => Carbon::now()->next('Monday')->setHour(12)->toDateTimeString(),
                 ]
             ],
             'guest_name' => 'John Guest',
@@ -115,8 +115,8 @@ class LabBookingInitiateTest extends TestCase
             'lab_space_id' => $lab->id,
             'slots' => [
                 [
-                    'starts_at' => Carbon::now()->addDay()->setHour(14)->toDateTimeString(),
-                    'ends_at' => Carbon::now()->addDay()->setHour(16)->toDateTimeString(),
+                    'starts_at' => Carbon::now()->next('Tuesday')->setHour(9)->toDateTimeString(),
+                    'ends_at' => Carbon::now()->next('Tuesday')->setHour(11)->toDateTimeString(),
                 ]
             ],
             'guest_name' => 'Quick Guest',

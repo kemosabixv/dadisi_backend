@@ -185,7 +185,8 @@ class LabSpaceController extends Controller
                 ? Carbon::parse($request->end) 
                 : Carbon::now()->endOfMonth();
 
-            $events = $this->bookingService->getAvailabilityCalendar($space, $start, $end);
+            $timezone = $request->query('timezone', 'Africa/Nairobi');
+            $events = $this->bookingService->getAvailabilityCalendar($space, $start, $end, $timezone);
 
             return response()->json([
                 'success' => true,

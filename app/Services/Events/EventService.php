@@ -157,6 +157,8 @@ class EventService implements EventServiceContract
                 $event->update($data);
 
                 // Smart Ticket Management: When event is set to Free (price = 0)
+                // We only deactivate paid tickets if the base price is 0. 
+                // We NO LONGER force online events to be free.
                 if (array_key_exists('price', $data) && $data['price'] == 0 && ($oldValues['price'] ?? 0) > 0) {
                     // 1. Deactivate ALL paid tickets
                     $event->tickets()->where('price', '>', 0)->update(['is_active' => false]);

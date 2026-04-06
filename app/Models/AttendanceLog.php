@@ -89,6 +89,20 @@ class AttendanceLog extends Model
     }
 
     /**
+     * Filter attendance for a specific local day of a lab.
+     */
+    public function scopeForLocalDay($query, LabSpace $lab, ?Carbon $date = null)
+    {
+        $timezone = $lab->timezone;
+        $localDate = $date ? $date->copy()->setTimezone($timezone) : now($timezone);
+        
+        $start = $localDate->copy()->startOfDay()->utc();
+        $end = $localDate->copy()->endOfDay()->utc();
+        
+        return $query->whereBetween('created_at', [$start, $end]);
+    }
+
+    /**
      * Filter attendance by lab.
      */
     public function scopeForLab($query, $labId)

@@ -60,12 +60,12 @@ interface LabBookingServiceContract
     /**
      * Check if user can book a space.
      */
-    public function canBook(User $user, float $requestedHours): array;
+    public function canBook(User $user, float $requestedHours, ?LabSpace $lab = null): array;
 
     /**
      * Check space availability for time range.
      */
-    public function checkAvailability(int $spaceId, Carbon $start, Carbon $end, ?int $excludeBookingId = null): bool;
+    public function checkAvailability(int|LabSpace $space, Carbon $start, Carbon $end, ?int $excludeBookingId = null, ?array $context = null): bool;
 
     /**
      * Check in to a booking.

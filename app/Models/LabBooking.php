@@ -324,9 +324,10 @@ class LabBooking extends Model
             return false;
         }
 
+        $tz = $this->labSpace->timezone;
         // According to the 15-Minute Rule: 
         // No-Shows: If you haven't checked in 15 minutes after your slot ends
-        return now()->isAfter($this->ends_at->addMinutes(15));
+        return now($tz)->isAfter($this->ends_at->copy()->setTimezone($tz)->addMinutes(15));
     }
 
     /**
@@ -334,10 +335,22 @@ class LabBooking extends Model
      */
     public function getCanCheckInAttribute(): bool
     {
+        $tz = $this->labSpace->timezone;
         return $this->status === self::STATUS_CONFIRMED
             && !$this->checked_in_at
-            && now()->isAfter($this->starts_at->subMinutes(15)) // Allow 15 min early check-in
+            && now($tz)->isAfter($this->starts_at->copy()->setTimezone($tz)->subMinutes(15)) // Allow 15 min early check-in
             && !$this->is_past_grace_period;
+    }
+
+    /**
+     * Check if booking can be checked out.
+     */
+    public function getCanCheckOutAttribute(): bool
+    {
+        $tz = $this->labSpace->timezone;
+        return $this->status === self::STATUS_CONFIRMED
+            && $this->checked_in_at !== null
+            && $this->checked_out_at === null;
     }
 
 

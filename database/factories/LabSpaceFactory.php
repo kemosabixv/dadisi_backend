@@ -57,7 +57,9 @@ class LabSpaceFactory extends Factory
                 'Projector',
             ], fake()->numberBetween(3, 6)),
             'rules' => fake()->optional()->paragraph(),
+            'operating_days' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
             'checkin_token' => 'LAB-' . Str::upper(Str::random(12)),
+            'timezone' => 'Africa/Nairobi',
         ];
     }
 

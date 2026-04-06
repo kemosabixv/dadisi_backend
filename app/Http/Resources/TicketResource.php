@@ -10,8 +10,8 @@ class TicketResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'event_id' => $this->event_id,
+            'id' => (int) $this->id,
+            'event_id' => (int) $this->event_id,
             'name' => $this->name,
             'description' => $this->description,
             'price' => (float) $this->price,

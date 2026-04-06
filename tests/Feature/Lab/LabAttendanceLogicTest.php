@@ -11,6 +11,8 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -26,23 +28,38 @@ class LabAttendanceLogicTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Http::fake();
+        Notification::fake();
+        
+        // Mock ExchangeRateService to prevent Guzzle network calls
+        $mockExchange = $this->createMock(\App\Services\Contracts\ExchangeRateServiceContract::class);
+        $mockExchange->method('kesToUSD')->willReturn(0.0);
+        $mockExchange->method('getCurrentUSDRate')->willReturn(130.0);
+        $this->app->instance(\App\Services\Contracts\ExchangeRateServiceContract::class, $mockExchange);
+
+        Carbon::setTestNow(Carbon::parse('2025-01-15 10:00:00', 'UTC'));
 
         $this->user = User::factory()->create();
         
         // 1. Setup Roles and Permissions
         $staffRole = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'web']);
         $supervisorRole = Role::firstOrCreate(['name' => 'lab_supervisor', 'guard_name' => 'web']);
+        
+        $adminPermission = Permission::firstOrCreate(['name' => 'access_admin_panel', 'guard_name' => 'web']);
         $permission = Permission::firstOrCreate(['name' => 'mark_lab_attendance', 'guard_name' => 'web']);
         
+        $staffRole->givePermissionTo($adminPermission);
         $staffRole->givePermissionTo($permission);
+        
+        $supervisorRole->givePermissionTo($adminPermission);
         $supervisorRole->givePermissionTo($permission);
 
         $this->staff = User::factory()->create();
         $this->staff->assignRole($staffRole);
         $this->staff->assignRole($supervisorRole);
 
-        // 2. Setup Lab and Assignment
-        $this->labSpace = LabSpace::factory()->create(['capacity' => 10]);
+        // 2. Setup Lab and Assignment with UTC for legacy test compatibility
+        $this->labSpace = LabSpace::factory()->create(['capacity' => 10, 'timezone' => 'UTC']);
         
         // Assign staff as supervisor to this lab
         $this->staff->assignedLabSpaces()->attach($this->labSpace->id, ['assigned_at' => now()]);
@@ -81,8 +98,8 @@ class LabAttendanceLogicTest extends TestCase
             'lab_space_id' => $this->labSpace->id,
             'status' => LabBooking::STATUS_CONFIRMED,
             'guest_name' => 'John Guest',
-            'starts_at' => now()->subMinutes(5),
-            'ends_at' => now()->addMinutes(55),
+            'starts_at' => now()->subHours(1),
+            'ends_at' => now()->addHours(1),
         ]);
 
         $this->actingAs($this->staff);

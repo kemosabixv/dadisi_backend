@@ -12,7 +12,7 @@ use Carbon\Carbon;
  * Handles real-time occupancy tracking and capacity calculations for lab spaces.
  * Calculates how many booking slots are available vs full for each time slot.
  *
- * Uses `slots_per_hour` field for capacity (booking slots per hour), not `capacity` field (people limit).
+ * Uses `capacity` field for both physical limit and booking slots per hour.
  *
  * Percentage thresholds:
  * - ≤50% = Green (plenty of space)
@@ -31,7 +31,7 @@ class OccupancyService
      *
      * @return array {
      *     'current': int,           // Number of confirmed/completed bookings
-     *     'capacity': int,          // Total slots available per hour (slots_per_hour)
+     *     'capacity': int,          // Total slots available per hour
      *     'available': int,         // Available slots remaining
      *     'percentage': int,        // Occupancy % (0-100)
      *     'is_full': bool,          // true if current >= capacity
@@ -45,12 +45,8 @@ class OccupancyService
         $prefetchedBookings = null,
         $prefetchedHolds = null
     ): array {
-        // Get capacity from slots_per_hour (new flexible capacity field)
-        // Falls back to capacity field if slots_per_hour not set (null or 0)
-        // Defaults to 1 slot per hour if both are null/0
-        $slotsPerHour = ($space->slots_per_hour && $space->slots_per_hour > 0) ? $space->slots_per_hour : null;
-        $capacity = $slotsPerHour ?? ($space->capacity ?? 1);
-        $capacity = max(1, (int) $capacity);
+        // Use capacity logic (synchronized to reflect users-per-slot)
+        $capacity = max(1, (int) ($space->capacity ?? 1));
 
         // Count confirmed and completed bookings that overlap this time slot
         // Pending bookings don't count toward occupancy

@@ -70,7 +70,6 @@ class EventServiceTest extends TestCase
             capacity: 50,
             venue: 'Nairobi Convention Center',
             image_path: 'events/community-meetup.jpg',
-            tag_ids: [1, 2],
             status: 'published',
         );
 

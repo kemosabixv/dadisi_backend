@@ -32,9 +32,9 @@ class LabSpace extends Model
         'opens_at',
         'closes_at',
         'operating_days',
-        'slots_per_hour',
         'bookings_enabled',
         'checkin_token',
+        'timezone',
     ];
 
     protected $casts = [
@@ -49,7 +49,6 @@ class LabSpace extends Model
         'opens_at' => 'datetime:H:i',
         'closes_at' => 'datetime:H:i',
         'operating_days' => 'array',
-        'slots_per_hour' => 'integer',
     ];
 
     protected $appends = [
@@ -279,7 +278,7 @@ public function getGalleryMediaAttribute()
             self::TYPE_WORKSHOP => 'Workshop',
             self::TYPE_STUDIO => 'Studio',
             self::TYPE_OTHER => 'Other',
-            default => ucfirst(str_replace('_', ' ', $this->type)),
+            default => $this->type ? ucfirst(str_replace('_', ' ', (string) $this->type)) : 'Unknown',
         };
     }
 
@@ -345,7 +344,7 @@ public function getGalleryMediaAttribute()
      */
     public function getIsActiveAttribute(): bool
     {
-        return $this->is_available;
+        return (bool) ($this->is_available ?? false);
     }
 
     /**
@@ -408,11 +407,7 @@ public function getGalleryMediaAttribute()
      */
     public function maxMonthlySlotsOffered(): int
     {
-        if (!$this->slots_per_hour || $this->slots_per_hour <= 0) {
-            return 0;
-        }
-
-        return $this->monthlyAvailableHours() * $this->slots_per_hour;
+        return $this->monthlyAvailableHours() * $this->capacity;
     }
 
     // ============================================================================

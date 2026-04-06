@@ -20,7 +20,7 @@ class AdminBillingExportTest extends TestCase
         $this->seed(\Database\Seeders\RolesPermissionsSeeder::class);
 
         $this->adminUser = User::factory()->create(['email' => 'admin-export@example.com']);
-        $this->adminUser->assignRole('finance');
+        $this->adminUser->assignRole('finance_manager');
 
         // Disable middleware for controller permission checks during tests
         $this->withoutMiddleware();

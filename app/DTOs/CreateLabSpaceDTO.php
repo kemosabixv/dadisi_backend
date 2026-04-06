@@ -24,13 +24,13 @@ class CreateLabSpaceDTO
         public ?int $opens_at = null,
         public ?int $closes_at = null,
         public ?array $operating_days = null,
-        public ?int $slots_per_hour = null,
         public bool $bookings_enabled = true,
         public bool $is_available = true,
         public ?\DateTime $available_from = null,
         public ?\DateTime $available_until = null,
         public ?int $featured_media_id = null,
         public ?array $gallery_media_ids = null,
+        public string $timezone = 'Africa/Nairobi',
     ) {}
 
     /**
@@ -53,13 +53,13 @@ class CreateLabSpaceDTO
             opens_at: isset($data['opens_at']) ? (int) $data['opens_at'] : null,
             closes_at: isset($data['closes_at']) ? (int) $data['closes_at'] : null,
             operating_days: $data['operating_days'] ?? null,
-            slots_per_hour: isset($data['slots_per_hour']) ? (int) $data['slots_per_hour'] : null,
             bookings_enabled: $data['bookings_enabled'] ?? true,
             is_available: $data['is_available'] ?? true,
             available_from: isset($data['available_from']) ? new \DateTime($data['available_from']) : null,
             available_until: isset($data['available_until']) ? new \DateTime($data['available_until']) : null,
             featured_media_id: isset($data['featured_media_id']) ? (int) $data['featured_media_id'] : null,
             gallery_media_ids: $data['gallery_media_ids'] ?? null,
+            timezone: $data['timezone'] ?? 'Africa/Nairobi',
         );
     }
 
@@ -83,13 +83,13 @@ class CreateLabSpaceDTO
             'opens_at' => $this->opens_at,
             'closes_at' => $this->closes_at,
             'operating_days' => $this->operating_days,
-            'slots_per_hour' => $this->slots_per_hour,
             'bookings_enabled' => $this->bookings_enabled,
             'is_available' => $this->is_available,
             'available_from' => $this->available_from?->format('H:i'),
             'available_until' => $this->available_until?->format('H:i'),
             'featured_media_id' => $this->featured_media_id,
             'gallery_media_ids' => $this->gallery_media_ids,
+            'timezone' => $this->timezone,
         ];
     }
 }
